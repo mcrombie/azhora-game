@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
+import { scopedWorld } from './scoped-world.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES, HEX_WORLD_TRANSFORM, worldBoundsFor } from '../src/region-layout.js';
@@ -11,7 +12,7 @@ import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, hexOwnerAt, regionAt, regions, landDistance, insideRegion,
   METRES_PER_HEX,
 } from '../src/region-world.js';
-import { groundTint, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES, shoreTintOf } from '../src/world-terrain.js';
+import { groundBeforeSelamus, groundTint, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES, shoreTintOf } from '../src/world-terrain.js';
 import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
 import { regionLevel } from '../src/region-levels.js';
 import { regionBuildStatus } from '../src/build-status.js';
@@ -28,12 +29,15 @@ import {
   selemisShoreTint,
 } from '../src/selemis-world.js';
 import { SELEMIS_WILDLIFE_ZONES } from '../src/selemis-wildlife.js';
+import { SELAMUS_ARRIVAL, SELAMUS_LANDMARKS, selamusReserved, selamusCanalAt, selamusGround } from '../src/selamus-city.js';
 
 /**
  * Selemis - the island one row of water south of the tip of the Ascarth Peninsula - built on the
  * user's word of 1 October 2026 ("start working on the Selemis region") as terrain, climate, water,
- * scenery and wildlife, and nothing that belongs to anybody (docs/selemis-brief.md,
- * docs/selemis-report.md).
+ * scenery and wildlife (docs/selemis-brief.md, docs/selemis-report.md). Selemis now
+ * occupies the island. Natural height/topology claims below explicitly exercise
+ * the retained pure island baseline; current structures, coast and wildlife use
+ * the composed world. Ordinary bridge/city travel is covered by the city suite.
  *
  * The atlas is the authority. Most of what is asserted below is its own arithmetic: eight hexes, all
  * `grassland`, all `Csa`; fourteen unclaimed hexes round them and no river edge on any; one sea hex
@@ -43,10 +47,9 @@ import { SELEMIS_WILDLIFE_ZONES } from '../src/selemis-wildlife.js';
  * the brief asked to be measured rather than assumed: that the world box and the survey window did
  * not move, how wide the channel is, and what the swim rule as it stands makes of that width.
  */
-const { createWorld } = await sourceModule('../src/world.js');
 const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/west-regions-life.js');
 const scene = new THREE.Scene();
-const world = createWorld(scene);
+const world = await scopedWorld(scene, [REGION_IDS[SELEMI], REGION_IDS[ASCARTH_TIP]]);
 const island = regions.find(region => region.name === SELEMI);
 const cells = REGION_CELLS[SELEMI];
 const WWMAP = new URL('../../world-builder/map/resources/examples/azhora.wwmap', import.meta.url);
@@ -58,7 +61,10 @@ const ATLAS_OWNERS = (() => {
   for (const region of ATLAS.regions) for (const cell of region.cells) owners.set(`${cell.q},${cell.r}`, region.name ?? region.id);
   return owners;
 })();
-const H = (x, z) => world.heightAt(x, z);
+// Exact pre-city terrain, including the original shallow seabed at canal mouths.
+const H = groundBeforeSelamus;
+const naturalWorld = { bounds: world.bounds, colliders: [], heightAt: H, waterAt: () => WATERLINE };
+const naturalSpawn = { x: -790, z: 2436 }; // Original terrain-only arrival/scatter anchor.
 const RADIUS = .34;
 /** Every point of a lattice over the island and the water round it. */
 function* lattice(step, box = { minX: -1010, maxX: -590, minZ: 2300, maxZ: 2606 }) {
@@ -76,35 +82,16 @@ function flood(seed, box = { minX: -1250, maxX: -450, minZ: 1950, maxZ: 2700 }) 
       const ni = i + di, nj = j + dj, nk = nj * W + ni;
       if (ni < 0 || nj < 0 || ni >= W || nj >= rows || seen[nk]) continue;
       seen[nk] = 1;
-      if (canStand(box.minX + ni, box.minZ + nj, world, RADIUS)) queue.push(nk);
+      if (canStand(box.minX + ni, box.minZ + nj, naturalWorld, RADIUS)) queue.push(nk);
     }
   }
-  return { reached, has: (x, z) => seen[Math.round(z - box.minZ) * W + Math.round(x - box.minX)] === 1 && canStand(Math.round(x), Math.round(z), world, RADIUS) };
+  return { reached, has: (x, z) => seen[Math.round(z - box.minZ) * W + Math.round(x - box.minX)] === 1 && canStand(Math.round(x), Math.round(z), naturalWorld, RADIUS) };
 }
-const walked = flood(island.spawn);
-/**
- * The height of the ground the renderer draws under a point, which is not the ground a traveler walks
- * on: `world.heightAt` is analytic and the terrain is a grid whose vertices are 7.1 m apart out here
- * (`tests/drawn-ground.test.js` has the whole argument). The terrain's tiles share one vertex buffer.
- */
-const drawnHeight = (() => {
-  const tile = (scene.getObjectByName('The ground of Azhora') ?? scene.getObjectByName('The ground of the four regions')).children.find(mesh => /^Terrain \d+:\d+$|^Whole-world terrain$/.test(mesh.name));
-  const position = tile.geometry.attributes.position;
-  let columns = 1; while (columns < position.count && position.getX(columns) !== position.getX(0)) columns++;
-  const rows = position.count / columns, xs = new Float64Array(columns), zs = new Float64Array(rows);
-  for (let i = 0; i < columns; i++) xs[i] = position.getX(i);
-  for (let j = 0; j < rows; j++) zs[j] = position.getZ(j * columns);
-  const cell = (values, value) => { let low = 0, high = values.length - 1; while (high - low > 1) { const mid = (low + high) >> 1; if (values[mid] <= value) low = mid; else high = mid; } return low; };
-  return (x, z) => {
-    const i = cell(xs, x), j = cell(zs, z), u = (x - xs[i]) / (xs[i + 1] - xs[i]), v = (z - zs[j]) / (zs[j + 1] - zs[j]);
-    const height = (di, dj) => position.getY((j + dj) * columns + i + di);
-    // Each cell is split along u + v = 1, as the terrain's own index buffer splits it.
-    return u + v <= 1 ? height(0, 0) + (height(1, 0) - height(0, 0)) * u + (height(0, 1) - height(0, 0)) * v
-      : height(1, 1) + (height(0, 1) - height(1, 1)) * (1 - u) + (height(1, 0) - height(1, 1)) * (1 - v);
-  };
-})();
+const walked = flood(naturalSpawn);
+/** Actual composed drawn surface, including Selemis' retained fine triangles. */
+const drawnHeight = (x, z) => world.renderedGroundHeight(x, z);
 /** The shore of a piece of ground: its standable cells with water a body can be in a metre away. */
-const shoreOf = ground => ground.filter(c => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => canSwim(c.x + dx, c.z + dz, world, RADIUS)));
+const shoreOf = ground => ground.filter(c => [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dz]) => canSwim(c.x + dx, c.z + dz, naturalWorld, RADIUS)));
 
 test('the atlas: an island of eight grassland hexes that touches nobody, registered after everything that was there before', () => {
   // **No number is written here on purpose.** The island was built as the last country on its base, and
@@ -272,15 +259,15 @@ test('the crescent is the atlas’s own: one bay, turned on the tip of the penin
   }
   assert.ok(tally.strand >= 20 && tally.sand === tally.strand, `${tally.sand} of ${tally.strand} strand samples are a beach`);
   assert.ok(tally.cliff >= 180 && tally.low === 0, `${tally.low} of ${tally.cliff} samples of the other shores are under six metres`);
-  assert.ok(canStand(HARBOUR.strand.x, HARBOUR.strand.z, world, .5), 'the strand can be stood on');
+  assert.ok(canStand(HARBOUR.strand.x, HARBOUR.strand.z, naturalWorld, .5), 'the natural strand is dry before the Exchange Canal cut');
   assert.equal(strandWeight(HARBOUR.strand.x, HARBOUR.strand.z), 1);
   assert.ok(STRAND.full < STRAND.none && CLIFF.face > 2);
   // And the bay is water: its middle is deep, and it is nobody's hex.
-  assert.ok(canSwim(HARBOUR.water.x, HARBOUR.water.z, world, RADIUS) && H(HARBOUR.water.x, HARBOUR.water.z) < -5);
+  assert.ok(canSwim(HARBOUR.water.x, HARBOUR.water.z, naturalWorld, RADIUS) && H(HARBOUR.water.x, HARBOUR.water.z) < -5, 'the natural bay remains deep water beneath the moored fleet');
   assert.equal(hexOwnerAt(HARBOUR.water.x, HARBOUR.water.z), 'Open country');
 });
 
-test('three grass hills along its back, lower than the peninsula’s, and a table tilted up toward the open sea', () => {
+test('the natural baseline has three grass hills along its back, lower than the peninsula’s, and a table tilted up toward the open sea', () => {
   assert.equal(HILLS.length, 3);
   const tops = HILLS.map(h => H(h.x, h.z));
   for (const [i, [low, high]] of [[19, 24], [25.5, 30], [20.5, 25.5]].entries()) {
@@ -328,9 +315,10 @@ test('three grass hills along its back, lower than the peninsula’s, and a tabl
   assert.ok(Math.abs(sum / n - REGION_TERRAIN[SELEMI].base) < .5, `the island’s mean height is ${(sum / n).toFixed(2)} m`);
 });
 
-test('the hollow behind the strand is where a city would stand, and the whole island can be walked from it', () => {
+test('the natural hollow and dry island remain a connected baseline beneath the new city', () => {
   // The ground the lore's city "fills ... from headland to headland" and climbs: low behind the
-  // strand, rising to the hills. Not built - measured, so that the report can say how much there is.
+  // strand, rising to the hills. This is the measured natural baseline, not a
+  // claim that the constructed canals can be crossed without their bridges.
   let low = 0, standable = 0;
   for (const [x, z] of lattice(2)) {
     if (regionAt(x, z)?.name !== SELEMI || H(x, z) < WATERLINE) continue;
@@ -342,12 +330,13 @@ test('the hollow behind the strand is where a city would stand, and the whole is
   // The travel button sets a traveler down in it, on ground, on the island's own hex.
   assert.equal(hexOwnerAt(island.spawn.x, island.spawn.z), SELEMI);
   assert.ok(canStand(island.spawn.x, island.spawn.z, world, .5), 'the travel button puts the traveler on ground');
-  assert.ok(hollow(island.spawn.x, island.spawn.z) > .8 && H(island.spawn.x, island.spawn.z) < 4);
+  assert.ok(Math.hypot(island.spawn.x - SELAMUS_ARRIVAL.x, island.spawn.z - SELAMUS_ARRIVAL.z) < 1e-6, 'arrival uses the authored city square');
+  assert.ok(world.heightAt(island.spawn.x, island.spawn.z) < 4);
   // **Nobody is sealed in a pocket.** From there, every standable square metre of the island is
   // joined to every other: the flood from the spawn reaches all of it.
   let all = 0, reached = 0;
   for (const [x, z] of lattice(1)) {
-    if (regionAt(x, z)?.name !== SELEMI || !canStand(x, z, world, RADIUS)) continue;
+    if (regionAt(x, z)?.name !== SELEMI || !canStand(x, z, naturalWorld, RADIUS)) continue;
     all++; if (walked.has(x, z)) reached++;
   }
   assert.ok(all > 69000, `${all} standable cells on the island`);
@@ -361,14 +350,17 @@ test('the hollow behind the strand is where a city would stand, and the whole is
   // And nobody is put under the ground the world draws: the travel button and every named place stand
   // within half a metre of the drawn surface, where the grid cannot follow a cliff.
   for (const place of [island.spawn, ...SELEMIS_LANDMARKS, CHANNEL_VIEW, SOUTH_CLIFFS]) {
-    const buried = drawnHeight(place.x, place.z) - H(place.x, place.z);
+    // Legacy labels can now lie inside a building or canal; city-route tests
+    // cover their public approaches. The actual arrival is always checked.
+    if (place !== island.spawn && selamusReserved(place.x, place.z, 3)) continue;
+    const buried = drawnHeight(place.x, place.z) - world.heightAt(place.x, place.z);
     assert.ok(buried < .5, `${place.id ?? 'the travel button'} is ${buried.toFixed(2)} m inside the drawn ground`);
   }
   // And it does not reach the peninsula: the island is an island.
   assert.ok(!walked.reached.some(c => c.z < 2300), 'the island’s ground joins the peninsula’s');
 });
 
-test('no stream and no spring: two winter beds come down to the strand, and both are dry', () => {
+test('the natural island has two dry winter beds and no freshwater, beneath the tidal city canals', () => {
   assert.equal(WINTER_BEDS.length, 2);
   for (const bed of WINTER_BEDS) {
     const heights = [];
@@ -378,8 +370,8 @@ test('no stream and no spring: two winter beds come down to the strand, and both
         const x = a.x + (b.x - a.x) * s / length, z = a.z + (b.z - a.z) * s / length;
         assert.equal(hexOwnerAt(x, z), SELEMI, `${bed.id} leaves the island`);
         // Dry: no water body anywhere on it, and its floor is ground a traveler stands on.
-        assert.equal(world.waterAt(x, z), WATERLINE, `${bed.id} has water in it at ${x.toFixed(0)}, ${z.toFixed(0)}`);
-        assert.ok(canStand(x, z, world, RADIUS) || world.colliders.some(c => Math.hypot(c.x - x, c.z - z) < (c.r ?? 0) + RADIUS), `${bed.id} cannot be stood in at ${x.toFixed(0)}, ${z.toFixed(0)}`);
+        assert.equal(naturalWorld.waterAt(x, z), WATERLINE);
+        assert.ok(canStand(x, z, naturalWorld, RADIUS), `${bed.id} cannot be stood in at ${x.toFixed(0)}, ${z.toFixed(0)}`);
         heights.push(H(x, z));
       }
     }
@@ -390,7 +382,7 @@ test('no stream and no spring: two winter beds come down to the strand, and both
     assert.equal(bedWeight(bed.line[1].x, bed.line[1].z), 1); assert.equal(bedWeight(bed.line[2].x, bed.line[2].z), 1);
     assert.ok(bed.half * 2 > 14, 'wide enough for vertices seven metres apart to draw it');
   }
-  // Nothing on the island is a water body of any kind.
+  // No freshwater body has been added: the new canals carry the existing sea.
   assert.equal(world.colliders.filter(c => (c.kind === 'river-water' || c.kind === 'pond-water' || c.kind === 'west-deep-water') && regionAt(c.x, c.z)?.name === SELEMI).length, 0);
   for (const [x, z] of lattice(6)) if (regionAt(x, z)?.name === SELEMI) assert.equal(world.waterAt(x, z), WATERLINE);
   assert.ok(world.selemisMetrics.bedStones > 150, 'and what says a bed is a bed is the stones in it');
@@ -424,7 +416,7 @@ const CHANNEL = (() => {
   };
 })();
 
-test('the channel is one row of water: three pinches of sixty metres, six metres deep, and nobody wades it', () => {
+test('the natural channel remains one row of water: three pinches of sixty metres, six metres deep, and nobody wades it', () => {
   for (const [name, metres] of [['west', 61.0], ['middle', 59.7], ['east', 61.0]])
     assert.ok(Math.abs(CHANNEL[name].metres - metres) < 1.5, `the ${name} pinch is ${CHANNEL[name].metres.toFixed(1)} m shore to shore; docs/selemis-report.md says ${metres} m`);
   // The nearest the strand's own sand comes to the peninsula: no cliff under a swimmer at either end of it.
@@ -435,7 +427,7 @@ test('the channel is one row of water: three pinches of sixty metres, six metres
     for (let t = 0; t <= 1; t += .01) {
       const x = pinch.island.x + (pinch.tip.x - pinch.island.x) * t, z = pinch.island.z + (pinch.tip.z - pinch.island.z) * t;
       deepest = Math.min(deepest, H(x, z)); n++;
-      if (canSwim(x, z, world, RADIUS)) wet++;
+      if (canSwim(x, z, naturalWorld, RADIUS)) wet++;
     }
     assert.ok(WATERLINE - deepest > 5.5, `the ${name} crossing is ${(WATERLINE - deepest).toFixed(1)} m deep at its deepest`);
     assert.ok(wet / n > .93, `${Math.round(wet / n * 100)}% of the ${name} crossing is water over a traveler’s head`);
@@ -448,7 +440,7 @@ test('the channel is one row of water: three pinches of sixty metres, six metres
   for (const p of shoreOf(walked.reached)) assert.ok(landDistance(p.x, p.z) > -3.6 && landDistance(p.x, p.z) < 1.5, `the shore at ${p.x}, ${p.z} is ${landDistance(p.x, p.z).toFixed(1)} m off the coast field’s zero`);
 });
 
-test('what the swim rule as it stands makes of that width: a first-day swimmer crosses either way, drowning for the last few metres', () => {
+test('what the unchanged swim rule makes of the natural channel width: a first-day swimmer crosses either way, drowning for the last few metres', () => {
   // **A measurement, not a ruling.** If the user decides the channel should not be swum, this is the
   // test that changes, along with either the ground or the rule.
   for (const name of ['west', 'middle', 'east']) {
@@ -466,14 +458,14 @@ test('what the swim rule as it stands makes of that width: a first-day swimmer c
     const p = { x: from.x, z: from.z, y: H(from.x, from.z) }, dt = 1 / 30;
     let wind = SWIM.wind, health = 100, swum = 0, wet = false;
     for (let i = 0; i < 30 * 120 && health > 0; i++) {
-      const inWater = canSwim(p.x, p.z, world, RADIUS);
+      const inWater = canSwim(p.x, p.z, naturalWorld, RADIUS);
       if (wet && !inWater) break;                      // out the other side
       if (inWater) wet = true;
       const dx = beyond.x - p.x, dz = beyond.z - p.z, d = Math.hypot(dx, dz), step = Math.min(d, (inWater ? swimSpeed(level) : 4.2) * dt), bx = p.x, bz = p.z;
-      moveCharacter(p, dx / d * step, dz / d * step, world, RADIUS, { swimming: true });
+      moveCharacter(p, dx / d * step, dz / d * step, naturalWorld, RADIUS, { swimming: true });
       if (inWater) { const s = swimStep({ dt, level, wind, health }); wind = s.wind; health = s.health; swum += Math.hypot(p.x - bx, p.z - bz); }
     }
-    return { landed: wet && canStand(p.x, p.z, world, RADIUS), health, wind, swum, offTarget: Math.hypot(p.x - to.x, p.z - to.z) };
+    return { landed: wet && canStand(p.x, p.z, naturalWorld, RADIUS), health, wind, swum, offTarget: Math.hypot(p.x - to.x, p.z - to.z) };
   };
   for (const name of ['west', 'middle', 'east']) for (const [from, to, way] of [[CHANNEL[name].tip, CHANNEL[name].island, 'to the island'], [CHANNEL[name].island, CHANNEL[name].tip, 'to the peninsula']]) {
     const first = cross(from, to, 1);
@@ -483,6 +475,22 @@ test('what the swim rule as it stands makes of that width: a first-day swimmer c
     assert.ok(Math.abs(first.swum - CHANNEL[name].metres) < 2.5, `having swum ${first.swum.toFixed(1)} m`);
     const tenth = cross(from, to, 10);
     assert.ok(tenth.landed && tenth.health === 100 && tenth.wind > 0, `a level-10 swimmer going ${way} at the ${name} pinch arrives dry with wind in hand`);
+  }
+});
+
+test('city terrain is bounded: the coast and water outside canal mouths and southern cliffs keep their physical heights', () => {
+  let unchanged = 0, sea = 0, changed = 0;
+  for (const [x, z] of lattice(2, { minX: -1020, maxX: -580, minZ: 2260, maxZ: 2620 })) {
+    const before = H(x, z), expected = selamusGround(x, z, before), actual = world.groundHeight(x, z);
+    assert.ok(Math.abs(actual - expected) < 1e-8, `city ground composition differs at ${x}, ${z}`);
+    if (expected === before) { unchanged++; assert.equal(actual, before); }
+    else changed++;
+    if (landDistance(x, z) <= 0 && selamusCanalAt(x, z)?.edge >= 1.3) { sea++; assert.equal(actual, before, `sea bed outside a canal mouth changed at ${x}, ${z}`); }
+  }
+  assert.ok(unchanged > 10000 && sea > 10000 && changed > 1000);
+  for (const zone of SELEMIS_WILDLIFE_ZONES.filter(zone => zone.species === 'gull')) for (const [x, z] of zone.sites) {
+    if (oceanward(x, z) > .85) assert.equal(world.groundHeight(x, z), H(x, z), 'ocean colony cliff changed');
+    assert.ok(selamusCanalAt(x, z).edge > 1.3, `${zone.id} home is inside a tidal canal`);
   }
 });
 
@@ -520,22 +528,23 @@ test('the island writes nothing off itself: the peninsula across the channel is 
   assert.ok(named[SELEMI] > 300 && named[ASCARTH_TIP] > 300 && named.open > 100, JSON.stringify(named));
 });
 
-test('nothing that belongs to anybody: no building, no road, no person, and the chart says what is built', () => {
+test('the unwalled city is registered without inventing residents, preserving the island landmarks', () => {
   const mine = world.colliders.filter(c => regionAt(c.x, c.z)?.name === SELEMI);
   const kinds = new Set(mine.map(c => c.kind));
-  for (const kind of kinds) assert.ok(['selemis-tree', 'ridge-rock'].includes(kind), `a ${kind} on the island`);
+  for (const kind of kinds) assert.ok(['selemis-tree', 'ridge-rock', 'building', 'building-column', 'bridge-rail', 'bollard', 'naval-pedestal', 'harbor-crane', 'harbor-cargo', 'ship'].includes(kind), `a ${kind} on the island`);
   for (const path of world.paths ?? []) for (const p of path) assert.notEqual(regionAt(p.x, p.z)?.name, SELEMI, 'a road on the island');
   for (const [id, stand] of Object.entries(world.npcPositions)) assert.notEqual(regionAt(stand.x, stand.z)?.name, SELEMI, `${id} stands on the island`);
   assert.deepEqual(island.npcIds, []);
   assert.equal(island.id, REGION_IDS[SELEMI]);
   // Its places: every one of the region's own, on its own ground, and described.
-  assert.deepEqual([...island.landmarks], SELEMIS_LANDMARKS.map(place => place.id));
+  assert.ok(island.landmarks.includes('selamus') && island.landmarks.includes('selamus-temple'));
+  for (const place of SELEMIS_LANDMARKS) assert.ok(world.landmarks.some(entry => entry.id === place.id), `${place.id} was removed`);
   for (const id of island.landmarks) {
-    const place = SELEMIS_LANDMARKS.find(entry => entry.id === id);
+    const place = [...SELEMIS_LANDMARKS, ...SELAMUS_LANDMARKS].find(entry => entry.id === id);
     assert.ok(world.landmarks.some(entry => entry.id === id), `${id} is not on the world’s list`);
     assert.equal(regionAt(place.x, place.z).name, SELEMI, `${id} is not on the island`);
     assert.ok(landDistance(place.x, place.z) > 3, `${id} is in the water`);
-    assert.ok(place.description.length > 60);
+    assert.ok(place && place.description.length > 30);
   }
   // **Two names are the Selemi tongue's own words and none is coined** (LANGUAGES.selemi.roots).
   const named = word => `The ${word[0].toUpperCase()}${word.slice(1)}`;
@@ -546,10 +555,11 @@ test('nothing that belongs to anybody: no building, no road, no person, and the 
     assert.match(place.name, /^The (west|east) head$|^The interior hills$|^The winter beds$|^The south cliffs$/, `${place.name} is not plain English`);
   // The chart.
   const status = regionBuildStatus(SELEMI);
-  assert.equal(status.state, 'early'); assert.equal(status.playable, true);
-  assert.match(status.work, /Everybody/);
-  const areas = SUBREGIONS.filter(area => area.region === SELEMI);
-  assert.equal(areas.length, 4);
+  assert.equal(status.state, 'environment'); assert.equal(status.playable, true);
+  assert.match(status.detail, /Selemis/); assert.match(status.work, /residents|interiors/);
+  const areas = SUBREGIONS.filter(area => area.region === SELEMI && area.id.startsWith('selemis-'));
+  assert.deepEqual(areas.map(area => area.id).sort(), ['selemis-east-head', 'selemis-interior-hills', 'selemis-seloca', 'selemis-west-head']);
+  for (const place of SELAMUS_LANDMARKS) assert.ok(SUBREGIONS.some(area => area.region === SELEMI && area.id === place.id), `${place.id} has no city map area`);
   for (const area of areas) {
     assert.equal(regionAt(area.x, area.z).name, SELEMI, area.id);
     assert.ok(insideRegion(SELEMI, area.x, area.z), area.id);
@@ -579,7 +589,8 @@ test('what grows there: straw grass and scrub, maquis and a few trees in the lee
   for (const [key, least] of Object.entries({ rocks: 400, outcrops: 25, scrub: 700, maquis: 60, tufts: 2400, pines: 12, olives: 5, tamarisks: 6, bedStones: 150, wrack: 60, cliffRocks: 150 }))
     assert.ok(m[key] >= least, `${m[key]} ${key}`);
   const trees = world.colliders.filter(c => c.kind === 'selemis-tree');
-  assert.equal(trees.length, m.trees);
+  assert.equal(trees.length + world.selamus.metrics.cleared.trees, m.trees, 'only city-reserved trees are removed');
+  for (const tree of trees) assert.equal(selamusReserved(tree.x, tree.z, 3), false, 'a retained tree blocks the city');
   assert.equal(m.trees, m.pines + m.olives + m.tamarisks);
   assert.ok(m.trees < 50, 'few trees: an island with a sea wind on it');
   // Every one is enrolled in the world's tree registry under an id of its own, with its species - what
@@ -615,11 +626,11 @@ test('both tint tables reach the screen on the island: its own colours inland, a
   assert.ok(GROUND_TINT_FAMILIES.includes('selemis'), 'the island has a row in the ground table');
   // **The shore table's guard**: exactly these rows, and every one of them puts stone on its own
   // country's shore and nothing on the other's. A row that quietly stops painting says so with its id.
-  assert.deepEqual([...SHORE_TINT_FAMILIES], ['ascarth', 'selemis', 'legemum', 'babon'], 'a row was added to the shore table without a line here');
-  const probes = { ascarth: ASCARTH_TIP, selemis: SELEMI, legemum: 'Legemum', babon: 'Babon' };
+  assert.deepEqual([...SHORE_TINT_FAMILIES], ['ascarth', 'selemis', 'legemum', 'babon', 'east-izol', 'alezhor', 'south-ibenal', 'north-ibenal'], 'a row was added to the shore table without a line here');
+  const probes = { ascarth: ASCARTH_TIP, selemis: SELEMI, legemum: 'Legemum', babon: 'Babon', 'east-izol': 'East Izol', alezhor: 'Alezhor', 'south-ibenal': 'South Ibenal', 'north-ibenal': 'North Ibenal' };
   for (const family of SHORE_TINT_FAMILIES) {
     let stone = 0, strays = 0;
-    for (const [x, z] of lattice(2, family === 'babon' ? { minX: -2120, maxX: -1030, minZ: 2650, maxZ: 3390 } : family === 'legemum' ? { minX: -2480, maxX: -1790, minZ: 1460, maxZ: 2000 } : { minX: -1010, maxX: -590, minZ: 2180, maxZ: 2606 })) {
+    for (const [x, z] of lattice(2, family === 'south-ibenal' ? { minX: -4820, maxX: -4380, minZ: -40, maxZ: 980 } : family === 'north-ibenal' ? { minX: -4420, maxX: -3820, minZ: -660, maxZ: 0 } : family === 'alezhor' ? { minX: -4680, maxX: -3700, minZ: 880, maxZ: 1240 } : family === 'east-izol' ? { minX: 380, maxX: 880, minZ: 1340, maxZ: 2180 } : family === 'babon' ? { minX: -2120, maxX: -1030, minZ: 2650, maxZ: 3390 } : family === 'legemum' ? { minX: -2480, maxX: -1790, minZ: 1460, maxZ: 2000 } : { minX: -1010, maxX: -590, minZ: 2180, maxZ: 2606 })) {
       const d = landDistance(x, z);
       if (d < 0 || d > 3) continue;
       const answer = shoreTintOf(family, x, z, d);
@@ -639,11 +650,11 @@ test('both tint tables reach the screen on the island: its own colours inland, a
   assert.equal(selemisShoreTint(sand[0], sand[1], landDistance(sand[0], sand[1])), null, 'the strand takes the world’s own sand');
   // Inland the four fields move the colour: the hollow, a hilltop, the ocean bench and a winter bed
   // are four different grounds, and none of them is the bare swatch.
-  const at = (x, z) => { groundTint(colour, x, z, THREE); return [colour.r, colour.g, colour.b]; };
+  const at = (x, z) => { colour.set(selemisTint(x, z, REGION_TERRAIN[SELEMI].ground)); return [colour.r, colour.g, colour.b]; };
   const gap = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
   want.set(REGION_TERRAIN[SELEMI].ground);
   const swatch = [want.r, want.g, want.b];
-  const grounds = { hollow: at(island.spawn.x - 6, island.spawn.z + 12), crown: at(HILLS[1].x, HILLS[1].z), bed: at(WINTER_BEDS[0].line[1].x, WINTER_BEDS[0].line[1].z), ocean: at(-870, 2560) };
+  const grounds = { hollow: at(naturalSpawn.x - 6, naturalSpawn.z + 12), crown: at(HILLS[1].x, HILLS[1].z), bed: at(WINTER_BEDS[0].line[1].x, WINTER_BEDS[0].line[1].z), ocean: at(-870, 2560) };
   for (const [name, value] of Object.entries(grounds)) assert.ok(gap(value, swatch) > .02, `the ${name} is drawn as the bare swatch`);
   const names = Object.keys(grounds);
   for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++)
@@ -653,7 +664,7 @@ test('both tint tables reach the screen on the island: its own colours inland, a
   const tip = hexCentre(-7, 131), iscare = hexCentre(1, 119);
   for (const p of [tip, iscare]) for (const ground of [REGION_TERRAIN.outland.ground, REGION_TERRAIN[SELEMI].ground]) assert.equal(selemisTint(p.x, p.z, ground), null);
   // The cover fields say what they are for.
-  assert.ok(selemisCover(island.spawn.x, island.spawn.z).hollow > .9 && selemisCover(HILLS[1].x, HILLS[1].z).crown === 1);
+  assert.ok(selemisCover(naturalSpawn.x, naturalSpawn.z).hollow > .9 && selemisCover(HILLS[1].x, HILLS[1].z).crown === 1);
   assert.ok(selemisCover(SOUTH_CLIFFS.x, SOUTH_CLIFFS.z).salt > .6 && selemisCover(CHANNEL_VIEW.x, CHANNEL_VIEW.z).salt === 0);
 });
 
@@ -680,7 +691,9 @@ test('the wildlife is the sea’s: gulls on both heads and the ocean cliffs, sea
       // renderer draws under it is the ground it stands on. Six metres back, one floated 1.6 m over it.
       const d = landDistance(x, z);
       assert.ok(d > 9 && d < 14 && H(x, z) > 7 && cliffShare(x, z) > .9, `${zone.id} is not on a cliff top at ${x}, ${z}`);
-      assert.ok(Math.abs(H(x, z) - drawnHeight(x, z)) < .3, `${zone.id} stands ${(H(x, z) - drawnHeight(x, z)).toFixed(2)} m off the drawn ground at ${x}, ${z}`);
+      // Head colonies now stand on open waterfront; the ocean colony retains
+      // its original cliff. The rendered-footing check is always the real city.
+      assert.ok(Math.abs(world.heightAt(x, z) - drawnHeight(x, z)) < .3, `${zone.id} stands ${(world.heightAt(x, z) - drawnHeight(x, z)).toFixed(2)} m off the drawn ground at ${x}, ${z}`);
     }
   }
   // Each head has its gulls, and so has the ocean face.

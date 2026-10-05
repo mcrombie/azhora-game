@@ -62,12 +62,13 @@ function colliderEntry(world, c, from, delta, radius, ground) {
     if (!clip(range, lx, dx, -hx - radius, hx + radius)
       || !clip(range, lz, dz, -hz - radius, hz + radius)) return Infinity;
   }
-  const tree = c.kind === 'tree' ? world?.treeRegistry?.get?.(c.id) : null;
+  const tree = world?.treeRegistry?.get?.(c.id) ?? null;
+  const isTree = !!tree || c.kind === 'tree';
   const base = Number.isFinite(c.minY) ? c.minY : [c.base?.y, c.y, tree?.base?.y, tree?.y]
     .find(Number.isFinite) ?? ground(c.x, c.z);
   const height = [c.height, tree?.height].find(n => Number.isFinite(n) && n >= 0);
   const top = Number.isFinite(c.maxY) ? c.maxY : Number.isFinite(height) ? base + height
-    : c.kind === 'tree' ? base + 24 : Infinity;
+    : isTree ? base + 24 : Infinity;
   if (top < base || !clip(range, from.y, delta.y, base - radius, top + radius)) return Infinity;
   return c.r !== undefined ? range[0] : roundedBoxEntry(range, lx, lz, dx, dz, hx, hz, radius);
 }

@@ -1,9 +1,14 @@
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
+import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
+import { createGaneshShadeScrub } from './ganesh-shade-scrub.js';
+import { forestTimber } from './wood-species.js';
 import { hexOwnerAt, REGION_CELLS, relief, landDistance } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import { VAELLIR, ALEZHOR_WATER, SOUTHWEST_RIVERS, westBareGround } from './west-regions.js';
 import { WEST_PROFILES, westWaterSurface } from './west-ground.js';
+import { pyraClear } from './pyra-world.js';
 import {
   SOUTHWEST_REGIONS, SOUTHWEST_NORTH_REGIONS, MEROSHE_REGIONS, WEST_EDGE_REGIONS, GANESH_WASHES, GANESH_PLAIN_CHANNELS, GANESH_DEPRESSIONS,
   MEROSHE_SALT, MEROSHE_DUNES,
@@ -71,10 +76,12 @@ export function* createSouthwestScenerySteps(kit) {
     maquis: 0, maroshStone: 0, oaks: 0, emergents: 0, canopy: 0, fogTrees: 0, understory: 0, litter: 0,
     buttress: 0, ferns: 0, mangrove: 0 };
   const gy = (x, z) => groundHeight(x, z);
+  const treeGroundAt = kit.renderedGroundHeight ?? gy;
   const OWN = new Set(SOUTHWEST_REGIONS);
   const own = (x, z) => OWN.has(hexOwnerAt(x, z));
   const where = (x, z) => hexOwnerAt(x, z);
-  const plantable = (x, z, margin) => own(x, z) && !westBareGround(x, z, margin)
+
+  const plantable = (x, z, margin) => !pyraClear(x,z,margin) && own(x, z) && !westBareGround(x, z, margin)
     && westWaterSurface(x, z) === null && !southwestClear(x, z, margin);
 
   // -------------------------------------------------------------------------
@@ -129,7 +136,7 @@ export function* createSouthwestScenerySteps(kit) {
     const step = Math.max(1, Math.round(sample.half / 3.2)), radius = sample.half / (step + .5) + 1.4;
     for (let k = -step; k <= step; k++) { if ((++buildWork & 31) === 0) yield;
       const offset = sample.half * (k / (step + .5));
-      colliders.push({ x: sample.x + sample.nx * offset, z: sample.z + sample.nz * offset, r: radius, kind: 'west-deep-water' });
+      colliders.push({ x: sample.x + sample.nx * offset, z: sample.z + sample.nz * offset, r: radius, ...(pyraClear(sample.x,sample.z,20)?{maxY:(westWaterSurface(sample.x,sample.z)??gy(sample.x,sample.z))+1}:{}), kind: 'west-deep-water' });
       metrics.blockers++;
     }
   }
@@ -138,6 +145,15 @@ export function* createSouthwestScenerySteps(kit) {
   // Stone: the washes' floors, the desert pavement, the swells' tops
   // -------------------------------------------------------------------------
   const stoneMaterial = material('#ffffff', { flatShading: true });
+  // Native review exposed hovering Meroshe and western-edge stones. Seat their
+  // actual tilted hulls on the drawn terrain; retain every seeded size, lean,
+  // colour and horizontal position, and leave other surface materials alone.
+  const groundedStoneBatches = new Set(['Meroshe fan cobbles', 'Meroshe shore shingle', 'Cape Heth bedding slabs', 'Heth Bight shingle', 'Dinelv bedding slabs', 'Dinelv cliff blocks', 'Dinelv channel rubble', 'Hama stony ribs', 'Hama gravel']);
+  // Thin slabs must sit in the earth, not balance visibly on one tip.
+  const embeddedStoneBatches = new Set(['Cape Heth bedding slabs', 'Heth Bight shingle', 'Dinelv bedding slabs', 'Dinelv cliff blocks', 'Dinelv channel rubble', 'Hama stony ribs', 'Hama gravel']);
+  const stoneHull = [...new Map(Array.from({ length: round.attributes.position.count }, (_, i) => {
+    const p = round.attributes.position, v = [p.getX(i), p.getY(i), p.getZ(i)]; return [v.join(','), v];
+  })).values()];
   function* stoneBatchSteps(spots, name, tint, lift = .12) {
     let buildWork = 0;
     if (!spots.length) return;
@@ -146,6 +162,16 @@ export function* createSouthwestScenerySteps(kit) {
       dummy.position.set(spot.x, gy(spot.x, spot.z) + spot.s * lift, spot.z);
       dummy.rotation.set(range(-.16, .16), spot.rot, range(-.16, .16));
       dummy.scale.set(spot.s, spot.s * (spot.flat ?? range(.25, .45)), spot.s * range(.7, 1.25)); dummy.updateMatrix();
+      if (groundedStoneBatches.has(name)) {
+        const e = dummy.matrix.elements, embedded = embeddedStoneBatches.has(name); let bottom = embedded ? -Infinity : Infinity;
+        for (const [x, y, z] of stoneHull) {
+          if (embedded && y >= 0) continue;
+          const px = e[0] * x + e[4] * y + e[8] * z + e[12], py = e[1] * x + e[5] * y + e[9] * z + e[13];
+          const pz = e[2] * x + e[6] * y + e[10] * z + e[14];
+          bottom = (embedded ? Math.max : Math.min)(bottom, py - treeGroundAt(px, pz));
+        }
+        dummy.position.y -= bottom + Math.min(.025, spot.s * .06); dummy.updateMatrix();
+      }
       batch.setMatrixAt(index, dummy.matrix); batch.setColorAt(index, tint(spot));
     }
     batch.name = name; batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch);
@@ -256,25 +282,35 @@ export function* createSouthwestScenerySteps(kit) {
   const trunkGeometry = new THREE.CylinderGeometry(.16, .28, 1, 6);
   const crownGeometry = new THREE.IcosahedronGeometry(1, 0);
   const barkMaterial = material('#6b5942'), leafMaterial = material('#ffffff', { flatShading: true });
-  function* treeBatchSteps(trees, name, tint, kind) {
+  function* treeBatchSteps(trees, name, tint, kind, speciesFor = null) {
     let buildWork = 0;
     if (!trees.length) return;
     const trunks = new THREE.InstancedMesh(trunkGeometry, barkMaterial, trees.length);
     const crowns = new THREE.InstancedMesh(crownGeometry, leafMaterial, trees.length * 3);
     let at = 0;
     for (const [index, tree] of trees.entries()) { if ((++buildWork & 31) === 0) yield;
-      const y = gy(tree.x, tree.z), height = tree.h * tree.s;
+      let y = gy(tree.x, tree.z);
+      const height = tree.h * tree.s, species = speciesFor?.(tree);
       dummy.position.set(tree.x, y + height * tree.bole * .5, tree.z); dummy.rotation.set(range(-.05, .05), tree.rot, range(-.05, .05));
       dummy.scale.set(tree.s * tree.girth, height * tree.bole, tree.s * tree.girth); dummy.updateMatrix();
+      if (species) {
+        const offset = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .28, segments: 6 });
+        y += offset; dummy.position.y += offset; dummy.updateMatrix();
+      }
+      const footY = dummy.matrix.elements[13] - dummy.matrix.elements[5] * .5;
       trunks.setMatrixAt(index, dummy.matrix);
-      colliders.push({ x: tree.x, z: tree.z, r: .42 * tree.s * tree.girth, kind });
+      const collider = { x: tree.x, z: tree.z, r: .42 * tree.s * tree.girth, kind }; colliders.push(collider);
+      const parts = species ? [{ mesh: trunks, index }] : null;
       for (let lobe = 0; lobe < 3; lobe++) { if ((++buildWork & 31) === 0) yield;
         const a = tree.rot + lobe * 2.1, spread = lobe === 2 ? 0 : height * tree.spread;
         dummy.position.set(tree.x + Math.sin(a) * spread, y + height * (lobe === 2 ? tree.top : tree.top - .16), tree.z + Math.cos(a) * spread);
         dummy.rotation.set(range(-.2, .2), a, range(-.18, .18));
         dummy.scale.set(height * tree.wide, height * tree.deep, height * tree.wide); dummy.updateMatrix();
+        if (parts) parts.push({ mesh: crowns, index: at });
         crowns.setMatrixAt(at, dummy.matrix); crowns.setColorAt(at++, tint(tree));
       }
+      if (species) registerWorldTree(colliders, { id: worldTreeId('southwest', tree.x, tree.z), x: tree.x, z: tree.z,
+        y: footY, height, species }, parts, collider);
     }
     trunks.name = `${name} trunks`; crowns.name = `${name} crowns`;
     for (const batch of [trunks, crowns]) { if ((++buildWork & 31) === 0) yield;  batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch); }
@@ -377,8 +413,10 @@ export function* createSouthwestScenerySteps(kit) {
   metrics.gallery = gallery.length + tamarisk.length;
   yield* treeBatchSteps(gallery, 'Vaellir gallery', tree => tree.poplar
     ? color.set('#4e6536').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06))
-    : color.set('#5f6f49').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .05)), 'southwest-tree');
-  yield* treeBatchSteps(tamarisk, 'Southwest tamarisk', () => color.set('#71785e').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.05, .06)), 'southwest-tree');
+    : color.set('#5f6f49').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .05)), 'southwest-tree',
+    tree => tree.poplar ? 'white-poplar' : 'black-willow');
+  yield* treeBatchSteps(tamarisk, 'Southwest tamarisk', () => color.set('#71785e').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.05, .06)), 'southwest-tree',
+    () => 'tamarisk');
 
   /**
    * **The north wood**, on the one `forest` hex the atlas gives this quarter: (-24,116), `Csb`, at
@@ -407,7 +445,8 @@ export function* createSouthwestScenerySteps(kit) {
   }
   yield* treeBatchSteps(wood, 'Navarth north wood', tree => tree.pine
     ? color.set('#3b5135').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .05))
-    : color.set('#4c6037').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06)), 'southwest-tree');
+    : color.set('#4c6037').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06)), 'southwest-tree',
+    tree => forestTimber(tree.pine).species);
   metrics.wood = wood.length;
 
   /**
@@ -746,7 +785,7 @@ export function* createSouthwestScenerySteps(kit) {
   // belt it stands, which is the one gradient this half of the block has.
   yield* bushBatchSteps(fogThorn, 'Meroshe fog thorn', bush =>
     color.setHSL(.160 + bush.fog * .022 + range(-.010, .010), .13 + bush.fog * .11 + range(-.025, .025), .145 + range(-.02, .02)), .34);
-  yield* treeBatchSteps(thornTrees, 'Meroshe hamada thorn trees', () => color.set('#5d6647').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.04, .06)), 'southwest-tree');
+  yield* treeBatchSteps(thornTrees, 'Meroshe hamada thorn trees', () => color.set('#5d6647').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.04, .06)), 'southwest-tree', () => 'desert-thorn');
   yield* stubbleBatchSteps(hamadaStubble, 'Meroshe hamada stubble');
   yield* stubbleBatchSteps(regStubble, 'Meroshe fog stubble');
   metrics.rock = rockSlabs.length; metrics.cobble = fanCobble.length + fanDust.length;
@@ -1006,8 +1045,8 @@ export function* createSouthwestScenerySteps(kit) {
   yield* bushBatchSteps(hamaMaquis, 'Hama evergreen scrub', bush => bush.grey
     ? color.set('#4e5346').offsetHSL(range(-.02, .02), range(-.04, .04), range(-.05, .05))
     : color.set('#2e4423').offsetHSL(range(-.02, .02), range(-.04, .05), range(-.04, .05)), .46);
-  yield* treeBatchSteps(basinTrees, 'Dinelv basin thorn', () => color.set('#434b34').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.04, .06)), 'southwest-tree');
-  yield* treeBatchSteps(hamaTrees, 'Hama wind trees', () => color.set('#334823').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06)), 'southwest-tree');
+  yield* treeBatchSteps(basinTrees, 'Dinelv basin thorn', () => color.set('#434b34').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.04, .06)), 'southwest-tree', () => 'desert-thorn');
+  yield* treeBatchSteps(hamaTrees, 'Hama wind trees', () => color.set('#334823').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06)), 'southwest-tree', () => 'olive');
   // **Hama's grass is the only properly green scatter in the block**, and the beds in it are greener
   // again. Everything else in nine countries is buff, grey or bleached.
   yield* tuftBatchSteps(hamaSward, 'Hama sward', tuft => color.setHSL(.212 + tuft.green * .022 + range(-.012, .012),
@@ -1233,7 +1272,7 @@ export function* createSouthwestScenerySteps(kit) {
     .24 + bush.crest * .10 + range(-.03, .03), .13 + range(-.02, .025)), .32);
   yield* bushBatchSteps(aromatics, 'Marosh aromatic scrub', () => color.setHSL(.176 + range(-.014, .014),
     .16 + range(-.03, .03), .23 + range(-.025, .025)));
-  yield* treeBatchSteps(maroshOaks, 'Marosh holm oak', tree => color.set('#2d4020').offsetHSL(range(-.015, .015), range(-.04, .05), range(-.03, .05) - tree.crest * .015), 'southwest-tree');
+  yield* treeBatchSteps(maroshOaks, 'Marosh holm oak', tree => color.set('#2d4020').offsetHSL(range(-.015, .015), range(-.04, .05), range(-.03, .05) - tree.crest * .015), 'southwest-tree', () => 'holm-oak');
   yield* tuftBatchSteps(terraceGrass, 'Marosh terrace grass', tuft => color.setHSL(.148 + range(-.014, .014),
     .20 + range(-.03, .03), .27 + range(-.03, .03)));
   yield* tuftBatchSteps(combeGrass, 'Marosh combe grass', tuft => color.setHSL(.246 + range(-.010, .010),
@@ -1257,10 +1296,10 @@ export function* createSouthwestScenerySteps(kit) {
     .34 + range(-.04, .04), .125 + range(-.018, .022)));
   yield* bushBatchSteps(shoreScrub, 'Trogo shore scrub', () => color.setHSL(.212 + range(-.014, .014),
     .24 + range(-.03, .03), .145 + range(-.02, .02)));
-  yield* treeBatchSteps(canopyTrees, 'Trogo canopy', tree => color.set('#1e3318').offsetHSL(range(-.012, .012), range(-.04, .05), range(-.025, .045) - tree.fog * .01), 'southwest-tree');
-  yield* treeBatchSteps(emergents, 'Trogo emergents', () => color.set('#20381a').offsetHSL(range(-.012, .012), range(-.04, .05), range(-.02, .05)), 'southwest-tree');
-  yield* treeBatchSteps(fogTrees, 'Trogo fog forest', () => color.set('#31422c').offsetHSL(range(-.012, .012), range(-.05, .04), range(-.02, .05)), 'southwest-tree');
-  yield* treeBatchSteps(mangroves, 'Trogo mangrove', () => color.set('#253a22').offsetHSL(range(-.012, .012), range(-.04, .05), range(-.02, .05)), 'southwest-tree');
+  yield* treeBatchSteps(canopyTrees, 'Trogo canopy', tree => color.set('#1e3318').offsetHSL(range(-.012, .012), range(-.04, .05), range(-.025, .045) - tree.fog * .01), 'southwest-tree', () => 'mahogany');
+  yield* treeBatchSteps(emergents, 'Trogo emergents', () => color.set('#20381a').offsetHSL(range(-.012, .012), range(-.04, .05), range(-.02, .05)), 'southwest-tree', () => 'kapok');
+  yield* treeBatchSteps(fogTrees, 'Trogo fog forest', () => color.set('#31422c').offsetHSL(range(-.012, .012), range(-.05, .04), range(-.02, .05)), 'southwest-tree', () => 'strangler-fig');
+  yield* treeBatchSteps(mangroves, 'Trogo mangrove', () => color.set('#253a22').offsetHSL(range(-.012, .012), range(-.04, .05), range(-.02, .05)), 'southwest-tree', () => 'red-mangrove');
   yield* tuftBatchSteps(clearingGrass, 'Trogo clearing grass', () => color.setHSL(.252 + range(-.012, .012),
     .30 + range(-.03, .03), .21 + range(-.025, .025)));
   yield* tuftBatchSteps(shoreTussock, 'Trogo shore tussock', () => color.setHSL(.176 + range(-.014, .014),
@@ -1272,6 +1311,10 @@ export function* createSouthwestScenerySteps(kit) {
   metrics.buttress = buttress.length; metrics.ferns = wayFerns.length; metrics.mangrove = mangroves.length;
   metrics.scrub += aromatics.length + clearingSaplings.length + shoreScrub.length;
   metrics.shingle += maroshShingle.length;
+
+  // Explicit home-patch additions use their own stream after the original scatter.
+  group.add(createGaneshShadeScrub(round, leafMaterial, treeGroundAt));
+  metrics.scrub += 6;
 
   return {
     group, metrics,

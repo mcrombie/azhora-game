@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createDeveloperWildlifeDamage } from './developer-wildlife-damage.js';
 import { canStand } from './game-state.js';
 import { toWorld } from './world-scale.js';
 import { MOROS_WAYSIDE } from './wayside.js';
@@ -106,7 +107,7 @@ function models() {
   };
 }
 
-/** Ambient creatures only: they cannot be attacked, collected or block a quest. */
+/** Ambient creatures do not block quests; developer damage stays outside saved adventures. */
 export function createRoadLife(scene, world) {
   const shapes=models(), flocks=[], creatures=[];
   const dummy=new THREE.Object3D(), rootMatrix=new THREE.Matrix4(), resultMatrix=new THREE.Matrix4();
@@ -149,6 +150,11 @@ export function createRoadLife(scene, world) {
     if(shape.ear)meshes.ears=instances(group,'Rock hare ears',shape.ear,count*2);
     flocks.push({zone,group,animals,meshes,center:{x:(zone.minX+zone.maxX)/2,z:(zone.minZ+zone.maxZ)/2},ticks:0});
   }
+  const flockFor=new Map(flocks.flatMap(flock=>flock.animals.map(animal=>[animal.id,flock])));
+  const damageState=createDeveloperWildlifeDamage({creatures,
+    body:animal=>flockFor.get(animal.id)?.group.visible
+      ? {x:animal.x,y:animal.y+animal.lift+(animal.species==='bank-bird'?.75:animal.zone.radius),z:animal.z,radius:Math.max(.22,animal.zone.radius)} : null,
+    changed:animal=>render(flockFor.get(animal.id))});
   function move(animal,step) {
     const originalX=animal.x,originalZ=animal.z;
     for(const offset of [0,.55,-.55,1.1,-1.1]) {
@@ -214,6 +220,7 @@ export function createRoadLife(scene, world) {
   function render(flock) {
     flock.animals.forEach((a,i)=>{
       rotation.setFromEuler(new THREE.Euler(0,a.yaw,0));
+      unit.setScalar(damageState.dead(a.id)?0:1);
       rootMatrix.compose(new THREE.Vector3(a.x,a.y+a.lift,a.z),rotation,unit);
       const breath=Math.sin(a.clock*2.1)*.012,walk=a.speed>.05,phase=a.clock*(a.action==='flee'?13:7);
       place(flock.meshes.body,i,0,0,0,0,0,0,1,1+breath,1);
@@ -239,12 +246,12 @@ export function createRoadLife(scene, world) {
     for(const flock of flocks) {
       const near=Math.hypot(playerPosition.x-flock.center.x,playerPosition.z-flock.center.z)<=100;
       flock.group.visible=near;if(!near)continue;
-      flock.ticks++;for(const animal of flock.animals)tickAnimal(animal,step,playerPosition);render(flock);
+      flock.ticks++;for(const animal of flock.animals)if(!damageState.dead(animal.id))tickAnimal(animal,step,playerPosition);render(flock);
     }
   }
   function snapshot() {
     return {updates,creatures:creatures.map(a=>({id:a.id,species:a.species,region:a.region,x:a.x,y:a.y+a.lift,z:a.z,
-      groundY:a.y,yaw:a.yaw,action:a.action,speed:a.speed,clock:a.clock,calmFor:a.calmFor||0,tame:!!a.zone.tame})),
+      groundY:a.y,yaw:a.yaw,action:damageState.dead(a.id)?'dead':a.action,speed:damageState.dead(a.id)?0:a.speed,clock:a.clock,calmFor:a.calmFor||0,tame:!!a.zone.tame,hidden:damageState.dead(a.id),...damageState.view(a.id)})),
       groups:flocks.map(f=>({id:f.zone.id,visible:f.group.visible,ticks:f.ticks,count:f.animals.length}))};
   }
   function setObserver(position) {
@@ -253,8 +260,9 @@ export function createRoadLife(scene, world) {
   }
   function calm(id,seconds=8) {
     const animal=creatures.find(a=>a.id===id&&a.species==='sheep');
-    if(!animal||!Number.isFinite(seconds)||seconds<=0)return false;
+    if(!animal||damageState.dead(id)||!Number.isFinite(seconds)||seconds<=0)return false;
     animal.calmFor=Math.max(animal.calmFor||0,Math.min(60,seconds));animal.action='graze';animal.timer=3;animal.speed=0;return true;
   }
-  return {update,setObserver,snapshot,state:snapshot,calm};
+  return {update,setObserver,snapshot,state:snapshot,calm,
+    bodies:damageState.bodies,damage:damageState.damage,resetDamage:damageState.resetDamage};
 }

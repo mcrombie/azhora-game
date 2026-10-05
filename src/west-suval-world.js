@@ -1,3 +1,4 @@
+import { treeGroundingOffset } from './tree-grounding.js';
 import { forEachBuild } from './build-each.js';
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
@@ -28,6 +29,7 @@ export function* createWestSuvalScenerySteps(kit) {
   let buildWork = 0;
   const { root, material, mesh, box, post, pebble, rope, groundHeight, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, sign, roadDistance, signs, barrel } = kit;
+  const treeGroundAt = kit.renderedGroundHeight ?? groundHeight;
   const district = new THREE.Group(); district.name = 'West Suval scenery'; root.add(district);
   const metrics = { buildings: 0, ruins: 0, towers: SOLIS_TOWERS.length, tents: 0, colliders: 0, props: 0 };
   let seed = 5150917;
@@ -780,16 +782,20 @@ export function* createWestSuvalScenerySteps(kit) {
   const campSign = P(34, -71); sign(campSign.x, campSign.z, 'The Coalition camp', 0, 'Solis');
 
   function oliveTree(x, z, parent = district) {
-    const y = gy(x, z), lean = range(-.35, .35);
+    let y = gy(x, z); const lean = range(-.35, .35);
     const trunk = post(material('#6f6456'), x, y + .9, z, .22, 1.9, parent); trunk.rotation.set(lean, 0, range(-.3, .3));
+    trunk.updateMatrix(); const offset = treeGroundingOffset(trunk.matrix, treeGroundAt, { radius: 1 });
+    y += offset; trunk.position.y += offset; trunk.updateMatrix();
     const parts = [trunk];
     for (let k = 0; k < 3; k++) parts.push(pebble(olive, x + range(-1.1, 1.1), y + range(2.1, 2.8), z + range(-1.1, 1.1), range(1.1, 1.6), range(.6, .9), range(1.1, 1.6), parent));
     const collider = { x, z, r: .4, kind: 'olive-tree' }; push(collider);
     registerWorldTree(colliders, { id: worldTreeId('west-suval-olive', x, z), x, z, y, species: 'olive', radius: .4 }, parts.map(mesh => ({ mesh })), collider);
   }
   function thornTree(x, z, parent = district) {
-    const y = gy(x, z);
+    let y = gy(x, z);
     const trunk = post(material('#5e5143'), x, y + 1.4, z, .13, 2.8, parent); trunk.rotation.z = range(-.2, .2);
+    trunk.updateMatrix(); const offset = treeGroundingOffset(trunk.matrix, treeGroundAt, { radius: 1 });
+    y += offset; trunk.position.y += offset; trunk.updateMatrix();
     const crown = pebble(leafDark, x, y + 3.0, z, range(2.0, 2.8), .45, range(1.8, 2.5), parent); crown.rotation.y = range(0, 6);
     const collider = { x, z, r: .3, kind: 'thorn-tree' }; push(collider);
     registerWorldTree(colliders, { id: worldTreeId('west-suval-hawthorn', x, z), x, z, y, species: 'hawthorn', radius: .3 }, [{ mesh: trunk }, { mesh: crown }], collider);

@@ -11,6 +11,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PLAYABLE_REGIONS } from '../src/region-layout.js';
 import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/game-atlas-adjustments.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -396,6 +397,9 @@ const svg = [
   `<g id="terrain" clip-path="url(#land-clip)" stroke-width="0.6" stroke-linejoin="round">`,
   ...[...terrainTintPaths].map(([tint, paths]) => `<path fill="${tint}" stroke="${tint}" d="${paths.join('')}"/>`),
   `<rect width="${number(width)}" height="${number(height)}" fill="${PARCHMENT}" filter="url(#parchment)" opacity=".7"/>`,
+  '</g>',
+  '<g id="unbuilt-regions" fill="#777d7c" fill-opacity=".92">',
+  ...sortedRegions.filter(([id])=>!PLAYABLE_REGIONS.includes(map.regions[id].name)).map(([id,cells])=>`<path data-unbuilt-region="${escape(id)}" d="${cells.map(polygon).join('')}"><title>${escape(map.regions[id].name)} - not built</title></path>`),
   '</g>',
   '<g id="region-tints" opacity="0.07">',
   ...sortedRegions.map(([id, cells]) => `<path data-region="${escape(id)}" fill="${escape(map.regions[id].color)}" d="${cells.map(polygon).join('')}"/>`),

@@ -13,7 +13,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
  * opening and selects Start game. restore uses the ordinary checkpoint loader.
  */
 export async function runPeninsulaTutorialChecks({ state, frames, playtest, begin, host,
-  snapshot, restore, pilot = () => ({}), clearAnnouncement = () => {}, warp, hold, flight, pause,
+  snapshot, restore, startRoad, stopRoad, pilot = () => ({}), clearAnnouncement = () => {}, warp, hold, flight, pause,
   openingOnly = false, deadlineMs = 8 * 60 * 1000 }) {
   const checks = [], milestones = [], started = performance.now();
   let completed = null, chrisRelease = null, travelled = 0, maxMetresPerFrame = 0;
@@ -180,6 +180,28 @@ export async function runPeninsulaTutorialChecks({ state, frames, playtest, begi
     escapes.push({ kind, sawDefeat, recoveries: after.boundary.recoveries }); note(`${kind} escape checked`);
     await capture(`${kind}-return`);
   }
+  // Enlisting starts the main journey. Run this last so boundary checkpoint tests
+  // above remain fresh tutorial scenarios without an already-started campaign.
+  if (startRoad && stopRoad) {
+    await begin('skip'); await frames(3);
+    check(startRoad(), 'Main-road autoplay resumes after the skipped tutorial');
+    const enlistStarted=performance.now(); let lastEnlistNote=0;
+    try {
+      while (!read().enlisted) {
+        await frames(6);
+        assert(!state().frameErrors?.count, 'The graduation-to-enlistment journey renders without errors');
+        if(performance.now()-lastEnlistNote>10000) { note('taking letter to Ottar',{position:state().position,intent:pilot().intent}); lastEnlistNote=performance.now(); }
+        assert(state().autoplay, `Road autoplay stopped before enlistment: ${pilot().reason}`);
+        assert(performance.now()-enlistStarted<180000, 'Road autoplay did not deliver the letter to Footman Ottar');
+      }
+    } finally { stopRoad(); }
+    const enlisted=snapshot();
+    check(count(enlisted,'harbor-letter')===1 && count(enlisted,'road-token')===1,
+      'Enlistment grants the army letter and road token through the actual conversation');
+    check(host.objective()===null, 'Enlistment releases the tutorial objective to the main road');
+    note('enlisted through road autoplay'); await capture('enlisted');
+  }
+
   return { ok: true, checks, milestones, seconds: Math.round((performance.now() - started) / 100) / 10,
     travelled: Math.round(travelled * 10) / 10, maxMetresPerFrame, completed, chrisRelease, skipped, escapes, openingOnly, state: state() };
 }

@@ -33,6 +33,14 @@ export const TELEMONIA_TOWN_COLOURS = Object.freeze({
 });
 
 export function createTelemoniaTownScenery(kit) {
+  const steps = createTelemoniaTownScenerySteps(kit);
+  let step; do { step = steps.next(); } while (!step.done);
+  return step.value;
+}
+
+/** Yield field and vine sampling in bounded slices without changing their seed order. */
+export function* createTelemoniaTownScenerySteps(kit) {
+  let buildWork = 0;
   const { root, material, groundHeight, colliders, dummy, color, round } = kit;
   const group = new THREE.Group(); group.name = 'Telemonia town and fields'; root.add(group);
   const C = TELEMONIA_TOWN_COLOURS, gy = (x, z) => groundHeight(x, z);
@@ -77,13 +85,13 @@ export function createTelemoniaTownScenery(kit) {
       }
     }
   }
-  function flush(t, name, { double = false } = {}) {
+  function flush(t, name, { double = false, roughness } = {}) {
     if (!t.i.length) return null;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(t.p, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(t.c, 3));
     geometry.setIndex(t.i); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
-    const mesh = new THREE.Mesh(geometry, material('#ffffff', { vertexColors: true, flatShading: true, ...(double ? { side: THREE.DoubleSide } : {}) }));
+    const mesh = new THREE.Mesh(geometry, material('#ffffff', { vertexColors: true, flatShading: true, ...(double ? { side: THREE.DoubleSide } : {}), ...(roughness === undefined ? {} : { roughness }) }));
     mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true; group.add(mesh); metrics.batches++;
     return mesh;
   }
@@ -106,6 +114,7 @@ export function createTelemoniaTownScenery(kit) {
       return { high, low };
     };
     for (const b of KETHORN_BUILDINGS) {
+      yield;
       const { high, low } = floorOf(b);
       if (b.kind === 'granary') {
         // Round, of coursed stone, corbelled in to a point; a low door on the street side.
@@ -167,14 +176,15 @@ export function createTelemoniaTownScenery(kit) {
     }
     // The street: the rock's own floor, laid flat with slabs where it is rough, from the gate to the far end.
     for (let u = KETHORN_STREET.to + 1; u <= KETHORN_STREET.from; u += 2.2) for (let v = -KETHORN_STREET.half + 1; v <= KETHORN_STREET.half - .9; v += 2.1) {
+      if ((++buildWork & 127) === 0) yield;
       const p = kethornPoint(u + range(-.15, .15), v + range(-.1, .1));
       if (!onKethornTop(p.x, p.z, .5) || kethornBuildingAt(p.x, p.z, .3)) continue;
       box(town, p.x, gy(p.x, p.z) + .02, p.z, range(1.6, 2.1), .12, range(1.5, 1.95), Math.atan2(ALONG.x, ALONG.z) + range(-.05, .05), C.paving, .1);
       metrics.paving++;
     }
     flush(town, 'Kethorn: the halls, the granaries and the cisterns');
-    const water = flush(cisternWater, 'Kethorn: the cisterns’ water');
-    if (water) { water.castShadow = false; water.material.roughness = .2; }
+    const water = flush(cisternWater, 'Kethorn: the cisterns’ water', { roughness: .2 });
+    if (water) water.castShadow = false;
   }
 
   // -------------------------------------------------------------------------
@@ -183,6 +193,7 @@ export function createTelemoniaTownScenery(kit) {
   {
     const huts = solid();
     for (const hamlet of HAMLETS) for (const hut of hamlet.huts) {
+      yield;
       const fx = Math.sin(hut.yaw), fz = Math.cos(hut.yaw), sx = fz, sz = -fx;
       let low = Infinity, high = -Infinity;
       for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1], [0, 0]]) { const y = gy(hut.x + sx * a * HUT.long / 2 + fx * b * HUT.deep / 2, hut.z + sz * a * HUT.long / 2 + fz * b * HUT.deep / 2); low = Math.min(low, y); high = Math.max(high, y); }
@@ -212,6 +223,7 @@ export function createTelemoniaTownScenery(kit) {
   {
     const folds = solid();
     for (const pen of PENS) {
+      yield;
       const fx = Math.sin(pen.yaw), fz = Math.cos(pen.yaw), sx = fz, sz = -fx;
       const at = (a, b) => ({ x: pen.x + sx * a + fx * b, z: pen.z + sz * a + fz * b });
       for (const [a0, b0, a1, b1] of penWalls(pen)) {
@@ -253,6 +265,7 @@ export function createTelemoniaTownScenery(kit) {
           run = null;
         };
         for (let u = Math.floor(uMin / STEP) * STEP; u <= uMax; u += STEP) {
+          if ((++buildWork & 127) === 0) yield;
           const p = kethornPoint(u, v);
           if (plainDistance(p.x, p.z) > -FIELDS.edge) { close(); continue; }
           const f = fieldAt(p.x, p.z);
@@ -277,13 +290,15 @@ export function createTelemoniaTownScenery(kit) {
     for (const [crop, list] of Object.entries(rows)) {
       if (!list.length) continue;
       const batch = new THREE.InstancedMesh(prism, material('#ffffff', { flatShading: true }), list.length);
-      list.forEach((row, i) => {
+      for (const [i, row] of list.entries()) {
+        if ((i & 127) === 0) yield;
         const h = crop === 'barley' ? range(.5, .66) : range(.26, .36), w = crop === 'barley' ? range(.42, .52) : range(.48, .6);
         dummy.position.set(row.x, gy(row.x, row.z) - .02, row.z);
         dummy.rotation.set(0, yaw + Math.PI / 2, 0); dummy.scale.set(row.length, h, w); dummy.updateMatrix();
         batch.setMatrixAt(i, dummy.matrix);
         batch.setColorAt(i, color.set(crop === 'barley' ? (random() < .5 ? C.barley : C.barleyDry) : (random() < .5 ? C.pulses : C.pulsesDark)).multiplyScalar(.93 + random() * .12));
-      });
+      }
+      yield;
       batch.receiveShadow = true; batch.computeBoundingSphere(); batch.name = crop === 'barley' ? 'Galmeth barley' : 'Galmeth pulses';
       group.add(batch); metrics.batches++;
       if (crop === 'barley') metrics.barleyRows = list.length; else metrics.pulseRows = list.length;
@@ -298,6 +313,7 @@ export function createTelemoniaTownScenery(kit) {
     const cols = Math.floor((B.maxX - B.minX) / STEP) + 1, rowsN = Math.floor((B.maxZ - B.minZ) / STEP) + 1;
     const level = new Float32Array(cols * rowsN).fill(NaN);
     for (let j = 0; j < rowsN; j++) for (let i = 0; i < cols; i++) {
+      if ((++buildWork & 127) === 0) yield;
       const x = B.minX + i * STEP, z = B.minZ + j * STEP, pd = plainDistance(x, z);
       if (pd < -1 || pd > INNER.terraceWidth + 1) continue;
       const c = vineCourseLine(x, z);
@@ -307,6 +323,7 @@ export function createTelemoniaTownScenery(kit) {
     for (let course = 0; course < Math.round(INNER.terraceTop / TERRACES.period); course++) {
       const L = course + VINES.mid, segments = [];
       for (let j = 0; j < rowsN - 1; j++) for (let i = 0; i < cols - 1; i++) {
+        if ((++buildWork & 127) === 0) yield;
         const c = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]];
         if (c.some(([a, b]) => Number.isNaN(level[b * cols + a]))) continue;
         const hits = [];
@@ -319,6 +336,7 @@ export function createTelemoniaTownScenery(kit) {
       // Along each little segment a vine every so often: the segments are the contour, a lattice cell at a time.
       let carry = 0;
       for (const [a, b] of segments) {
+        if ((++buildWork & 127) === 0) yield;
         const length = Math.hypot(b.x - a.x, b.z - a.z);
         metrics.vineMetres += length;
         carry += length;
@@ -332,14 +350,16 @@ export function createTelemoniaTownScenery(kit) {
     if (stocks.length) {
       const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(.04, .07, 1, 5), material(C.vineStock), stocks.length);
       const leaves = new THREE.InstancedMesh(round, material('#ffffff', { flatShading: true }), stocks.length);
-      stocks.forEach((vine, i) => {
+      for (const [i, vine] of stocks.entries()) {
+        if ((i & 127) === 0) yield;
         const y = gy(vine.x, vine.z);
         dummy.position.set(vine.x, y + .35 * vine.s, vine.z); dummy.rotation.set(range(-.1, .1), vine.rot, range(-.1, .1)); dummy.scale.set(vine.s, .7 * vine.s, vine.s); dummy.updateMatrix();
         trunks.setMatrixAt(i, dummy.matrix);
         dummy.position.set(vine.x, y + .82 * vine.s, vine.z); dummy.rotation.set(0, vine.rot, 0); dummy.scale.set(.62 * vine.s, .36 * vine.s, .55 * vine.s); dummy.updateMatrix();
         leaves.setMatrixAt(i, dummy.matrix);
         leaves.setColorAt(i, color.set(random() < .5 ? C.vineLeaf : C.vineLeafDark).multiplyScalar(.92 + random() * .14));
-      });
+      }
+      yield;
       for (const mesh of [trunks, leaves]) { mesh.castShadow = true; mesh.receiveShadow = true; mesh.computeBoundingSphere(); group.add(mesh); metrics.batches++; }
       trunks.name = 'Terrace vines (stocks)'; leaves.name = 'Terrace vines';
       metrics.vines = stocks.length;

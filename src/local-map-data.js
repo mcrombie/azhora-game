@@ -160,7 +160,7 @@ export function buildLocalMapModel({ world, position, heading, discoveries = new
   const mainGoal = objective(goalPoint, 'objective', 'main-objective');
   const openGoalMarker = objective(finitePoint(openGoal) ? openGoal : null, 'objective-open', 'long-road-objective');
   const trackedMarker = validId(trackedId) ? markers.get(trackedId) : null;
-  const buildings = (Array.isArray(world.colliders) ? world.colliders : []).filter(c => c?.kind === 'house'
+  const buildings = [...(Array.isArray(world.colliders) ? world.colliders : []), ...(world.mapBuildings ?? [])].filter(c => c?.kind === 'house'
     && finitePoint(c) && Number.isFinite(c.width) && c.width > 0 && Number.isFinite(c.depth) && c.depth > 0
     && (c.angle === undefined || Number.isFinite(c.angle))).filter(c => {
     const angle = c.angle || 0, halfX = (Math.abs(Math.cos(angle)) * c.width + Math.abs(Math.sin(angle)) * c.depth) / 2;

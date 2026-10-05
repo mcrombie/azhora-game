@@ -25,3 +25,15 @@
 #loading-countdown{font-size:12px;text-align:center;color:#dfd6b5;margin-top:17px;min-height:18px}
 #loading.choosing-mode #loading-status{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media(max-height:580px){#loading.choosing-mode .opening-oak{max-height:19vh}#loading.choosing-mode{gap:8px;padding:14px 0}#loading-choice h2{font-size:24px;margin-bottom:10px}#loading-choice button{min-height:66px;padding:11px 15px;margin-top:10px}}
+
+/* Opening panorama: keep the city visible beside a readable, compact menu. */
+#opening{padding:24px 30px;border-left:2px solid #e3c981;background:linear-gradient(90deg,#102e28ed,#102e28b8 75%,#102e2800);max-width:440px;border-radius:3px}
+#opening .opening-place{margin:12px 0 18px;font-family:Adventure,Georgia,serif;font-size:26px;color:#ffe6a7}
+#opening .opening-place span{display:block;font-family:inherit;font-size:14px;color:#f4ecd5;letter-spacing:.03em}
+#opening #continue-road:disabled{opacity:.45;cursor:default}
+@media(max-width:600px),(max-height:600px){#opening{padding:14px 20px;bottom:6%;left:4%;max-width:88vw}#opening .eyebrow{margin-bottom:8px}#opening h2{font-size:42px}#opening .opening-place{margin:8px 0;font-size:22px}#opening .opening-note{margin:10px 0 0;font-size:12px}}
+
+#opening .opening-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}#opening .opening-actions button{min-width:0;width:100%;margin:0;padding:14px 8px;font-size:15px}
+body:not(.playing) #compass,body:not(.playing) #map-wrap,body:not(.playing) #controls,body:not(.playing) #journal-button,body:not(.playing) #region-loading-status{display:none!important}
+
+#opening .opening-actions button{background:#173c32df;border:1px solid #cbbd92;color:#f9edce;border-radius:3px}#opening .opening-actions #begin-skip-tutorial{background:#f4d99e;border-color:#f4d99e;color:#263b31}#opening .opening-actions button:hover:not(:disabled){filter:brightness(1.12)}#opening .opening-actions button:focus-visible{outline:2px solid #fff1bb;outline-offset:4px}

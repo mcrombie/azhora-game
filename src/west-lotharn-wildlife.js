@@ -9,9 +9,9 @@
  *
  *  - **the valley floors**, flat, grassed, deep-soiled, with the wood standing back from them: the
  *    deer and the boar are there, and so is everything that needs cover and water;
- *  - **the ledge forest**, which is most of the country by area and almost none of it by what can be
- *    seen - "a wood of trunks four metres apart is a maze to a deer", and an animal backing off from
- *    a traveler on a ledge nine metres wide has nowhere to back off to. Nothing is placed in it;
+ *  - **the ledge forest**, with resident deer and boar on its wider soil-covered shelves and
+ *    wooded shoulders. They remember their paths between the trunks; steep faces and narrow
+ *    cliff ledges remain outside their footing rather than excluding the whole forest;
  *  - **the balds above the tree line**, at two hundred and fifty metres and up, which are thin
  *    short-grazed turf ringed by cliff - the hares' ground, and nothing else's;
  *  - **and the air over the crest**, which is the one thing this range has that no other country in
@@ -71,4 +71,18 @@ export const WEST_LOTHARN_WILDLIFE_ZONES = freeze([
   zone('west-shoulder-hawk', 'plateau-hawk', .3, [-2210, -2050, -700, -540], [[-2130, -615]],
     'The dry-plateau hawk, which the fauna overview places on the upland grasslands of the country east of the Lotharn; an extension here, over the west shoulder’s bald and the long valley below it. One bird, high, quartering the open ground between the tree line and the summit.',
     { air: 36 }),
+  // Append resident woodland bands: the original twenty-four animals retain
+  // their zone order, site positions and saved identities.
+  zone('west-lotharn-spur-woodland-boar', 'boar', .7, [-2060, -1930, -460, -360], [[-1990, -410], [-2002, -410], [-1994, -419]],
+    'Extension: boar rooting in the oak and chestnut woods on the low southern spur. Broad soil-covered shoulders give them room to turn among the trunks; the rocky faces and summit bald are excluded by their footing limits.',
+    { habitat: 'woodland', maxSlope: .6 }),
+  zone('west-lotharn-valley-woodland-deer', 'red-deer', .55, [-1960, -1830, -700, -605], [[-1890, -650], [-1902, -650], [-1894, -640]],
+    'Extension: red deer browsing inside the woods above the middle of the long valley, between its established open meadow bands. They use the sheltered, gently sloping shelf and remembered gaps between trees, not the cliff courses above it.',
+    { habitat: 'woodland', hornless: true, maxSlope: .6 }),
+  zone('west-lotharn-cold-head-woodland-boar', 'boar', .7, [-2360, -2240, -560, -460], [[-2300, -510], [-2306, -508]],
+    'Extension: a pair of boar on the cold head\'s broad wooded shoulder, below its bald, where fallen broadleaf mast gathers beneath the mountain. They can retreat through the grove while their footing limits exclude the steep faces around it.',
+    { habitat: 'woodland', maxSlope: .6 }),
+  zone('west-lotharn-east-foot-woodland-deer', 'red-deer', .55, [-1680, -1570, -735, -640], [[-1610, -690], [-1622, -696]],
+    'Extension: two red deer in the eastern foothill woods below the east arm, beyond the notch and its water birds. The open understory supplies browse and a level retreat through the trees while the steeper mountain ground stays out of reach.',
+    { habitat: 'woodland', hornless: true, maxSlope: .6 }),
 ]);

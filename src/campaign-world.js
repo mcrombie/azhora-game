@@ -43,8 +43,8 @@ export const FACTIONS = Object.freeze({
     note: 'Officially loyal to the Empire; its people would rather crown their duke than join a republic.' }),
   pyrosi: Object.freeze({ id: 'pyrosi', name: 'Pyros', short: 'Pyrosi', seat: 'Gala', tint: '#c97b6a',
     note: 'One empire ruling East and West Pyros. Overrun by goblins and its own rebellion, it sends only a small contingent to the Coalition; there is no South Pyros.' }),
-  mithalan: Object.freeze({ id: 'mithalan', name: 'Mithalan Empire', short: 'Mithalan', seat: 'the river-city of Mithala', tint: '#7fa7a0',
-    note: 'A river empire with a rebellion of its own, north of the Lotharn.' }),
+  mithalan: Object.freeze({ id: 'mithalan', name: 'Mithalan Empire', short: 'Mithalan', seat: 'Mithala', tint: '#7fa7a0',
+    note: 'A river kingdom with a rebellion of its own, north of the Lotharn. What the south calls the Mithalan Empire is what is left of Mithala: a Cref king holds the oath at the old seat and little else, and the warlords who broke away hold the countryside (lore: mithala.md, the_cref_alliance.md).' }),
   thalmagar: Object.freeze({ id: 'thalmagar', name: 'Thalmagar', short: 'Thalmagar', seat: 'Cape Thalmagar', tint: '#4a2c4f',
     note: 'The dark lord of the far northwest, whose orcs and goblin allies press south.' }),
   elfland: Object.freeze({ id: 'elfland', name: 'Elfland', short: 'Elfland', seat: 'the royal forest heart', tint: '#74946b',
@@ -96,7 +96,7 @@ export const SETTLEMENTS = Object.freeze({
   mavren: Object.freeze({ id: 'mavren', name: 'Mavren', region: 'Amod', note: 'Terraced town at the meeting of three valleys; the Empire’s outpost fortress (lore: amod.md).' }),
   gala: Object.freeze({ id: 'gala', name: 'Gala', region: 'West Pyros', note: 'The walled Pyrosi capital above a river confluence (lore: pyros.md).' }),
   kethorn: Object.freeze({ id: 'kethorn', name: 'Kethorn', region: 'Telemonia', note: 'The one town of the Telemon, on a rock in the middle of the Galmeth: cliff on three sides and a wall closing the fourth, the only walled place in the country (lore: telemonia.md). Inside the wall: six halls of the bands down the two long sides, six round granaries and two cisterns in the middle, one street from the gate to the hall at the far end, which is the king’s and is known from the others by where it stands. No inn, no market, no temple, no gatehouse.' }),
-  mithalaCity: Object.freeze({ id: 'mithala-city', name: 'The Mithalan river-city', region: 'South Mithala', note: 'Where the rivers of West, East and South Mithala meet. Name pending.' }),
+  mithalaCity: Object.freeze({ id: 'mithala-city', name: 'Mithala', region: 'South Mithala', note: 'The old seat, at the meeting of the arms where all four Mithalas meet and the plain’s only crossing of the main channel (the user, 4 October 2026; docs/mithala-city-brief.md). Four districts, one in each Mithala: the Fork (West), walled in Cref stone round the king’s hall and the sky tower; the Braid Bank (North); the Quays (East); and the Ford (South), where the road from the Lotharn comes in. Dark brick and reed thatch on raised ground behind flood banks; nobody lives in it yet.' }),
   izolveth: Object.freeze({ id: 'izolveth', name: 'Izolveth', region: 'West Izol', note: 'The Izoli port that shelters the Coalition army.' }),
   tornMouth: Object.freeze({ id: 'torn-mouth', name: 'The Torn mouth', region: 'Drent', note: 'Seat of the Ambroni Lord Protector of Drent (lore: drent.md).' }),
 });
@@ -109,6 +109,7 @@ const region = (id, level, control, climate, threats, role, extra = {}) =>
  * the game. `provisional` marks levels inferred from terrain rather than stated.
  */
 export const REGION_DESIGN = Object.freeze([
+  region('Urubond',5,'wild','Barren volcanic island; dark corrupted ground.',[],'A legend found by exploration alone. An empty fortress is concealed inside the volcano.',{secret:true}),
   region('West Baldro Mountains', 3, 'west-baldro', 'Cold dry-winter hills and exposed joined mountain ridges; Dwc with one Dfc mountain hex and no permanent ice.', [],
     'The western surviving independent dwarf city kingdom, confederated in Dwarfland. Travelers earn this kingdom\'s permission at its own gate; short, broad dwarves occupy thriving halls beside abandoned districts.', { provisional: true, confederation: 'Dwarfland', settlements: ['west-baldro-hold'] }),
   region('East Baldro Mountains', 3, 'east-baldro', 'Cold dry-winter mountains, sheltered wooded hills, rock basins and mapped border water; Dwc throughout.', [],
@@ -158,7 +159,7 @@ export const REGION_DESIGN = Object.freeze([
   region('Oves Desert', 4, 'wild', 'Open desert with low hills.', ['sand-goblin', 'bandit', 'orc'],
     'The sand goblin base, with orcs stationed inside it. Join rangers to assassinate the orc chief.', { story: 'coalition-7' }),
   region('South Mithala', 3, 'mithalan', 'River plains with hills toward the Lotharn.', ['hill-goblin', 'wolf-pack'],
-    'Scout northwest for the Empire arc; the river-city where the three Mithalas meet.', { story: 'empire-8', settlements: ['mithala-city'] }),
+    'Scout northwest for the Empire arc; Mithala, the old seat where the four Mithalas meet.', { story: 'empire-8', settlements: ['mithala-city'] }),
   region('West Mithala', 3, 'mithalan', 'Grassland along the western river.', ['hill-goblin', 'wolf-pack'], 'Mithalan Empire; its own rebellion.', {}),
   region('North Mithala', 4, 'mithalan', 'Plains toward the Acor Wetlands.', ['hill-goblin', 'wolf-pack', 'troll'], 'Mithalan Empire; its own rebellion.', {}),
   region('East Mithala', 4, 'mithalan', 'Plains and grassland below the Acorwood.', ['hill-goblin', 'wolf-pack', 'troll'], 'Mithalan Empire; its own rebellion.', {}),

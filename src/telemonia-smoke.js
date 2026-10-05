@@ -5,7 +5,8 @@ import { WATCH } from './telemon-watch.js';
 
 /**
  * **The challenge, played in the running game** (`node scripts/launch.cjs --smoke-test --telemonia-checks`).
- * The traveler is moved by the script a frame at a time at a walker's or a runner's pace; everything else -
+ * The native runner holds ordinary movement keys; small rule-only callers may omit drive and
+ * use scripted positions. The result states which movement mode was used. Everything else -
  * who notices him, who comes, where they walk, the fight and who joins it, the border, the save - is the
  * game's own frame loop, read back from its own state each frame:
  *
@@ -22,7 +23,7 @@ import { WATCH } from './telemon-watch.js';
  * not his swordwork), and he never fights back.
  */
 export async function runTelemoniaChecks({ host, player, combat, npcById, travel, frames, sneak, camera = () => {}, capture = () => {},
-  keepAlive = () => {}, saveAndReload, reset, progress = () => {}, state = () => ({}) }) {
+  keepAlive = () => {}, drive = null, stopDriving = () => {}, saveAndReload, reset, progress = () => {}, state = () => ({}) }) {
   const checks = [], metrics = { lines: [], steps: {} }, started = performance.now();
   const check = (ok, message, detail) => { if (!ok) throw new Error(`Telemonia: ${message}\n${JSON.stringify({ checks, metrics, detail }, null, 1)}`); checks.push(message); progress(message); };
   const p = () => player.group.position;
@@ -44,7 +45,8 @@ export async function runTelemoniaChecks({ host, player, combat, npcById, travel
   async function go(to, speed, { until = () => false, limit = 60, alive = false, each = () => {} } = {}) {
     let last = performance.now();
     const begin = last;
-    for (;;) {
+    try { for (;;) {
+      if (drive) drive(to, speed);
       await tick(alive);
       const now = performance.now(), dt = Math.min(.1, (now - last) / 1000); last = now;
       each();
@@ -52,10 +54,12 @@ export async function runTelemoniaChecks({ host, player, combat, npcById, travel
       if ((now - begin) / 1000 > limit) return false;
       const here = p(), d = Math.hypot(to.x - here.x, to.z - here.z);
       if (d < .25) return false;
-      const step = Math.min(d, speed * dt);
-      here.x += (to.x - here.x) / d * step; here.z += (to.z - here.z) / d * step;
-      player.group.rotation.y = Math.atan2(to.x - here.x, to.z - here.z);
-    }
+      if (!drive) {
+        const step = Math.min(d, speed * dt);
+        here.x += (to.x - here.x) / d * step; here.z += (to.z - here.z) / d * step;
+        player.group.rotation.y = Math.atan2(to.x - here.x, to.z - here.z);
+      }
+    } } finally { stopDriving(); }
   }
   async function along(points, speed, options) { for (const q of points) if (await go(q, speed, options)) return true; return false; }
   async function wait(secs, until = () => false, alive = false) { const begin = performance.now(); while ((performance.now() - begin) / 1000 < secs) { await tick(alive); if (until()) return true; } return false; }
@@ -155,8 +159,9 @@ export async function runTelemoniaChecks({ host, player, combat, npcById, travel
   sneak(false);
   metrics.steps.west = { t: seconds(), at: { x: +p().x.toFixed(1), z: +p().z.toFixed(1) }, highest: +highest.toFixed(2), phase: view().phase };
   check(unseen && groundKind(p().x, p().z) === 'plain' && Math.hypot(p().x + 2136, p().z - 1203) < 2, 'Sneaking through the gap between the western watchers’ cones, over the terraces and the plain to the rock’s foot, nobody notices him', metrics.steps.west);
+  metrics.movement = drive ? 'ordinary keyboard input' : 'scripted positions';
   metrics.seconds = +seconds();
   const s = state();
-  metrics.state = { region: s.region, frameErrors: s.frameErrors };
+  metrics.state = { region: s.region, frameErrors: s.frameErrors, loadingMode: s.loadingMode, loading: s.loading };
   return { ok: true, checks, metrics };
 }

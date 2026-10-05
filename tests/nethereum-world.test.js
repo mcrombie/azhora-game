@@ -342,7 +342,8 @@ test('every hex of Nethereum is honest ground, and nobody is sealed in', () => {
   // x = -3900 and the world's western edge -3960.002, nine hundred and fifty metres past the
   // corner this country set. Nethereum is still what set the edge it had; it does not set this one.
   // The Baldro integration enlarged the eastern extent (documented below).
-  assert.ok(Math.abs(wide - 68.2) < .01, `the world is ${wide.toFixed(2)} hexes wide`);
+  // ...and 70.70 since Alezhor's and South Ibenal's coasts took the western edge to -4860.002 (4 October 2026).
+  assert.ok(Math.abs(wide - 70.7) < .01, `the world is ${wide.toFixed(2)} hexes wide`);
   // North to south: 30.93 hexes then, untouched by Nethereum; 35.26 since the East Lotharn, 37.00
   // (36.996) since the Ascarth Peninsula's tip, and 45.656 since the four Mithala countries carried
   // the world north to the Acor Wetlands. Nethereum touched none of it.

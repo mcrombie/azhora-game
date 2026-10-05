@@ -8,8 +8,16 @@ const smoke = process.argv.includes('--smoke-test');
 const peninsulaOpeningOnly=smoke&&process.argv.includes('--peninsula-opening-check');
 const peninsulaChecksOnly=smoke&&(peninsulaOpeningOnly||process.argv.includes('--peninsula-check')||process.argv.includes('--peninsula-checks'));
 const peninsulaCaptures=[];
+const minoraOpeningChecksOnly=smoke&&process.argv.includes('--minora-opening-checks');
+const minoraCaptures=[];
 const strategicChecksOnly=smoke&&process.argv.includes('--strategic-checks');
 const strategicCaptures=[];
+const r1JourneyChecksOnly=smoke&&process.argv.includes('--r1-journey-checks');
+const alezhorChecksOnly=smoke&&process.argv.includes('--alezhor-checks');
+const eastIzolChecksOnly=smoke&&process.argv.includes('--east-izol-checks');
+const regionalGroundChecksOnly=smoke&&process.argv.includes('--regional-ground-checks');
+const r4R7JourneyChecksOnly=smoke&&process.argv.includes('--r4-r7-journey-checks');
+const r4R7Captures=[];
 const fastLoadChecksOnly=smoke&&process.argv.includes('--fast-load-checks');
 const loadChoiceChecksOnly=smoke&&process.argv.includes('--load-choice-checks');
 const fastLoad=fastLoadChecksOnly||process.argv.includes('--fast-load');
@@ -221,6 +229,17 @@ if (ownsInstance) app.whenReady().then(async () => {
   if (smoke) win.webContents.setFrameRate(60);
   if(reviewViews.length)win.webContents.on('console-message',(_event,level,message)=>{if(level>=3)console.error('REVIEW_ERROR '+message);});
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  if(r4R7JourneyChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{
+    if(!message.startsWith('R4_R7_CAPTURE '))return;
+    const name=message.slice('R4_R7_CAPTURE '.length).replace(/[^a-z0-9-]/gi,'');
+    r4R7Captures.push((async()=>{
+      let acknowledgment={name};
+      try{fs.writeFileSync(path.join(__dirname,'tests','artifacts','r4-r7-'+name+'.png'),(await win.webContents.capturePage()).toPNG());}
+      catch(error){acknowledgment.error=error.message;errors.push('R4/R7 capture: '+error.message);}
+      await win.webContents.executeJavaScript('window.__r4R7CaptureAck='+JSON.stringify(acknowledgment));
+    })());
+  });
+  if(minoraOpeningChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('MINORA_PROGRESS '))console.log(message);if(message.startsWith('MINORA_CAPTURE ')){const name=message.slice(15).replace(/[^a-z0-9-]/gi,'');minoraCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`minora-${name}.png`),image.toPNG())));}});
   if(peninsulaChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('PENINSULA_PROGRESS '))console.log(message);if(message.startsWith('PENINSULA_CAPTURE ')){const name=message.slice(18).replace(/[^a-z0-9-]/gi,'');peninsulaCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`peninsula-${name}.png`),image.toPNG())));}});
   if(telemoniaChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('TELEMONIA_PROGRESS '))console.log(message);if(message.startsWith('TELEMONIA_CAPTURE ')){const name=message.slice(18).replace(/[^a-z0-9-]/gi,'');telemoniaCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`telemonia-play-${name}.png`),image.toPNG())));}});
   if(strategicChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('STRATEGY_CAPTURE ')){const name=message.slice(17).replace(/[^a-z0-9-]/gi,'');strategicCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`strategy-${name}.png`),image.toPNG())));}});
@@ -243,7 +262,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     fs.writeFileSync(path.join(artifactDir, 'fullscreen.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2)); app.exit(0); return;
   }
-  if(fastLoadChecksOnly||reviewViews.length){
+  if(fastLoadChecksOnly||r1JourneyChecksOnly||r4R7JourneyChecksOnly||regionalGroundChecksOnly||eastIzolChecksOnly||alezhorChecksOnly||reviewViews.length){
     let reading=false;
     const progress=setInterval(async()=>{if(reading||win.isDestroyed())return;reading=true;try{
       const state=await win.webContents.executeJavaScript(`(()=>{const api=window.__AZHORA__;if(!api)return {startup:globalThis.__AZHORA_STARTUP__?.stages?.at(-1)?.name,fatal:document.getElementById('fatal')?.dataset.stack};const s=api.state();return {frames:s.frames,mode:s.mode,waiting:s.waitingForRegion,quest:s.autoplay,active:s.loading?.active,completed:s.loading?.completed,total:s.loading?.total,errors:s.frameErrors};})()`);
@@ -259,7 +278,7 @@ if (ownsInstance) app.whenReady().then(async () => {
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {
           const fatal=document.getElementById('fatal');if(fatal?.dataset.stack&&!fatal.classList.contains('hidden')){reject(new Error(fatal.dataset.stack));return;}
-          if(window.__AZHORA__) { ${strategicChecksOnly ? 'window.__AZHORA__.strategicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : telemoniaChecksOnly ? 'window.__AZHORA__.runTelemoniaChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : sevronChecksOnly ? 'window.__AZHORA__.sevronChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : peninsulaChecksOnly ? `window.__AZHORA__.peninsulaChecks({openingOnly:${peninsulaOpeningOnly}}).then(resolve,error=>reject(new Error(error.stack||error.message)));` : fastLoadChecksOnly ? 'window.__AZHORA__.runFastLoadingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : dwarfAutoplayChecksOnly ? 'window.__AZHORA__.runDwarfAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : baldroChecksOnly ? 'window.__AZHORA__.runBaldroChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : frontierChecksOnly ? 'window.__AZHORA__.runFrontierChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : southOremindiChecksOnly ? 'window.__AZHORA__.runSouthOremindiChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : ibenwoodDefenseChecksOnly ? 'window.__AZHORA__.runIbenwoodDefenseChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : ibenwoodChecksOnly ? 'window.__AZHORA__.runIbenwoodChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : willowmereFamilyChecksOnly ? 'window.__AZHORA__.runWillowmereFamilyChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : ariAutoplayChecksOnly ? 'window.__AZHORA__.runAriAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : sylviaIvyChecksOnly ? 'window.__AZHORA__.runSylviaIvyChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : sunflowerChecksOnly ? 'window.__AZHORA__.runSunflowerChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : silverAutoplayChecksOnly ? 'window.__AZHORA__.runSilverAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : developerDragonChecksOnly ? 'window.__AZHORA__.runDeveloperDragonChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : countrysideChecksOnly ? 'window.__AZHORA__.runCountrysideChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : northernRegionsChecksOnly ? 'window.__AZHORA__.runNorthernRegionsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : jesseAutoplayChecksOnly ? 'window.__AZHORA__.runJesseAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : catieAutoplayChecksOnly ? 'window.__AZHORA__.runCatieAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : climbingChecksOnly ? 'window.__AZHORA__.runClimbingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : batmanChecksOnly ? 'window.__AZHORA__.runBatmanChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : bearQuestChecksOnly ? 'window.__AZHORA__.runBearQuestChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : kaylaChecksOnly ? 'window.__AZHORA__.runKaylaChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : jesseCarriageChecksOnly ? 'window.__AZHORA__.runJesseCarriageChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : brandyHomeChecksOnly ? 'window.__AZHORA__.runBrandyHomeChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : homeResidentsChecksOnly ? 'window.__AZHORA__.runHomeResidentsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : testingToolsChecksOnly ? 'window.__AZHORA__.runTestingToolsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : cagneyAutoplayChecksOnly ? 'window.__AZHORA__.runCagneyAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : addisonAutoplayChecksOnly ? 'window.__AZHORA__.runAddisonAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : portCalosChecksOnly ? 'window.__AZHORA__.runPortCalosChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : wineryChecksOnly ? 'window.__AZHORA__.runWineryChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : republicChecksOnly ? 'window.__AZHORA__.runRepublicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : livingChecksOnly ? 'window.__AZHORA__.runLivingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : magicAutoplayKind ? `window.__AZHORA__.runMagicAutoplayChecks(${JSON.stringify(magicAutoplayKind)}).then(resolve,error=>reject(new Error(error.stack||error.message)));` : benAutoplayChecksOnly ? 'window.__AZHORA__.runBenAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : benFightChecksOnly ? 'window.__AZHORA__.runBenFightChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : companionCombatChecksOnly ? 'window.__AZHORA__.runCompanionCombatChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : magicChecksOnly ? 'window.__AZHORA__.runMagicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : lawChecksOnly ? 'window.__AZHORA__.runLawChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : presentationChecksOnly ? 'window.__AZHORA__.runPresentationChecks().then(resolve,reject);' : drentChecksOnly ? 'window.__AZHORA__.runDrentChecks().then(resolve,reject);' : journalChecksOnly ? 'window.__AZHORA__.runJournalChecks().then(resolve,reject);' : chartReloadOnly ? 'window.__AZHORA__.runChartReloadCheck().then(resolve,reject);' : cartographyChecksOnly ? 'window.__AZHORA__.runCartographyChecks().then(resolve,reject);' : mainArcChecksOnly ? 'window.__AZHORA__.runMainArcChecks().then(resolve,reject);' : autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : fishingLessonChecksOnly ? 'window.__AZHORA__.runFishingLessonsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : fireMakingChecksOnly ? 'window.__AZHORA__.runFireMakingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : visualArtsChecksOnly ? 'window.__AZHORA__.runVisualArtsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : roadAmbushChecksOnly ? 'window.__AZHORA__.runRoadAmbushChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : roadSkillsChecksOnly ? `window.__AZHORA__.runRoadSkillsChecks(${process.argv.includes('--glun-wood-checks')}).then(resolve,error=>reject(new Error(error.stack||error.message)));` : hideoutHostilityChecksOnly ? 'window.__AZHORA__.runHideoutHostilityChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || drawReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
+          if(window.__AZHORA__) { ${minoraOpeningChecksOnly ? 'window.__AZHORA__.minoraOpeningChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : strategicChecksOnly ? 'window.__AZHORA__.strategicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : telemoniaChecksOnly ? 'window.__AZHORA__.runTelemoniaChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : sevronChecksOnly ? 'window.__AZHORA__.sevronChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : peninsulaChecksOnly ? `window.__AZHORA__.peninsulaChecks({openingOnly:${peninsulaOpeningOnly}}).then(resolve,error=>reject(new Error(error.stack||error.message)));` : alezhorChecksOnly ? 'window.__AZHORA__.runAlezhorChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : eastIzolChecksOnly ? 'window.__AZHORA__.runEastIzolChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : r4R7JourneyChecksOnly ? 'window.__AZHORA__.runR4R7JourneyChecks('+JSON.stringify({habitatsOnly:process.argv.includes('--r4-habitats-only'),onlyHabitat:process.argv.includes('--navarth-habitat-only')?'navarth-wood-deer':null})+').then(resolve,error=>resolve(window.__r4R7JourneyEvidence?{...window.__r4R7JourneyEvidence,nativeDriverError:error.stack||error.message}:{ok:false,mode:"unknown",failures:[{error:error.stack||error.message}]}));' : regionalGroundChecksOnly ? 'window.__AZHORA__.runRegionalGroundChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : r1JourneyChecksOnly ? 'window.__AZHORA__.runR1JourneyChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : fastLoadChecksOnly ? 'window.__AZHORA__.runFastLoadingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : dwarfAutoplayChecksOnly ? 'window.__AZHORA__.runDwarfAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : baldroChecksOnly ? 'window.__AZHORA__.runBaldroChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : frontierChecksOnly ? 'window.__AZHORA__.runFrontierChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : southOremindiChecksOnly ? 'window.__AZHORA__.runSouthOremindiChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : ibenwoodDefenseChecksOnly ? 'window.__AZHORA__.runIbenwoodDefenseChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : ibenwoodChecksOnly ? 'window.__AZHORA__.runIbenwoodChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : willowmereFamilyChecksOnly ? 'window.__AZHORA__.runWillowmereFamilyChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : ariAutoplayChecksOnly ? 'window.__AZHORA__.runAriAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : sylviaIvyChecksOnly ? 'window.__AZHORA__.runSylviaIvyChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : sunflowerChecksOnly ? 'window.__AZHORA__.runSunflowerChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : silverAutoplayChecksOnly ? 'window.__AZHORA__.runSilverAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : developerDragonChecksOnly ? 'window.__AZHORA__.runDeveloperDragonChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : countrysideChecksOnly ? 'window.__AZHORA__.runCountrysideChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : northernRegionsChecksOnly ? 'window.__AZHORA__.runNorthernRegionsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : jesseAutoplayChecksOnly ? 'window.__AZHORA__.runJesseAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : catieAutoplayChecksOnly ? 'window.__AZHORA__.runCatieAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : climbingChecksOnly ? 'window.__AZHORA__.runClimbingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : batmanChecksOnly ? 'window.__AZHORA__.runBatmanChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : bearQuestChecksOnly ? 'window.__AZHORA__.runBearQuestChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : kaylaChecksOnly ? 'window.__AZHORA__.runKaylaChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : jesseCarriageChecksOnly ? 'window.__AZHORA__.runJesseCarriageChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : brandyHomeChecksOnly ? 'window.__AZHORA__.runBrandyHomeChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : homeResidentsChecksOnly ? 'window.__AZHORA__.runHomeResidentsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : testingToolsChecksOnly ? 'window.__AZHORA__.runTestingToolsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : cagneyAutoplayChecksOnly ? 'window.__AZHORA__.runCagneyAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : addisonAutoplayChecksOnly ? 'window.__AZHORA__.runAddisonAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : portCalosChecksOnly ? 'window.__AZHORA__.runPortCalosChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : wineryChecksOnly ? 'window.__AZHORA__.runWineryChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : republicChecksOnly ? 'window.__AZHORA__.runRepublicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : livingChecksOnly ? 'window.__AZHORA__.runLivingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : magicAutoplayKind ? `window.__AZHORA__.runMagicAutoplayChecks(${JSON.stringify(magicAutoplayKind)}).then(resolve,error=>reject(new Error(error.stack||error.message)));` : benAutoplayChecksOnly ? 'window.__AZHORA__.runBenAutoplayChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : benFightChecksOnly ? 'window.__AZHORA__.runBenFightChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : companionCombatChecksOnly ? 'window.__AZHORA__.runCompanionCombatChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : magicChecksOnly ? 'window.__AZHORA__.runMagicChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : lawChecksOnly ? 'window.__AZHORA__.runLawChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : presentationChecksOnly ? 'window.__AZHORA__.runPresentationChecks().then(resolve,reject);' : drentChecksOnly ? 'window.__AZHORA__.runDrentChecks().then(resolve,reject);' : journalChecksOnly ? 'window.__AZHORA__.runJournalChecks().then(resolve,reject);' : chartReloadOnly ? 'window.__AZHORA__.runChartReloadCheck().then(resolve,reject);' : cartographyChecksOnly ? 'window.__AZHORA__.runCartographyChecks().then(resolve,reject);' : mainArcChecksOnly ? 'window.__AZHORA__.runMainArcChecks().then(resolve,reject);' : autoplayChecksOnly ? `window.__AZHORA__.runAutoplayChecks(${autoplayOptions}).then(resolve,reject);` : regionalLifeChecksOnly ? 'window.__AZHORA__.runRegionalLifeChecks().then(resolve,reject);' : regionalLifeReviewOnly ? 'window.__AZHORA__.reviewRegional("mill-yard");resolve({reviewOnly:true});' : localMapChecksOnly ? 'window.__AZHORA__.runLocalMapChecks().then(resolve,reject);' : fishingLessonChecksOnly ? 'window.__AZHORA__.runFishingLessonsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : fireMakingChecksOnly ? 'window.__AZHORA__.runFireMakingChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : visualArtsChecksOnly ? 'window.__AZHORA__.runVisualArtsChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : roadAmbushChecksOnly ? 'window.__AZHORA__.runRoadAmbushChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : roadSkillsChecksOnly ? `window.__AZHORA__.runRoadSkillsChecks(${process.argv.includes('--glun-wood-checks')}).then(resolve,error=>reject(new Error(error.stack||error.message)));` : hideoutHostilityChecksOnly ? 'window.__AZHORA__.runHideoutHostilityChecks().then(resolve,error=>reject(new Error(error.stack||error.message)));' : hideoutChecksOnly ? 'window.__AZHORA__.runHideoutChecks().then(resolve,reject);' : developerChecksOnly ? 'window.__AZHORA__.runDeveloperChecks().then(resolve,reject);' : forestChecksOnly ? 'window.__AZHORA__.runForestChecks().then(resolve,reject);' : roadChecksOnly ? 'window.__AZHORA__.runRoadChecks().then(resolve,reject);' : traverseOnly ? 'window.__AZHORA__.runTraversal().then(resolve,reject);' : localMapReviewOnly ? 'window.__AZHORA__.reviewLocalMap("local-trails");resolve({reviewOnly:true});' : hideoutReviewOnly ? 'window.__AZHORA__.reviewHideout("hideout-approach"); resolve({reviewOnly:true});' : reviewOnly||roadReviewOnly||forestReviewOnly||developerReviewOnly||catReviewOnly||openingReviewOnly||mapReviewOnly||lakotaReviewOnly||wineryReviewOnly || atticReviewOnly || troupeReviewOnly || perfReviewOnly || drawReviewOnly || reviewViews.length ? 'window.__AZHORA__.review("walk"); resolve({reviewOnly:true,...window.__AZHORA__.state()});' : 'window.__AZHORA__.runSmoke().then(resolve,reject);'} }
           else if(Date.now()-start>900000) reject(new Error(document.getElementById('fatal')?.dataset.stack||'Game did not initialize'));
           else setTimeout(poll,100);
         }; poll();
@@ -297,9 +316,113 @@ if (ownsInstance) app.whenReady().then(async () => {
         fs.writeFileSync(path.join(artifactDir,`${pilotId}-autoplay.png`),(await win.webContents.capturePage()).toPNG());
         console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(minoraOpeningChecksOnly){
+        await Promise.all(minoraCaptures);
+        if(process.argv.includes('--profile-opening-flow')){
+          const dbg=win.webContents.debugger;dbg.attach('1.3');await dbg.sendCommand('Profiler.enable');await dbg.sendCommand('Profiler.start');
+          await win.webContents.executeJavaScript('window.__AZHORA__.timeRender();window.__renderTimes=[];');
+          const sample=await win.webContents.executeJavaScript(`(async()=>{const gaps=[];let last=performance.now();for(let i=0;i<120;i++){await new Promise(requestAnimationFrame);const now=performance.now();gaps.push(now-last);last=now;}const stat=a=>{const s=[...a].sort((a,b)=>a-b);return{mean:a.reduce((a,b)=>a+b,0)/a.length,p95:s[Math.floor(s.length*.95)]};};return{frame:stat(gaps),render:stat(window.__renderTimes),...window.__AZHORA__.perf()};})()`);
+          const {profile}=await dbg.sendCommand('Profiler.stop');dbg.detach();
+          const duration=(profile.endTime-profile.startTime)/1000,interval=duration/profile.samples.length;
+          sample.topFunctions=profile.nodes.filter(n=>n.hitCount).map(n=>({name:n.callFrame.functionName,file:n.callFrame.url?.split('/').at(-1),ms:n.hitCount*interval})).sort((a,b)=>b.ms-a.ms).slice(0,24);
+          sample.processes=app.getAppMetrics().map(p=>({type:p.type,memory:p.memory}));
+          fs.writeFileSync(path.join(artifactDir,'minora-full-profile.json'),JSON.stringify(sample,null,2));console.log('MINORA_PROFILE '+JSON.stringify(sample));
+        }
+        fs.writeFileSync(path.join(artifactDir,'minora-opening-before-reload.json'),JSON.stringify({...result,errors},null,2));
+        if(process.argv.includes('--profile-only')){console.log('MINORA_PROFILE_COMPLETE');app.exit(result.ok&&!errors.length?0:1);return;}
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>600000?reject(new Error("Minora reload did not initialize")):setTimeout(poll,100);poll();})');
+        const reloaded=await win.webContents.executeJavaScript(`window.__AZHORA__.minoraOpeningChecks(${JSON.stringify(result.expected)})`);
+        await Promise.all(minoraCaptures);
+        fs.writeFileSync(path.join(artifactDir,'minora-opening-checks.json'),JSON.stringify({initial:result,reloaded,errors},null,2));
+        console.log(JSON.stringify({initial:result,reloaded,errors},null,2));app.exit(result.ok&&reloaded.ok&&!errors.length?0:1);return;
+      }
       if(peninsulaChecksOnly){await Promise.all(peninsulaCaptures);fs.writeFileSync(path.join(artifactDir,'peninsula-checks.json'),JSON.stringify({...result,errors},null,2));fs.writeFileSync(path.join(artifactDir,'peninsula-final.png'),(await win.webContents.capturePage()).toPNG());console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
+      if(alezhorChecksOnly){
+        fs.writeFileSync(path.join(artifactDir,'alezhor-'+result.mode+'-before-reload.json'),JSON.stringify({...result,errors},null,2));
+        if(reviewViews.length){
+          if(reviewClean)await win.webContents.executeJavaScript(`(()=>{const style=document.createElement('style');style.textContent='body > *:not(#world){visibility:hidden !important}';document.head.appendChild(style);})()`);
+          for(const view of reviewViews){
+            console.log('REGIONAL_GROUND_REVIEW_BEGIN '+view);
+            await win.webContents.executeJavaScript(`(async()=>{await window.__AZHORA__.reviewR1JourneyView(${JSON.stringify(view)});for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
+            const picture=await win.webContents.capturePage();
+            fs.writeFileSync(path.join(artifactDir,'alezhor-'+result.mode+'-'+shotName(view)+'.jpg'),picture.toJPEG(82));
+          }
+        }
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>600000?reject(new Error("Regional journey reload did not initialize")):setTimeout(poll,100);poll();})');
+        const reloaded=await win.webContents.executeJavaScript(`window.__AZHORA__.runAlezhorChecks(${JSON.stringify(result.expected)})`);
+        const {expected,...journey}=result,report={...journey,reloaded,errors};
+        fs.writeFileSync(path.join(artifactDir,'alezhor-'+result.mode+'.json'),JSON.stringify(report,null,2));
+        fs.writeFileSync(path.join(artifactDir,'alezhor-'+result.mode+'.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify(report,null,2));app.exit(result.ok&&reloaded.ok&&!errors.length?0:1);return;
+      }      if(eastIzolChecksOnly){
+        fs.writeFileSync(path.join(artifactDir,'east-izol-'+result.mode+'-before-reload.json'),JSON.stringify({...result,errors},null,2));
+        if(reviewViews.length){
+          if(reviewClean)await win.webContents.executeJavaScript(`(()=>{const style=document.createElement('style');style.textContent='body > *:not(#world){visibility:hidden !important}';document.head.appendChild(style);})()`);
+          for(const view of reviewViews){
+            console.log('REGIONAL_GROUND_REVIEW_BEGIN '+view);
+            await win.webContents.executeJavaScript(`(async()=>{await window.__AZHORA__.reviewR1JourneyView(${JSON.stringify(view)});for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
+            const picture=await win.webContents.capturePage();
+            fs.writeFileSync(path.join(artifactDir,'east-izol-'+result.mode+'-'+shotName(view)+'.jpg'),picture.toJPEG(82));
+            const subject=await win.webContents.executeJavaScript('window.__eastIzolWildlifeReview?.['+JSON.stringify(view)+']??null');
+            if(subject)fs.writeFileSync(path.join(artifactDir,'east-izol-'+result.mode+'-'+shotName(view)+'.json'),JSON.stringify(subject,null,2));
+          }
+        }
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>600000?reject(new Error("Regional journey reload did not initialize")):setTimeout(poll,100);poll();})');
+        const reloaded=await win.webContents.executeJavaScript(`window.__AZHORA__.runEastIzolChecks(${JSON.stringify(result.expected)})`);
+        const {expected,...journey}=result,report={...journey,reloaded,errors};
+        fs.writeFileSync(path.join(artifactDir,'east-izol-'+result.mode+'.json'),JSON.stringify(report,null,2));
+        fs.writeFileSync(path.join(artifactDir,'east-izol-'+result.mode+'.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify(report,null,2));app.exit(result.ok&&reloaded.ok&&!errors.length?0:1);return;
+      }      if(r4R7JourneyChecksOnly){
+        await Promise.all(r4R7Captures);
+        const report={...result,errors};
+        fs.writeFileSync(path.join(artifactDir,'r4-r7-journey-'+result.mode+'.json'),JSON.stringify(report,null,2));
+        fs.writeFileSync(path.join(artifactDir,'r4-r7-journey-'+result.mode+'-final.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify(report,null,2));app.exit(result.ok&&!errors.length?0:1);return;
+      }
+      if(regionalGroundChecksOnly){
+        fs.writeFileSync(path.join(artifactDir,'regional-ground-'+result.mode+'-before-reload.json'),JSON.stringify({...result,errors},null,2));
+        if(reviewViews.length){
+          if(reviewClean)await win.webContents.executeJavaScript(`(()=>{const style=document.createElement('style');style.textContent='body > *:not(#world){visibility:hidden !important}';document.head.appendChild(style);})()`);
+          for(const view of reviewViews){
+            console.log('REGIONAL_GROUND_REVIEW_BEGIN '+view);
+            await win.webContents.executeJavaScript(`(async()=>{await window.__AZHORA__.reviewR1JourneyView(${JSON.stringify(view)});for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
+            const picture=await win.webContents.capturePage();
+            fs.writeFileSync(path.join(artifactDir,'regional-ground-'+result.mode+'-'+shotName(view)+'.jpg'),picture.toJPEG(82));
+          }
+        }
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>600000?reject(new Error("Regional journey reload did not initialize")):setTimeout(poll,100);poll();})');
+        const reloaded=await win.webContents.executeJavaScript(`window.__AZHORA__.runRegionalGroundChecks(${JSON.stringify(result.expected)})`);
+        const {expected,...journey}=result,report={...journey,reloaded,errors};
+        fs.writeFileSync(path.join(artifactDir,'regional-ground-'+result.mode+'.json'),JSON.stringify(report,null,2));
+        fs.writeFileSync(path.join(artifactDir,'regional-ground-'+result.mode+'.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify(report,null,2));app.exit(result.ok&&reloaded.ok&&!errors.length?0:1);return;
+      }
+      if(r1JourneyChecksOnly){
+        fs.writeFileSync(path.join(artifactDir,'r1-journey-'+result.mode+'-before-reload.json'),JSON.stringify({...result,errors},null,2));
+        if(reviewViews.length){
+          if(reviewClean)await win.webContents.executeJavaScript(`(()=>{const style=document.createElement('style');style.textContent='body > *:not(#world){visibility:hidden !important}';document.head.appendChild(style);})()`);
+          for(const view of reviewViews){
+            console.log('R1_REVIEW_BEGIN '+view);
+            await win.webContents.executeJavaScript(`(async()=>{await window.__AZHORA__.reviewR1JourneyView(${JSON.stringify(view)});for(let i=0;i<120;i++)await new Promise(requestAnimationFrame);})()`);
+            const picture=await win.webContents.capturePage();
+            fs.writeFileSync(path.join(artifactDir,'r1-'+result.mode+'-'+shotName(view)+'.jpg'),picture.toJPEG(82));
+          }
+        }
+        await win.loadURL(win.webContents.getURL());
+        await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>600000?reject(new Error("Regional journey reload did not initialize")):setTimeout(poll,100);poll();})');
+        const reloaded=await win.webContents.executeJavaScript(`window.__AZHORA__.runR1JourneyChecks(${JSON.stringify(result.expected)})`);
+        const {expected,...journey}=result,report={...journey,reloaded,errors};
+        fs.writeFileSync(path.join(artifactDir,'r1-journey-'+result.mode+'.json'),JSON.stringify(report,null,2));
+        fs.writeFileSync(path.join(artifactDir,'r1-journey-'+result.mode+'.png'),(await win.webContents.capturePage()).toPNG());
+        console.log(JSON.stringify(report,null,2));app.exit(result.ok&&reloaded.ok&&!errors.length?0:1);return;
+      }
       if(fastLoadChecksOnly){fs.writeFileSync(path.join(artifactDir,'fast-loading-checks.json'),JSON.stringify({...result,errors},null,2));fs.writeFileSync(path.join(artifactDir,'fast-loading.png'),(await win.webContents.capturePage()).toPNG());console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
-      if(developerDragonChecksOnly){fs.writeFileSync(path.join(artifactDir,'developer-dragon-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
+      if(developerDragonChecksOnly){fs.writeFileSync(path.join(artifactDir,'developer-dragon-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));if(!reviewViews.length||!result.ok||errors.length){app.exit(result.ok&&!errors.length?0:1);return;}}
       if(countrysideChecksOnly){await Promise.all(countrysideCaptures);fs.writeFileSync(path.join(artifactDir,'countryside-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
       if(strategicChecksOnly){await Promise.all(strategicCaptures);fs.writeFileSync(path.join(artifactDir,'strategy-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
       if(telemoniaChecksOnly){await Promise.all(telemoniaCaptures);fs.writeFileSync(path.join(artifactDir,'telemonia-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
@@ -535,10 +658,42 @@ if (ownsInstance) app.whenReady().then(async () => {
           fs.writeFileSync(path.join(artifactDir,`${shotName(view)}.${reviewJpeg?'jpg':'png'}`),reviewJpeg?picture.toJPEG(82):picture.toPNG());
           console.log(view,JSON.stringify(await win.webContents.executeJavaScript('window.__AZHORA__.camera?.()')));
         }
+        if(reviewViews.includes('fast-local')){
+          const checks=await win.webContents.executeJavaScript('window.__localStreamingChecks');
+          fs.writeFileSync(path.join(artifactDir,'local-streaming-checks.json'),JSON.stringify({checks,errors},null,2));
+          console.log(JSON.stringify({localStreaming:checks,errors},null,2));
+          if(!checks?.ok){app.exit(1);return;}
+        }
         if(reviewViews.some(view=>view.startsWith('east-pyros')||view.startsWith('nether-desert')||view.startsWith('legemum')||view.startsWith('babon'))){
           const checks=await win.webContents.executeJavaScript('window.__westernEnvironmentChecks');
           fs.writeFileSync(path.join(artifactDir,'western-environments-checks.json'),JSON.stringify({regions:checks,errors},null,2));
           console.log(JSON.stringify({westernEnvironments:checks,errors},null,2));
+        }
+        if(reviewViews.some(view=>view.startsWith('outer-'))){
+          const checks=await win.webContents.executeJavaScript('window.__outerChecks');
+          fs.writeFileSync(path.join(artifactDir,'outer-regions-checks.json'),JSON.stringify({regions:checks,errors},null,2));
+        }
+        if(reviewViews.some(view=>view.startsWith('northern-'))){
+          const checks=await win.webContents.executeJavaScript('window.__northernChecks');
+          fs.writeFileSync(path.join(artifactDir,'northern-oremindi-checks.json'),JSON.stringify({regions:checks,errors},null,2));
+          console.log(JSON.stringify({northernOremindi:checks,errors},null,2));
+          if(!checks||Object.values(checks).some(c=>!c.ok)){app.exit(1);return;}
+        }
+        if(reviewViews.some(view=>view==='selamus'||view.startsWith('selamus-'))){
+          const checks=await win.webContents.executeJavaScript('window.__selamusChecks');
+          fs.writeFileSync(path.join(artifactDir,'selamus-checks.json'),JSON.stringify({...checks,errors},null,2));
+          console.log(JSON.stringify({selamus:checks,errors},null,2));
+          if(!checks?.ok){app.exit(1);return;}
+        }
+        if(reviewViews.some(view=>view==='pyra'||view.startsWith('pyra-'))){
+          const checks=await win.webContents.executeJavaScript('window.__pyraChecks');
+          fs.writeFileSync(path.join(artifactDir,'pyra-checks.json'),JSON.stringify({...checks,errors},null,2));
+          console.log(JSON.stringify({pyra:checks,errors},null,2));
+        }
+        if(reviewViews.some(view=>view==='canerd'||view.startsWith('canerd-'))){
+          const checks=await win.webContents.executeJavaScript('window.__canerdChecks');
+          fs.writeFileSync(path.join(artifactDir,'canerd-checks.json'),JSON.stringify({...checks,errors},null,2));
+          console.log(JSON.stringify({canerd:checks,errors},null,2));
         }
         if(reviewViews.some(view=>view.startsWith('aevis-'))){
           const checks=await win.webContents.executeJavaScript('window.__aevisChecks');

@@ -1,6 +1,8 @@
 /** Developer destinations on the authored atlas. Normal journal mapping stays read-only. */
 import { regionDesign, levelInfo, provisionalLevel, terrainCounts } from './campaign-world.js';
-import { REGION_IDS } from './region-world.js';
+import { OUTER_PROFILES } from './outer-regions-data.js';
+import { outerProfile } from './outer-regions-world.js';
+import { REGION_IDS, TRANSFORM } from './region-world.js';
 
 export const DEV_ATLAS_SIZE = Object.freeze({ width: 3062.266, height: 4088 });
 export const DEV_ATLAS_PROVENANCE = Object.freeze({
@@ -192,6 +194,30 @@ const LOCALS = [
   [58, 'Nether Desert', 'nether-desert', 'Nether Desert', point(1082.463,2744.290,-18,114)],
   [59, 'Legemum', 'legemum', 'Legemum', point(1324.673,2977.355,-14,123)],
   [60, 'Babon', 'babon', 'Babon', point(1504.806,3327.368,-15,138)],
+  [61, 'South Celder', 'south-celder', 'South Celder', point(1191.651,2344.000,-6,97)],
+  [62, 'North Celder', 'north-celder', 'North Celder', point(1177.795,2224.000,-4,92)],
+  [63, 'East Izol', 'east-izol', 'East Izol', point(2050.748,3016.000,11,125)],
+  [64, 'Alezhor', 'alezhor', 'Alezhor', point(734.390,2800.000,-32,116)],
+  [65, 'East Oremindi Mountains', 'east-oremindi', 'East Oremindi Mountains', point(1066.943,2320,-10,96)],
+  [66, 'North Oreminidi Mountains', 'north-oremindi', 'North Oreminidi Mountains', point(1108.513,2104,-4,87)],
+  [67, 'Lesser Oremindi Mountains', 'lesser-oremindi', 'Lesser Oremindi Mountains', point(1177.795,2032,0,84)],
+  [68, 'Cudon', 'cudon', 'Cudon', point(1011.518,1936,-4,80)],
+  [69, 'Narcosh', 'narcosh', 'Narcosh', point(1233.22,1984,3,82)],
+  [70, "Cape Thalmagar", 'thalmagar-coast', "Cape Thalmagar", point(1011.518,1888,-3,78)],
+  [71, "Acor Wetlands", 'acor-wetlands', "Acor Wetlands", point(1316.359,1936,7,80)],
+  [72, "West Acorwood", 'west-acorwood', "West Acorwood", point(1482.635,1936,13,80)],
+  [73, "South Acordwood", 'south-acordwood', "South Acordwood", point(1648.912,2032,17,84)],
+  [74, "North Acorwood", 'north-acorwood', "North Acorwood", point(1635.056,1864,20,77)],
+  [75, "East Acordwood", 'east-acordwood', "East Acordwood", point(1773.62,1912,24,79)],
+  [76, "South Endevor", 'south-endevor', "South Endevor", point(1399.497,1792,13,74)],
+  [77, "West Endevor", 'west-endevor', "West Endevor", point(1260.933,1744,9,72)],
+  [78, "North Endevor", 'north-endevor', "North Endevor", point(1385.641,1672,15,69)],
+  [79, "East Endevor", 'east-endevor', "East Endevor", point(1551.918,1720,20,71)],
+  ...OUTER_PROFILES.map(p=>{const c=outerProfile(p.name).anchor,a=TRANSFORM.worldToAtlas(c.x,c.z);return [p.id,p.name,'outer-'+p.id,p.name,point(a.x,a.y,c.q,c.r)];}),
+  [114, 'South Ibenal', 'south-ibenal', 'South Ibenal', point(623.538,2656.000,-33,110)],
+  [115, 'North Ibenal', 'north-ibenal', 'North Ibenal', point(748.246,2488.000,-25,103)],
+  [116, 'Henborth', 'henborth', 'Henborth', point(1205.507,2080.000,0,86)],
+  [117, 'Urubond', 'urubond', 'Urubond', (()=>{const p=TRANSFORM.worldToAtlas(-3500,-3160);return point(p.x,p.y,-2,69);})()],
 ];
 export const DEV_WORLD_DESTINATIONS = Object.freeze([
   ...LOCALS.map(([region, name, target, regionId, atlas], index) => local(region, name, target, 88 - index * 72 / Math.max(1, LOCALS.length - 1), regionId, atlas)),

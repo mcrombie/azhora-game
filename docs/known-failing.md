@@ -1,5 +1,26 @@
 # Tests that already fail on this base
 
+## 5 October working-tree integration comparison: Celder scenery
+
+`tests/celder-routes-review.test.js` currently passes 5/6. The failing assertion is
+`combined Celder scenery and wildlife preserve delivered identities and meet actual visible ground`.
+It reports changes from the original delivered batch/tree/wildlife identities and exposed lower
+footprints (11 South Celder forbs, 3 southern shrubs, 21 North Celder forbs, 3 northern shrubs,
+14 northern stones and 1 northern tree).
+
+This predates the Ibenal/Henborth/Mithala integration. On 5 October, a separate local copy restored
+the pre-integration source snapshots and regenerated its atlas/survey/rivers. Its production-world
+scene inspection reproduced the same problem list and identical current tree/layout hashes for
+both Celders. The integration did not introduce or fix this older regression. The continuous routes,
+water crossing, stamina and North-first loading checks pass. Do not update the original identity
+fixtures or loosen contact tolerances merely to clear this failure.
+
+Evidence: ignored `tests/artifacts/celder-preintegration-comparison.json`,
+`tests/artifacts/integration-final-regressions.log` and the saved pre-integration source snapshots.
+See [the integration report](region-reviews/main-integration-2026-10-05.md).
+
+## Earlier measured baseline
+
 Measured on 2026-10-01/02 by running every listed test file on `b16b66a`, one process per file. The eight files the
 merge itself had broken are fixed on this base and are not listed. Everything here fails the same way on the
 commit before the merge or was known before it. **Compare names and messages, not counts.**
@@ -167,9 +188,14 @@ commit before the merge or was known before it. **Compare names and messages, no
 - every quarter-metre of the authored line is ground a body can stand on, and none of it is wet
   - `AssertionError [ERR_ASSERTION]: 183 samples of the authored line are not standable`
 
-## `woodcutting-forest` (1 failing)
-- every ordinary timber species can be harvested without substituting a different species of log
-  - `AssertionError [ERR_ASSERTION]: wild-grey-vault`
+## `woodcutting-forest` (resolved test contract, 4 October 2026)
+The original `wild-grey-vault` failure is reproduced on `a2e49c3`: the test treated
+six explicitly protected living Ibenwood species as ordinary harvestable timber.
+The test now exhaustively checks ordinary species products and separately requires
+all six protected species to have no recipe, no log/plank, no successful ordinary
+swing, no stock/reward change and no experience gain even if a caller requests
+`harvestable:true`. Focused suite: **7/7 pass**. No production recipe, species,
+protection rule or save behavior changed.
 
 ## `woodland-progress` (4 failing)
 - first-shore save needs neither letter nor token and restores gathered sites and optional stories

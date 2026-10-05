@@ -47,13 +47,13 @@ test('the active-play cooldown survives saving and reloading and repeated early 
 test('the real full atlas supplies every named region and does not filter by implementation or region level', async () => {
   const atlas = JSON.parse(await readFile(new URL('../assets/azhora-dev-regions.json', import.meta.url), 'utf8'));
   const { geography, cartography } = setup({ regions: () => atlas.regions, random: () => .613 });
-  const count = atlas.regions.filter(r => !cartography.named(r.name ?? r.id)).length, names = new Set();
+  const count = atlas.regions.filter(r => r.name !== 'Urubond' && !cartography.named(r.name ?? r.id)).length, names = new Set();
   for (let i = 0; i < count; i++) {
     const answer = geography.ask(i * BARRETT_GEOGRAPHY_COOLDOWN);
     assert.equal(answer.ok, true); assert.equal(answer.kind, 'new-region'); assert.equal(names.has(answer.region), false); names.add(answer.region);
   }
   assert.ok(names.has('Cape Thalmagar')); assert.ok(names.has('East Lotharn Mountains'));
-  assert.equal(names.size, count); assert.ok(count > 100);
+  assert.equal(names.size, count); assert.ok(count > 100); assert.equal(names.has('Urubond'),false);
   assert.equal(geography.ask(count * BARRETT_GEOGRAPHY_COOLDOWN).kind, 'remembered-region');
 });
 

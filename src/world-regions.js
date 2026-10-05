@@ -1,3 +1,4 @@
+import { treeGroundingOffset } from './tree-grounding.js';
 import { tutorialSceneryClearAt } from './peninsula-tutorial-scenery.js';
 import { forEachBuild } from './build-each.js';
 import { finishBuild } from './build-steps.js';
@@ -139,6 +140,9 @@ export function* createRegionScenerySteps(kit) {
   const { root, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round, movingGroups } = kit;
+  const reviewedWoodland = new Set(['Drent', 'Luscia', 'Moros Plain', 'West Suval']);
+  const treeGroundAt = kit.renderedGroundHeight ?? groundHeight;
+  const scatterGroundAt = kit.legacyGroundHeight ?? groundHeight;
   let seed = 917351;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
@@ -202,7 +206,7 @@ export function* createRegionScenerySteps(kit) {
         const x = anchor.x + range(-spread, spread), z = anchor.z + range(-spread * 1.1, spread * 1.1);
         if (!owns(x, z) || kit.insideVillage(x, z) || name === 'Drent' && tutorialSceneryClearAt(x,z,1.2)) continue;
         if (regionClear(x, z, 2.5) || kit.roadDistance(x, z) < 4.2 || kit.riverDistance(x, z) < 12) continue;
-        if (groundHeight(x, z) < 1.4) continue;
+        if (scatterGroundAt(x, z) < 1.4) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < (dense ? 3.1 : 5.2))) continue;
         // Two biomes carry no conifer at all: the tawny Suval downs, and the Lake Lands,
         // whose timber stands are the broadleaf the lake fleet is built from.
@@ -219,7 +223,7 @@ export function* createRegionScenerySteps(kit) {
         if (!owns(x, z) || kit.insideVillage(x, z) || kit.roadDistance(x, z) < 2.1) continue;
         // Grass grows on any ground above the tideline, which in the Lake Lands includes the bed of a lake.
         if (kit.waterClear?.(x, z) || regionalFarmlandClear(x,z,.3) || jesseWorkshopClear(x, z, .2)) continue;
-        if (groundHeight(x, z) < 1.2) continue;
+        if (scatterGroundAt(x, z) < 1.2) continue;
         tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28) });
       }
     }
@@ -240,9 +244,13 @@ export function* createRegionScenerySteps(kit) {
       const cones = new THREE.InstancedMesh(coneGeometry, leafMaterial, Math.max(1, pines.length * 3));
       let broadIndex = 0, pineIndex = 0;
       yield* forEachBuild(trees, function* (tree, index) {
-        const y = groundHeight(tree.x, tree.z), height = tree.h * tree.s;
+        let y = groundHeight(tree.x, tree.z); const height = tree.h * tree.s;
         dummy.position.set(tree.x, y + height * .41, tree.z);
         dummy.rotation.set(0, tree.rot, 0); dummy.scale.set(tree.s, height * .82, tree.s); dummy.updateMatrix();
+        if (reviewedWoodland.has(name)) {
+          const offset = treeGroundingOffset(dummy.matrix, treeGroundAt, { segments: 6 });
+          y += offset; dummy.position.y += offset; dummy.updateMatrix();
+        }
         trunks.setMatrixAt(index, dummy.matrix);
         const parts = [{mesh:trunks,index}];
         const timber = { ...forestTimber(tree.pine), id: tree.pine ? `${idPrefix}-pine-${pineTreeCount++}` : `${idPrefix}-oak-${broadTreeCount++}`, x: tree.x, z: tree.z, y,

@@ -1,3 +1,6 @@
+import {URUBOND_LANDMARKS} from './urubond-world.js';
+import { OUTER_LANDMARKS } from './outer-regions-world.js';
+import { ACOR_LANDMARKS } from './acor-world.js';
 /**
  * What the traveler has charted. The world chart starts blank: a hex of the
  * authored atlas is uncovered only when the traveler has walked into it, and the country between them is named by subregions — small
@@ -5,17 +8,29 @@
  * in the journal the first time the traveler reaches one. Tidehaven, the port
  * village the game opens in, is the first. Pure: no DOM, no three.
  */
-import { hexAt } from './region-world.js';
+import { hexAt, regionAt } from './region-world.js';
 import { BALDRO_KINGDOMS, BALDRO_PATHS, baldroRegionAt } from './baldro-world.js';
 import { FARMSTEADS } from './regional-farmland.js';
 import { WINERY } from './winery.js';
 import { CARICAS_TOWN } from './caricas-settlement.js';
 import { NYLON } from './nylon-city.js';
 import { AEVIS } from './aevis-city.js';
+import { MITHALA_CITY } from './mithala-city.js';
 import { EAST_PYROS_LANDMARKS } from './east-pyros-world.js';
 import { NETHER_DESERT_LANDMARKS } from './nether-desert-world.js';
 import { LEGEMUM_LANDMARKS } from './legemum-world.js';
 import { BABON_LANDMARKS } from './babon-world.js';
+import { NORTHERN_LANDMARKS } from './northern-oremindi-world.js';
+import { SOUTH_CELDER_LANDMARKS } from './south-celder-world.js';
+import { NORTH_CELDER_LANDMARKS } from './north-celder-world.js';
+import { CANERD_LANDMARKS } from './canerd-world.js';
+import { PYRA_LANDMARKS } from './pyra-world.js';
+import { SELAMUS_LANDMARKS } from './selamus-city.js';
+import { EAST_IZOL_LANDMARKS } from './east-izol-world.js';
+import { ALEZHOR_LANDMARKS } from './alezhor-world.js';
+import { SOUTH_IBENAL_LANDMARKS } from './south-ibenal-world.js';
+import { NORTH_IBENAL_LANDMARKS } from './north-ibenal-world.js';
+import { HENBORTH_LANDMARKS } from './henborth-world.js';
 import { ISCARE_RUIN_SITES, ISCARE_REGION } from './iscare-world.js';
 import { IBENWOOD_GROVES, IBENWOOD_ARRIVALS, IBENWOOD_PILOT } from './ibenwood-environment.js';
 
@@ -35,6 +50,9 @@ const area = (id, name, region, x, z, radius, note) => Object.freeze({ id, name,
 
 /** The named ground of Azhora, as the traveler's own chart records it. */
 export const SUBREGIONS = Object.freeze([
+  ...NORTHERN_LANDMARKS.map(l=>area(l.id,l.name,l.region,l.x,l.z,35,l.description)),
+  ...[...ACOR_LANDMARKS,...URUBOND_LANDMARKS].map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
+  ...OUTER_LANDMARKS.map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
   ...BALDRO_KINGDOMS.flatMap(k => {
     const side = k.id === 'west-baldro' ? 'Western' : 'Eastern';
     const points = BALDRO_PATHS.find(p => p.id === 'baldro-saddle-traverse').points.filter(p => baldroRegionAt(p.x, p.z) === k.region);
@@ -50,7 +68,17 @@ export const SUBREGIONS = Object.freeze([
     ['Nether Desert', NETHER_DESERT_LANDMARKS, 'Exposed stony plateau, dry rain pans and shallow scrub-lined washes above the upper Neth.'],
     ['Babon', BABON_LANDMARKS, 'Ancient tropical canopy, fern-filled ravines, steep jungle ridges and sheltered coves on the great island.'],
     ['Legemum', LEGEMUM_LANDMARKS, 'Tin-bearing hills, slate headlands and sheltered woodland around the damp heath and peat hollows.'],
+    ['South Celder', SOUTH_CELDER_LANDMARKS, 'Open grass plain falling east from the Oremindi in low swells, its water gathered on the eastern margin.'],
+    ['North Celder', NORTH_CELDER_LANDMARKS, 'Grassland and plain between the East Oremindi and the streams of the Mithala margin.'],
+    ['East Izol', EAST_IZOL_LANDMARKS, 'Rock and pasture rising from a headland coast to the Three Presences.'],
+    ['Alezhor', ALEZHOR_LANDMARKS, 'A cool coastal strip between the open ocean and the Ibenwood\'s tree line, cut by the gold rivers.'],
+    ['South Ibenal', SOUTH_IBENAL_LANDMARKS, 'A coastal plain between the open ocean and the Ibenwood, crossed at intervals by small rivers out of the forest.'],
+    ['North Ibenal', NORTH_IBENAL_LANDMARKS, 'A cold, narrowing coastal plain between the open ocean and the Ibenwood, ending at the Narrows below the Oremindi.'],
+    ['Henborth', HENBORTH_LANDMARKS, 'Open continental plains between the Celder and Mithala country and the northern mountain approaches.'],
   ].flatMap(([region, landmarks, note]) => landmarks.map(p => area(p.id, p.name, region, p.x, p.z, Math.max(28, p.radius ?? 40), p.description ?? note))),
+  ...PYRA_LANDMARKS.map(p=>area(p.id,p.name,regionAt(p.x,p.z).name,p.x,p.z,Math.max(18,Math.min(32,p.radius)),p.description)),
+  ...SELAMUS_LANDMARKS.map(p=>area(p.id,p.name,'Selemi',p.x,p.z,p.radius,p.description)),
+  ...CANERD_LANDMARKS.filter(p=>p.id!=='canerd-court').map(p=>area(p.id,p.name,regionAt(p.x,p.z).name,p.x,p.z,p.radius,p.description)),
   ...ISCARE_RUIN_SITES.map(site => area(site.id, site.name, ISCARE_REGION, site.x, site.z, 45, 'Burned, roofless stone and charred beams remain from the Blood Prince\'s passage. The islands have wildlife, but these settlements are abandoned.')),
   area('imlamdris-rebuilding', 'Imlamdris rebuilding', 'South Suval', -126, 1154, 40, 'Four small timber homes and a new building frame stand beside the razed city.'),
   // Drent
@@ -223,8 +251,11 @@ export const SUBREGIONS = Object.freeze([
   area('west-lotharn-rampart', 'The South Rampart', 'West Lotharn Mountains', -2250, -340, 70, 'The range’s southern wall, one hex deep above Isareos: cliffs in courses standing over ordinary country, with the lake country’s low hills beginning immediately below them.'),
   // The Mithala plain (src/mithala-world.js): four countries, one landform, and a chart with almost
   // nothing on it - which is honest, because the country's own answer to "where are we" is which
-  // channel you are on. Every area here is either a piece of the river's own work or a horizon.
-  area('mithala-meeting', 'The Meeting of the Arms', 'South Mithala', -1672, -1388, 55, 'Where the west arm and the north braid come together and go on east as one channel. Every drop of water on the plain passes this spot, and the high dry ground inside the fork - the obvious place to build anything - is empty.'),
+  // channel you are on. Every area here is either a piece of the river's own work or a horizon, but
+  // one: the city at the meeting (src/mithala-city.js), charted from the Ford, the quarter the south
+  // road comes in by, where its badge stands and the testing panel puts a traveler down.
+  area('mithala', 'Mithala', 'South Mithala', MITHALA_CITY.arrival.x, MITHALA_CITY.arrival.z, 68, 'The river-city at the meeting of the arms and the royal seat of the Mithala: four quarters on made ground with the water between them. The Fork, the old seat, behind the only stone wall on the plain, with the king’s hall and the sky tower; the Braid Bank and its cattle market; the Quays and the grain barges; and the Ford, where the south road comes in to the plain’s only crossing. Three bridges join the Fork to the other quarters, and the ford is waded.'),
+  area('mithala-meeting', 'The Meeting of the Arms', 'South Mithala', -1672, -1388, 55, 'Where the west arm and the north braid come together and go on east as one channel. Every drop of water on the plain passes this spot, and Mithala is built round it: the old seat on the high dry ground inside the fork, with the sky tower over the point and the flood gauge at the water’s edge, and the Quays and the Ford across the water from it.'),
   area('south-mithala-plain', 'The Flood Plain', 'South Mithala', -1400, -1290, 110, 'The country between the mountains’ water and the main channel: dark river soil under tall grass, levees a pace and a half high along every channel and backswamps between them that stand under water for weeks of a spring the world cannot yet show.'),
   area('south-mithala-apron', 'The Apron', 'South Mithala', -1500, -1270, 85, 'The Lotharn’s last rise, come out into the plain as two long low swells of older ground. Twelve metres is the whole of it, and on this ground twelve metres is a view in every direction.'),
   area('mountain-march', 'The Mountain March', 'South Mithala', -1750, -1060, 90, 'The plain’s one hard edge, where the flat simply stops and the Lotharn stands up out of it. The farmers’ phrase for the range is "the places where the land went wrong", which is precision and not hostility.'),

@@ -37,6 +37,7 @@ export const SWING = 1.3, CHOP_REACH = 2.7;
  */
 const kind = (id, name, short, level, xp, chance, logs, regrow, price, trunk) => freeze({ ...timberForKind(id), id, name, short, level, xp, chance, logs: freeze(logs), regrow, price, trunk });
 export const TREE_KINDS = freeze({
+  acor: kind('acor', 'Acor', 'acor', 15, 38, .34, [2, 4], 40, 2, .6),
   kapok: kind('kapok', 'Kapok', 'kapok', 15, 38, .34, [2, 4], 40, 2, .6),
   'strangler-fig': kind('strangler-fig', 'Strangler fig', 'strangler fig', 15, 38, .34, [2, 4], 40, 2, .55),
   'coconut-palm': kind('coconut-palm', 'Coconut palm', 'coconut palm', 1, 25, .52, [1, 2], 25, 1, .3),
@@ -74,9 +75,21 @@ export const TREE_KINDS = freeze({
   'fig': kind('fig', 'Common fig', 'common fig', 1, 25, .52, [1, 1], 25, 1, .3),
   'apple': kind('apple', 'Domestic apple', 'domestic apple', 1, 25, .52, [1, 1], 25, 1, .3),
   'hawthorn': kind('hawthorn', 'Common hawthorn', 'common hawthorn', 1, 25, .52, [1, 1], 25, 1, .3),
+  'desert-thorn': kind('desert-thorn', 'Desert thorn', 'desert thorn', 1, 25, .52, [1, 1], 25, 1, .3),
+  'red-mangrove': kind('red-mangrove', 'Red mangrove', 'red mangrove', 15, 38, .34, [2, 4], 40, 2, .38),
+  'black-poplar': kind('black-poplar', 'Black poplar', 'black poplar', 1, 25, .52, [1, 1], 25, 1, .3),
 });
 export const TREE_KIND_IDS = freeze(Object.keys(TREE_KINDS));
 export const LOG_ITEMS = freeze(TREE_KIND_IDS.map(id => TREE_KINDS[id].log));
+
+/** Use the catalog's validated offer, including protected species without recipes. */
+export function woodcuttingInteractionLabel(offer, level, study = false) {
+  const { tree, kind, ok } = offer;
+  if (!tree) return '';
+  const protectedTree = tree.harvestable === false || !kind;
+  const suffix = protectedTree ? 'protected' : level < kind.level ? `Woodcutting ${kind.level}` : !ok ? 'axe required' : '';
+  return `${study ? 'Study or cut' : protectedTree ? 'Examine' : 'Chop'} ${tree.woodName ?? tree.name}${suffix ? ` · ${suffix}` : ''}`;
+}
 
 /** The axes, worst to best. The best one the traveler carries and has the level for is the one swung. */
 export const AXES = freeze([

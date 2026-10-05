@@ -4,12 +4,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/region-layout.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
 import { PLAYABLE, WINDOW, ENCLOSED_HEXES } from '../scripts/build-region-survey.mjs';
 import { LAND_HEXES } from '../src/region-survey.js';
 import { RIVER_EDGES } from '../src/region-rivers.js';
 import {
-  REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, hexOwnerAt, regionAt,
+  REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexCentre, hexOwnerAt, regionAt,
   regions, terrainMix, landDistance,
 } from '../src/region-world.js';
 import {
@@ -33,6 +33,7 @@ import { regionBuildStatus } from '../src/build-status.js';
 import { regionLevel } from '../src/region-levels.js';
 import { REGION_LANGUAGE, DIALECTS } from '../src/languages.js';
 import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
+import { MITHALA_CITY_LANDMARKS, MITHALA_STREETS, MITHALA_DISTRICTS, mithalaCityReserved, polygonDepth } from '../src/mithala-city.js';
 
 /**
  * The Mithala plain — South, West, East and North Mithala — built as terrain, climate, water,
@@ -42,7 +43,7 @@ import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
  *
  * The standing rule is the user's: the atlas wins over the lore. So most of what is asserted below
  * is the atlas's own arithmetic — thirty-three hexes and twenty-eight and twenty-three and
- * thirty-two, forty-nine internal edges, twenty-five against the Lotharn, sixty-one new river edges
+ * thirty-two, forty-seven internal edges, twenty-five against the Lotharn, sixty-one new river edges
  * in thirteen chains with one outlet — and the four things this job had to get right that nothing
  * else could check:
  *
@@ -53,12 +54,17 @@ import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
  *  3. **the water falls**, on a plain whose whole relief is half a metre, six of whose eight channels
  *     are drawn on a border and four of those borders unbuilt;
  *  4. **nothing of either Lotharn's ground moved**, which is the one built neighbour this block has.
+ *
+ * Since 4 October 2026 one thing on it is somebody's: the city of Mithala at the meeting of the arms,
+ * a quarter on each of the four (docs/mithala-city-brief.md). Its own tests are
+ * tests/mithala-city.test.js and tests/mithala-city-world.test.js; here it is set apart from the
+ * plain, which outside it is still nobody's.
  */
-const { createWorld } = await sourceModule('../src/world.js');
+const { scopedWorld } = await import('./scoped-world.js');
 const { WEST_LIFE_ZONES, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
 const scene = new THREE.Scene();
-const world = createWorld(scene);
 const NAMES = ['South Mithala', 'West Mithala', 'East Mithala', 'North Mithala'];
+const world = await scopedWorld(scene, [...NAMES, 'West Lotharn Mountains', 'East Lotharn Mountains'].map(name => REGION_IDS[name]));
 const CELLS = Object.fromEntries(NAMES.map(name => [name, REGION_CELLS[name]]));
 const ALL = NAMES.flatMap(name => CELLS[name]);
 const g = (x, z) => groundWithRiver(x, z);
@@ -79,8 +85,10 @@ test('the atlas: four countries, 116 authored hexes and one the atlas forgot, an
   const terrain = name => CELLS[name].reduce((tally, cell) => ({ ...tally, [cell.terrain]: (tally[cell.terrain] ?? 0) + 1 }), {});
   assert.deepEqual(terrain('South Mithala'), { grassland: 10, plains: 19, hills: 5 });
   assert.deepEqual(terrain('West Mithala'), { plains: 4, grassland: 24 });
-  assert.deepEqual(terrain('East Mithala'), { plains: 12, grassland: 11 });
-  assert.deepEqual(terrain('North Mithala'), { plains: 22, grassland: 10 });
+  // Two plains hexes in from North Mithala and two grassland out to it, in the user's trade of
+  // 4 October 2026 that puts all four countries round the city (`mithala-city-quarters-v1`).
+  assert.deepEqual(terrain('East Mithala'), { plains: 14, grassland: 9 });
+  assert.deepEqual(terrain('North Mithala'), { plains: 20, grassland: 12 });
   // **No mountain hex anywhere, and the five `hills` are the only relief the atlas asks for.**
   assert.equal(ALL.filter(cell => cell.terrain === 'mountain').length, 0, 'this is a plain');
   // The enclosed hex, and the reason it is held: ringed by South Mithala on all six sides, `hills`
@@ -111,18 +119,30 @@ test('the atlas: four countries, 116 authored hexes and one the atlas forgot, an
   assert.equal(south['West Lotharn Mountains'], 10);
   assert.equal(south['East Mithala'], 16);
   assert.equal(south['West Mithala'], 8);
-  assert.equal(edges('West Mithala')['North Mithala'], 7);
-  assert.equal(edges('West Mithala')['East Mithala'], 5);
-  assert.equal(edges('East Mithala')['North Mithala'], 13);
-  // Forty-nine internal edges, counted once each: the reason this is one job and one module.
+  // The trade moved four of West Mithala's edges from East to North Mithala: East and West now meet
+  // on one edge only, the braid's last fifty-eight metres into the meeting, inside the city.
+  assert.equal(edges('West Mithala')['North Mithala'], 11);
+  assert.equal(edges('West Mithala')['East Mithala'], 1);
+  assert.equal(edges('East Mithala')['North Mithala'], 11);
+  // Forty-seven internal edges, counted once each: the reason this is one job and one module. It was
+  // forty-nine until the city trade: four East-North edges became North Mithala's own ground and two
+  // new ones opened round the Braid Bank.
   const internal = NAMES.reduce((sum, name) => sum + NAMES.reduce((part, other) => part + (edges(name)[other] ?? 0), 0), 0);
-  assert.equal(internal / 2, 49, 'forty-nine hex edges among the four');
-  // Twenty-five against built country, and the Lotharn is the whole of it.
+  assert.equal(internal / 2, 47, 'forty-seven hex edges among the four');
+  // Twenty-five against built country when the plain was built, and the Lotharn was the whole of it. The two
+  // Celders were built against the plain's western margin on 3 October 2026: North Celder along twelve of West
+  // Mithala's edges and six of South Mithala's, South Celder along one. Henborth was registered on 4 October 2026
+  // north of the plain: eight of West Mithala's edges and six of North Mithala's. Nothing else built touches the four.
   assert.equal(south['East Lotharn Mountains'] + south['West Lotharn Mountains'], 25);
+  const later = { 'West Mithala': { 'North Celder': 12, Henborth: 8 }, 'South Mithala': { 'North Celder': 6, 'South Celder': 1 },
+    'North Mithala': { Henborth: 6, 'West Acorwood': 8, 'Acor Wetlands': 12 },
+    'East Mithala': { 'West Acorwood': 3, 'South Acordwood': 4 } };
+  for (const [name, counts] of Object.entries(later)) for (const [built, n] of Object.entries(counts))
+    assert.equal(edges(name)[built], n, `${name} meets ${built} on ${n} edges`);
   for (const name of ['West Mithala', 'East Mithala', 'North Mithala'])
     for (const built of PLAYABLE_REGIONS) {
-      if (NAMES.includes(built)) continue;
-      assert.equal(edges(name)[built], undefined, `${name} touches no built country`);
+      if (NAMES.includes(built) || later[name]?.[built]) continue;
+      assert.equal(edges(name)[built], undefined, `${name} touches no other built country`);
     }
 
   // **The water.** Sixty-one new river edges came in with these four names, in thirteen chains.
@@ -159,69 +179,23 @@ test('the climate is Dfa on every one of the 116 hexes, and it is the first cont
   assert.ok(codeOf('Acor Wetlands').every(code => code.startsWith('D')), 'the wetlands are colder still');
 });
 
-test('the world grows north, and it is the biggest structural change any region has made', () => {
-  // Measured, not estimated. North Mithala's northernmost hex is the atlas's row 82, centred at
-  // z = -2049.5, and its top corner stands at -2107.2; the world's margin is 60 m.
-  // Since the Baldro Mountains landed as regions 52 and 53 the eastern and northern edges are theirs:
-  // maxX 2209.998, minZ -3899.247, the world 68.20 by 73.369 hexes, the window's maxQ 60 and minR 59.
-  // Babon now sets the southern edge at z3437.632, two atlas rows beyond Trogo.
-  // Every assertion below that holds one of those numbers holds the Baldros' and nothing of this country's.
-  assert.ok(Math.abs(WORLD_BOUNDS.minZ - -3899.2468035704924) < 1e-6, `minZ is ${WORLD_BOUNDS.minZ}`);
-  const tall = (WORLD_BOUNDS.maxZ - WORLD_BOUNDS.minZ) / METRES_PER_HEX;
-  const wide = (WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / METRES_PER_HEX;
-  // 45.656 when this plain set the northern edge; 53.450 since the South Meroshe Desert carried the
-  // southern one from 2398.401 to 3177.824. What the plain set is the *northern* edge, and that is
-  // the number to hold here rather than the height it happened to make at the time.
-  // ...and 54.316 since Trogo carried the southern edge to 3264.426 (docs/southwest-4-report.md).
-  assert.ok(Math.abs(tall - 73.369) < .01, `north to south is ${tall.toFixed(3)} hexes`);
-  // East to west the plain took nothing, and the number below has moved twice for other people since
-  // this test was written: to 45.70 for the Ganesh Desert and to **49.700** for Cape Heth, whose one
-  // `coast` hex reaches four hundred metres further west again. What this plain is held to is unchanged:
-  // it spent none of it. The original note follows: the number was no longer 36.20 because the four
-  // southwestern countries moved it afterwards: the Ganesh Desert took the western edge from
-  // -3010.002 to -3960.002 and the width from 36.20 hexes to 45.70. What this plain is held to is
-  // that it spent none of it, which is what its own box being inside -2400...-950 says.
-  // ...and 52.20 since West Ibenwood took the western edge to -4610.002 when the forest belt landed
-  // alongside. Still none of it the plain's.
-  assert.ok(Math.abs(wide - 68.20) < .01, `east to west is ${wide.toFixed(2)} hexes, none of it the plain's`);
-  // The other three edges are exactly where they were when this plain was built: it spends northing
-  // and nothing else. The western one has moved twice since, and neither time for anything on this
-  // plain: -3960.002 for the Ganesh Desert and **-4360.002** for Cape Heth's one `coast` hex - and a
-  // third time, to **-4610.002**, for West Ibenwood when the forest belt landed alongside.
-  assert.ok(Math.abs(WORLD_BOUNDS.minX - -4610.001927939127) < 1e-6);
-  assert.ok(Math.abs(WORLD_BOUNDS.maxX - 2209.9980720608737) < 1e-6);
-  // ...and the South Meroshe Desert took the southern edge from 2398.401 to 3177.824
-  // (docs/southwest-2-report.md), which the plain also spent nothing of.
-  assert.ok(Math.abs(WORLD_BOUNDS.maxZ - 3437.6315612998296) < 1e-6);
-  // North Mithala alone spends it: row 82 against the East Lotharn's 92.
+test('the expanded world still contains the whole Mithala plain and its northern neighbors', () => {
+  // World bounds now include the northern islands, Eshtor and the Ibenals. Keep this
+  // test about Mithala's coverage; global atlas tests own the expanded world's extents.
+  for (const cell of ALL) {
+    assert.ok(cell.x - 58 > WORLD_BOUNDS.minX && cell.x + 58 < WORLD_BOUNDS.maxX);
+    assert.ok(cell.z - 58 > WORLD_BOUNDS.minZ && cell.z + 58 < WORLD_BOUNDS.maxZ);
+    assert.ok(cell.q >= WINDOW.minQ && cell.q <= WINDOW.maxQ && cell.r >= WINDOW.minR && cell.r <= WINDOW.maxR);
+  }
   assert.equal(Math.min(...CELLS['North Mithala'].map(cell => cell.r)), 82);
   assert.ok(Math.min(...CELLS['North Mithala'].map(cell => cell.z)) < Math.min(...CELLS['East Mithala'].map(cell => cell.z)));
-
-  // **`WINDOW.minR` went 90 -> 79, measured off the coast lattice.** The lattice is laid
-  // COAST_MARGIN (96 m) beyond the world bounds on a fixed phase; its first row stands at
-  // z = -2264.35, and a pointy-top hex reaches a circumradius past its centre, so row 79's hexes
-  // (centres -2309.3) come down to -2251.6 and are the last the lattice can land in.
-  assert.equal(WINDOW.minR, 59);
-  // 135 when the Ascarth tip set it; 144 since the South Meroshe Desert carried the world south.
-  // 145 since Trogo's row 142: one row deeper, measured off the lattice (docs/southwest-4-report.md).
-  assert.equal(WINDOW.maxR, 147);
-  assert.equal(WINDOW.maxQ, 60);
-  const COAST_CELL = 4, COAST_MARGIN = 96, PHASE = -704.3502691896258;
-  const latticeMinZ = PHASE + Math.floor((WORLD_BOUNDS.minZ - COAST_MARGIN - PHASE) / COAST_CELL + 1e-9) * COAST_CELL;
-  // -2264.350 while this plain held the northern edge; -3996.350 since the Baldro Mountains took it.
-  assert.ok(Math.abs(latticeMinZ - -3996.3502691896256) < 1e-6, `the lattice starts at ${latticeMinZ}`);
-  let reached = Infinity;
-  for (let x = WORLD_BOUNDS.minX - COAST_MARGIN; x <= WORLD_BOUNDS.maxX + COAST_MARGIN; x += COAST_CELL)
-    reached = Math.min(reached, hexAt(x, latticeMinZ).r);
-  assert.equal(reached, WINDOW.minR, 'the window reaches exactly the last row the lattice lands in');
-  // And it pulled a great deal of land in with it: the whole northern horizon was sea before.
-  const inWindow = ([q, r]) => q >= WINDOW.minQ && q <= WINDOW.maxQ && r >= WINDOW.minR && r <= WINDOW.maxR;
-  const newly = ATLAS.regions.flatMap(region => region.cells
-    .filter(cell => cell.r < 90 && inWindow([cell.q, cell.r]))
-    .map(cell => region.name ?? region.id));
-  assert.ok(newly.length > 300, `${newly.length} claimed hexes are newly inside the window`);
-  for (const name of ['Acor Wetlands', 'Henborth', 'South Acordwood', 'West Acorwood', 'Narcosh'])
-    assert.ok(newly.includes(name), `${name} is land on the northern horizon now`);
+  assert.ok(WORLD_BOUNDS.minX < MITHALA_BOX.minX && WORLD_BOUNDS.maxX > MITHALA_BOX.maxX);
+  assert.ok(WORLD_BOUNDS.minZ < MITHALA_BOX.minZ && WORLD_BOUNDS.maxZ > MITHALA_BOX.maxZ);
+  const inWindow = cell => cell.q >= WINDOW.minQ && cell.q <= WINDOW.maxQ && cell.r >= WINDOW.minR && cell.r <= WINDOW.maxR;
+  for (const name of ['Acor Wetlands', 'Henborth', 'South Acordwood', 'West Acorwood', 'Narcosh']) {
+    const cells = ATLAS.regions.find(region => (region.name ?? region.id) === name).cells;
+    assert.ok(cells.length && cells.every(inWindow), `${name} remains inside the land survey`);
+  }
 });
 
 test('one plain, one profile: the four quarters share their terrain numbers and their wavelength', () => {
@@ -501,7 +475,7 @@ test('what lives here: nineteen ranges, one new rig, and none of it is anybody�
     assert.ok(!/hunt-hound|grass-lion|wolf/.test(zone.species), 'no predator stands about in the open');
 });
 
-test('nobody lives here yet: no people, no road, no made place, and the chart says what is built', () => {
+test('nobody lives here yet: no people, one made place - the city at the meeting - and the chart says what is built', () => {
   for (const [index, name] of NAMES.entries()) {
     assert.equal(REGION_IDS[name], 28 + index, `${name} is ${28 + index}`);
     // Appended, never inserted - the rule `world-regions.js`'s one seeded scatter stream depends on.
@@ -524,23 +498,38 @@ test('nobody lives here yet: no people, no road, no made place, and the chart sa
     assert.ok(canStand(region.spawn.x, region.spawn.z, world, .5), `${name}'s spawn is not on ground`);
     // Landmarks, map-fog areas and a developer destination each.
     assert.ok(region.landmarks.length >= 4, `${name} has landmarks`);
+    // The plain's own places, and since 4 October 2026 the city's (src/mithala-city.js) in whichever country each stands.
     for (const id of region.landmarks)
-      assert.ok(MITHALA_LANDMARKS.some(mark => mark.id === id), `${name} names ${id} and nothing defines it`);
+      assert.ok(MITHALA_LANDMARKS.some(mark => mark.id === id) || MITHALA_CITY_LANDMARKS.some(mark => mark.id === id && mark.region === name),
+        `${name} names ${id} and nothing defines it`);
     assert.ok(SUBREGIONS.filter(area => area.region === name).length >= 4, `${name} has chart areas`);
     assert.ok(DEV_WORLD_DESTINATIONS.some(destination => destination.regionId === name));
   }
   assert.deepEqual(NAMES.map(name => regionLevel(name)), [3, 3, 4, 4], 'the levels region-levels.js already carried');
-  // **Nothing anybody made stands on this ground.** The landmarks talk about the villages, the
-  // barges and the grain a good deal — a country whose whole lore is one farming system cannot be
-  // described without them, and several of them say in as many words that none of it is here — so
-  // the test is not the words but the world: inside the plain's box the only things this build puts
-  // in anybody's way are trees and deep water, and there is no sign and no road anywhere on it.
+  // **Nothing anybody made stands on this ground but the city.** The landmarks talk about the
+  // villages, the barges and the grain a good deal — a country whose whole lore is one farming system
+  // cannot be described without them, and several of them say in as many words that none of it is
+  // here — so the test is not the words but the world. Since 4 October 2026 one place on the plain is
+  // somebody's: Mithala, the city at the meeting of the arms, a quarter on each of the four countries
+  // (src/mithala-city.js, docs/mithala-city-brief.md; tests/mithala-city-world.test.js walks it). So the
+  // city's own ground is set apart, and outside it nothing has changed: inside the plain's box the only
+  // things this build puts in anybody's way are trees and deep water, there is no sign, and the only
+  // roads are the city's own streets, which stop at the plain's edge of their approaches.
   const insideBox = item => item.x > MITHALA_BOX.minX && item.x < MITHALA_BOX.maxX
     && item.z > MITHALA_BOX.minZ && item.z < MITHALA_BOX.maxZ && own(item.x, item.z);
-  const kinds = new Set(world.colliders.filter(insideBox).map(collider => collider.kind));
-  assert.deepEqual([...kinds].sort(), ['mithala-tree', 'west-deep-water'], `the plain carries ${[...kinds].join(', ')}`);
-  assert.equal((world.signs ?? []).filter(insideBox).length, 0, 'no sign anywhere on the plain');
-  for (const path of world.paths ?? []) assert.ok(!(path ?? []).some(insideBox), 'no road crosses the plain');
+  // The city's barges are moored on the water off its quay, a metre or two outside the reserved ground: they are the city's.
+  const onCity = item => mithalaCityReserved(item.x, item.z) || item.kind === 'mithala-barge';
+  const kinds = new Set(world.colliders.filter(collider => insideBox(collider) && !onCity(collider)).map(collider => collider.kind));
+  assert.deepEqual([...kinds].sort(), ['mithala-tree', 'west-deep-water'], `the plain off the city carries ${[...kinds].join(', ')}`);
+  const city = world.colliders.filter(collider => insideBox(collider) && onCity(collider));
+  assert.ok(city.length > 100, `the city stands at the meeting (${city.length} colliders on its ground)`);
+  assert.equal(city.filter(collider => collider.kind === 'mithala-tree').length, 0, 'and no tree of the plain stands on it');
+  assert.equal((world.signs ?? []).filter(sign => insideBox(sign) && !onCity(sign)).length, 0, 'no sign anywhere on the plain');
+  const key = points => points.map(p => `${p.x},${p.z}`).join(' ');
+  const roads = (world.paths ?? []).filter(path => (path ?? []).some(insideBox));
+  assert.deepEqual(roads.map(key).sort(), MITHALA_STREETS.map(street => key(street.points)).sort(), 'the only roads are the city’s streets');
+  for (const path of roads) for (const p of path)
+    assert.ok(MITHALA_DISTRICTS.some(district => polygonDepth(district.outline, p.x, p.z) > -30), `a street runs out to ${p.x}, ${p.z}`);
   assert.equal(MITHALA_LANDMARKS.length, 18);
   for (const mark of MITHALA_LANDMARKS) {
     assert.ok(mark.description.length > 80, mark.id);

@@ -169,9 +169,9 @@ export function createIbenwoodRiverSystem({ groundHeight }) {
  * solid colliders; normal heightAt/waterAt movement supplies swimming behavior.
  */
 export function createIbenwoodRiverScenery(...args) { return finishBuild(createIbenwoodRiverScenerySteps(...args)); }
-export function* createIbenwoodRiverScenerySteps({ THREE, parent, rivers, terrainRoot, heightAt }) {
+export function* createIbenwoodRiverScenerySteps({ THREE, parent, rivers, terrainRoot, heightAt, refinedGround = null }) {
   let buildWork = 0;
-  const terrain = terrainRoot ? (yield* refineIbenwoodRiverGroundSteps({ THREE, terrainRoot, rivers, heightAt })) : null;
+  const terrain = refinedGround ?? (terrainRoot ? (yield* refineIbenwoodRiverGroundSteps({ THREE, terrainRoot, rivers, heightAt })) : null);
   const material = new THREE.MeshStandardMaterial({ color: '#527e78', roughness: .3, metalness: .06 });
   const meshes = rivers.ribbons.map((ribbon, i) => {
     const geometry = new THREE.BufferGeometry();
@@ -191,8 +191,15 @@ export function* createIbenwoodRiverScenerySteps({ THREE, parent, rivers, terrai
  * A common subdivision count keeps shared edges conforming across tile borders.
  */
 export function refineIbenwoodRiverGround(...args) { return finishBuild(refineIbenwoodRiverGroundSteps(...args)); }
-export function* refineIbenwoodRiverGroundSteps({ THREE, terrainRoot, rivers, heightAt }) {
+export function* refineIbenwoodRiverGroundSteps({ THREE, terrainRoot, rivers, heightAt, reach = REACH }) {
   let buildWork = 0;
+  // Faces share their edge and corner points with their neighbours: each point's true height is asked of the ground once.
+  const heights = new Map(), trueHeight = (x, z) => {
+    const key = Math.round(x * 100) * 1e6 + Math.round(z * 100);
+    let h = heights.get(key);
+    if (h === undefined) heights.set(key, h = heightAt(x, z));
+    return h;
+  };
   if (typeof heightAt !== 'function') throw new TypeError('River terrain refinement requires final heightAt.');
   const tiles = [], corridors = rivers.courses.map(course => course.bounds);
   let longest = 0, removedTriangles = 0;
@@ -202,15 +209,15 @@ export function* refineIbenwoodRiverGroundSteps({ THREE, terrainRoot, rivers, he
     const geometry = mesh.geometry, position = geometry.attributes.position, index = geometry.index;
     if (!index || !position) continue;
     const box = geometry.boundingBox;
-    if (box && !corridors.some(b => box.max.x >= b.minX - REACH && box.min.x <= b.maxX + REACH
-      && box.max.z >= b.minZ - REACH && box.min.z <= b.maxZ + REACH)) continue;
+    if (box && !corridors.some(b => box.max.x >= b.minX - reach && box.min.x <= b.maxX + reach
+      && box.max.z >= b.minZ - reach && box.min.z <= b.maxZ + reach)) continue;
     const keep = [], faces = [];
     for (let i = 0; i < index.count; i += 3) { if ((++buildWork & 31) === 0) yield;
       const ids = [index.getX(i), index.getX(i + 1), index.getX(i + 2)];
       const p = ids.map(id => ({ x: position.getX(id), y: position.getY(id), z: position.getZ(id) }));
       const x = (p[0].x + p[1].x + p[2].x) / 3, z = (p[0].z + p[1].z + p[2].z) / 3;
       const radius = Math.max(...p.map(v => Math.hypot(v.x - x, v.z - z)));
-      if (!rivers.nearest(x, z, REACH + radius)) { keep.push(...ids); continue; }
+      if (!rivers.nearest(x, z, reach + radius)) { keep.push(...ids); continue; }
       faces.push({ ids, p });
       for (let j = 0; j < 3; j++) { if ((++buildWork & 31) === 0) yield; longest = Math.max(longest, Math.hypot(p[j].x - p[(j + 1) % 3].x, p[j].z - p[(j + 1) % 3].z)); }
     }
@@ -227,8 +234,8 @@ export function* refineIbenwoodRiverGroundSteps({ THREE, terrainRoot, rivers, he
           const u = i / divisions, v = j / divisions, w = 1 - u - v;
           const x = a.x * w + b.x * u + c.x * v, z = a.z * w + b.z * u + c.z * v;
           const plane = a.y * w + b.y * u + c.y * v, near = rivers.nearest(x, z);
-          const strength = near ? 1 - smooth(REACH - 6, REACH, near.distance) : 0;
-          position.push(x, strength ? lerp(plane, heightAt(x, z), strength) : plane, z);
+          const strength = near ? 1 - smooth(reach - 6, reach, near.distance) : 0;
+          position.push(x, strength ? lerp(plane, trueHeight(x, z), strength) : plane, z);
           if (sourceColor) for (let k = 0; k < 3; k++) { if ((++buildWork & 31) === 0) yield; color.push(sourceColor.array[ids[0] * 3 + k] * w
             + sourceColor.array[ids[1] * 3 + k] * u + sourceColor.array[ids[2] * 3 + k] * v); }
         }

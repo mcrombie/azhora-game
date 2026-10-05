@@ -111,8 +111,17 @@ export function createDeveloperDragon() {
     [-.31, 0, .23, .24], [-.04, .065, .32, .28], [.22, -.01, .275, .20],
     [.56, -.055, .21, .145], [.79, -.04, .17, .12],
   ], new THREE.Color(0x4b9c63), new THREE.Color(0xb8ca80)), paintedHide, [0, 0, 0], [1, 1, 1], 'Long dragon snout');
-  mesh(head, sphere, dark, [0, -.152, .43], [.215, .031, .34], 'Mouth line');
-  mesh(head, sphere, belly, [0, -.178, .39], [.205, .045, .32], 'Lower jaw');
+  mesh(head, sphere, mouth, [0, -.166, .43], [.207, .058, .33], 'Dark upper palate');
+  const jaw = new THREE.Group(); jaw.name = 'Articulated dragon jaw';
+  jaw.position.set(0,-.145,.08); head.add(jaw);
+  mesh(jaw,sphere,belly,[0,-.036,.32],[.207,.058,.36],'Lower jaw');
+  mesh(jaw,sphere,mouth,[0,.006,.33],[.184,.020,.30],'Lower mouth interior');
+  const fireSurface = new THREE.MeshBasicMaterial({color:0xff9b20,transparent:true,opacity:0,
+    blending:THREE.AdditiveBlending,depthWrite:false});
+  const throatGlow=mesh(head,sphere,fireSurface,[0,-.205,.51],[.174,.086,.23],'Dragon mouth fire glow');
+  throatGlow.castShadow=false; throatGlow.receiveShadow=false; throatGlow.visible=false;
+  const mouthAnchor=new THREE.Group(); mouthAnchor.name='Dragon fire mouth';
+  mouthAnchor.position.set(0,-.20,.84); head.add(mouthAnchor);
   for (const side of [-1, 1]) {
     mesh(head, sphere, dark, [side * .264, .1, .13], [.068, .10, .12], 'Eye socket');
     mesh(head, sphere, amber, [side * .294, .111, .155], [.038, .073, .08], 'Amber eye');
@@ -204,13 +213,23 @@ export function createDeveloperDragon() {
   // The character's riding animation puts the hips .566m above its feet-root.
   passengerAnchor.position.y = -.57; passengerSeat.add(passengerAnchor);
 
-  function update(seconds, { flying = false, speed = 0, bank = 0 } = {}) {
+  function update(seconds, { flying = false, speed = 0, bank = 0,
+    breathing = false, breathIntensity = 1, breathPitch = .28 } = {}) {
+    const fire=breathing?THREE.MathUtils.clamp(Number.isFinite(breathIntensity)?breathIntensity:0,0,1):0;
     const phase = seconds * (3.2 + THREE.MathUtils.clamp(speed, 0, 35) * .018);
     const stroke = Math.sin(phase), breath = Math.sin(seconds * 1.15);
     rig.position.y = flying ? Math.sin(phase - .6) * .025 : breath * .008;
     rig.rotation.set(flying ? -.035 + stroke * .012 : 0, 0, flying ? THREE.MathUtils.clamp(bank, -.34, .34) : 0);
     passengerSeat.quaternion.copy(rig.quaternion).invert();
-    head.rotation.set(flying ? -.025 + Math.sin(phase - .8) * .015 : breath * .018, flying ? 0 : Math.sin(seconds * .39) * .055, 0);
+    const restingPitch=flying?-.025+Math.sin(phase-.8)*.015:breath*.018;
+    head.rotation.set(restingPitch*(1-fire)+THREE.MathUtils.clamp(Number.isFinite(breathPitch)?breathPitch:.28,0,1.1)*fire,
+      (flying?0:Math.sin(seconds*.39)*.055)*(1-fire),0);
+    jaw.rotation.x=fire*(.72+Math.sin(seconds*13)*.035);
+    mouthAnchor.position.y=-.20-fire*.065;
+    throatGlow.visible=fire>0;
+    fireSurface.opacity=fire*(.78+Math.sin(seconds*21)*.12);
+    throatGlow.scale.set(.174*(1+fire*.12),.086+fire*.062,.23);
+    amber.emissiveIntensity=.22+fire*.8;
     for (let i = 0; i < wings.length; i++) {
       const side = i ? 1 : -1;
       wings[i].rotation.set(flying ? -.035 : -.06, side * (flying ? -.025 : .87), side * (flying ? .09 + stroke * .36 : .91));
@@ -227,8 +246,15 @@ export function createDeveloperDragon() {
     }
   }
   function animate(seconds, speed = 0, grounded = true, pose = {}) {
-    update(seconds, { flying: pose.flying ?? !grounded, speed, bank: pose.bank ?? 0 });
+    update(seconds, { ...pose, flying: pose.flying ?? !grounded, speed, bank: pose.bank ?? 0 });
+  }
+  function mouthWorldPosition(out=new THREE.Vector3()) {
+    mouthAnchor.updateWorldMatrix(true,false); return out.setFromMatrixPosition(mouthAnchor.matrixWorld);
+  }
+  function mouthWorldDirection(out=new THREE.Vector3()) {
+    mouthAnchor.updateWorldMatrix(true,false); return out.set(0,0,1).transformDirection(mouthAnchor.matrixWorld);
   }
   update(0);
-  return { group, rig, torso, head, wings, wingTips, wingMembranes, wingFingerBones, tail, legs, legJoints, passengerSeat, passengerAnchor, update, animate };
+  return { group, rig, torso, head, jaw, throatGlow, mouthAnchor, mouthWorldPosition, mouthWorldDirection,
+    wings, wingTips, wingMembranes, wingFingerBones, tail, legs, legJoints, passengerSeat, passengerAnchor, update, animate };
 }

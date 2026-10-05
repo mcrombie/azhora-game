@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLotharnCaveWalk, validLotharnCaveSave } from '../src/east-lotharn-cave-walk.js';
+import { moveCharacter } from '../src/game-state.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const surface = (_x, z) => z > 3 && z < 17 ? 25 : 10;
@@ -35,6 +36,77 @@ test('movement away from a mouth stays outside, and a step may cross the mouth w
   const walk = setup(), p = { x: 0, y: 10, z: 1.8 };
   assert.equal(walk.entering(p, 0, -.4), null);
   assert.ok(walk.entering(p, 0, .4)); advance(walk, p, .4); assert.equal(walk.active, true);
+});
+
+test('the exterior approach keeps its floor while entering and reversing before the opening releases it', () => {
+  const walk = setup(), p = { x: 0, y: 10, z: .1 };
+  assert.ok(walk.entering(p, 0, .2));
+  advance(walk, p, .2);
+  assert.equal(walk.active, true, 'the outside portion of the authored passage must not eject an incoming traveler');
+  advance(walk, p, -.1);
+  assert.equal(walk.active, false);
+  assert.equal(walk.floorAt(p.x, p.z), null);
+  assert.equal(walk.safeEntrance, null);
+});
+
+test('a traveler can strafe off either exterior approach without being held by underground walls', () => {
+  const world = { heightAt: surface, colliders: [], bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 } };
+  for (const start of [.1, 1.8, 18.2, 19.9]) for (const side of [-1, 1]) {
+    const walk = setup(), inward = start < 2 ? 1 : -1, p = { x: 0, y: 10, z: start };
+    assert.ok(walk.entering(p, 0, inward * .1)); advance(walk, p, inward * .1);
+    const along = p.z;
+    for (let i = 0; i < 40; i++) {
+      const dx = side * .1;
+      if (walk.active || walk.entering(p, dx, 0)) walk.move(p, dx, 0);
+      else moveCharacter(p, dx, 0, world);
+      p.y = walk.floorAt(p.x, p.z) ?? surface(p.x, p.z);
+    }
+    assert.equal(walk.active, false, `exterior sidewall trapped the traveler at ${start}`);
+    assert.ok(Math.abs(p.x) > 3); assert.equal(p.z, along);
+    assert.equal(walk.snapshot(), null); assert.equal(walk.safeEntrance, null);
+  }
+});
+
+test('an exterior lateral departure hands movement to the surface guard without immediately reacquiring', () => {
+  const world = { heightAt: surface, colliders: [], bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 } };
+  for (const start of [.3, 19.7]) {
+    const walk = setup(), inward = start < 2 ? 1 : -1, p = { x: 1.4, y: 10, z: start };
+    assert.ok(walk.entering(p, 0, inward * .1));
+    const before = { ...p }, dx = .2, dz = inward * .01;
+    assert.equal(walk.move(p, dx, dz).outside, true);
+    assert.deepEqual(p, before, 'releasing the cave must not move through a surface obstacle');
+    let surfaceChecks = 0;
+    for (let i = 0; i < 3; i++) {
+      assert.equal(walk.entering(p, dx, dz), null, 'diagonal sideward movement must not reacquire each frame');
+      moveCharacter(p, dx, dz, world, .34, { canTraverse: () => { surfaceChecks++; return false; } });
+    }
+    assert.ok(surfaceChecks > 0); assert.deepEqual(p, before);
+    moveCharacter(p, dx, dz, world); assert.ok(p.x > 1.46);
+  }
+});
+
+test('lateral movement just inside either opening still meets the passage walls', () => {
+  for (const start of [2.1, 17.9]) for (const side of [-1, 1]) {
+    const walk = setup(), p = { x: 0, y: 10, z: start };
+    assert.ok(walk.entering(p, 0, start < 10 ? .1 : -.1));
+    walk.move(p, side * 10, 0);
+    assert.equal(walk.active, true); assert.ok(Math.abs(p.x) <= 1.46 + 1e-7);
+    assert.equal(p.z, start); assert.equal(walk.floorAt(p.x, p.z), 10);
+  }
+});
+
+test('the exact upper line endpoint has an inward tangent and remains protected against airborne entry', () => {
+  const walk = setup(), p = { x: 0, y: 10, z: 20 };
+  assert.ok(walk.entering(p, 0, -.2));
+  advance(walk, p, -.2); assert.equal(walk.active, true);
+  advance(walk, p, .8); assert.equal(walk.active, false);
+  for (const z of [0, 20]) {
+    const inward = z ? -.2 : .2;
+    assert.equal(setup().entering({ x: 0, y: 25, z }, 0, inward), null, 'a traveler on a roof cannot acquire the approach');
+    for (const flags of [{ grounded: false }, { mounted: true }, { climbing: true }, { inWater: true }]) {
+      assert.equal(setup().entering({ x: 0, y: 10, z }, 0, inward, flags), null);
+    }
+  }
 });
 
 test('passages support entry and exit in both directions and chambers have no false rear exit', () => {

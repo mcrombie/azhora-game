@@ -697,6 +697,11 @@ export const REGION_LANGUAGE = freeze({
   // more conservative", and there is no dialect of it to name, so none is invented here.
   'South Suval': spoken('suvalen'),
   'West Izol': spoken('izoli'),
+  'East Izol': spoken('izoli'),
+  'Alezhor': spoken('ibnael'),
+  'South Ibenal': spoken('ibnael'),
+  'North Ibenal': spoken('ibnael'),
+  'Henborth': spoken('mittoli'),
   Elagos: spoken('ambroni'),
   // The four western regions. The lore is specific: all four are Mittoli-speaking
   // country, each with its own dialect, inside the Empire's reach — so the people
@@ -740,6 +745,9 @@ export const REGION_LANGUAGE = freeze({
   'West Mithala': spoken('mittoli', 'mithali'),
   'East Mithala': spoken('mittoli', 'mithali'),
   'North Mithala': spoken('mittoli', 'mithali'),
+  // Celder speaks the upper plain's Mittoli (celder.md, Language); no dialect of its own is drawn yet.
+  'South Celder': spoken('mittoli'),
+  'North Celder': spoken('mittoli'),
   // Feradom speech, the Drentish of the domain country, which already had its entry above
   // for the company's men who came from there.
   Feradom: spoken('feradom'),

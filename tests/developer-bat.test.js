@@ -94,3 +94,17 @@ test('The developer bat climbs above high mountain summits before crossing and l
   assert.equal(bat.active, false);
   assert.equal(bat.view().position.y, summit);
 });
+
+
+test('breath aiming rotates a hovering dragon without moving it or changing ordinary travel steering', () => {
+  const bat = createDeveloperBat({ heightAt: () => 0 });
+  bat.start({ x: 0, y: 15, z: 0 }, 0);
+  for (let i = 0; i < 30; i++) bat.tick(.05, { aimYaw: Math.PI / 2 });
+  assert.ok(Math.abs(bat.view().yaw - Math.PI / 2) < .001);
+  assert.deepEqual(bat.view().position, { x: 0, y: 15, z: 0 });
+  const before=bat.view();bat.tick(.1, { aimYaw: -Math.PI / 2, playing: false });
+  assert.deepEqual(bat.view(),before);
+  for (let i = 0; i < 30; i++) bat.tick(.05, { dz: 1 });
+  assert.ok(Math.abs(bat.view().yaw) < .001);
+  assert.ok(bat.view().position.z > 30);
+});

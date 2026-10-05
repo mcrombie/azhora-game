@@ -2,6 +2,7 @@ import { finishBuild } from './build-steps.js';
 import { regionalFarmlandClear } from './regional-farmland.js';
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
 import { groundTint } from './world-terrain.js';
 import { createSceneryBuilder } from './scenery-builder.js';
 import { drawCircuit } from './fortworks.js';
@@ -38,6 +39,7 @@ export function* createFeradomScenerySteps(kit) {
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
   const gy = (x, z) => groundHeight(x, z);
+  let treeGroundAt = kit.renderedGroundHeight ?? gy;
   const push = collider => { colliders.push(collider); return collider; };
   const metrics = { batches: 0, trees: 0, stumps: 0, rocks: 0, outcrops: 0, castles: 0, towers: 0, road: 0 };
   const smooth = (a, b, x) => { const v = Math.max(0, Math.min(1, (x - a) / (b - a))); return v * v * (3 - 2 * v); };
@@ -148,6 +150,17 @@ export function* createFeradomScenerySteps(kit) {
       ground.name = 'Feradom barrier hills ground'; ground.receiveShadow = true; group.add(ground);
       metrics.batches++;
     } }
+    // The fine mesh is piecewise planar. Its analytic height can stand metres
+    // above a drawn triangle at a sharp hill shoulder. Keep the actual sampled
+    // vertices for tree feet, including which cells have visible geometry.
+    const coarseGroundAt = treeGroundAt;
+    treeGroundAt = (x, z) => {
+      const gx = (x - minX) / step, gz = (z - minZ) / step, i = Math.floor(gx), j = Math.floor(gz);
+      if (i < 0 || j < 0 || i >= cols - 1 || j >= rows - 1 || !drawn[j * (cols - 1) + i]) return coarseGroundAt(x, z);
+      const a = heightOf(i, j), b = heightOf(i, j + 1), c = heightOf(i + 1, j), d = heightOf(i + 1, j + 1);
+      const u = gx - i, v = gz - j;
+      return u + v <= 1 ? a + (c - a) * u + (b - a) * v : d + (b - d) * (1 - u) + (c - d) * (1 - v);
+    };
   }
 
   // -------------------------------------------------------------------------
@@ -216,6 +229,9 @@ export function* createFeradomScenerySteps(kit) {
         const y = gy(tree.x, tree.z);
         dummy.position.set(tree.x, y + tree.h * (tree.fir ? .3 : .34), tree.z); dummy.rotation.set(0, tree.rot, 0);
         dummy.scale.set(tree.s, tree.h * (tree.fir ? .62 : .7), tree.s); dummy.updateMatrix();
+        const grounding = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .32, segments: 6 });
+        tree.y = y + grounding;
+        dummy.position.y += grounding; dummy.updateMatrix();
         trunks.setMatrixAt(index, dummy.matrix);
         tree.parts = [{mesh:trunks,index}]; tree.collider = push({ x: tree.x, z: tree.z, r: .45 * tree.s, kind: 'feradom-tree' });
       }
@@ -225,7 +241,7 @@ export function* createFeradomScenerySteps(kit) {
         const cones = new THREE.InstancedMesh(coneGeometry, leafMaterial, firs.length * 3);
         let n = 0;
         for (const tree of firs) { if ((++buildWork & 31) === 0) yield;
-          const y = gy(tree.x, tree.z);
+          const y = tree.y;
           for (let tier = 0; tier < 3; tier++) { if ((++buildWork & 31) === 0) yield;
             const r = tree.h * (.25 - tier * .058) * tree.spread, h = tree.h * (.42 - tier * .06);
             dummy.position.set(tree.x, y + tree.h * (.34 + tier * .21) + h / 2, tree.z);
@@ -241,7 +257,7 @@ export function* createFeradomScenerySteps(kit) {
         const lobes = new THREE.InstancedMesh(lobeGeometry, leafMaterial, oaks.length * 3);
         let n = 0;
         for (const tree of oaks) { if ((++buildWork & 31) === 0) yield;
-          const y = gy(tree.x, tree.z);
+          const y = tree.y;
           for (let lobe = 0; lobe < 3; lobe++) { if ((++buildWork & 31) === 0) yield;
             const a = tree.rot + lobe * 2.1, spread = lobe === 2 ? 0 : tree.h * .19;
             dummy.position.set(tree.x + Math.sin(a) * spread, y + tree.h * (lobe === 2 ? .88 : .7), tree.z + Math.cos(a) * spread);
@@ -255,7 +271,7 @@ export function* createFeradomScenerySteps(kit) {
         batches.push(lobes);
       }
       for (const batch of batches) { if ((++buildWork & 31) === 0) yield;  batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch); metrics.batches++; }
-      for(const tree of trees) { if ((++buildWork & 31) === 0) yield; registerWorldTree(colliders,{id:worldTreeId('feradom',tree.x,tree.z),x:tree.x,z:tree.z,y:gy(tree.x,tree.z),height:tree.h,species:tree.fir?'silver-fir':'white-oak'},tree.parts,tree.collider); }
+      for(const tree of trees) { if ((++buildWork & 31) === 0) yield; registerWorldTree(colliders,{id:worldTreeId('feradom',tree.x,tree.z),x:tree.x,z:tree.z,y:tree.y-tree.h*.01,height:tree.h,species:tree.fir?'silver-fir':'white-oak'},tree.parts,tree.collider); }
       metrics.trees += trees.length;
     }
     if (stumps.length) {

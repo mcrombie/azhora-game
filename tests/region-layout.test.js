@@ -229,7 +229,9 @@ test('points resolve to regions and cells, and the world bounds enclose all play
     'the Telemon highland moves the world box');
   // Baldro sets the north/east edges. Babon extends the south by two atlas rows
   // (173.205 m), to z3437.632: 68.2 hexes wide and 73.3688 tall.
-  assert.ok(bounds.maxX - bounds.minX < 68.3 * METRES_PER_HEX, 'the playable regions fit a walkable world east to west');
+  // Alezhor's coast (registered 4 October 2026) moves the west edge out by 50 m, to x-4660.002: 68.7 hexes wide.
+  // South Ibenal's coast (registered 4 October 2026) moves it out again, to x-4860.002: 70.7 hexes wide.
+  assert.ok(bounds.maxX - bounds.minX < 70.8 * METRES_PER_HEX, 'the playable regions fit a walkable world east to west');
   assert.ok(bounds.maxZ - bounds.minZ < 73.4 * METRES_PER_HEX, 'and north to south');
   // And it is a budget rather than a shrug: a country that widened the world without
   // anybody noticing would sail through a guard with room in it.

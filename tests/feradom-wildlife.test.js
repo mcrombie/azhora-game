@@ -2,13 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
+import { scopedWorld } from './scoped-world.js';
+import { createHash } from 'node:crypto';
 import { REGION_CELLS } from '../src/region-world.js';
 import { canStand } from '../src/game-state.js';
 import { FERADOM_WILDLIFE_ZONES, FERADOM_COUNTRYSIDE_WILDLIFE_ZONES } from '../src/feradom-wildlife.js';
+import { FARMSTEADS } from '../src/regional-farmland.js';
+import { createWoodcutting } from '../src/woodcutting.js';
+import { createSkills, MAX_XP } from '../src/skills.js';
 
-const { createWorld } = await sourceModule('../src/world.js');
 const { createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
-const world = createWorld(new THREE.Scene());
+const world = await scopedWorld(new THREE.Scene(), [21]);
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const center = zone => ({ x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 });
 
@@ -16,6 +20,39 @@ function withLife(run) {
   const scene = new THREE.Scene(), life = createWestLife(scene, world, { zones: FERADOM_WILDLIFE_ZONES });
   try { return run(life, scene); } finally { life.dispose(); }
 }
+
+test('production Feradom keeps existing tree save identities and all seven working farm approaches', () => {
+  // Coordinate IDs identify the hill forest; named farm orchard IDs share the
+  // region prefix and are supplied by the separate regional-farmland job.
+  const trees = world.treeRegistry.trees.filter(tree => /^feradom--?\d/.test(tree.id));
+  const facts = trees.map(({ id, x, z, height, species }) => [id, x, z, height, species]);
+  assert.equal(trees.length, 3730);
+  assert.equal(createHash('sha256').update(JSON.stringify(facts)).digest('hex'),
+    '03cbb57000457a36be3a7f368e262bd4996a2a3f4d24150bcbf6a4a5e19b552e');
+  const skills = createSkills(); skills.learn('woodcutting'); skills.gain('woodcutting', MAX_XP);
+  const wood = createWoodcutting({ skills, trees, random: () => 0 }), axe = id => id === 'bronze-axe';
+  const fir = trees.find(tree => tree.species === 'silver-fir'), oak = trees.find(tree => tree.species === 'white-oak');
+  assert.equal(wood.swing(fir.id, axe).felled, true);
+  assert.equal(wood.swing(oak.id, axe).felled, false);
+  const saved = wood.snapshot(), restored = createWoodcutting({ skills, trees, random: () => 0 });
+  assert.equal(restored.restore(saved), true);
+  assert.deepEqual(restored.snapshot(), saved);
+  assert.equal(restored.standing(fir.id), false);
+  assert.equal(restored.standing(oak.id), true);
+  assert.equal(restored.swing(oak.id, axe).felled, true, 'saved partial oak keeps only its remaining log');
+  world.treeRegistry.set(fir.id, restored.standing(fir.id));
+  assert.equal(world.colliders.some(collider => collider.id === fir.id), false);
+  assert.ok(world.colliders.some(collider => collider.id === oak.id));
+  world.treeRegistry.set(fir.id, true);
+  const farms = FARMSTEADS.filter(farm => farm.region === 'Feradom');
+  assert.equal(farms.length, 7);
+  for (const farm of farms) {
+    for (const row of farm.rows) assert.ok(canStand(row.x, row.z, world), `${row.id}: usable field`);
+    for (const point of farm.approach) assert.ok(canStand(point.x, point.z, world), `${farm.id}: clear approach`);
+    assert.ok(canStand(farm.seedStation.x, farm.seedStation.z + 1.2, world), `${farm.id}: seed bench`);
+    assert.ok(canStand(farm.shed.x, farm.shed.z + 1, world), `${farm.id}: tool shelter`);
+  }
+});
 
 test('Feradom has resident land animals across every plain and hill hex', () => withLife(life => {
   const animals = life.state().creatures.filter(animal => animal.species !== 'plateau-hawk');

@@ -213,7 +213,7 @@ export function createCaves(ground) {
  * - its walls are its width - and his feet are on its floor; he comes out when he walks back out of
  * a mouth. `move` is one step of him, and answers where he is and on what.
  */
-export function createCaveWalk(caves, ground = null) {
+export function createCaveWalk(caves, ground = null, { exteriorEntry = false } = {}) {
   let inside = null;
   const nearest = (cave, x, z) => nearestPlain(cave.path, x, z);
   return {
@@ -244,6 +244,7 @@ export function createCaveWalk(caves, ground = null) {
      */
     move(position, dx, dz, radius = .34) {
       const { cave } = inside;
+      const previousAlong = inside.along;
       const steps = Math.max(1, Math.ceil(Math.hypot(dx, dz) / .18));
       // The whole step if it keeps within the walls, else each half of it on its own, so he slides
       // along a wall at a bend; and a step back toward the middle of the passage is always taken.
@@ -260,7 +261,11 @@ export function createCaveWalk(caves, ground = null) {
       for (let i = 0; i < steps; i++) if (!tryStep(dx / steps, dz / steps)) { tryStep(dx / steps, 0); tryStep(0, dz / steps); }
       // Out of the mouth he came in by, or through and out of the far one; or off either end of the line.
       const [open, close] = cave.openings, s = inside.along;
-      if (s < open - .3 || (cave.kind !== 'chamber' && s > close + .3) || (inside.past && (s < .01 || (cave.kind !== 'chamber' && s > cave.length - .01)))) {
+      // The player wrapper may acquire the existing exterior approach before `open`. Keep
+      // ownership while moving inward there; reversing still releases it at the usual exit.
+      const lowerExit = s < open - .3 && (!exteriorEntry || s < previousAlong - 1e-5);
+      const upperExit = cave.kind !== 'chamber' && s > close + .3 && (!exteriorEntry || s > previousAlong + 1e-5);
+      if (lowerExit || upperExit || (inside.past && (s < .01 || (cave.kind !== 'chamber' && s > cave.length - .01)))) {
         inside = null; return { outside: true, floor: null };
       }
       return { outside: false, floor: this.floorAt(position.x, position.z) };

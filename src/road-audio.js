@@ -47,6 +47,7 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
   let context=null,master=null,noise=null,ambientSource=null,enabled=false,disposed=false;
   let playing=false,lastY=null,region=1,surface='earth',steps=0,calls=0,elapsed=0;
   let stepDistance=0,callCountdown=5.5,mixTimer=0,profile=roadAudioProfile(),lastError=null;
+  let dragon=null,dragonIntensity=0;
   const layers={},transients=new Set();
   const rand=()=>clamp(Number(random())||0,0,1);
 
@@ -116,19 +117,44 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
   function effect(type) {
     const spec=EFFECTS[type];return spec?tone(spec,{type:['bell','success','discovery','bird-call'].includes(type)?'sine':'triangle'}):false;
   }
+  /** Two persistent voices are created on the first audible breath and reused.
+   * Releasing the trigger fades both to silence; no source is allocated per frame. */
+  function dragonFire(intensity=0) {
+    const next=enabled&&playing&&!disposed&&Number.isFinite(intensity)?clamp(intensity,0,1):0;
+    if(next>0&&!dragon&&context){
+      const hiss=context.createBufferSource(),hissFilter=context.createBiquadFilter(),hissGain=context.createGain();
+      const rumble=context.createOscillator(),rumbleFilter=context.createBiquadFilter(),rumbleGain=context.createGain();
+      hiss.buffer=noise;hiss.loop=true;hissFilter.type='lowpass';hissFilter.Q.value=.5;hissGain.gain.value=0;
+      rumble.type='sawtooth';rumble.frequency.value=54;rumbleFilter.type='lowpass';rumbleFilter.frequency.value=170;
+      rumbleFilter.Q.value=.7;rumbleGain.gain.value=0;
+      hiss.connect(hissFilter);hissFilter.connect(hissGain);hissGain.connect(master);
+      rumble.connect(rumbleFilter);rumbleFilter.connect(rumbleGain);rumbleGain.connect(master);
+      dragon={sources:[hiss,rumble],nodes:[hiss,hissFilter,hissGain,rumble,rumbleFilter,rumbleGain],hissFilter,hissGain,rumble,rumbleGain};
+      hiss.start();rumble.start();
+    }
+    if(dragon&&next!==dragonIntensity){
+      const now=context.currentTime,fade=next>0?.085:.055;
+      dragon.hissGain.gain.setTargetAtTime(next*.48,now,fade);
+      dragon.rumbleGain.gain.setTargetAtTime(next*.18,now,fade);
+      dragon.hissFilter.frequency.setTargetAtTime(1050+next*1700,now,.12);
+      dragon.rumble.frequency.setTargetAtTime(46+next*18,now,.12);
+    }
+    dragonIntensity=next;return next>0&&Boolean(dragon);
+  }
   function toggle() {
     if(disposed)return false;
     if(!enabled&&!ensureContext())return false;
     enabled=!enabled;
     try{context.resume()?.catch?.(()=>{});}catch{}
     master.gain.setTargetAtTime(enabled?.26:0,context.currentTime,.18);
-    if(!enabled)for(const entry of [...transients])stopTransient(entry);
+    if(!enabled){dragonFire(0);for(const entry of [...transients])stopTransient(entry);}
     stepDistance=0;mix();return enabled;
   }
   function update(dt,{position, speed=0,region:nextRegion=1,playing:nextPlaying=false}={}) {
     if(disposed||!Number.isFinite(dt)||dt<=0||!Number.isFinite(position?.x)||!Number.isFinite(position?.z))return;
     const step=Math.min(dt,.25),previousRegion=region,wasPlaying=playing;
     profile=roadAudioProfile({position,region:nextRegion});region=profile.region;surface=profile.surface;playing=Boolean(nextPlaying);
+    if(!playing)dragonFire(0);
     if(!enabled||!context){lastY=Number.isFinite(position.y)?position.y:null;stepDistance=0;return;}
     elapsed+=step;mixTimer-=step;
     if(region!==previousRegion||playing!==wasPlaying||mixTimer<=0){mix();mixTimer=.18;}
@@ -152,13 +178,14 @@ export function createRoadAudio({AudioContext=globalThis.AudioContext??globalThi
     }
   }
   function dispose() {
-    if(disposed)return;disposed=true;enabled=false;
+    if(disposed)return;dragonFire(0);disposed=true;enabled=false;
     for(const entry of [...transients])stopTransient(entry);
     try{ambientSource?.stop();}catch{}
     disconnect(ambientSource);
+    if(dragon){for(const source of dragon.sources){try{source.stop();}catch{}}for(const node of dragon.nodes)disconnect(node);dragon=null;}
     for(const layer of Object.values(layers)){disconnect(layer.filter);disconnect(layer.gain);}
     disconnect(master);try{context?.close()?.catch?.(()=>{});}catch{}
   }
-  return {effect,toggle,update,dispose,state:()=>({enabled,initialized:Boolean(context),disposed,playing,region,surface,
-    footsteps:steps,calls,transients:transients.size,profile:{...profile},lastError})};
+  return {effect,dragonFire,toggle,update,dispose,state:()=>({enabled,initialized:Boolean(context),disposed,playing,region,surface,
+    footsteps:steps,calls,transients:transients.size,dragonFire:{intensity:dragonIntensity,initialized:Boolean(dragon),sources:dragon?2:0},profile:{...profile},lastError})};
 }

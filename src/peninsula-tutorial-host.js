@@ -13,6 +13,23 @@ const lessons = {
   cooking: ['You caught supper. My fire is already lit: take your raw fish over to it and turn it over the heat. You are learning Cooking today. Lee Anne can teach you to build a fire of your own later.'],
 };
 
+// Keep the current task visible after the teacher's dialogue closes. These are
+// instructions from saved lesson progress, never an alternate completion path.
+function practiceObjective(v) {
+  const p=v.practice, seconds=(value,total)=>`${Math.min(total,Math.floor(value+1e-6))}/${total} seconds`;
+  switch(v.next.id) {
+    case 'inventory': return 'Press I to open your satchel, then select Jojo\'s sandwich.';
+    case 'walking': return p.walked<4 ? `Use WASD to walk along the trail toward the two white posts (${seconds(p.walked,4)}).` : 'Walk between the two white trail posts to finish your first steps.';
+    case 'running': return p.ran<6 ? `Hold Shift or Tab while moving to run along the trail (${seconds(p.ran,6)}).` : `Release Shift or Tab. Walk or rest to catch your breath (${seconds(p.recovered,2)}).`;
+    case 'combat': return p.strikes<2 ? `Face the straw target and press left mouse or R to strike (${Math.min(2,p.strikes)}/2).` : p.guarded<1.5 ? 'Stay by the straw target and hold V to guard for a moment.' : 'Stay by the straw target and press C to dodge.';
+    case 'cartography': return 'Press M to open Bear\'s chart and find your position.';
+    case 'swimming': return !p.buoy ? 'Swim to the blue buoy in Jess\'s sheltered cove.' : p.swam<4 ? `Keep swimming beside the buoy (${seconds(p.swam,4)}), then return to Jess\'s beach.` : 'Return to Jess\'s beach and walk out of the water.';
+    case 'fishing': return 'At the quiet bank south of Ryan, press F to cast. Wait for a bite, then press F to reel in your fish.';
+    case 'cooking': return 'Walk to Jojo\'s lit fire, press F, and choose Cook one raw fish.';
+    default: return v.next.detail;
+  }
+}
+
 /** Connects saved tutorial facts to the ordinary inventory, combat and movement.
  * No lesson is completed merely by visiting its teacher. */
 export function createPeninsulaTutorialHost({ scene, world, player, npcById, inventory, skills,
@@ -185,9 +202,9 @@ export function createPeninsulaTutorialHost({ scene, world, player, npcById, inv
     recover() { model.recover(); previous = null; save(); },
     get camera() { return camera; }, get chosen() { return chosen(); }, get active() { return model.view().active; }, get enlisted() { return model.view().enlisted; },
     objective() { const v = model.view(); if (!chosen() || v.enlisted) return null;
-      if (v.completed) return { title: 'Report to Tidewater Haven', detail: 'The gate is open. Take Glun’s letter to Footman Ottar in Tidewater Haven to enlist.', at: world.npcPositions['post-landing'], target: 'Footman Ottar' };
+      if (v.completed) return { title: 'Report to Tidewater Haven', detail: 'The gate is open. Take Glun’s letter to Footman Ottar in Tidewater Haven to enlist.', at: npcById.get('post-landing')?.actor.group.position ?? world.npcPositions['post-landing'], target: 'Footman Ottar' };
       if (v.canGraduate || !v.next) return { title: 'Report back to Glun', detail: 'You have completed every lesson. Ask Glun for your letter.', at: A.glun, target: 'Glun' };
-      return { title: v.next.title, detail: v.next.detail, at: v.next.introduced ? v.next.at : PENINSULA_TEACHERS[v.next.teacher] ?? A.jojo, target: v.next.title };
+      return { title: v.next.title, detail: v.next.introduced ? practiceObjective(v) : v.next.detail, at: v.next.introduced ? v.next.at : PENINSULA_TEACHERS[v.next.teacher] ?? A.jojo, target: v.next.title };
     },
   };
 }

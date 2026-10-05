@@ -329,3 +329,10 @@ test('a local ivy favor has a copper marker, yields to a main objective and disa
   assert.equal(markerFor('sylvia',{...offer,arcDestinations:['sylvia']}).kind,'main');
   assert.equal(markerFor('sylvia',{...offer,deedDestinations:[]}).kind,'skill');
 });
+
+test('peninsula enlistment marks the moving recipient instead of Glun', () => {
+  const view={ids:IDS,questStage:2,peninsulaEnlistment:true};
+  assert.equal(markerGrade(markerFor('post-landing',view)),'main');
+  assert.equal(markerFor(IDS.instructor,view),null);
+  assert.equal(markerFor('post-landing',{...view,peninsulaEnlistment:false}),null);
+});

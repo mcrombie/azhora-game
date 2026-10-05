@@ -23,6 +23,15 @@ function fixture({ cached = false, xs = Array.from({ length: 65 }, (_, i) => i *
   return { stream, root, xs, zs, positions, colors, sampled, calls, sample };
 }
 
+test('preempted region builds share unfinished terrain tiles and publish each mesh once', () => {
+  const f=fixture(), a=f.stream.buildRegion(1), b=f.stream.buildRegion(1);
+  a.next(); a.next(); b.next();
+  finishBuild(b); finishBuild(a);
+  assert.equal(f.root.children.length,f.stream.tileCount());
+  assert.equal(new Set(f.root.children.map(mesh=>mesh.name)).size,f.root.children.length);
+  assert.ok(f.calls.every(count=>count<=1));
+});
+
 test('regions sample only their tiles and reuse identical shared edge vertices when built later', () => {
   const f = fixture(), steps = f.stream.buildRegion(1);
   assert.equal(f.root.children.length, 0);

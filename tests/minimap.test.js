@@ -131,6 +131,26 @@ test('new-region house half-extents render finite footprints; invalid data canno
   assert.equal(drawMinimap(context(), { world, position: { x: NaN, z: Infinity }, radius: NaN, size: Infinity }).player.x, 150);
 });
 
+test('display-only building footprints are drawn by the minimap without entering collision geometry', () => {
+  const world = fixture(), position = at(-40, 35);
+  const originalCount = drawMinimap(context(), { world, position }).counts.buildings;
+  world.mapBuildings = Object.freeze([
+    Object.freeze({ id: 'open-court-hall', kind: 'house', ...position, width: 26, depth: 22, angle: .3 }),
+    Object.freeze({ id: 'distant-hall', kind: 'house', ...at(120, 620), width: 18, depth: 12 }),
+  ]);
+  const collisions = world.colliders, before = JSON.stringify(collisions);
+  for (const collider of collisions) Object.freeze(collider);
+  Object.freeze(collisions);
+  const ctx = context(), drawn = drawMinimap(ctx, { world, position });
+  assert.equal(drawn.counts.buildings, originalCount + 1, 'the nearby hall appears while the distant footprint stays outside the minimap');
+  assert.ok(ctx.calls.some(call => call.method === 'fillRect' && call.fill === MINIMAP_PALETTE.house
+    && Math.abs(call.args[2] - 26 * drawn.scale) < 1e-9 && Math.abs(call.args[3] - 22 * drawn.scale) < 1e-9),
+  'the open hall is painted at its authored footprint dimensions');
+  assert.ok(ctx.calls.some(call => call.method === 'rotate' && call.args[0] === -.3));
+  assert.equal(world.colliders, collisions);
+  assert.equal(JSON.stringify(collisions), before, 'drawing the hall must not replace its walkable room with a solid collider');
+});
+
 test('separate distant bridges cannot paint a timber rectangle over inland terrain', () => {
   const ctx = context(), world = { colliders: [
     { kind: 'bridge-rail', x: -600, z: 140, r: .35 },

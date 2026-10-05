@@ -555,10 +555,11 @@ export function mithalaTint(x, z, ground) {
  * the lore it was meant to serve, exactly as it would in the Lotharn. So everything is either the
  * lore's own word (the north braid, the main channel, the Mithala) or plain English.
  *
- * Two places are named for what is *not* built on them, because leaving them unnamed would be
- * dishonest about the ground: **the meeting of the arms**, where the campaign's unbuilt river-city
- * stands (`campaign-world.js`: "Where the rivers of West, East and South Mithala meet"), and **the
- * levees**, which is where every village on this plain is and where none of them is yet.
+ * One place was named for what was *not* built on it, because leaving it unnamed would have been
+ * dishonest about the ground, and is now named for what is: **the meeting of the arms**, where the
+ * campaign's river-city stands (`campaign-world.js`: "Where the rivers of West, East and South
+ * Mithala meet"), built round it on all four countries (src/mithala-city.js). **The levees** are
+ * still named for what is not on them: every village on this plain is on one, and none of them is yet.
  */
 const onLine = (course, t) => {
   const points = course.points;
@@ -583,9 +584,9 @@ const besideLine = (course, t, offset) => {
 export const MITHALA_LANDMARKS = freeze([
   // ----- South Mithala -----
   freeze({ id: 'mithala-meeting', name: 'The Meeting of the Arms', x: -1700, z: -1414,
-    description: 'Where the arm out of the western hill country and the north braid come together and go on east as one channel. Three quarters of the plain have a corner here and every drop of water on it passes the spot. There is nothing standing on it: the ground on the inside of the fork is the highest, driest and most obvious building land in the Mithala, and it is empty.' }),
+    description: 'Where the arm out of the western hill country and the north braid come together and go on east as one channel. Three quarters of the plain have a corner here and every drop of water on it passes the spot, and Mithala is built round it on all four. The ground on the inside of the fork is the highest, driest and most obvious building land in the Mithala, and the old seat stands on it, with the sky tower over the point and the flood gauge at the water’s edge; the Quays face it across the braid and the Ford across the main channel.' }),
   freeze({ id: 'the-main-channel', name: 'The Main Channel', ...besideLine(MITHALA_MAIN, .5, 30),
-    description: 'The largest water on the plain, running east to the sea in a bed it has laid itself: levees a pace and a half high on both banks, bars of grey silt down the middle, and three threads round them where it cannot decide. Wadeable over gravel at its head and deep below that. A flat-bottomed boat would go anywhere on it and nothing here has one.' }),
+    description: 'The largest water on the plain, running east to the sea in a bed it has laid itself: levees a pace and a half high on both banks, bars of grey silt down the middle, and three threads round them where it cannot decide. Wadeable over gravel at its head, where Mithala has paved the ford, and deep below that. A flat-bottomed boat would go anywhere on it, and the grain barges at Mithala’s quay are the ones that do.' }),
   freeze({ id: 'south-mithala-apron', name: 'The Apron', x: -1500, z: -1270,
     description: 'The last rise of the Lotharn, come out into the plain as two long low swells of older ground between the mountains’ water and the main channel. Twelve metres is the whole of it, and on this ground twelve metres is a view: from the top of the eastern swell you can see the range behind you and the channel country in front, and no flood has ever been up here.' }),
   freeze({ id: 'south-mithala-levees', name: 'The Levees', ...besideLine(MITHALA_MAIN, .68, 34),
@@ -605,7 +606,7 @@ export const MITHALA_LANDMARKS = freeze([
   freeze({ id: 'east-mithala-gather', name: 'Where the Channels Gather', ...besideLine(MITHALA_MAIN, .8, 40),
     description: 'The lowest and wettest ground in the Mithala, where the threads of the main channel come back together for the run to the sea. Rank grass to the knee on silt that is still soft in August, backswamps on both sides that stand under water for weeks of every spring, and a gallery of willow and poplar two trees deep on the water.' }),
   freeze({ id: 'the-river-mouth', name: 'The River Mouth', ...besideLine(MITHALA_MAIN, .97, 26),
-    description: 'Where the plain ends and the water goes. The channel widens, the levees flatten out, the grass turns to sand within forty paces, and the sea is there with nothing at all to announce it. Everything the Mithala grows that leaves the Mithala leaves past this point, in boats nobody here has built yet.' }),
+    description: 'Where the plain ends and the water goes. The channel widens, the levees flatten out, the grass turns to sand within forty paces, and the sea is there with nothing at all to announce it. Everything the Mithala grows that leaves the Mithala leaves past this point, in the flat grain barges that load at Mithala’s quay.' }),
   // Thirty metres off the centre line and not twenty-two: at twenty-two the point stood on the
   // levee crest, where the analytic ground rises a pace and a half over eighteen metres and the
   // renderer's seven-metre grid cannot follow it, so the drawn triangle floated a metre over the
@@ -615,7 +616,7 @@ export const MITHALA_LANDMARKS = freeze([
   // actually stands on, which is what this landmark was always about.
   freeze({ id: 'east-mithala-gallery', name: 'The Gallery', ...besideLine(MITHALA_MAIN, .62, 30),
     description: 'The only wood on the plain: willow, black poplar and alder standing two and three trees deep along the channel banks, roots in water that freezes every winter and floods every spring, which is a combination very little else will tolerate. Seen from half a mile out on the grass it is a dark line with nothing behind it, and it is how you find the river.' }),
-  freeze({ id: 'acorwood-horizon', name: 'The Acorwood Horizon', x: -1150, z: -1680,
+  freeze({ id: 'acorwood-horizon', name: 'The Acorwood Horizon', x: -1230, z: -1680,
     description: 'The north-eastern skyline, where the treeline thickens along the top of the plain until it is a forest. There is no wall, no cliff and no line: the Acorwood closes off the north of the continent and it does it by getting gradually nearer. The river communities have no reason that would outweigh the navigation, and do not go in.' }),
   // ----- North Mithala -----
   freeze({ id: 'the-north-braid', name: 'The North Braid', ...besideLine(MITHALA_NORTH_BRAID, .55, 22),

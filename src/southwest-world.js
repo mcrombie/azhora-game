@@ -48,7 +48,9 @@
  * move through the plain by the drought cycle, the northern markets and Ganesh Ford at the head of
  * them, and every animal any of those people own.
  */
-import { terrainMix, hexOwnerAt, REGION_CELLS, REGION_TERRAIN, landDistance } from './region-world.js';
+import { terrainMix, seamlessTerrainMix, relief, hexOwnerAt, hexAtlasCorners, TRANSFORM, REGION_CELLS, REGION_TERRAIN, landDistance } from './region-world.js';
+import { regionOutline } from './region-layout.js';
+import { PLAYABLE_SURVEY } from './region-survey.js';
 import { VAELLIR, ALEZHOR_WATER, MAROSH_NAHR, TROGORETH, SOUTHWEST_RIVERS, courseDistance, coursePosition } from './west-regions.js';
 
 const freeze = Object.freeze;
@@ -440,6 +442,82 @@ const centreOf = name => {
   return point(cells.reduce((s, c) => s + c.x, 0) / cells.length, cells.reduce((s, c) => s + c.z, 0) / cells.length);
 };
 export const SOUTHWEST_CENTRES = freeze(Object.fromEntries(SOUTHWEST_REGIONS.map(name => [name, centreOf(name)])));
+
+/**
+ * The northern countries and six western-edge joins meet built neighbours. The old seven-hex
+ * blend can drop an influencing hex at an ownership edge, producing metre-high
+ * steps even over a millimetre. Correct both the handed base and the shares
+ * used by this module within 36m of these joins; everything farther in keeps
+ * its authored terrain. River centre profiles remain on their original ground.
+ */
+export const SOUTHWEST_SEAM = freeze({ core: 6, reach: 36, riverKeep: .25, riverFade: 1.5 });
+// Keep the reviewed northern joins and add only the six measured western-edge pairs.
+const WEST_EDGE_SEAM_PAIRS = new Set([
+  ['Cape Heth', 'Dinelv Highlands'], ['Dinelv Highlands', 'North Meroshe Desert'],
+  ['Dinelv Highlands', 'West Meroshe Desert'], ['Hama', 'West Meroshe Desert'],
+  ['Hama', 'Central Meroshe Desert'], ['Hama', 'South Meroshe Desert'],
+].map(pair => pair.sort().join('|')));
+// The real controller reproduced 2.48 m and 1.09 m steps on these two
+// internal Trogo edges. Keep all other forest terrain and scatter fields on
+// their original blend; only the existing physical seam wrapper uses these.
+export const TROGO_REVIEW_SEAMS = freeze([
+  { id: 'north-link', q: -24, r: 137, edge: 2 },
+  { id: 'south-gully', q: -28, r: 140, edge: 1 },
+].map(spec => {
+  const loop = hexAtlasCorners(spec.q, spec.r).map(p => TRANSFORM.atlasToWorld(p.x, p.y));
+  const a = loop[spec.edge], b = loop[(spec.edge + 1) % 6], dx = b.x - a.x, dz = b.z - a.z;
+  return freeze({ ...spec, a, b, dx, dz, length2: dx * dx + dz * dz, regions: freeze(['Trogo', 'Trogo']) });
+}));
+export function trogoReviewSeamWeight(x, z) {
+  let distance = SOUTHWEST_SEAM.reach;
+  for (const edge of TROGO_REVIEW_SEAMS) {
+    const t = clamp(((x - edge.a.x) * edge.dx + (z - edge.a.z) * edge.dz) / edge.length2, 0, 1);
+    distance = Math.min(distance, Math.hypot(x - edge.a.x - edge.dx * t, z - edge.a.z - edge.dz * t));
+  }
+  return 1 - smooth(SOUTHWEST_SEAM.core, SOUTHWEST_SEAM.reach, distance);
+}
+const SEAM_GRID = 64;
+const SEAM_EDGES = (() => {
+  const edges = [...TROGO_REVIEW_SEAMS], seen = new Set();
+  for (const name of [...SOUTHWEST_NORTH_REGIONS, ...WEST_EDGE_REGIONS]) for (const loop of regionOutline(PLAYABLE_SURVEY, name))
+    for (let i = 0; i < loop.length; i++) {
+      const a = loop[i], b = loop[(i + 1) % loop.length], dx = b.x - a.x, dz = b.z - a.z;
+      const length = Math.hypot(dx, dz), mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+      let nx = dz / length, nz = -dx / length;
+      if (hexOwnerAt(mx + nx, mz + nz) === name) { nx = -nx; nz = -nz; }
+      const other = hexOwnerAt(mx + nx, mz + nz);
+      if (!REGION_CELLS[other] || other === name) continue;
+      if (!SOUTHWEST_NORTH_REGIONS.includes(name) && !WEST_EDGE_SEAM_PAIRS.has([name, other].sort().join('|'))) continue;
+      const key = [`${a.x.toFixed(5)},${a.z.toFixed(5)}`, `${b.x.toFixed(5)},${b.z.toFixed(5)}`].sort().join('|');
+      if (seen.has(key)) continue;
+      seen.add(key); edges.push(freeze({ a, b, dx, dz, length2: length * length, regions: freeze([name, other]) }));
+    }
+  return freeze(edges);
+})();
+const SEAM_BUCKETS = (() => {
+  const grid = new Map(), reach = SOUTHWEST_SEAM.reach;
+  for (const edge of SEAM_EDGES)
+    for (let i = Math.floor((Math.min(edge.a.x, edge.b.x) - reach) / SEAM_GRID); i <= Math.floor((Math.max(edge.a.x, edge.b.x) + reach) / SEAM_GRID); i++)
+      for (let j = Math.floor((Math.min(edge.a.z, edge.b.z) - reach) / SEAM_GRID); j <= Math.floor((Math.max(edge.a.z, edge.b.z) + reach) / SEAM_GRID); j++) {
+        const key = `${i},${j}`;
+        if (!grid.has(key)) grid.set(key, []);
+        grid.get(key).push(edge);
+      }
+  return grid;
+})();
+export function southwestSeamWeight(x, z) {
+  const edges = SEAM_BUCKETS.get(`${Math.floor(x / SEAM_GRID)},${Math.floor(z / SEAM_GRID)}`);
+  if (!edges) return 0;
+  let distance = SOUTHWEST_SEAM.reach;
+  for (const edge of edges) {
+    const t = clamp(((x - edge.a.x) * edge.dx + (z - edge.a.z) * edge.dz) / edge.length2, 0, 1);
+    distance = Math.min(distance, Math.hypot(x - edge.a.x - edge.dx * t, z - edge.a.z - edge.dz * t));
+  }
+  if (distance >= SOUTHWEST_SEAM.reach) return 0;
+  const near = nearestSouthwestRiver(x, z, SOUTHWEST_SEAM.riverFade);
+  const river = near ? smooth(SOUTHWEST_SEAM.riverKeep, SOUTHWEST_SEAM.riverFade, near.distance) : 1;
+  return (1 - smooth(SOUTHWEST_SEAM.core, SOUTHWEST_SEAM.reach, distance)) * river;
+}
 
 /**
  * How much of a point is this block's own to shape, by the ground blend's own weights, at the
@@ -1406,8 +1484,9 @@ export function dinelvRidges(x, z, own = 0) {
  *
  * Their flanks carry `DINELV_BANDS` like everything else in the country, so the courses run round them
  * at the same heights they run along the escarpment - which is the one thing that says these three and
- * the escarpment face are the same rock. **They cannot be walked up**: this is not a climbing region,
- * and the lore's ridge-exposure mines, whose families hold the knowledge of where the good stone runs,
+ * the escarpment face are the same rock. Their steep faces require the normal climbing controller
+ * and its stamina limits; the authored ascent remains the walkable way onto the plateau. The lore's
+ * ridge-exposure mines, whose families hold the knowledge of where the good stone runs,
  * are people's and are not built.
  */
 const mesa = (id, name, x, z, lift, top, reach) => freeze({ id, name, x, z, lift, top, reach });
@@ -1934,9 +2013,16 @@ export function inTrogoClearing(x, z) {
  * something a traveler can walk on**, and the middle link is what makes it true.
  */
 const trogoPath = (id, name, line) => freeze({ id, name, line: freeze(line.map(([x, z]) => point(x, z))) });
+// The direct old endpoint reaches the steep coastal taper. The walk instead
+// joins the north gully along its already open inner bank. Keep the original
+// line as the vegetation/undergrowth footprint so saved trees do not reroll.
+export const TROGO_NORTH_LINK_WALK = freeze([
+  [-2352, 2706], [-2332, 2714], [-2312, 2718], [-2300, 2723],
+  [-2290, 2778], [-2286, 2840], [-2294, 2884],
+].map(([x, z]) => point(x, z)));
 export const TROGO_PATHS = freeze([
   trogoPath('crest-path', 'The crest path', TROGO_CREST.line.map(p => [p.x, p.z])),
-  trogoPath('north-link', 'The north link', [[-2302, 2712], [-2290, 2778], [-2286, 2840], [-2294, 2884]]),
+  freeze({ ...trogoPath('north-link', 'The north link', [[-2302, 2712], [-2290, 2778], [-2286, 2840], [-2294, 2884]]), walkLine: TROGO_NORTH_LINK_WALK }),
   trogoPath('middle-link', 'The middle link', [[-2196, 2722], [-2206, 2790], [-2198, 2848], [-2192, 2888]]),
   trogoPath('shore-path', 'The shore path', [[-2140, 2726], [-2118, 2782], [-2104, 2840], [-2098, 2888]]),
   trogoPath('south-link', 'The south link', [[-2424, 3098], [-2358, 3072], [-2302, 3050], [-2258, 3040]]),
@@ -2083,7 +2169,19 @@ export function southwestSwaleWeight(x, z, bank = null, near = null) {
  */
 export function southwestGround(x, z, ground) {
   if (!inSouthwestBox(x, z)) return ground;
-  const mix = terrainMix(x, z), raw = southwestWeight(x, z, mix);
+  let mix = terrainMix(x, z);
+  const seam = southwestSeamWeight(x, z);
+  if (seam > 0) {
+    const complete = seamlessTerrainMix(x, z);
+    // These joins are outside the village and terrain pads. Retain the world's
+    // beach attenuation rather than lifting the sea with an inland correction.
+    const before = mix.base + relief(x, z, mix.amp, mix.wave);
+    const after = complete.base + relief(x, z, complete.amp, complete.wave);
+    ground += (after - before) * seam * smooth(2, 40, landDistance(x, z));
+    const weights = Object.fromEntries(SOUTHWEST_REGIONS.map(name => [name, lerp(mix.weights[name] ?? 0, complete.weights[name] ?? 0, seam)]));
+    mix = { ...mix, base: lerp(mix.base, complete.base, seam), weights };
+  }
+  const raw = southwestWeight(x, z, mix);
   if (raw <= 0) return ground;
   const bank = smooth(.05, .30, raw), own = smooth(.3, .8, raw);
   const navarth = regionShare('Navarth', x, z, mix);
@@ -2588,7 +2686,7 @@ export const SOUTHWEST_LANDMARKS = freeze([
   freeze({ id: 'trogoreth', name: 'The Trogoreth', ...onCourse(TROGORETH, .5, 18),
     description: 'The only permanent water in the rainforest, and the lore names it itself: "the largest, which Maroshi records call the Trogoreth (‘the Trogo river,’ a construction that acknowledges they have no better name for it), has a wide delta mouth that has silted into a shallow estuary system." Four `small` atlas edges through the south-eastern corner, out of the canopy and across the coastal grass into the southern ocean. It is waded anywhere, deliberately: **this country already has one movement rule and a walled river inside it would be a second barrier crossing the first.** It is also the first of the three ways through - "follow the rivers down" - and a traveler who cannot push into the thicket can walk up the water.' }),
   freeze({ id: 'trogo-animal-paths', name: 'The Animal Paths', x: -2290, z: 2778,
-    description: 'Five worn lines through a country with no roads in it: one along the crest, two rungs between the north and middle gullies, one just inside the north-eastern shore, and one along the southern forest edge. Nobody cut them and nobody maintains them - the lore’s three peoples move through this forest and so do the carnivores they study hardest, and a path in a closed canopy is worn by whatever walks it most. Four and a half metres of trodden ground with a wall of fern down both sides and nothing to see past it. **They are the third of the three kinds of way through, and what they do is join the other two to each other**: without them the gullies and the river would be five lines that do not meet.' }),
+    description: 'Five worn lines through a country with no roads in it: one along the crest, two rungs between the north and middle gullies, one just inside the north-eastern shore, and one along the southern forest edge. Nobody cut them and nobody maintains them - the lore’s three peoples move through this forest and so do the carnivores they study hardest, and a path in a closed canopy is worn by whatever walks it most. Four and a half metres of trodden ground with a wall of fern down both sides and nothing to see past it. At the north gully, take the upper, inland bank and curve south into the forest; the direct coastal face below that turn is steep. **They are the third of the three kinds of way through, and what they do is join the other two to each other**: without them the gullies and the river would be five lines that do not meet.' }),
   freeze({ id: 'trogo-clearings', name: 'The Dry Corridors', x: -2418, z: 2662,
     description: 'The lore gives these as a mechanism rather than as scenery: "and then the reverse - gaps in the ridge where the desert air pushes through in the dry months, creating corridors of sparse growth cutting into the forest." Three of the five clearings are exactly that, openings on the crest where the Meroshe’s own air comes over the top and the canopy does not close; the other two are treefall gaps, which is what a forest like this has instead of fields. Light, grass, saplings and a sky, in a country that has none of those anywhere else - and every one of them stands on a way, because a clearing in a thicket that nobody can walk into is a picture of nothing.' }),
   freeze({ id: 'trogo-thicket', name: 'The Thicket', x: -2250, z: 2830,

@@ -147,3 +147,16 @@ test('magic quest adapters list accepted errands, update destinations and omit u
   assert.deepEqual(activeOptionalQuests({ spider: { stage: 'abandoned' }, murder: { stage: 'paid' }, cat: { stage: 'lost' } }), []);
   assert.equal(normalizeTrackableQuests({ main, optional: tasks }).length, 4, 'active authored magic quests are not the parked teacher errands');
 });
+
+
+test('Independent exploration has neutral guidance and no invented main objective', () => {
+  const tracker=createQuestTracker();
+  const exploration={title:'Your own road',detail:'Join when you choose.'};
+  const view=tracker.update({main:{...main,active:false},exploration});
+  assert.equal(view.selectedId,'free-roam');
+  assert.equal(view.selected.detail,exploration.detail);
+  assert.equal(view.choices.length,0);
+  assert.equal(tracker.target({id:'harbormaster',x:1,z:2}),null);
+  const joined=tracker.update({main});
+  assert.equal(joined.selectedId,'main');
+});

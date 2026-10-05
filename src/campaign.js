@@ -63,7 +63,7 @@ export const CHAPTERS = Object.freeze({
     'Infiltrate the mountain-goblin base and kill the orc chief. You cannot fight the whole warren; do it fast and flee. Get back to Mavren.',
     { kind: 'assassination', side: 'empire', outcomes: { empire: { victory: 'mithala-scout', defeat: null } } }),
   'mithala-scout': chapter('mithala-scout', 'South Mithala', 'The river-city',
-    'Scout northwest into South Mithala. The Mithalan Empire has a rebellion of its own. Reach the river-city where the three Mithalas meet, talk to a few people, and carry what you learn back to Mavren.',
+    'Scout northwest into South Mithala. The Mithalan Empire has a rebellion of its own. Reach Mithala, the old seat where the four Mithalas meet, talk to a few people, and carry what you learn back to Mavren.',
     { side: 'empire', next: 'oremindi-convergence' }),
   // Coalition branch
   'moros-outpost': chapter('moros-outpost', 'Moros Plain', 'The outpost on the plain',

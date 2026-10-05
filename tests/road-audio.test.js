@@ -115,3 +115,32 @@ test('missing audio devices and invalid updates fail quietly; disposal is safe t
   assert.deepEqual(audio.state(),before);
   audio.dispose();audio.dispose();assert.equal(audio.state().transients,0);
 });
+
+test('Dragon fire stays silent until enabled and playing, then reuses one filtered roar and rumble for sustained breath',()=>{
+  const {audio,devices,frame}=fixture();
+  assert.equal(audio.dragonFire(1),false);assert.equal(devices.length,0);
+  audio.toggle();assert.equal(audio.dragonFire(1),false,'Paused menus cannot start a breath');
+  frame(.1,{...walking(),speed:0});
+  const ordinaryCount=devices[0].nodes.length;assert.equal(audio.dragonFire(.8),true);
+  const graph=devices[0].nodes.slice(ordinaryCount),fireCount=devices[0].nodes.length;
+  assert.equal(graph.filter(n=>n.kind==='buffer').length,1);assert.equal(graph.filter(n=>n.kind==='oscillator').length,1);
+  assert.ok(graph.find(n=>n.kind==='buffer').loop);assert.ok(graph.filter(n=>n.kind==='filter').every(n=>n.type==='lowpass'));
+  for(let i=0;i<7200;i++)audio.dragonFire(.8);
+  assert.equal(devices[0].nodes.length,fireCount,'Two minutes of holding fire creates no extra voices');
+  assert.ok(graph.filter(n=>n.kind==='gain').every(n=>n.gain.events.length===1),'A steady trigger does not accumulate automation events');
+  audio.dragonFire(.25);assert.equal(audio.state().dragonFire.intensity,.25);
+  audio.dragonFire(0);assert.ok(graph.filter(n=>n.kind==='gain').every(n=>n.gain.events.at(-1).value===0));
+  assert.equal(audio.dragonFire(1),true);assert.equal(devices[0].nodes.length,fireCount,'A new breath reuses the silent graph');
+  audio.dispose();assert.ok(graph.every(n=>n.disconnected));assert.equal(audio.state().dragonFire.sources,0);
+});
+
+test('Pausing, muting and invalid dragon intensities fade the breath and never resume it without a new trigger',()=>{
+  const {audio,devices,frame}=fixture();audio.toggle();frame(.1,{...walking(),speed:0});audio.dragonFire(1);
+  frame(.1,{...walking(),speed:0,playing:false});assert.equal(audio.state().dragonFire.intensity,0);
+  assert.equal(audio.dragonFire(1),false);frame(.1,{...walking(),speed:0});assert.equal(audio.state().dragonFire.intensity,0);
+  audio.dragonFire(1);audio.toggle();assert.equal(audio.state().dragonFire.intensity,0);assert.equal(audio.dragonFire(1),false);
+  audio.toggle();assert.equal(audio.state().dragonFire.intensity,0);
+  for(const value of [NaN,Infinity,-2,undefined]){audio.dragonFire(value);assert.equal(audio.state().dragonFire.intensity,0);}
+  audio.dragonFire(100);assert.equal(audio.state().dragonFire.intensity,1);
+  audio.dispose();audio.dispose();assert.equal(audio.dragonFire(1),false);assert.ok(devices[0].nodes.every(n=>n.disconnected));
+});

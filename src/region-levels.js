@@ -5,9 +5,9 @@
  * It is docs/difficulty-ladder.md turned into data, and that file is the argument: seventy-four
  * regions were levelled in the spoken brief (docs/original-brief.md) with its contradictions
  * resolved, and the other fifty-seven placed from their neighbours on the atlas, the lore, and the
- * brief’s own rules of thumb. All 131 regions of assets/azhora-dev-regions.json are here, under
+ * brief’s own rules of thumb. All 132 regions of assets/azhora-dev-regions.json are here, under
  * the atlas’s own spellings; the Cold Stones are the one row the ladder leaves open, at the 9 it
- * proposes. Level 11 is the hidden island, which is not on the atlas and so is not in the table.
+ * proposes. Level 11 is Urubond, charted only by personal exploration.
  *
  * The player never sees the number on the HUD. The region card gives the words on first entering;
  * the number appears only in the cartography section of the journal, and only once the region is
@@ -26,6 +26,7 @@ export const LEVEL_WORDS = Object.freeze([
 
 /** Every region of the atlas, by the name the atlas gives it. */
 export const REGION_LEVELS = Object.freeze({
+  Urubond:11,
   // 0 · A quiet country — the tutorial and the heartland
   'Drent': 0, 'Elagos': 0, 'West Izol': 0,
   // 1 · Mind the road at night — wolves, and goblins who keep to the trees
@@ -53,15 +54,15 @@ export const REGION_LEVELS = Object.freeze({
   'North Oreminidi Mountains': 6, 'Qadwaaqaad': 6, 'Saxrul': 6, 'South Ganun': 6, 'South Lond': 6, 'South Nonoth': 6,
   'West Endevor': 6, 'West Ganun': 6, 'West Lond': 6,
   // 7 · The mountains keep their dead — the high passes, the cold sea, the jungle ring
-  'Anubrul': 7, 'Cudon': 7, 'East Inseld': 7, 'Haatrul': 7, 'Maanub': 7, 'Maawad': 7, 'North Riesov': 7,
+  'Anubrul': 7, 'Cudon': 7, 'East Ithzel': 7, 'Haatrul': 7, 'Maanub': 7, 'Maawad': 7, 'North Riesov': 7,
   'Noth Hills': 7, 'Nothwood': 7, 'Nuurat': 7, 'Rihas': 7, 'Riwaad': 7, 'Sabrqad': 7, 'South Riesov': 7,
-  'South Thoth': 7, 'West Inseld': 7, 'West Oremindi Mountains': 7,
+  'South Thoth': 7, 'West Ithzel': 7, 'West Oremindi Mountains': 7,
   // 8 · The dark lord’s shadow — the cape, and what the cape reaches
   'Barqat': 8, 'Cape Thalmagar': 8, 'Central Thoth': 8, 'East Baldro Mountains': 8, 'North Thoth': 8, 'Qadmar': 8,
   'Saxhan': 8, 'South Orsa': 8,
   // 9 · Few return — the Gorgi and the Scythe
-  'Cold Stones': 9, 'East Gorgi Mountains': 9, 'East Witherst': 9, 'Eshtor Plateau': 9, 'North Orsa': 9,
-  'Orgmala': 9, 'South Scythe': 9, 'Waahaat': 9, 'Waahan': 9, 'West Baldro Mountains': 9, 'West Gorgi Mountains': 9,
+  'Cold Stones': 9, 'South Gorgi Mountains': 9, 'East Witherst': 9, 'Eshtor Plateau': 9, 'North Orsa': 9,
+  'Orgmala': 9, 'South Scythe': 9, 'Waahaat': 9, 'Waahan': 9, 'West Baldro Mountains': 9, 'Gorgiwood': 9,
   'West Witherst': 9,
   // 10 · None return — the orcs’ homeland and the mountain island
   'North Gorgi Mountains': 10, 'North Scythe': 10,

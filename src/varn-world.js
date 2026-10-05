@@ -1,3 +1,4 @@
+import { lotharnRouteJoinDelta, nearLotharnRouteJoin } from './east-lotharn-world.js';
 /**
  * Varn: the Empire's fortress-city in the notch of Amod, on the pass that comes south out of the East
  * Lotharn - as pure numbers. `src/varn-scenery.js` draws what is described here.
@@ -44,7 +45,8 @@ import { fortCircuit, FORT_STANDARD } from './fortification.js';
 import { KELMOD_ROAD_END, AMOD_ROAD } from './amod-world.js';
 import { amodRoadBench, amodTerracedGround } from './amod-terraces.js';
 import { firstCliff, onPeakWay, RAMPS_KEEP_THEIR_HOLD } from './lotharn-first-course.js';
-import { peakUplift as eastUplift, BANDS as EAST_BANDS, LOTHARN as EAST_LOTHARN, RAMPS as EAST_RAMPS, nearestOn, pointOn as pointOnLine } from './east-lotharn-world.js';
+import { peakUplift as eastUplift, BANDS as EAST_BANDS, LOTHARN as EAST_LOTHARN, RAMPS as EAST_RAMPS, nearestOn, pointOn as pointOnLine,
+  lotharnLandscapeDelta, LOTHARN_WESTERN_SHOULDER } from './east-lotharn-world.js';
 import { RAMPS as WEST_RAMPS } from './west-lotharn-world.js';
 import { CAVE_LINES as EAST_CAVE_LINES } from './east-lotharn-caves.js';
 import { WEST_CAVE_LINES } from './west-lotharn-caves.js';
@@ -331,11 +333,17 @@ export const inVarnNeighbourhood = (x, z) => inBoxOf(VARN_NEIGHBOURHOOD, x, z);
  * climber does, and those three doors carry rails (`CAVE_RAILS`): rock beyond the two metres, not in the door.
  */
 const CAVE_MOUTHS = freeze([...EAST_CAVE_LINES, ...WEST_CAVE_LINES].flatMap(cave => cave.kind === 'chamber' ? [cave.points[0]] : [cave.points[0], cave.points.at(-1)]));
+const CAVE_MOUTH_DIRECTIONS = EAST_CAVE_LINES.flatMap(cave => (cave.kind === 'chamber' ? [0] : [0, 1]).map(end => {
+  const p = end ? cave.points.at(-1) : cave.points[0], q = end ? cave.points.at(-2) : cave.points[1], length = Math.hypot(q.x - p.x, q.z - p.z);
+  return { ...p, dx: (q.x - p.x) / length, dz: (q.z - p.z) / length };
+}));
 const DOOR = 2;
 const nearCaveMouth = (x, z) => CAVE_MOUTHS.some(mouth => Math.hypot(mouth.x - x, mouth.z - z) <= DOOR);
 /** Whether the lip rule looks at a point at all: Varn's reach, the mountain's own hexes, the courses it takes, off the ways, the caves' mouths and the works. */
-export function lipRuleApplies(x, z) {
+export function lipRuleApplies(x, z, legacyCaves = false) {
   if (!inVarnRock(x, z) || hexOwnerAt(x, z) !== EAST_LOTHARN || onSlab(x, z, SLAB.side + 1) || onLanding(x, z, -2.5) || nearCaveMouth(x, z)) return false;
+  // The restored cave shelf has its own outer rim; the old brink must not stand across its tread.
+  if (!legacyCaves && caveBenchNearest(x, z)?.distance < CAVE_BENCH.reach) return false;
   if (onPeakWay(x, z)) return onWayShoulder(x, z);
   return eastUplift(x, z) >= RIB.lift.low;
 }
@@ -382,8 +390,8 @@ export function onWayShoulder(x, z) {
  * inner side of the rim is a step of a metre and more in a metre, which no walker takes; the outer side is
  * the cliff.
  */
-export function lipRib(x, z, unbuilt = varnBeforeLips, here = null) {
-  return Math.max(brinkRib(x, z, unbuilt, here), stopRib(x, z), railRib(x, z, unbuilt, here));
+export function lipRib(x, z, unbuilt = varnBeforeLips, here = null, legacyCaves = false) {
+  return Math.max(brinkRib(x, z, unbuilt, here, legacyCaves), stopRib(x, z), railRib(x, z, unbuilt, here, legacyCaves), legacyCaves ? 0 : caveBenchRib(x, z, unbuilt, here));
 }
 /**
  * **The stops**: a rim stood by hand where the brink rule has no brink to stand one on. One, so far.
@@ -430,8 +438,8 @@ export function stopRib(x, z) {
  * fourth ledge from the top of its fourth ramp west to the high chimney's lower door, whose passage climbs to the upper.
  * Only that ledge's own band of lift (`lift`), within `half` metres of the line, and never a rim or a rail: the cliffs
  * above and below and every brink keep no hold. A climber's way: the ledge tilts past a walker's grade in places.
- * The eastern chamber has no way: its ledge is all rim between the peak's way and its door, and the one line a hand
- * could take there runs on the cliff below the rim, from which a climber stepped off into Amod (measured, section 10).
+ * The chamber and low chimney use the restored second-ledge shelf below (`CAVE_BENCHES`): its rim was
+ * moved outward instead of granting holds on the cliff below it, which would allow a fall into Amod.
  */
 export const CAVE_WAY = freeze({
   id: 'eastern-caves-way', name: 'The cave ledges', half: 2.5,
@@ -463,8 +471,101 @@ function nearCaveWay(x, z, margin = 0) {
 }
 /** On the caves' way: within its reach of one of its lines, and on that ledge's own band of lift. Rims and rails are not taken off. */
 export const onCaveWay = (x, z) => nearCaveWay(x, z) && !inVarnNeighbourhood(x, z);
+
+/** The second ledge joins the third ramp's foot, the chamber and the low chimney's upper door.
+ * The old rim filled that shelf. Its tread is now cut into the ledge and the rim carried along
+ * its outer shoulder. All adjacent cliff faces still give no hold. The lower chimney door is
+ * reached through the existing passage, with its own rail; it never becomes a descent to Amod.
+ * Points follow the original ground, preserving cave identities, their lines and the peak route. */
+export const CAVE_BENCH = freeze({ half: 1.35, reach: 3.8, rail: 2.65, railHalf: .95, height: 3.6 });
+const cavePoint = (id, end = 0) => {
+  const line = EAST_CAVE_LINES.find(cave => cave.id === id);
+  return end ? line.points.at(-1) : line.points[0];
+};
+const chamberMouth = cavePoint('eastern-chamber');
+// Surveyed on the actual ground, rather than its uplift: the third ramp's shoulder and the
+// northeastern ridge both distort a nominal band contour. Retain those landforms above the shelf.
+export const CAVE_BENCHES = freeze([
+  freeze({ id: 'eastern-chamber-approach', line: freeze([
+    EAST_RAMPS.find(r => r.id === 'eastern-peak-ramp-3').line.points[0],
+    point(-1027.359,-762.454), point(-1023.002,-761.243), point(-1018.640,-760.321), point(-1014.605,-759.290),
+    point(-1010.692,-758.344), point(-1007.010,-757.287), point(-1003.421,-756.269), point(-999.898,-755.305),
+    point(-996.423,-754.407), point(-992.991,-753.563), point(-989.626,-752.686), point(-986.323,-751.720),
+    point(-983.019,-750.797), point(-979.753,-749.709), point(-976.506,-748.366), point(-973.116,-747.582),
+    point(-969.681,-746.987), point(-966.255,-745.792), point(-962.739,-744.651), point(-959.131,-743.645),
+    point(-955.447,-742.940), point(-951.680,-742.277), point(-947.947,-742.405), point(-944.302,-743.154),
+    point(-940.668,-743.955), point(-937.108,-745.038), point(-933.585,-746.228), point(-930.078,-747.472),
+    point(-926.502,-748.600), point(-922.885,-749.740), chamberMouth,
+  ]) }),
+  freeze({ id: 'eastern-low-chimney-approach', line: freeze([
+    chamberMouth, point(-914.872,-751.190), point(-910.369,-751.572), point(-905.579,-751.907),
+    point(-900.559,-752.331), point(-895.204,-752.767), point(-889.529,-753.296), point(-883.279,-753.734),
+    point(-876.209,-753.981), point(-865.897,-752.330), point(-853.729,-750.377), point(-847.460,-753.330),
+    point(-860.715,-767.868), point(-867.028,-776.953), point(-871.115,-784.055), point(-874.281,-790.142),
+    point(-876.592,-795.429), point(-878.267,-800.153), point(-881.667,-804.531),
+    freeze({ x: -884.771, z: -808.623, level: 162.54 }), freeze({ x: -885.701, z: -812.511, level: 162.18 }),
+    freeze({ x: -885.536, z: -816.249, level: 161.81 }), freeze({ x: -885.259, z: -819.864, level: 161.45 }), point(-883.869,-823.386),
+    point(-884.377,-826.845), point(-884.874,-830.262), point(-885.081,-833.682), point(-886.543,-836.931),
+    point(-888.291,-840.037), point(-890.352,-842.966), point(-892.362,-845.787), point(-894.370,-848.500),
+    point(-896.352,-851.123), cavePoint('eastern-low-chimney', 1),
+  ]) }),
+]);
+const CAVE_BENCH_SEGMENTS = CAVE_BENCHES.flatMap(bench => bench.line.slice(1).map((b, i) => {
+  const a = bench.line[i], dx = b.x - a.x, dz = b.z - a.z, length = Math.hypot(dx, dz);
+  return { a, b, dx, dz, length, minX: Math.min(a.x, b.x) - CAVE_BENCH.reach, maxX: Math.max(a.x, b.x) + CAVE_BENCH.reach,
+    minZ: Math.min(a.z, b.z) - CAVE_BENCH.reach, maxZ: Math.max(a.z, b.z) + CAVE_BENCH.reach };
+}));
+function caveBenchNearest(x, z, margin = 0) {
+  if (x < -1040 - margin || x > -840 + margin || z < -865 - margin || z > -730 + margin) return null;
+  let best = null;
+  for (const s of CAVE_BENCH_SEGMENTS) {
+    if (x < s.minX - margin || x > s.maxX + margin || z < s.minZ - margin || z > s.maxZ + margin) continue;
+    const t = clamp(((x - s.a.x) * s.dx + (z - s.a.z) * s.dz) / (s.length * s.length), 0, 1);
+    const px = s.a.x + s.dx * t, pz = s.a.z + s.dz * t, distance = Math.hypot(x - px, z - pz);
+    const outward = ((x - px) * -s.dz + (z - pz) * s.dx) / s.length;
+    if (!best || distance < best.distance - 1e-7) best = { segment: s, t, x: px, z: pz, distance, outward };
+    // Outside a convex corner both segments have the same nearest endpoint. Their outward
+    // half-planes must join: picking only the first segment leaves half the corner unguarded.
+    else if (Math.abs(distance - best.distance) <= 1e-7) best.outward = Math.max(best.outward, outward);
+  }
+  return best;
+}
+const caveBenchLevels = new Map();
+function caveBenchLevel(p) {
+  if (p.level !== undefined) return p.level;
+  if (!caveBenchLevels.has(p)) caveBenchLevels.set(p, groundBeforeVarn(p.x, p.z));
+  return caveBenchLevels.get(p);
+}
+const benchLevel = near => lerp(caveBenchLevel(near.segment.a), caveBenchLevel(near.segment.b), near.t);
+function caveBenchGround(x, z, ground) {
+  const near = caveBenchNearest(x, z);
+  if (!near || near.distance >= CAVE_BENCH.reach) return ground;
+  // Flatten the shelf right up to a mouth, but leave its inward passage on the original ground.
+  // The first opening is at least a metre inside the surveyed mouth, beyond this feather.
+  let outside = 1;
+  for (const p of CAVE_MOUTH_DIRECTIONS) {
+    const distance = Math.hypot(x - p.x, z - p.z);
+    if (distance < 4) outside = Math.min(outside, 1 - (1 - smooth(2, 4, distance)) * smooth(.2, .8, (x - p.x) * p.dx + (z - p.z) * p.dz));
+  }
+  // Keep level footing right to the inner foot of the outer ridge. A feather starting before
+  // the ridge would make a steep gutter from which the falling controller can begin sliding.
+  const flat = near.outward > 0 ? Math.max(CAVE_BENCH.half, CAVE_BENCH.rail - CAVE_BENCH.railHalf + .1) : CAVE_BENCH.half;
+  return lerp(ground, benchLevel(near), (1 - smooth(flat, CAVE_BENCH.reach, near.distance)) * outside);
+}
+export function caveBenchRib(x, z, unbuilt = varnBeforeLips, here = null) {
+  const near = caveBenchNearest(x, z);
+  if (!near || near.outward <= 0 || near.distance >= CAVE_BENCH.reach) return 0;
+  if (onPeakWay(x, z) && !onWayShoulder(x, z)) return 0;
+  // Distance rounds an outside bend continuously. The normal's projection alone leaves an
+  // open wedge where two segments turn, even though each straight shoulder is protected.
+  const profile = Math.max(0, 1 - Math.abs(near.distance - CAVE_BENCH.rail) / CAVE_BENCH.railHalf);
+  if (!profile) return 0;
+  // Rail the shoulder right into the mouth's existing arc, never through the doorway.
+  if (nearCaveMouth(x, z)) return 0;
+  return Math.max(0, benchLevel(near) + CAVE_BENCH.height * profile - (here ?? unbuilt(x, z)));
+}
 /**
- * **The rails at the caves' doors.** At three doors of the eastern peak the rim stops two metres short of the mouth
+ * **The rails at the caves' doors.** At five doors of the eastern peak the rim stops two metres short of the mouth
  * (`DOOR`) on a shelf no wider than the rim, and the brink before the door was open: a body stepping out came to the
  * Empire's ground by falls. Each has a rail of the same stone as the rims: an arc round the mouth from the rim on one
  * side to the rim on the other, over the open brink (`from` to `to`, degrees, 0 along +x and 90 along +z), its crest
@@ -475,9 +576,11 @@ export const onCaveWay = (x, z) => nearCaveWay(x, z) && !inVarnNeighbourhood(x, 
  */
 export const RAIL = freeze({ radius: 2.9, inner: .9, outer: .5, height: 3.2, fill: 1 });
 export const CAVE_RAILS = freeze([
-  freeze({ id: 'eastern-chamber', cave: 'eastern-chamber', end: 0, from: -20, to: 160 }),
+  freeze({ id: 'eastern-chamber', cave: 'eastern-chamber', end: 0, from: 15, to: 145 }),
   freeze({ id: 'eastern-high-chimney-lower', cave: 'eastern-high-chimney', end: 0, from: 94, to: 214 }),
   freeze({ id: 'eastern-high-chimney-upper', cave: 'eastern-high-chimney', end: 1, from: 146, to: 282 }),
+  freeze({ id: 'eastern-low-chimney-lower', cave: 'eastern-low-chimney', end: 0, from: -150, to: 120 }),
+  freeze({ id: 'eastern-low-chimney-upper', cave: 'eastern-low-chimney', end: 1, from: 200, to: 20 }),
 ].map(rail => {
   const line = EAST_CAVE_LINES.find(cave => cave.id === rail.cave), mouth = rail.end ? line.points.at(-1) : line.points[0];
   return freeze({ ...rail, mouth: point(mouth.x, mouth.z) });
@@ -488,13 +591,15 @@ const railLevel = rail => { if (!railLevels.has(rail.id)) railLevels.set(rail.id
 /** Whether a bearing from a mouth (degrees) is within a rail's arc. */
 const inArc = (rail, a) => ((a - rail.from) % 360 + 360) % 360 <= ((rail.to - rail.from) % 360 + 360) % 360;
 /** How much a rail raises the ground at a point (its fill, its rise, its crest), over `here`. */
-export function railRib(x, z, unbuilt = varnBeforeLips, here = null) {
+export function railRib(x, z, unbuilt = varnBeforeLips, here = null, legacyCaves = false) {
   let rib = 0;
   for (const rail of CAVE_RAILS) {
+    if (legacyCaves && rail.cave === 'eastern-low-chimney') continue;
     const dx = x - rail.mouth.x, dz = z - rail.mouth.z;
     if (Math.abs(dx) > RAIL.radius + RAIL.outer || Math.abs(dz) > RAIL.radius + RAIL.outer) continue;
     const r = Math.hypot(dx, dz);
-    if (r < RAIL.fill || r > RAIL.radius + RAIL.outer || !inArc(rail, Math.atan2(dz, dx) * 180 / Math.PI)) continue;
+    const arc = legacyCaves && rail.cave === 'eastern-chamber' ? { from: -20, to: 160 } : rail;
+    if (r < RAIL.fill || r > RAIL.radius + RAIL.outer || !inArc(arc, Math.atan2(dz, dx) * 180 / Math.PI)) continue;
     const level = railLevel(rail), off = r - RAIL.radius;
     const target = off >= 0 ? level + RAIL.height * (1 - off / RAIL.outer) : level + RAIL.height * Math.max(0, 1 + off / RAIL.inner);
     if (here === null) here = unbuilt(x, z);
@@ -503,8 +608,8 @@ export function railRib(x, z, unbuilt = varnBeforeLips, here = null) {
   return rib;
 }
 /** The rim the brink rule builds at a point (the comment above `lipRib`). */
-function brinkRib(x, z, unbuilt, here) {
-  if (!lipRuleApplies(x, z)) return 0;
+function brinkRib(x, z, unbuilt, here, legacyCaves = false) {
+  if (!lipRuleApplies(x, z, legacyCaves)) return 0;
   if (here === null) here = unbuilt(x, z);
   const shoulder = onPeakWay(x, z);
   let dx = 0, dz = 0, low = Infinity, tread = null;
@@ -771,11 +876,12 @@ const FLOOR_REACH = 3, FLOOR_FEATHER = 9;
  * end this floor meets at the road's own grade. Outside `VARN_ROCK` and off the descent it answers with the
  * ground it was given.
  */
-export function varnGround(x, z, ground, lips = true) {
-  let height = ground;
+export function varnGround(x, z, ground, lips = true, legacyCaves = false) {
+  let height = legacyCaves ? ground : caveBenchGround(x, z, ground);
   const bench = varnRoadBench(x, z);
   if (bench && bench.weight > 0) height = lerp(height, bench.level, bench.weight);
-  if (!inBox(x, z)) return lips ? height + lipRib(x, z, varnBeforeLips, height) : height;
+  const unbuilt = legacyCaves ? varnLegacyBeforeLips : varnBeforeLips;
+  if (!inBox(x, z)) return lips ? height + lipRib(x, z, unbuilt, height, legacyCaves) : height;
   const wall = nearestWall(x, z);
   if (wall.outward < FLOOR_REACH + FLOOR_FEATHER) {
     // Outside the Amod Gate the floor is the road's own bed, so the street runs out onto the descent without a hump.
@@ -793,10 +899,32 @@ export function varnGround(x, z, ground, lips = true) {
   const slab = slabGround(x, z, height);
   if (slab !== null) height = slab;
   // The lips last, read off this same ground without them: a brink the jambs have buried is no brink.
-  return lips ? height + lipRib(x, z, varnBeforeLips, height) : height;
+  return lips ? height + lipRib(x, z, unbuilt, height, legacyCaves) : height;
 }
 /** The ground with everything of Varn on it but the lips: what the lip rule reads. */
 export const varnBeforeLips = (x, z) => varnGround(x, z, groundBeforeVarn(x, z), false);
+const varnLegacyBeforeLips = (x, z) => varnGround(x, z, groundBeforeVarn(x, z), false, true);
+/**
+ * Scenery-only inverse of the western shoulder's change to the old brink rims.
+ * The visible/physical rims still follow their actual ground. Seeded legacy
+ * scatter must read its original terrain, including the old derived rim, or
+ * one changed rejection would advance the rest of the regional random stream.
+ */
+export function varnLandscapeSceneryDelta(x, z) {
+  const s = LOTHARN_WESTERN_SHOULDER, reach = RIB.reach + 1;
+  if (x < s.minX - reach || x > s.maxX + reach || z < s.minZ - reach || z > s.maxZ + reach) return 0;
+  const here = varnLegacyBeforeLips(x, z);
+  const original = (a, b) => varnLegacyBeforeLips(a, b) - lotharnLandscapeDelta(a, b);
+  return lipRib(x, z, varnLegacyBeforeLips, here, true)
+    - lipRib(x, z, original, here - lotharnLandscapeDelta(x, z), true);
+}
+/** Subtract only for legacy seeded scenery acceptance; rendered and traversed ground keeps the shelf.
+ * Existing harvestable tree identities must not change when a new shelf raises a height threshold. */
+export function varnCaveAccessDelta(x, z) {
+  if (x < -1040 || x > -840 || z < -865 || z > -730) return 0;
+  const ground = groundBeforeVarn(x, z);
+  return varnGround(x, z, ground) - varnGround(x, z, ground, true, true);
+}
 
 /**
  * How far the world's own ground grid is sunk under Varn's (src/varn-scenery.js draws the city's floor,
@@ -819,6 +947,7 @@ export function varnTerrainSink(x, z) {
  */
 export function varnKeepsClear(x, z, margin = 0) {
   if (varnRoadDistance(x, z) < VARN_ROAD_HALF + 2.2 + margin) return true;
+  if (caveBenchNearest(x, z, 1 + margin)?.distance < CAVE_BENCH.reach + 1 + margin) return true;
   // The caves' way, a metre beyond its reach: a narrow ledge, and a tree on it is a wall.
   if (nearCaveWay(x, z, 1 + margin)) return true;
   if (!inBox(x, z)) return false;
@@ -956,3 +1085,13 @@ export const VARN_LANDMARKS = freeze([
   freeze({ id: 'varn-amod-gate', name: 'The Amod Gate', x: AXIS, z: FRONT - 5,
     description: 'Varn’s south gate, in the face of its salient, on the road down through the hills to Ostel: the town’s own door, shut and barred like the other, with a wicket in its right-hand leaf that is opened from inside and from nowhere else. From here the terraces begin.' }),
 ]);
+
+/** Scenery-only inverse for the old derived rim near repaired trail joins.
+ * Physical rims retain the actual field. Never use this to move a traveler. */
+export function varnRouteJoinSceneryDelta(x, z) {
+  if (!nearLotharnRouteJoin(x, z, RIB.reach + 2) || !inVarnRock(x, z)) return 0;
+  const here = varnLegacyBeforeLips(x, z);
+  const original = (a, b) => varnLegacyBeforeLips(a, b) - lotharnRouteJoinDelta(a, b);
+  return lipRib(x, z, varnLegacyBeforeLips, here, true)
+    - lipRib(x, z, original, here - lotharnRouteJoinDelta(x, z), true);
+}

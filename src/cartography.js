@@ -1,3 +1,5 @@
+import {isLegendaryRegion} from './urubond-atlas.js';
+import { GAME_REGION_RENAMES } from './game-atlas-adjustments.js';
 /**
  * The traveler's own chart of Azhora. A named country reveals only its original
  * lettering. Nearby hexes reveal vague terrain and walked hexes show the real
@@ -180,7 +182,7 @@ export function createCartography({ skills = null, onEvent = () => {} } = {}) {
   }
 
   /** Somebody told you where it is and what it is called. */
-  const hear = name => raise(name, 'heard', { named: true, xp: CHART_XP.heard });
+  const hear = name => isLegendaryRegion(name)?{ok:false,reason:'No reliable directions exist.'}:raise(name, 'heard', { named: true, xp: CHART_XP.heard });
   /** Survey knowledge improves the skill record, without uncovering unvisited terrain. */
   const chart = name => raise(name, 'charted', { xp: CHART_XP.charted });
   /** Enough of it is under your own boots to call it yours. */
@@ -249,7 +251,7 @@ export function createCartography({ skills = null, onEvent = () => {} } = {}) {
     if (!validateCartographySnapshot(data, { allowMissing: false })) return false;
     met = data.met;
     for (const [name, it] of Object.entries(data.regions)) {
-      const kept = ensure(name);
+      const kept = ensure(GAME_REGION_RENAMES[name]??name);
       if (RANK[it.state] > RANK[kept.state]) kept.state = it.state;
       kept.named = kept.named || it.named;
       kept.hexes = Math.max(kept.hexes, it.hexes);

@@ -1,3 +1,6 @@
+import {urubondGround,urubondTint} from './urubond-world.js';
+import { outerGround, outerTint } from './outer-regions-world.js';
+import { acorGround, acorTint } from './acor-world.js';
 /**
  * The ground of the rebuilt world: where land ends, how high it stands, and
  * what colour it is. Pure functions over `region-world.js` plus the original
@@ -9,6 +12,8 @@ import {
   REGION_TERRAIN, SEA_LEVEL, CALOSS, calossDistance, WORLD_BOUNDS, TERRAIN_PADS, MAIN_ROAD,
 } from './region-world.js';
 import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from './pueth-world.js';
+import { izolSeamInland } from './izol-ground.js';
+import { westernDrySeamInland, westernDrySeamWeight } from './western-dry-seams.js';
 import { elagosGround } from './elagos-world.js';
 import { southSuvalGround } from './south-suval-world.js';
 import { eastLotharnGround } from './east-lotharn-world.js';
@@ -29,16 +34,29 @@ import { iscareGround } from './iscare-world.js';
 import { menoraGround } from './menora-city.js';
 import { nylonGround } from './nylon-city.js';
 import { aevisGround } from './aevis-city.js';
+import { mithalaCityGround } from './mithala-city.js';
 import { eastPyrosGround, eastPyrosTint } from './east-pyros-world.js';
 import { netherDesertGround, netherDesertTint } from './nether-desert-world.js';
 import { legemumGround, legemumTint, legemumShoreTint } from './legemum-world.js';
 import { babonGround, babonTint, babonShoreTint } from './babon-world.js';
+import { southCelderGround, southCelderTint, legacyCelderLand, celderOwns } from './south-celder-world.js';
+import { northCelderGround, northCelderTint } from './north-celder-world.js';
+import { canerdGround, canerdTint } from './canerd-world.js';
+import { pyraGround, pyraTint } from './pyra-world.js';
+import { selamusGround, selamusTint } from './selamus-city.js';
+import { eastIzolGround, eastIzolTint, eastIzolShoreTint } from './east-izol-world.js';
+import { alezhorGround, alezhorTint, alezhorShoreTint } from './alezhor-world.js';
+import { southIbenalGround, southIbenalTint, southIbenalShoreTint } from './south-ibenal-world.js';
+import { northIbenalGround, northIbenalTint, northIbenalShoreTint } from './north-ibenal-world.js';
+import { henborthGround, henborthTint } from './henborth-world.js';
 import { caricasSettlementGround } from './caricas-settlement.js';
 import { westOremindiGround, westOremindiTint } from './west-oremindi-world.js';
+import { northernGround, northernTint } from './northern-oremindi-world.js';
 import { southOremindiGround, southOremindiTint } from './south-oremindi-world.js';
 import { yunethreGround, yunethreTint } from './yunethre-world.js';
 import { baldroHeight, baldroTint } from './baldro-world.js';
 
+let legacyWesternQuery = false;
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 export const smooth = (a, b, x) => { const v = clamp((x - a) / (b - a), 0, 1); return v * v * (3 - 2 * v); };
 export const lerp = (a, b, t) => a + (b - a) * t;
@@ -75,8 +93,15 @@ export function villageBase(x, z) {
 }
 
 /** Hex-blended biome ground with its own beach and sea floor. */
-export function regionBase(x, z) {
-  const mix = terrainMix(x, z), inland = mix.base + relief(x, z, mix.amp, mix.wave);
+export function regionBase(x, z) { return islandBase(x, z, true); }
+
+/** Original island ground for saved scatter eligibility; drawing uses regionBase. */
+export function legacyIzolGroundHeight(x, z) { return islandBase(x, z, false); }
+
+function islandBase(x, z, repairIzol) {
+  const mix = terrainMix(x, z), original = mix.base + relief(x, z, mix.amp, mix.wave);
+  const island = repairIzol ? izolSeamInland(x, z, original) : original;
+  const inland = legacyWesternQuery ? island : westernDrySeamInland(x, z, island);
   const distance = landDistance(x, z);
   const beach = lerp(-5.6, 1.4, smooth(-26, 6, distance));
   return padded(x, z, lerp(beach, inland, smooth(2, 40, distance)));
@@ -266,15 +291,116 @@ export function groundBeforeVarn(x, z) {
   try { return groundWithRiver(x, z); } finally { varnLeftOut = false; }
 }
 
+/** Original ground for saved scatter eligibility in the three repaired dry bands. */
+export function legacyWesternGroundHeight(x,z) {
+  const previous=legacyWesternQuery;legacyWesternQuery=true;
+  try{return groundWithRiver(x,z);}finally{legacyWesternQuery=previous;}
+}
+
 /** Ground with the river channels cut, before any deck or pier override. */
 export function groundWithRiver(x, z) {
-  return babonGround(x,z,legemumGround(x,z,netherDesertGround(x,z,groundBeforeNether(x,z),groundBeforeNether)));
+  return selamusGround(x,z,groundBeforeSelamus(x,z));
+}
+/** Natural island substrate for stable scatter and its terrain regression tests. */
+export function groundBeforeSelamus(x,z) {
+  const ground = henborthLayer(x,z,northIbenalLayer(x,z,southIbenalLayer(x,z,alezhorLayer(x,z,eastIzolLayer(x,z,celderLayer(x,z,babonGround(x,z,legemumGround(x,z,netherDesertGround(x,z,groundBeforeNether(x,z),groundBeforeNether)))))))));
+  return pyraGround(x,z,celderLeftOut ? ground : canerdGround(x,z,ground));
+}
+// The two Celders lay their ground last of all (src/south-celder-world.js, src/north-celder-world.js). Each writes only on
+// its own hexes; `groundBeforeCelder` answers the ground without either, for measuring their border seams.
+let celderLeftOut = false;
+const celderLayer = (x, z, ground) => (celderLeftOut ? ground : northCelderGround(x, z, southCelderGround(x, z, ground, groundBeforeCelder), groundBeforeCelder));
+export function groundBeforeCelder(x, z) {
+  celderLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { celderLeftOut = false; }
+}
+// East Izol lays its ground outermost (src/east-izol-world.js), on its own hexes only; `groundBeforeEastIzol` answers the
+// ground without it, for measuring its seam with West Izol.
+let eastIzolLeftOut = false;
+const eastIzolLayer = (x, z, ground) => (eastIzolLeftOut ? ground : eastIzolGround(x, z, ground, groundBeforeEastIzol));
+export function groundBeforeEastIzol(x, z) {
+  eastIzolLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { eastIzolLeftOut = false; }
+}
+/** Pre-review East Izol eligibility, retaining the first combined layout. */
+export function legacyEastIzolGroundHeight(x, z) {
+  return eastIzolGround(x, z, groundBeforeEastIzol(x, z), groundBeforeEastIzol, true);
+}
+/** Delivered Celder eligibility, with the current neighboring ground unchanged. Henborth was registered after the
+ * Celders' composition was reviewed, and North Celder's border seam reads whatever ground is beside it, so the
+ * eligibility is measured with Henborth's layer left out: the composition stays the one delivered, while the trees
+ * still stand on the live ground (`legacyCelderWorldGround` in src/world.js). */
+export function legacyCelderGroundHeight(x, z) {
+  const outer = henborthLeftOut;
+  henborthLeftOut = true;
+  try {
+    if (!celderOwns(x, z)) return groundWithRiver(x, z);
+    return legacyCelderLand(x, z, groundBeforeCelder(x, z), groundBeforeCelder);
+  } finally { henborthLeftOut = outer; }
+}
+// Alezhor lays its ground outermost (src/alezhor-world.js), on its own land only - its hexes and its own shore past
+// them, and its two river mouths cut through the shared shore below the waterline; `groundBeforeAlezhor` answers the
+// ground without it, for measuring its border seams and reading the forest's two courses where they reach it.
+let alezhorLeftOut = false;
+const alezhorLayer = (x, z, ground) => (alezhorLeftOut ? ground : alezhorGround(x, z, ground, groundBeforeAlezhor));
+export function groundBeforeAlezhor(x, z) {
+  alezhorLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { alezhorLeftOut = false; }
+}
+// South Ibenal lays its ground outermost (src/south-ibenal-world.js), on its own hexes only; `groundBeforeSouthIbenal`
+// answers the ground without it, for measuring its border seams.
+let southIbenalLeftOut = false;
+const southIbenalLayer = (x, z, ground) => (southIbenalLeftOut ? ground : southIbenalGround(x, z, ground, groundBeforeSouthIbenal));
+export function groundBeforeSouthIbenal(x, z) {
+  southIbenalLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { southIbenalLeftOut = false; }
+}
+// North Ibenal lays its ground outermost (src/north-ibenal-world.js), on its own hexes only; `groundBeforeNorthIbenal`
+// answers the ground without it, for measuring its border seams.
+let northIbenalLeftOut = false;
+/**
+ * Read the ground with both Ibenals' layers left out: the ground Alezhor's composition was reviewed and approved on
+ * (docs/region-briefs/south-ibenal-environment.md, item 6). The Ibenals keep `outland`'s profile, so with their layers
+ * out their hexes are exactly the unbuilt ground Alezhor's border fringe was planted on.
+ */
+export function withoutIbenalLayers(read) {
+  const south = southIbenalLeftOut, north = northIbenalLeftOut;
+  southIbenalLeftOut = northIbenalLeftOut = true;
+  try { return read(); } finally { southIbenalLeftOut = south; northIbenalLeftOut = north; }
+}
+
+const northIbenalLayer = (x, z, ground) => (northIbenalLeftOut ? ground : northIbenalGround(x, z, ground, groundBeforeNorthIbenal));
+export function groundBeforeNorthIbenal(x, z) {
+  northIbenalLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { northIbenalLeftOut = false; }
+}
+// Henborth lays its ground outermost (src/henborth-world.js), on its own hexes only; `groundBeforeHenborth`
+// answers the ground without it, for measuring its border seams. North Celder's seam reads Henborth's side live
+// (`groundBeforeCelder` keeps this layer), so Henborth holds that line exactly as handed and North Celder meets it.
+let henborthLeftOut = false;
+const henborthLayer = (x, z, ground) => (henborthLeftOut ? ground : henborthGround(x, z, ground, groundBeforeHenborth));
+export function groundBeforeHenborth(x, z) {
+  henborthLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { henborthLeftOut = false; }
+}
+/**
+ * Mithala's own layer of the ground, and the same ground with that layer left out (`groundBeforeMithalaCity`): the plain
+ * as the Mithala's scenery and its channels were laid on, which is what the city's tests hold the river's cut to.
+ */
+let mithalaCityLeftOut = false;
+const mithalaCityLayer = (x, z, ground) => (mithalaCityLeftOut ? ground : mithalaCityGround(x, z, ground, groundBeforeMithalaCity));
+export function groundBeforeMithalaCity(x, z) {
+  mithalaCityLeftOut = true;
+  try { return groundWithRiver(x, z); } finally { mithalaCityLeftOut = false; }
 }
 /** Everything `groundWithRiver` lays but the Nether Desert and Legemum: the ground the Nether Desert's border seam is measured against. */
 function groundBeforeNether(x,z){
   // Feradom owns its inland hills and castle yards; their base includes every other regional layer.
   const base=groundBeforeFrontier(x,z);
-  return eastPyrosGround(x,z,aevisGround(x,z,nylonGround(x,z,menoraGround(x,z,caricasSettlementGround(x,z,base,groundBeforeFrontier)))),groundBeforeFrontier);
+  // Mithala (src/mithala-city.js) lays its district platforms, flood banks and ford approaches over the plain, after the
+  // western ground has cut the channels into it. It writes nothing within two metres of the water and nothing outside its
+  // own box, so the river's cut is the one it was and every seam measured from here is unchanged.
+  return eastPyrosGround(x,z,mithalaCityLayer(x,z,aevisGround(x,z,nylonGround(x,z,menoraGround(x,z,caricasSettlementGround(x,z,base,groundBeforeFrontier))))),groundBeforeFrontier);
 }
 function groundBeforeFrontier(x,z){
   return feradomGround(x, z, groundBeforeFeradom(x, z), groundBeforeFeradom);
@@ -323,8 +449,8 @@ function groundBeforeTelemonia(x, z) {
   // And Telemonia outside even that (`groundBeforeFeradom`, above; src/telemonia-world.js): the Telemon
   // highland writes only on its own hexes, meets the ground across its border line - which is where the
   // Caelin and the Treloss run, cut by the Oves's and Gala's own channels before it - and rises off it.
-  const regional = selemisGround(x, z, yunethreGround(x,z,southOremindiGround(x,z,ascarthGround(x, z, feradomSeam(x, z, iscareGround(x, z, suvalHighlandGround(x, z, southSuvalGround(x, z, wineryGround(x, z, varnLayer(x, z, eastLotharnGround(x, z, westGround(x, z, amodGround(x, z, elagosGround(x, z, ground))))))))))))));
-  return westOremindiGround(x,z,baldroHeight(x,z,regional));
+  const regional = selemisGround(x, z, yunethreGround(x,z,southOremindiGround(x,z,ascarthGround(x, z, feradomSeam(x, z, iscareGround(x, z, suvalHighlandGround(x, z, southSuvalGround(x, z, wineryGround(x, z, varnLayer(x, z, eastLotharnGround(x, z, westGround(x, z, amodGround(x, z, elagosGround(x, z, ground)), legacyWesternQuery ? 0 : westernDrySeamWeight(x,z)))))))))))));
+  return urubondGround(x,z,outerGround(x,z,acorGround(x,z,northernGround(x,z,westOremindiGround(x,z,baldroHeight(x,z,regional))))));
 }
 
 /** Terrain tint before scenery tints, matching the biome and the shore. */
@@ -376,6 +502,13 @@ const GROUND_TINTS = Object.freeze([
   Object.freeze({id:'nether-desert',tint:netherDesertTint}),
   Object.freeze({id:'legemum',tint:legemumTint}),
   Object.freeze({id:'babon',tint:babonTint}),
+  Object.freeze({id:'south-celder',tint:southCelderTint}),
+  Object.freeze({id:'north-celder',tint:(x,z,ground)=>canerdTint(x,z)??northCelderTint(x,z,ground)}),
+  Object.freeze({id:'east-izol',tint:eastIzolTint}),
+  Object.freeze({id:'alezhor',tint:alezhorTint}),
+  Object.freeze({id:'south-ibenal',tint:southIbenalTint}),
+  Object.freeze({id:'north-ibenal',tint:northIbenalTint}),
+  Object.freeze({id:'henborth',tint:henborthTint}),
 ]);
 /**
  * The families, in the order they are walked, for the guard. `tests/southwest-world.test.js` asserts this
@@ -401,6 +534,13 @@ const SHORE_TINTS = Object.freeze([
   Object.freeze({ id: 'selemis', tint: selemisShoreTint }),
   Object.freeze({ id: 'legemum', tint: legemumShoreTint }),
   Object.freeze({ id: 'babon', tint: babonShoreTint }),
+  // East Izol's headland cliffs and shingle coves (src/east-izol-world.js); its two bays keep the world's sand.
+  Object.freeze({ id: 'east-izol', tint: eastIzolShoreTint }),
+  // Alezhor's southern cliffs and its gold estuary's gravel banks (src/alezhor-world.js); its strands keep the world's sand.
+  Object.freeze({ id: 'alezhor', tint: alezhorShoreTint }),
+  // The Ibenals' rocky points and North Ibenal's broken rocky shore (src/south-ibenal-world.js); their bays keep the world's sand.
+  Object.freeze({ id: 'south-ibenal', tint: southIbenalShoreTint }),
+  Object.freeze({ id: 'north-ibenal', tint: northIbenalShoreTint }),
 ]);
 export const SHORE_TINT_FAMILIES = Object.freeze(SHORE_TINTS.map(family => family.id));
 /** One row of the shore table asked on its own, for the guard. */
@@ -410,6 +550,7 @@ export const shoreTintOf = (id, x, z, distance) => SHORE_TINTS.find(family => fa
 // of allocating four or more colours at every vertex of the whole-world grid.
 const tintScratch = new WeakMap();
 export function groundTint(color, x, z, THREE) {
+  const cityTint=selamusTint(x,z)??pyraTint(x,z);if(cityTint!==null){color.set(cityTint);return color;}
   const mix = terrainMix(x, z), distance = landDistance(x, z);
   let scratch = tintScratch.get(THREE);
   if (!scratch) {
@@ -473,6 +614,10 @@ export function groundTint(color, x, z, THREE) {
   const oremindi=southOremindiTint(x,z);if(oremindi!==null)color.set(oremindi);
   const yunethre=yunethreTint(x,z);if(yunethre!==null)color.set(yunethre);
   const westernOremindi=westOremindiTint(x,z);if(westernOremindi!==null)color.set(westernOremindi);
+  const northern=northernTint(x,z);if(northern!==null)color.set(northern);
+  const acor=acorTint(x,z);if(acor!==null)color.set(acor);
+  const urubond=urubondTint(x,z);if(urubond!==null)color.set(urubond);
+  const outer=outerTint(x,z);if(outer!==null)color.set(outer);
   const baldro=baldroTint(x,z);if(baldro!==null)color.set(baldro);
   return color;
 }

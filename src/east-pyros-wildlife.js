@@ -5,6 +5,7 @@ import { EAST_PYROS, EAST_PYROS_CELLS, EAST_PYROS_OUTCROPS,
   eastPyrosRiverClearance } from './east-pyros-world.js';
 import { hexOwnerAt, landDistance } from './region-world.js';
 import { groundWithRiver as height } from './world-terrain.js';
+import { pyraClear } from './pyra-world.js';
 
 const freeze=Object.freeze;
 const slope=(x,z)=>Math.hypot(height(x+1,z)-height(x-1,z),height(x,z+1)-height(x,z-1))/2;
@@ -23,7 +24,7 @@ for(const [index,cell] of EAST_PYROS_CELLS.entries()){
   for(let i=0;i<56;i++){
     const angle=i*2.39996323+index*.3,radius=36*Math.sqrt(i/56);
     const x=cell.x+Math.cos(angle)*radius,z=cell.z+Math.sin(angle)*radius;
-    if(hexOwnerAt(x,z)!==EAST_PYROS||landDistance(x,z)<20||eastPyrosBoundaryDistance(x,z)<16
+    if(pyraClear(x,z,30)||hexOwnerAt(x,z)!==EAST_PYROS||landDistance(x,z)<20||eastPyrosBoundaryDistance(x,z)<16
       ||eastPyrosRiverClearance(x,z)<25||eastPyrosWaterAt(x,z)!==null||eastPyrosClear(x,z,2))continue;
     if(EAST_PYROS_OUTCROPS.some(p=>Math.hypot(x-p.x,z-p.z)<p.radius+6))continue;
     const grade=slope(x,z);if(grade<traits[species].maxSlope*.8)candidates.push({x,z,grade});

@@ -1,6 +1,10 @@
 # The remaining regions of Azhora
 
+**5 October update:** [33 northern and island environments](outer-regions-environments.md) are integrated, including Gorgiwood, South Gorgi Mountains and both Ithzel regions. Unbuilt countries are gray on the map. Southern jungle development is on hold; further loading optimization is paused.
+
 Design draft for review — 29 September 2026. **This document does not authorize or implement the expansion.** West Lotharn integration is separate work. Proposed priorities and new gameplay ideas below need review together.
+
+**Current execution reference:** The [joint terrain and wildlife completion plan](regional-completion-joint-plan.md) and [live ledger](regional-completion-ledger.md) supersede this draft's dated counts and production sequence. Implementation was authorized 4 October 2026; current acceptance and pending review gates belong in that ledger.
 
 ## Current planning sequence
 

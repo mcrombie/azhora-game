@@ -2,6 +2,7 @@ import { forEachBuild } from './build-each.js';
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
 import { hexAt, hexOwnerAt, landDistance, regions, REGION_CELLS } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
@@ -39,6 +40,7 @@ export function* createAscarthScenerySteps(kit) {
   const metrics = { batches: 0, rocks: 0, scrub: 0, tufts: 0, trees: 0, oaks: 0, pines: 0, olives: 0, greenStone: 0, cliffRocks: 0 };
   const push = collider => { colliders.push(collider); return collider; };
   const gy = (x, z) => groundHeight(x, z);
+  const treeGroundAt = kit.renderedGroundHeight ?? gy;
   const per = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
   /** Where a traveler is set down by the developer's travel button: kept clear of anything solid. */
@@ -200,12 +202,15 @@ export function* createAscarthScenerySteps(kit) {
       if (!list.length) continue;
       const trunks = new THREE.InstancedMesh(trunkGeometry, bark, list.length);
       yield* forEachBuild(list, function* (tree, i) {
-        const y = gy(tree.x, tree.z), height = tree.h * tree.s;
+        let y = gy(tree.x, tree.z); const height = tree.h * tree.s;
         const bole = tree.kind === 'pine' ? .72 : tree.kind === 'oak' ? .34 : .42;
         dummy.position.set(tree.x, y + height * bole / 2, tree.z);
         dummy.rotation.set(tree.kind === 'pine' ? .05 : .08, tree.rot, tree.kind === 'pine' ? .07 : .05);
         const girth = tree.kind === 'pine' ? .9 : tree.kind === 'oak' ? 1.25 : 1;
         dummy.scale.set(tree.s * girth, height * bole, tree.s * girth); dummy.updateMatrix();
+        const grounding = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .26, segments: 6 });
+        y += grounding; dummy.position.y += grounding; dummy.updateMatrix();
+        const footY = dummy.matrix.elements[13] - dummy.matrix.elements[5] * .5;
         trunks.setMatrixAt(i, dummy.matrix);
         const parts = [{mesh:trunks,index:i}];
         for (let c = 0; c < lumpsOf(tree); c++) { if (++buildWork % 32 === 0) yield;
@@ -232,7 +237,7 @@ export function* createAscarthScenerySteps(kit) {
           dummy.updateMatrix(); crowns.setMatrixAt(crown++, dummy.matrix);
         }
         const collider = push({ x: tree.x, z: tree.z, r: .42 * tree.s, kind: 'ascarth-tree' });
-        registerWorldTree(colliders,{id:worldTreeId('ascarth',tree.x,tree.z),x:tree.x,z:tree.z,y,height,species:tree.kind==='pine'?'stone-pine':tree.kind==='oak'?'holm-oak':'olive'},parts,collider);
+        registerWorldTree(colliders,{id:worldTreeId('ascarth',tree.x,tree.z),x:tree.x,z:tree.z,y:footY,height,species:tree.kind==='pine'?'stone-pine':tree.kind==='oak'?'holm-oak':'olive'},parts,collider);
         metrics.trees++;
         if (tree.kind === 'pine') metrics.pines++; else if (tree.kind === 'oak') metrics.oaks++; else metrics.olives++;
       });

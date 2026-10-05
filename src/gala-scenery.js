@@ -2,6 +2,7 @@ import { forEachBuild } from './build-each.js';
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
 import { hexOwnerAt, REGION_CELLS, landDistance, relief } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import { LIZEEM, LIZEEM_REACH, WEST_BRAIDS, WEST_RIVERS, GALA_RIVERS, GALA_CHANNEL, GALA_TELEMONIA_STREAM, GALA_TELEMONIA_MOUTH, GALA_DESERT_STREAM, OVETH_REACH, westBareGround, courseDistance,
@@ -47,6 +48,8 @@ export function* createGalaScenerySteps(kit) {
   const smooth = (a, b, x) => { const v = Math.max(0, Math.min(1, (x - a) / (b - a))); return v * v * (3 - 2 * v); };
   const metrics = { water: 0, blockers: 0, reeds: 0, gravel: 0, sand: 0, stones: 0, tufts: 0, shrubs: 0, maquis: 0, trees: 0, tamarisk: 0, oleander: 0, thrift: 0 };
   const gy = (x, z) => groundHeight(x, z);
+  const pendingTrees = []; let fineGroundHeight = () => null;
+  const treeGroundAt = (x, z) => Math.max((kit.renderedGroundHeight ?? gy)(x, z), fineGroundHeight(x, z) ?? -Infinity);
   const own = (x, z) => hexOwnerAt(x, z) === 'Gala';
   /**
    * **The Treloss's mouth** (`GALA_TELEMONIA_MOUTH`) was cut on 2026-10-03, after everything here was laid.
@@ -335,7 +338,7 @@ export function* createGalaScenerySteps(kit) {
         parts.push({mesh:crowns,index:at});
         crowns.setMatrixAt(at, dummy.matrix); crowns.setColorAt(at++, tint(tree));
       }
-      registerWorldTree(colliders,{id:worldTreeId(kind,tree.x,tree.z),x:tree.x,z:tree.z,y,height,species:name.includes('tamarisk')?'tamarisk':tree.fig?'fig':'olive'},parts,collider);
+      pendingTrees.push({ tree: {id:worldTreeId(kind,tree.x,tree.z),x:tree.x,z:tree.z,y,height,species:name.includes('tamarisk')?'tamarisk':tree.fig?'fig':'olive'}, parts, collider });
     });
     trunks.name = `${name} trunks`; crowns.name = `${name} crowns`;
     for (const batch of [trunks, crowns]) { if (++buildWork % 32 === 0) yield; batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch); }
@@ -632,10 +635,38 @@ export function* createGalaScenerySteps(kit) {
     const ground = new THREE.Mesh(geometry, material('#ffffff', { vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
     ground.name = 'Treloss ground'; ground.receiveShadow = true; group.add(ground);
     metrics.trelossGround = positions.length / 3;
+    // Retain the emitted Float32 triangles: trees and ground animals must use
+    // this surface where the coarse grid was deliberately sunk underneath it.
+    const drawnCells = new Set(drawn), p = geometry.attributes.position;
+    fineGroundHeight = (x, z) => {
+      let i = Math.floor((x - T.minX) / STEP) - i0, j = Math.floor((z - T.minZ) / STEP) - j0;
+      if (x < Math.fround(xOf(i))) i--; else if (x >= Math.fround(xOf(i + 1))) i++;
+      if (z < Math.fround(zOf(j))) j--; else if (z >= Math.fround(zOf(j + 1))) j++;
+      if (i < 0 || j < 0 || i >= cols - 1 || j >= rows - 1 || !drawnCells.has(j * cols + i)) return null;
+      const k = j * cols + i, a = used[k], b = used[k + cols], c = used[k + 1], d = used[k + cols + 1];
+      const u = (x - p.getX(a)) / (p.getX(c) - p.getX(a)), v = (z - p.getZ(a)) / (p.getZ(b) - p.getZ(a));
+      return u + v <= 1 ? p.getY(a) + (p.getY(c) - p.getY(a)) * u + (p.getY(b) - p.getY(a)) * v
+        : p.getY(d) + (p.getY(b) - p.getY(d)) * (1 - u) + (p.getY(c) - p.getY(d)) * (1 - v);
+    };
   }
 
+  // The fine gully is authored after the scatter. Seat the completed trees
+  // now without rerolling any placement, colour, or saved coordinate identity.
+  const treeMatrix = new THREE.Matrix4(), changed = new Set();
+  yield* forEachBuild(pendingTrees, function* ({ tree, parts, collider }) {
+    parts[0].mesh.getMatrixAt(parts[0].index, treeMatrix);
+    const offset = treeGroundingOffset(treeMatrix, treeGroundAt, { radius: .28, segments: 6 });
+    tree.y = treeMatrix.elements[13] - treeMatrix.elements[5] * .5 + offset;
+    for (const { mesh, index } of parts) {
+      mesh.getMatrixAt(index, treeMatrix); treeMatrix.elements[13] += offset;
+      mesh.setMatrixAt(index, treeMatrix); changed.add(mesh);
+    }
+    registerWorldTree(colliders, tree, parts, collider);
+  });
+  for (const mesh of changed) { mesh.instanceMatrix.needsUpdate = true; mesh.computeBoundingSphere(); }
+
   return {
-    group, metrics,
+    group, metrics, fineGroundHeight,
     update(time) { waterMaterial.uniforms.time.value = time; },
   };
 }

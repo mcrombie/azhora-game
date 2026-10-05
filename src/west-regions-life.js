@@ -1,8 +1,19 @@
+import { OUTER_WILDLIFE_ZONES } from './outer-regions-wildlife.js';
+import { ACOR_WILDLIFE_ZONES } from './acor-wildlife.js';
+import { thalmagarModels } from './thalmagar-fauna.js';
 import { EAST_PYROS_WILDLIFE_ZONES } from './east-pyros-wildlife.js';
 import { NETHER_DESERT_WILDLIFE_ZONES } from './nether-desert-wildlife.js';
 import { LEGEMUM_WILDLIFE_ZONES } from './legemum-wildlife.js';
 import { BABON_WILDLIFE_ZONES } from './babon-wildlife.js';
+import { SOUTH_CELDER_WILDLIFE_ZONES } from './south-celder-wildlife.js';
+import { NORTH_CELDER_WILDLIFE_ZONES } from './north-celder-wildlife.js';
+import { EAST_IZOL_WILDLIFE_ZONES } from './east-izol-wildlife.js';
+import { ALEZHOR_WILDLIFE_ZONES } from './alezhor-wildlife.js';
+import { SOUTH_IBENAL_WILDLIFE_ZONES } from './south-ibenal-wildlife.js';
+import { NORTH_IBENAL_WILDLIFE_ZONES } from './north-ibenal-wildlife.js';
+import { HENBORTH_WILDLIFE_ZONES } from './henborth-wildlife.js';
 import * as THREE from 'three';
+import { createDeveloperWildlifeDamage } from './developer-wildlife-damage.js';
 import {WEST_OREMINDI_WILDLIFE_ZONES} from './west-oremindi-wildlife.js';
 import {BALDRO_WILDLIFE_ZONES} from './baldro-wildlife.js';
 import { GROVE_WILDLIFE } from './ibenwood-pilot.js';
@@ -11,9 +22,11 @@ import { canStand, canSwim } from './game-state.js';
 import { SEA_LEVEL, REGION_IDS } from './region-world.js';
 import { nylonReserved } from './nylon-city.js';
 import { aevisReserved } from './aevis-city.js';
+import { MITHALA_DISTRICTS, mithalaCityReserved } from './mithala-city.js';
 import { westWaterSurface } from './west-ground.js';
 import { REGIONAL_WILDLIFE_ZONES, WEST_SUVAL_WILDLIFE_ZONES } from './regional-wildlife.js';
 import { DRENT_WILDLIFE_ZONES } from './drent-wildlife.js';
+import { STARTING_COUNTRY_WILDLIFE_ZONES } from './starting-country-wildlife.js';
 import { SOUTH_SUVAL_WILDLIFE_ZONES } from './south-suval-wildlife.js';
 import { EAST_LOTHARN_WILDLIFE_ZONES } from './east-lotharn-wildlife.js';
 import { FERADOM_WILDLIFE_ZONES } from './feradom-wildlife.js';
@@ -21,6 +34,7 @@ import { GALA_WILDLIFE_ZONES } from './gala-wildlife.js';
 import { ASCARTH_WILDLIFE_ZONES } from './ascarth-wildlife.js';
 import { OVES_WILDLIFE_ZONES } from './oves-wildlife.js';
 import { WEST_LOTHARN_WILDLIFE_ZONES } from './west-lotharn-wildlife.js';
+import { NORTHERN_WILDLIFE_ZONES } from './northern-oremindi-wildlife.js';
 import { SOUTH_OREMINDI_WILDLIFE_ZONES } from './south-oremindi-wildlife.js';
 import { YUNETHRE_WILDLIFE_ZONES } from './yunethre-world.js';
 import { MITHALA_WILDLIFE_ZONES } from './mithala-wildlife.js';
@@ -112,6 +126,7 @@ function modelFactories() {
     // A heavy island apex reptile, modelled at its own eight-metre scale. It is
     // not a scaled desert lizard: broad jaws, thick thighs and a muscular tail
     // carry its weight while the small amber eyes follow a nearby traveler.
+    ...thalmagarModels({geometry,S,R,B,C,Y,both}),
     'babon-giant-monitor': () => ({
       body: geometry([
         S(0x52634b,[0,1.27,0],[.91,.60,1.62]), S(0x7c8660,[0,.90,.18],[.71,.27,1.42]),
@@ -435,6 +450,30 @@ function modelFactories() {
         ...both(side => S(0x0f0d0c, [side * .045, .03, .06], [.015, .016, .014])),
         ...both(side => S(0x5b4534, [side * .06, .06, -.005], [.028, .025, .018]))]),
       leg: geometry([Y(0x5b4534, [0, -.06, 0], [.028, .12, .028]), B(0x3a2d22, [0, -.12, .015], [.06, .03, .075])]),
+    }),
+
+    /**
+     * The grey seal, hauled out above the tide. The fauna overview names it twice: "the cold waters of the Bay of Lol
+     * and the northern Azhoran coast carry populations of marine mammals - grey seals ...", and "large populations of
+     * southern grey seal" on the cold westernmost strip of Bouén. North Ibenal's shore is the cold open sea between
+     * the two, and its seals are an extension that says so (src/north-ibenal-wildlife.js). A long mottled body
+     * tapering to the hind flippers, the fore flippers flat at its sides; the head and the hind flippers move, and
+     * everything else is one piece.
+     */
+    'grey-seal': () => ({
+      body: geometry([
+        S(0x5f5b53, [0, .25, -.08], [.32, .24, .74]),
+        S(0x8d877a, [0, .16, .02], [.28, .13, .66]),
+        S(0x57534c, [0, .3, .5], [.24, .22, .3]),
+        S(0x4f4b45, [0, .17, -.74], [.17, .12, .3], [-.1, 0, 0]),
+        ...[[.12, .458, .1], [-.1, .466, -.22], [.05, .44, -.48], [-.14, .415, .32], [.16, .43, -.36]]
+          .map(([x, y, z]) => S(0x3d3a35, [x, y, z], [.07, .03, .09])),
+        ...both(side => S(0x4a4640, [side * .26, .09, .38], [.07, .03, .17], [0, side * .45, side * .5])),
+      ]),
+      head: geometry([S(0x5f5b53, [0, 0, 0], [.16, .15, .18]), S(0x6e695f, [0, -.03, .14], [.1, .085, .11]),
+        S(0x1c1a18, [0, -.01, .245], [.04, .03, .02]),
+        ...both(side => S(0x0e0d0c, [side * .085, .05, .09], [.026, .028, .022]))]),
+      tail: geometry([...both(side => S(0x45423c, [side * .07, 0, -.16], [.08, .03, .17], [0, side * .35, 0]))]),
     }),
 
     /**
@@ -1045,6 +1084,60 @@ function modelFactories() {
       // Short, heavy, scaled and splayed, with a flat sole: an animal built to carry a shell and not to run.
       leg: geometry([Y(0x5f5744, [0, -.048, 0], [.052, .096, .052], [.22, 0, 0]), B(0x4a4336, [0, -.098, .018], [.078, .028, .090])]),
     }),
+
+    /**
+     * **The bog crane**, Henborth's damp hollows (src/henborth-wildlife.js): a new bird and an extension, one of the
+     * overview's "range of stilt-legged species for which Standard Mittoli maintains separate names", summering on a
+     * northern bog. It is on the heron's frame, because what tells a crane from a heron at any distance is its colours and
+     * its carriage rather than its build: ash-grey all over, a black neck and head with a red crown, and the drooping
+     * black bustle of the inner wing over its tail. Its range draws it a little larger than a heron.
+     */
+    crane: () => wader({ body: 0x8d9192, neck: 0x2e3032, head: 0x37393b, bill: 0x6f6d5c, crest: 0xa3392b,
+      tail: 0x2f3133, wingIn: 0x858a8b, wingOut: 0x2c2e30, legUp: 0x2b2b29, foot: 0x2b2b29 }),
+
+    /**
+     * **The willow grouse**, Henborth's cold-margin scrub (src/henborth-wildlife.js): a new bird and an extension. A
+     * round, low, rufous-brown body that is a clod of earth in the dwarf birch until it goes, a red comb over the eye,
+     * feathered pale feet - and white wings, which are the whole of what anybody sees as the covey goes up.
+     */
+    grouse: () => ({
+      body: geometry([
+        S(0x74503a, [0, .17, -.01], [.095, .085, .14]),
+        S(0x8a5d3a, [0, .185, .07], [.075, .07, .08]),
+        S(0xe4e0d4, [0, .12, -.02], [.07, .045, .10]),
+        S(0x5a4231, [0, .19, -.15], [.06, .03, .07], [.25, 0, 0]),
+        S(0x83563a, [0, .265, .11], [.048, .046, .05]),
+        S(0xa83a2c, [0, .297, .112], [.032, .012, .022]),
+        C(0x2a2520, [0, .258, .158], [.012, .03, .011], [Math.PI / 2 + .2, 0, 0]),
+        ...both(side => S(0x0f0d0c, [side * .028, .276, .134], [.009, .010, .009])),
+      ]),
+      wing: geometry([S(0xe9e6dc, [.10, 0, 0], [.13, .02, .075]), S(0xd5d1c5, [.20, -.005, -.03], [.08, .015, .05])]),
+      leg: geometry([Y(0xd9d2c0, [0, -.04, 0], [.014, .08, .014]), B(0xcfc7b4, [0, -.08, .015], [.03, .012, .04])]),
+    }),
+
+    /**
+     * **The steppe marmot**, Henborth's thin northern pasture (src/henborth-wildlife.js): a new animal and an extension.
+     * A heavy, low, round-backed burrower the size of a small dog, grizzled tawny-brown and darker along the back, with a
+     * blunt pale muzzle, small round ears and a short dark-tipped tail. Its behaviour is in `tickGround` (it sits up and
+     * watches, then goes down a hole: `MARMOT`, `burrowFor`) and its sitting up in `render`.
+     */
+    marmot: () => ({
+      body: geometry([
+        S(0x7d6448, [0, .20, -.02], [.14, .13, .25]),
+        S(0x8f7653, [0, .21, .14], [.12, .115, .12]),
+        S(0xa48b66, [0, .15, .02], [.11, .07, .20]),
+        S(0x5f4b36, [0, .26, -.06], [.10, .04, .18]),
+      ]),
+      head: geometry([
+        S(0x7a6146, [0, 0, .04], [.085, .075, .09]),
+        S(0xb9a888, [0, -.03, .11], [.05, .04, .045]),
+        S(0x1a1612, [0, -.02, .155], [.016, .012, .010]),
+        ...both(side => S(0x0f0d0c, [side * .05, .025, .085], [.013, .014, .012])),
+        ...both(side => S(0x5f4b36, [side * .06, .055, .01], [.022, .020, .014])),
+      ]),
+      leg: geometry([Y(0x4f3e2d, [0, -.05, 0], [.03, .10, .03]), B(0x2e251c, [0, -.10, .015], [.045, .02, .055])]),
+      tail: geometry([S(0x4a3a2a, [0, 0, -.10], [.035, .035, .11]), S(0x2a2219, [0, 0, -.20], [.03, .03, .05])]),
+    }),
   };
 }
 
@@ -1336,6 +1429,7 @@ export const WEST_LIFE_ZONES = Object.freeze([
   ...REGIONAL_WILDLIFE_ZONES,
   ...DRENT_WILDLIFE_ZONES,
   ...WEST_SUVAL_WILDLIFE_ZONES,
+  ...STARTING_COUNTRY_WILDLIFE_ZONES,
   ...SOUTH_SUVAL_WILDLIFE_ZONES,
   ...EAST_LOTHARN_WILDLIFE_ZONES,
   ...FERADOM_WILDLIFE_ZONES,
@@ -1344,6 +1438,8 @@ export const WEST_LIFE_ZONES = Object.freeze([
   ...OVES_WILDLIFE_ZONES,
   ...WEST_LOTHARN_WILDLIFE_ZONES,
   ...SOUTH_OREMINDI_WILDLIFE_ZONES,
+  ...NORTHERN_WILDLIFE_ZONES,
+  ...ACOR_WILDLIFE_ZONES, ...OUTER_WILDLIFE_ZONES,
   ...BALDRO_WILDLIFE_ZONES,
   ...WEST_OREMINDI_WILDLIFE_ZONES,
   ...YUNETHRE_WILDLIFE_ZONES,
@@ -1357,6 +1453,7 @@ export const WEST_LIFE_ZONES = Object.freeze([
   ...TELEMONIA_HERD_ZONES,
   ...EAST_PYROS_WILDLIFE_ZONES, ...NETHER_DESERT_WILDLIFE_ZONES, ...LEGEMUM_WILDLIFE_ZONES,
   ...BABON_WILDLIFE_ZONES,
+  ...SOUTH_CELDER_WILDLIFE_ZONES, ...NORTH_CELDER_WILDLIFE_ZONES, ...EAST_IZOL_WILDLIFE_ZONES, ...ALEZHOR_WILDLIFE_ZONES, ...SOUTH_IBENAL_WILDLIFE_ZONES, ...NORTH_IBENAL_WILDLIFE_ZONES, ...HENBORTH_WILDLIFE_ZONES,
 ]);
 
 /**
@@ -1448,6 +1545,11 @@ const SOARERS = new Set(Object.keys(SOAR));
 export const LIFE_REACH = 130;
 
 const GRAZER_RIG = Object.freeze({
+  'thalmagar-palmant': {neck:.66,high:1.78,low:1.15,shoulder:1.15,hip:.4,fore:.7,stride:.4},
+  'thalmagar-long-back': {neck:.8,high:1.8,low:1.75,shoulder:1.32,hip:.44,fore:.85,stride:.3},
+  'thalmagar-hul': {neck:.86,high:1.63,low:1.43,shoulder:.82,hip:.47,fore:.65,stride:.34},
+  'thalmagar-shore-elder': {neck:.96,high:1.02,low:.85,shoulder:.75,hip:.48,fore:.60,stride:.18},
+
   longhorn: { neck: .86, high: 1.38, low: .62, shoulder: .76, hip: .24, fore: .50, stride: .42 },
   'hill-sheep': { neck: .43, high: .84, low: .48, shoulder: .44, hip: .22, fore: .34, stride: .42 },
   'oremindi-snowgoat': { neck: .40, high: 1.07, low: .72, shoulder: .53, hip: .20, fore: .36, stride: .40 },
@@ -1481,10 +1583,14 @@ const BIRD_RIG = Object.freeze({
   // under it. `swing` is the loudest in the table because what this bird does on the ground is walk,
   // and a courser's stride is its whole gait.
   ghubr: { shoulder: .27, hip: .18, out: .055, apart: .032, beat: 1.15, swing: .26, fold: .26, sweep: 1.26, tuck: .54 },
+  // The bog crane is the heron's row with a slower, deeper wingbeat; the grouse sits low on short legs and whirrs.
+  crane: { shoulder: .84, hip: .58, out: .11, apart: .05, beat: 1.0, swing: .20, fold: .30, sweep: 1.22, tuck: .52 },
+  grouse: { shoulder: .19, hip: .09, out: .06, apart: .03, beat: 1.4, swing: .26, fold: .30, sweep: 1.30, tuck: .58 },
 });
 
 /** Ambient creatures only: they cannot be attacked, collected or block a quest. */
 export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
+  if(world.enabledRegions)zones=zones.filter(zone=>world.enabledRegions.includes(REGION_IDS[zone.region]));
   const factories = modelFactories(), shapes = new Map(), flocks = [], creatures = [];
   const dummy = new THREE.Object3D(), rootMatrix = new THREE.Matrix4(), resultMatrix = new THREE.Matrix4();
   const rotation = new THREE.Quaternion(), unit = new THREE.Vector3(1, 1, 1);
@@ -1520,10 +1626,14 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     }
     return true;
   }
+  // The cities keep their own ground: nothing on legs and nothing afloat is put on, or walks onto, Nylon's, Aevis's or
+  // Mithala's streets, platforms and quays. Mithala stands on all four Mithala countries, so all four keep off it.
+  const MITHALA_CITY_REGIONS = new Set(MITHALA_DISTRICTS.map(district => district.region));
   const valid = (x, z, zone) => inRange(x, z, zone) && footing(x, z, zone) && habitatFits(x, z, zone)
     && (!zone.keepRegion || !world.regionAt || world.regionAt(x, z)?.name === zone.region)
     && (zone.air || zone.sea || zone.region !== 'Eer' || !nylonReserved(x,z,3))
     && (zone.air || zone.sea || zone.region !== 'Southern Ascarth' || !aevisReserved(x,z,3))
+    && (zone.air || zone.sea || !MITHALA_CITY_REGIONS.has(zone.region) || !mithalaCityReserved(x,z,3))
     && !(zone.exclusions ?? []).some(area => x >= area.minX && x <= area.maxX && z >= area.minZ && z <= area.maxZ);
   /**
    * What an animal's feet are on. For everything on legs that is the ground, and
@@ -1546,7 +1656,13 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     const water = westWaterSurface(x, z) ?? world.waterAt?.(x, z) ?? null;
     return water === null ? ground : Math.max(ground, water - .04);
   };
-  const renderedFootingRegions = new Set(['East Pyros', 'Nether Desert', 'Legemum', 'Babon']);
+  const renderedFootingRegions = new Set(['Alezhor', 'South Ibenal', 'North Ibenal', 'Henborth', 'East Izol', 'East Pyros', 'Nether Desert', 'Legemum', 'Babon', 'South Celder', 'North Celder',
+    'Drent', 'Luscia', 'Moros Plain', 'West Suval',
+    'Navarth', 'West Pyros', 'Ganesh Desert', 'Ganesh Plain',
+    'North Meroshe Desert', 'West Meroshe Desert', 'Central Meroshe Desert', 'South Meroshe Desert',
+    'Cape Heth', 'Dinelv Highlands', 'Hama', 'Marosh', 'Trogo',
+    'South Mithala', 'West Mithala', 'East Mithala', 'North Mithala',
+    'Gala', 'Northern Ascarth', 'Southern Ascarth', 'Ovesos', 'Oves Desert', 'Selemi']);
   function visualFootingY(animal) {
     const y = animal.y + animal.lift, zone = animal.zone;
     if (!world.renderedGroundHeight || !renderedFootingRegions.has(zone.region)
@@ -1618,6 +1734,17 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     flocks.push({ zone, group, animals, meshes: null, ticks: 0,
       centre: { x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 } });
   }
+
+  const flockFor = new Map(flocks.flatMap(flock => flock.animals.map(animal => [animal.id, flock])));
+  const damageState = createDeveloperWildlifeDamage({ creatures,
+    body: animal => {
+      const flock = flockFor.get(animal.id);
+      if (disposed || animal.hidden || !flock?.group.visible || !flock.meshes) return null;
+      const radius = Math.max(.22, animal.zone.radius * animal.scale);
+      return { x: animal.x, y: visualFootingY(animal) + radius, z: animal.z, radius };
+    },
+    changed: animal => render(flockFor.get(animal.id)),
+  });
 
   // Keep every resident's home, identity and simulation state, but allocate GPU
   // instances and species geometry only when somebody can actually see them.
@@ -1743,12 +1870,18 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
    * distance: it has a walk and no run, and what it does when somebody comes at it is `SHUT`.
    */
 const FLEE_AT = {
+  'thalmagar-palmant': 9,
+  'thalmagar-long-back': 9,
+  'thalmagar-hul': 4,
+  'thalmagar-shore-elder': 4,
     'road-fox':12,'spine-lizard':7,
     'oremindi-snowgoat': 13,
     longhorn: 7.5,
     'hill-sheep': 6.5,
     'upland-hare': 9,
     otter: 8,
+    // A seal on a haul-out lets a traveler nearer than a deer does, and then it is in the sea.
+    'grey-seal': 15,
     'wading-bird': 11,
     'river-fox': 0,
     egret: 12,
@@ -1768,9 +1901,18 @@ const FLEE_AT = {
     // The ghubr lets a traveler come well in before it goes, which is the whole reason a caravan guide
     // can read one: ten metres, where the geese go at fourteen, the bone-birds at thirteen and the egrets
     // at twelve. Only the gull, which is used to people, lets anybody nearer.
-    ghubr: 10
+    ghubr: 10,
+    // Henborth's three (src/henborth-wildlife.js). The bog crane is the warest bird on the plain and is up at twenty metres;
+    // the grouse sits tight in its scrub until a traveler is nearly on it; the marmot runs for its hole at a dozen.
+    crane: 20,
+    grouse: 9,
+    marmot: 12
 };
 const WALK = {
+  'thalmagar-palmant': 0.65,
+  'thalmagar-long-back': 0.55,
+  'thalmagar-hul': 0.5,
+  'thalmagar-shore-elder': 0.3,
     'babon-giant-monitor': .72,
     'road-fox':1.1,'spine-lizard':.5,
     'oremindi-snowgoat': .65,
@@ -1778,6 +1920,7 @@ const WALK = {
     'hill-sheep': .48,
     'upland-hare': 1.9,
     otter: 1.1,
+    'grey-seal': .3,
     'wading-bird': .5,
     'river-fox': .9,
     egret: .5,
@@ -1798,14 +1941,23 @@ const WALK = {
     ghubr: .78,
     // And the tortoise is the slowest animal in the game by a factor of four - "a large, slow-moving
     // grazer of desert seeps". A traveler walks its whole range in the time it crosses a pace of it.
-    'canyon-tortoise': .11
+    'canyon-tortoise': .11,
+    crane: .55,
+    grouse: .4,
+    marmot: .5
 };
 const RUN = {
+  'thalmagar-palmant': 4,
+  'thalmagar-long-back': 3,
+  'thalmagar-hul': 3,
+  'thalmagar-shore-elder': 1.5,
     'road-fox':10.2,'spine-lizard':8.8,
     'oremindi-snowgoat': 7.8,
     'hill-sheep': 5.6,
     'upland-hare': 9.6,
     otter: 8.2,
+    // A seal galloping for the water is quicker over a few metres than anybody expects; it is never far from it.
+    'grey-seal': 4.6,
     'wading-bird': 10,
     egret: 10,
     stilt: 10.4,
@@ -1815,7 +1967,11 @@ const RUN = {
     'red-deer': 10.5,
     goose: 10.6,
     'forest-cat': 12.5,
-    ghubr: 10.2
+    ghubr: 10.2,
+    crane: 10.4,
+    grouse: 11.5,
+    // A marmot is no runner, but it never has far to go: its hole is a few strides off.
+    marmot: 5.4
 };
   /**
    * Cattle, whatever breed. They do not bolt: they put their heads up, turn to face whoever
@@ -1832,7 +1988,7 @@ const RUN = {
    * Everything that answers a traveler by getting off the ground. A bird cannot be
    * run down, which is the whole of why they are all here and the hare is not.
    */
-  const FLIES = new Set(['wading-bird', 'egret', 'stilt', 'duck', 'gull', 'goose', 'ghubr']);
+  const FLIES = new Set(['wading-bird', 'egret', 'stilt', 'duck', 'gull', 'goose', 'ghubr', 'crane', 'grouse']);
   /** Cattle giving ground: a shade over the traveler's walk, so a walker never closes and a runner does. */
   const GIVE = 4.5;
   /** The fox drifts back as fast as you come on, up to `cap`: only a flat run gains on it, and slowly. */
@@ -1854,8 +2010,17 @@ const RUN = {
    * skips the animal; the law simply has two halves now, because animals do.
    */
   const SHUT = Object.freeze({ notice: 7, hold: 2.6 });
+  /**
+   * **The steppe marmot's sentinel** (Henborth): inside `alert` metres it stops whatever it was doing, sits up on its
+   * haunches and watches whoever is coming; nearer than its `FLEE_AT` it runs for a hole and goes down it (`burrowFor`).
+   */
+  const MARMOT = Object.freeze({ alert: 30 });
   /** Going home is a purposeful walk, not a graze: a band chased a hundred metres is back in a minute or two. */
 const RETURN = {
+  'thalmagar-palmant': 1.2,
+  'thalmagar-long-back': 1,
+  'thalmagar-hul': 0.8,
+  'thalmagar-shore-elder': 0.5,
     'babon-giant-monitor': .92,
     'road-fox':2.2,'spine-lizard':1.4,
     'oremindi-snowgoat': 1.8,
@@ -1863,6 +2028,7 @@ const RETURN = {
     'hill-sheep': 1.5,
     'upland-hare': 2.8,
     otter: 1.8,
+    'grey-seal': 1.1,
     'wading-bird': 1.4,
     'river-fox': 1.5,
     egret: 1.4,
@@ -1878,7 +2044,10 @@ const RETURN = {
     'forest-cat': 2.6,
     albatross: 1.4,
     ghubr: 1.6,
-    'canyon-tortoise': .13
+    'canyon-tortoise': .13,
+    crane: 1.4,
+    grouse: 1.3,
+    marmot: 1.2
 };
   const HOME = 16, SETTLED = 6;
   const BACK = [0, .35, -.35, .7, -.7], ALONG = [1.05, -1.05, 1.4, -1.4, 1.75, -1.75, 2.1, -2.1];
@@ -1897,7 +2066,10 @@ const RETURN = {
     animal.speed = moved / dt; animal.yaw = facing;
   }
 
-  /** The water an otter can reach: the deep-water colliders in and about its range, found once. */
+  /**
+   * The water an otter or a seal can reach: the deep-water colliders in and about its range, found once, and any water
+   * the range names itself - the open sea off a seal's haul-out, which carries no marker.
+   */
   const waterByZone = new Map();
   let waterColliderCount = -1, waterRevision = -1;
   function waterOf(zone) {
@@ -1905,9 +2077,22 @@ const RETURN = {
     if (waterColliderCount !== (world.colliders?.length ?? 0) || waterRevision !== revision) {
       waterByZone.clear(); waterColliderCount = world.colliders?.length ?? 0; waterRevision = revision;
     }
-    if (!waterByZone.has(zone.id)) waterByZone.set(zone.id, (world.colliders ?? []).filter(c => /water/.test(c.kind ?? '')
-      && c.x > zone.minX - 30 && c.x < zone.maxX + 30 && c.z > zone.minZ - 30 && c.z < zone.maxZ + 30));
+    if (!waterByZone.has(zone.id)) waterByZone.set(zone.id, [...(zone.water ?? []), ...(world.colliders ?? []).filter(c => /water/.test(c.kind ?? '')
+      && c.x > zone.minX - 30 && c.x < zone.maxX + 30 && c.z > zone.minZ - 30 && c.z < zone.maxZ + 30)]);
     return waterByZone.get(zone.id);
+  }
+  /**
+   * A marmot's way out: the nearest of its own burrows (`zone.burrows`) that does not lie past whoever is coming, or one it
+   * is already at. A hole behind the traveler is no refuge.
+   */
+  function burrowFor(animal, away) {
+    let best = null;
+    for (const hole of animal.zone.burrows ?? []) {
+      const dx = hole.x - animal.x, dz = hole.z - animal.z, edge = Math.hypot(dx, dz) - (hole.r ?? 0), yaw = Math.atan2(dx, dz);
+      if (edge >= 1.6 && Math.abs(angleDelta(yaw, away)) > 1.75) continue;
+      if (!best || edge < best.edge) best = { x: hole.x, z: hole.z, edge, yaw };
+    }
+    return best;
   }
   function nearestWater(animal) {
     let best = null;
@@ -2071,6 +2256,8 @@ const RETURN = {
      * turning its back: it drifts off exactly as fast as you come on, so a walker
      * never gets nearer than that, and only somebody at a flat run gains on it.
      */
+    // A marmot sits up while anybody is inside `MARMOT.alert`, and settles again when they have gone.
+    if (species === 'marmot') animal.watching = near < MARMOT.alert ? Math.min(1, animal.watching + dt * 3) : Math.max(0, animal.watching - dt);
     if (species === 'river-fox') {
       if (near < FOX.notice) {
         animal.watching = Math.min(1, animal.watching + dt * 2);
@@ -2097,6 +2284,12 @@ const RETURN = {
         animal.y = footingY(animal.x, animal.z, animal.zone);
         return;
       }
+    } else if (species === 'marmot' && near >= FLEE_AT[species] && near < MARMOT.alert && animal.action !== 'flee' && animal.action !== 'return') {
+      // The sentinel: still, sat up, and facing whoever is coming.
+      animal.action = 'graze'; animal.timer = Math.max(animal.timer, .6);
+      animal.yaw += angleDelta(Math.atan2(player.x - animal.x, player.z - animal.z), animal.yaw) * Math.min(1, dt * 3);
+      animal.y = footingY(animal.x, animal.z, animal.zone);
+      return;
     } else if (CATTLE.has(species) && near < FLEE_AT[species]) {
       // Cattle do not bolt. They put their heads up, turn to face you, and give ground.
       animal.action = 'yield'; animal.timer = 1.2;
@@ -2113,7 +2306,17 @@ const RETURN = {
         const bx = flock.cx - animal.x, bz = flock.cz - animal.z, b = Math.hypot(bx, bz);
         if (b > 2.5 && bx / b * Math.sin(away) + bz / b * Math.cos(away) > -.3)
           heading = Math.atan2(Math.sin(away) + bx / b * .55, Math.cos(away) + bz / b * .55);
-      } else if (species === 'otter') {
+      } else if (species === 'marmot') {
+        // Down the nearest of its own holes that is not past whoever is coming, where it can be seen going (`dive`), and up
+        // again at another when they are well off.
+        const hole = burrowFor(animal, away);
+        if (hole && hole.edge < 1.6) {
+          animal.action = 'dive'; animal.timer = 5 + SLIP.seconds; animal.slip = SLIP.seconds;
+          animal.slipFrom = animal.y; animal.slipTo = { x: hole.x, z: hole.z };
+          return;
+        }
+        if (hole) heading = hole.yaw;
+      } else if (species === 'otter' || species === 'grey-seal') {
         const water = nearestWater(animal);
         if (water && water.edge < 1.6) {
           animal.action = 'dive'; animal.timer = 5 + SLIP.seconds; animal.slip = SLIP.seconds;
@@ -2215,7 +2418,7 @@ const RETURN = {
    */
   function settle(flock, elapsed) {
     for (const animal of flock.animals) {
-      if (flock.zone.air || flock.zone.sea) continue;
+      if (damageState.dead(animal.id) || flock.zone.air || flock.zone.sea) continue;
       // A tortoise that has been left to itself longer than it stays shut is out again, whether or not
       // it has anywhere to walk back to: unwatched time passes for it as it does for everything else.
       if (animal.shutFor > 0 && elapsed > animal.shutFor) {
@@ -2370,7 +2573,7 @@ const RETURN = {
         const right = h(animal.x+sz*1.1,animal.z-sx*1.1)-h(animal.x-sz*1.1,animal.z+sx*1.1);
         rotation.setFromEuler(new THREE.Euler(-Math.atan2(forward,5),animal.yaw,Math.atan2(right,2.2),'YXZ'));
       }
-      unit.setScalar(animal.hidden ? 1e-4 : animal.scale);   // an otter under the water is not drawn
+      unit.setScalar(damageState.dead(animal.id) ? 0 : animal.hidden ? 1e-4 : animal.scale);   // an otter under the water is not drawn
       rootMatrix.compose(new THREE.Vector3(animal.x, visualFootingY(animal), animal.z), rotation, unit);
       const walking = animal.speed > .05, phase = animal.clock * (animal.action === 'flee' ? 13 : 7);
       const breath = Math.sin(animal.clock * 2.1) * .012;
@@ -2405,11 +2608,20 @@ const RETURN = {
           (side ? -1 : 1) * ((dihedral + tilt) * (1 - fold) + beat + fold * .2));
         return;
       }
+      if(species === 'thalmagar-hul') {
+        // The Standing One surveys above the brush, folding down before walking.
+        const stand=walking?0:Math.max(0,Math.min(1,(Math.sin(animal.clock*.14+animal.index)-.1)*3));
+        place(flock.meshes.body,i,0,stand*.30,0,0,0,0,1,1+stand*.48,1-stand*.32);
+        place(flock.meshes.head,i,0,1.63+stand*1.28,.86-stand*.5,0,Math.sin(animal.clock*.35)*.22);
+        for(let leg=0;leg<4;leg++)place(flock.meshes.legs,i*4+leg,leg%2?.47:-.47,leg<2?.82+stand*1.15:.82,leg<2?.65-stand*.3:-.65,
+          walking?Math.sin(phase+(leg===0||leg===3?0:Math.PI))*.34:leg<2?-stand*.25:0);
+        return;
+      }
       const grazer = GRAZER_RIG[species];
       if (grazer) {
         // The head hangs off the end of the neck, so grazing swings it down and
         // forward together rather than sinking it back into the shoulder.
-        const grazing = animal.action === 'graze';
+        const grazing = animal.action === 'graze' && species !== 'thalmagar-long-back';
         place(flock.meshes.head, i, 0, grazing ? grazer.low : grazer.high, grazing ? grazer.neck + .22 : grazer.neck,
           grazing ? 1.15 + Math.sin(animal.clock * .8) * .06 : .10 + Math.sin(animal.clock * .8) * .07,
           Math.sin(animal.clock * .63) * .10);
@@ -2422,6 +2634,34 @@ const RETURN = {
         place(flock.meshes.head, i, 0, .38, .25, walking ? -.14 : Math.sin(animal.clock * .95) * .07, Math.sin(animal.clock * .73) * .12);
         for (let side = 0; side < 2; side++) place(flock.meshes.ears, i * 2 + side, side ? .07 : -.07, .47, .20,
           walking ? -.4 : Math.sin(animal.clock * 1.5 + side) * .14, 0, (side ? 1 : -1) * .12);
+        return;
+      }
+      if (species === 'marmot') {
+        // On all fours with its nose in the grass; or, watching, sat up on its haunches with its forelegs held in to its
+        // chest - the colony's sentinel; going, it gallops low. Sitting up turns the body about the haunch (`hip`).
+        const up = walking ? 0 : animal.watching ?? 0, a = -1.2 * up, c = Math.cos(a), s = Math.sin(a);
+        const hip = (y, z) => [.1 + (y - .1) * c - (z + .2) * s, -.2 + (y - .1) * s + (z + .2) * c];
+        const bob = walking ? Math.abs(Math.sin(phase * .5)) * .04 : 0, grazing = animal.action === 'graze' && up < .5;
+        const [by, bz] = hip(0, 0), [hy, hz] = hip(.25, .27), [fy, fz] = hip(.1, .13), [ty, tz] = hip(.17, -.24);
+        place(flock.meshes.body, i, 0, by + bob, bz, a, 0, 0, 1, 1 + breath, 1);
+        place(flock.meshes.head, i, 0, hy + bob, hz, grazing ? .45 + Math.sin(animal.clock * .8) * .06 : -.05,
+          Math.sin(animal.clock * (up > .5 ? .9 : .6)) * (up > .5 ? .35 : .12));
+        for (let leg = 0; leg < 4; leg++) {
+          const fore = leg < 2, swing = walking ? Math.sin(phase + (leg === 0 || leg === 3 ? 0 : Math.PI)) * .5 : 0;
+          place(flock.meshes.legs, i * 4 + leg, leg % 2 ? .075 : -.075, fore ? fy + bob : .1, fore ? fz : -.13 - up * .03, fore ? a * .5 + swing : swing);
+        }
+        place(flock.meshes.tail, i, 0, up > .5 ? .04 : ty + bob, up > .5 ? -.3 : tz, up > .5 ? 0 : -.25 + Math.sin(animal.clock * 1.7) * .06);
+        return;
+      }
+      if (species === 'grey-seal') {
+        // Hauled out it lies with its head up and turning, or laid down along the stones; going, it humps along on its
+        // belly, the hind flippers lifting with every heave and the head riding it.
+        const resting = animal.action === 'graze', heave = walking ? Math.abs(Math.sin(phase * .5)) : 0;
+        place(flock.meshes.body, i, 0, heave * .05, 0, walking ? -Math.sin(phase * .5) * .06 : 0, 0, 0, 1, 1 + breath, 1);
+        place(flock.meshes.head, i, 0, resting ? .4 : .5 + heave * .04, resting ? .84 : .8,
+          resting ? .12 + Math.sin(animal.clock * .4) * .05 : -.2 + Math.sin(animal.clock * .9) * .06,
+          Math.sin(animal.clock * (resting ? .35 : .7)) * (resting ? .3 : .15));
+        place(flock.meshes.tail, i, 0, .14 + heave * .08, -.95, walking ? .2 + heave * .3 : .1 + Math.sin(animal.clock * .5) * .06);
         return;
       }
       if (species === 'dolphin') return;   // a back and a fin: one piece, and no limb on it
@@ -2503,6 +2743,7 @@ const RETURN = {
       flock.cx = flock.animals.reduce((sum, animal) => sum + animal.x, 0) / Math.max(1, flock.animals.length);
       flock.cz = flock.animals.reduce((sum, animal) => sum + animal.z, 0) / Math.max(1, flock.animals.length);
       for (const animal of flock.animals) {
+        if (damageState.dead(animal.id)) continue;
         if (flock.zone.air) tickAir(animal, step);
         else if (flock.zone.sea) tickSea(animal, step);
         else tickGround(animal, step, player, flock, motion);
@@ -2526,8 +2767,8 @@ const RETURN = {
       updates,
       creatures: creatures.map(animal => ({ id: animal.id, species: animal.species, region: animal.region,
         x: animal.x, y: animal.y + animal.lift, groundY: animal.y, z: animal.z, yaw: animal.yaw,
-        action: animal.action, speed: animal.speed, clock: animal.clock, watching: animal.watching,
-        lift: animal.lift, hidden: !!animal.hidden, calmFor: animal.calmFor || 0 })),
+        action: damageState.dead(animal.id) ? 'dead' : animal.action, speed: damageState.dead(animal.id) ? 0 : animal.speed, clock: animal.clock, watching: animal.watching,
+        lift: animal.lift, hidden: !!animal.hidden || damageState.dead(animal.id), calmFor: animal.calmFor || 0, ...damageState.view(animal.id) })),
       groups: flocks.map(flock => ({ id: flock.zone.id, visible: flock.group.visible, ticks: flock.ticks, count: flock.animals.length })),
     };
   }
@@ -2537,12 +2778,17 @@ const RETURN = {
   // Snapshots above remain detached records for tests and saved inspection.
   const liveCreatures = Object.freeze(creatures.map(animal => {
     const view = {};
-    for (const key of ['id', 'species', 'region', 'x', 'z', 'yaw', 'action', 'speed', 'clock', 'watching', 'lift'])
+    for (const key of ['id', 'species', 'region', 'x', 'z', 'yaw', 'clock', 'watching', 'lift'])
       Object.defineProperty(view, key, { enumerable: true, get: () => animal[key] });
     Object.defineProperties(view, {
       y: { enumerable: true, get: () => animal.y + animal.lift },
       groundY: { enumerable: true, get: () => animal.y },
-      hidden: { enumerable: true, get: () => !!animal.hidden },
+      hidden: { enumerable: true, get: () => !!animal.hidden || damageState.dead(animal.id) },
+      action: { enumerable: true, get: () => damageState.dead(animal.id) ? 'dead' : animal.action },
+      speed: { enumerable: true, get: () => damageState.dead(animal.id) ? 0 : animal.speed },
+      hp: { enumerable: true, get: () => damageState.view(animal.id).hp },
+      maxHp: { enumerable: true, get: () => damageState.view(animal.id).maxHp },
+      dead: { enumerable: true, get: () => damageState.dead(animal.id) },
       calmFor: { enumerable: true, get: () => animal.calmFor || 0 },
     });
     return Object.freeze(view);
@@ -2571,11 +2817,12 @@ const RETURN = {
 
   function calm(id, seconds = 8) {
     const animal = creatures.find(animal => animal.id === id);
-    if (!animal || (!CATTLE.has(animal.species) && animal.species !== 'hill-sheep')
+    if (!animal || damageState.dead(id) || (!CATTLE.has(animal.species) && animal.species !== 'hill-sheep')
       || !Number.isFinite(seconds) || seconds <= 0) return false;
     animal.calmFor = Math.max(animal.calmFor || 0, Math.min(60, seconds));
     animal.action = 'graze'; animal.timer = 3; animal.speed = 0;
     return true;
   }
-  return { update, setObserver, snapshot, state: () => liveState, visualStats, calm, dispose };
+  return { update, setObserver, snapshot, state: () => liveState, visualStats, calm, dispose,
+    bodies: damageState.bodies, damage: damageState.damage, resetDamage: damageState.resetDamage };
 }

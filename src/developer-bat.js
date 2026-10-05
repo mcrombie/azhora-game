@@ -25,7 +25,7 @@ export function createDeveloperBat({ heightAt, canLand = () => true, bounds = nu
     active = false; landing = false; speed = 0;
     return { ...(returnToOrigin ? origin : position) };
   }
-  function tick(dt, { playing = true, dx = 0, dz = 0, lift = 0, boost = false, turbo = false } = {}) {
+  function tick(dt, { playing = true, dx = 0, dz = 0, lift = 0, boost = false, turbo = false, aimYaw } = {}) {
     if (!active || !playing) return view();
     const pace = turbo ? DEVELOPER_BAT.turbo : boost ? DEVELOPER_BAT.boost : DEVELOPER_BAT.speed;
     let remaining = clamp(Number(dt) || 0, 0, .2);
@@ -50,8 +50,8 @@ export function createDeveloperBat({ heightAt, canLand = () => true, bounds = nu
         speed = Math.hypot(x - position.x, z - position.z) / step;
         position.x = x; position.z = z;
       } else speed = 0;
-      if (length > .02) {
-        const want = Math.atan2(dx, dz), delta = Math.atan2(Math.sin(want - yaw), Math.cos(want - yaw));
+      if (length > .02 || Number.isFinite(aimYaw)) {
+        const want = Number.isFinite(aimYaw) ? aimYaw : Math.atan2(dx, dz), delta = Math.atan2(Math.sin(want - yaw), Math.cos(want - yaw));
         yaw += delta * (1 - Math.exp(-7 * step));
       }
     }

@@ -105,7 +105,10 @@ export const inWestLotharnBox = (x, z) => boxInset(x, z) > 0;
  * edges are against built country.
  */
 export function westLotharnShare(x, z, mix = seamlessTerrainMix(x, z)) {
-  const inset = boxInset(x, z), land = 1 - (mix.weights.outland ?? 0);
+  // The two Celders were unbuilt when this range was shaped, and are still measured as the outland they were: their
+  // own ground meets this range's at the line (src/south-celder-world.js), so registering them moved none of it.
+  const later = (mix.weights['South Celder'] ?? 0) + (mix.weights['North Celder'] ?? 0);
+  const inset = boxInset(x, z), land = 1 - (mix.weights.outland ?? 0) - later;
   if (inset <= 0 || land <= 1e-6) return 0;
   return smooth(.3, .75, (mix.weights[WEST_LOTHARN] ?? 0) / land) * smooth(0, 40, inset);
 }
@@ -810,11 +813,11 @@ function seamlessLift(x, z, share) {
  * shaping, so the water it cuts follows these valleys. Nothing is written outside this country's
  * own hexes: every term is weighed by `westLotharnShare`, which is nothing at every border.
  */
-export function westLotharnGround(x, z, ground) {
+export function westLotharnGround(x, z, ground, baseCorrection = 0) {
   if (!inWestLotharnBox(x, z)) return ground;
   const share = westLotharnShare(x, z);
   if (!share) return ground;
-  let height = ground + seamlessLift(x, z, share);
+  let height = ground + seamlessLift(x, z, share) * (1 - baseCorrection);
   // The valleys, each by its own line.
   const long = outside(LONG_VALLEY.line, x, z) < LONG_VALLEY.half + LONG_VALLEY.wall ? nearestOn(LONG_VALLEY.line, x, z) : null;
   if (long) height = lerp(height, carve(height, long, LONG_VALLEY.half, LONG_VALLEY.wall, longValleyFloor(long.along)), share);

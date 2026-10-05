@@ -2,6 +2,7 @@ import { forEachBuild } from './build-each.js';
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
 import { hexOwnerAt, REGION_CELLS, relief } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import { OVETH_UPPER, OVES_BORDER_STREAM, OVES_RIVERS, westBareGround } from './west-regions.js';
@@ -58,6 +59,7 @@ export function* createOvesScenerySteps(kit) {
   const smooth = (a, b, x) => { const v = Math.max(0, Math.min(1, (x - a) / (b - a))); return v * v * (3 - 2 * v); };
   const metrics = { water: 0, blockers: 0, reeds: 0, gravel: 0, boulders: 0, pavement: 0, stones: 0, tufts: 0, shrubs: 0, scrub: 0, stubble: 0, trees: 0, tamarisk: 0 };
   const gy = (x, z) => groundHeight(x, z);
+  const treeGroundAt = kit.renderedGroundHeight ?? gy;
   const OWN = new Set(['Ovesos', 'Oves Desert']);
   const own = (x, z) => OWN.has(hexOwnerAt(x, z));
   const inDesert = (x, z) => hexOwnerAt(x, z) === 'Oves Desert';
@@ -241,9 +243,12 @@ export function* createOvesScenerySteps(kit) {
     const crowns = new THREE.InstancedMesh(crownGeometry, leafMaterial, trees.length * 3);
     let at = 0;
     yield* forEachBuild(trees, function* (tree, index) {
-      const y = gy(tree.x, tree.z), height = tree.h * tree.s;
+      let y = gy(tree.x, tree.z); const height = tree.h * tree.s;
       dummy.position.set(tree.x, y + height * tree.bole * .5, tree.z); dummy.rotation.set(range(-.05, .05), tree.rot, range(-.05, .05));
       dummy.scale.set(tree.s * tree.girth, height * tree.bole, tree.s * tree.girth); dummy.updateMatrix();
+      const grounding = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .28, segments: 6 });
+      y += grounding; dummy.position.y += grounding; dummy.updateMatrix();
+      const footY = dummy.matrix.elements[13] - dummy.matrix.elements[5] * .5;
       trunks.setMatrixAt(index, dummy.matrix);
       const parts = [{mesh:trunks,index}], collider = { x: tree.x, z: tree.z, r: .42 * tree.s * tree.girth, kind }; colliders.push(collider);
       for (let lobe = 0; lobe < 3; lobe++) { if (++buildWork % 32 === 0) yield;
@@ -254,7 +259,7 @@ export function* createOvesScenerySteps(kit) {
         parts.push({mesh:crowns,index:at});
         crowns.setMatrixAt(at, dummy.matrix); crowns.setColorAt(at++, tint(tree));
       }
-      registerWorldTree(colliders,{id:worldTreeId(kind,tree.x,tree.z),x:tree.x,z:tree.z,y,height,species:name.includes('tamarisk')?'tamarisk':tree.poplar?'white-poplar':'black-willow'},parts,collider);
+      registerWorldTree(colliders,{id:worldTreeId(kind,tree.x,tree.z),x:tree.x,z:tree.z,y:footY,height,species:name.includes('tamarisk')?'tamarisk':tree.poplar?'white-poplar':'black-willow'},parts,collider);
     });
     trunks.name = `${name} trunks`; crowns.name = `${name} crowns`;
     for (const batch of [trunks, crowns]) { if (++buildWork % 32 === 0) yield; batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch); }

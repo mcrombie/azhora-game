@@ -10,10 +10,10 @@
  * trolls and the giants of the Empire arc's level-three range are not here: they are fights, and
  * fights are the campaign's to place.
  *
- * The ranges are on open ground - the balds, Upper Olveth's grass, Kemrath's western floor - because
- * an animal backing off from somebody needs room behind it, and a wood of trunks four metres apart
- * is a maze to a deer. Every site was measured on the built ground: dry, the range's own, and off
- * the water; `tests/east-lotharn-world.test.js` holds them to it.
+ * The original open-ground populations keep their identities. Small resident bands also browse
+ * the lower woodland interior: the shared woodland movement remembers a safe route through the
+ * trunks and retraces it home. Those ranges exclude steep faces at every movement step; animals
+ * are still instanced only on approach, with no new species rigs or distant simulation cost.
  */
 const freeze = Object.freeze;
 const zone = (id, species, radius, box, sites, note, traits = {}) => freeze({
@@ -37,4 +37,16 @@ export const EAST_LOTHARN_WILDLIFE_ZONES = freeze([
   zone('central-massif-hawk', 'plateau-hawk', .3, [-1320, -1140, -1050, -890], [[-1230, -965]],
     'Extension: the dry-plateau hawk, which the lore puts on the upland grass of the country east of here, riding the air over the central massif’s bald - one bird, high.',
     { air: 34 }),
+  zone('north-face-woodland-deer', 'red-deer', .55, [-1560, -1390, -1060, -950], [[-1500, -1010], [-1488, -1011], [-1500, -998]],
+    'Extension: a small band of red deer browsing the broadleaf interior below the western massif, away from the grazed balds. The north-facing foot has gentler soil-covered ground between the trunks and room to retreat along the slope.',
+    { habitat: 'woodland', hornless: true, maxSlope: .65 }),
+  zone('kemrath-woodland-boar', 'boar', .7, [-1610, -1470, -970, -875], [[-1548, -924], [-1538, -924], [-1550, -936]],
+    'Extension: boar rooting for oak and chestnut mast inside the western Kemrath woods, beyond the existing valley-floor group. Their home ground follows the wooded slope above the water and uses remembered paths between the trunks.',
+    { habitat: 'woodland', maxSlope: .65 }),
+  zone('stonegate-woodland-deer', 'red-deer', .55, [-1160, -1040, -1070, -950], [[-1100, -1010], [-1100, -998]],
+    'Extension: two red deer in the sheltered woodland west of the Stonegate gorge, encountered on a detour from the pass. They browse the lower soil-covered shoulder; steep rock and the gorge water remain outside their usable footing.',
+    { habitat: 'woodland', hornless: true, maxSlope: .65 }),
+  zone('southwest-woodland-boar', 'boar', .7, [-1610, -1480, -795, -710], [[-1550, -750], [-1538, -750]],
+    'Extension: a second small woodland sounder on the broad southwestern shoulder, where the oak forest continues beyond the Kemrath approach. This is sheltered mast habitat within the wood, not another animal group on a summit clearing.',
+    { habitat: 'woodland', maxSlope: .65 }),
 ]);

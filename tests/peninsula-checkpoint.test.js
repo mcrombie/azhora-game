@@ -6,6 +6,8 @@ import { createInventoryState } from '../src/inventory.js';
 import { createWeapons } from '../src/weapons.js';
 import { createJourney } from '../src/journey.js';
 import { METRES_PER_HEX } from '../src/world-scale.js';
+import { freshMinoraStart, MINORA_START } from '../src/minora-opening.js';
+import { QUEST_DONE } from '../src/game-state.js';
 
 function fixture(path = 'tutorial') {
   const inventory = createInventoryState(); inventory.grant('simple-sword');
@@ -40,4 +42,40 @@ test('Malformed peninsula progress cannot overwrite a valid checkpoint', () => {
   const invalid = structuredClone(data); invalid.peninsulaTutorial.signedOffAt = 4;
   assert.equal(checkpoint.save(invalid).ok, false);
   assert.deepEqual(checkpoint.read().data.peninsulaTutorial, data.peninsulaTutorial);
+});
+
+function minoraFixture() {
+  const f = fixture();
+  f.data.peninsulaTutorial = createPeninsulaTutorial().snapshot();
+  f.data.freeStart = freshMinoraStart();
+  f.data.position = { x: MINORA_START.x, z: MINORA_START.z };
+  return f;
+}
+test('Minora exploration saves without a tutorial, main quest, letters, or combat training', () => {
+  const {data, checkpoint} = minoraFixture();
+  assert.equal(checkpoint.save(data).ok, true);
+  const saved = checkpoint.read().data;
+  assert.deepEqual(saved.freeStart, freshMinoraStart());
+  assert.equal(saved.journey.started, false);
+  assert.equal(saved.peninsulaTutorial.path, 'unchosen');
+  assert.deepEqual(saved.position, data.position);
+  assert.deepEqual(saved.inventory, data.inventory);
+  assert.equal(saved.woodland.practiceHits, 0);
+});
+test('Joining from Minora saves legitimate main quest entry without fabricating tutorial lessons', () => {
+  const {data, checkpoint} = minoraFixture();
+  data.freeStart.joined = true; data.questStage = QUEST_DONE;
+  const journey = createJourney({inventory:{has:id=>['harbor-letter','road-token'].includes(id)}}); journey.start(); data.journey = journey.snapshot();
+  data.inventory.push({id:'harbor-letter',quantity:1},{id:'road-token',quantity:1});
+  const result = checkpoint.save(data); assert.equal(result.ok, true, result.reason);
+  assert.equal(checkpoint.read().data.woodland.practiceHits, 0);
+  data.freeStart.joined = false;
+  assert.equal(checkpoint.save(data).ok, false);
+});
+test('Free-roaming saves reject contradictory tutorial and recruitment states', () => {
+  const {data, checkpoint} = minoraFixture();
+  data.freeStart.joined = true; assert.equal(checkpoint.save(data).ok, false);
+  data.freeStart.joined = false;
+  data.peninsulaTutorial = fixture().data.peninsulaTutorial;
+  assert.equal(checkpoint.save(data).ok, false);
 });

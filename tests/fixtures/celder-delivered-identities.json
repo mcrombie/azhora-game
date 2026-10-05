@@ -1,0 +1,1627 @@
+{
+  "rows": [
+    {
+      "name": "South Celder - grass, scrub, stone and the water's margin",
+      "batches": [
+        {
+          "name": "South Celder prairie grass 0,0",
+          "count": 75,
+          "hash": "39a3f07111c82adea44822f71f0acca70c6654039d92ba7e928964470e2c9fa7"
+        },
+        {
+          "name": "South Celder prairie grass 0,1",
+          "count": 152,
+          "hash": "4c251e9d630b8f14473b668d52b1a028e282bab2b5dc4aa73a39f3ee2fbef9d5"
+        },
+        {
+          "name": "South Celder prairie grass 0,2",
+          "count": 345,
+          "hash": "293ee046f5c4e28c1ccbb9d7bdb062b54fa45040e1cc0f759b64931af12758ae"
+        },
+        {
+          "name": "South Celder prairie grass 1,0",
+          "count": 540,
+          "hash": "7262f3320a895b32cfbc5c83b898eff90df206ff1f36587f2291d6e562ca43ce"
+        },
+        {
+          "name": "South Celder prairie grass 1,1",
+          "count": 757,
+          "hash": "0859e6d99acba3fb5ddc8d3725e6888e2a1f55c4b9d88e8bdd3d08d8d4caa8c9"
+        },
+        {
+          "name": "South Celder prairie grass 1,2",
+          "count": 553,
+          "hash": "b8d403716d39fe765d311be96a6218c1b1e471af01330b5cc0a315f839f4f117"
+        },
+        {
+          "name": "South Celder prairie grass 2,0",
+          "count": 660,
+          "hash": "0c43401cdc111f57eb63cfda8c90335ebe409d9fa1a9e27ad2163aa79e238241"
+        },
+        {
+          "name": "South Celder prairie grass 2,1",
+          "count": 857,
+          "hash": "b92cbbd6dd4e0011e0f53ff7aa196aa94196366153a25d02e114f0f01a793a23"
+        },
+        {
+          "name": "South Celder prairie grass 2,2",
+          "count": 566,
+          "hash": "8e7144768b7df559a8973c25f6ee47cf76251d17c38a846cd2c672c9b2a8086f"
+        },
+        {
+          "name": "South Celder prairie grass 3,0",
+          "count": 681,
+          "hash": "6aa6678369929dfa7e460388d2fb0f9d6fadf1f392079bd933eb567a6f3e6ce6"
+        },
+        {
+          "name": "South Celder prairie grass 3,1",
+          "count": 842,
+          "hash": "7453ed90473b5377737b55d59100bdacc5d309292e41e7f96c7b2c52167b72ae"
+        },
+        {
+          "name": "South Celder prairie grass 3,2",
+          "count": 607,
+          "hash": "43f869d63b042c1f7cf461ea9862223d03b64e93aa01f1c3c28a2da80167006c"
+        },
+        {
+          "name": "South Celder prairie grass 4,0",
+          "count": 87,
+          "hash": "3abb1e365ea7c2b71ca8d49d27f13a46b4a3e9819592185a95c973dfd21b60cd"
+        },
+        {
+          "name": "South Celder prairie grass 4,1",
+          "count": 656,
+          "hash": "fd151c41220f157e6211e3eac37ff41b466f02be46d19054edab091230b4bb2a"
+        },
+        {
+          "name": "South Celder prairie grass 4,2",
+          "count": 289,
+          "hash": "f9301a25b7ea29d07b3b51223960a575015e37a43c21f8ba2da7b960079ce3af"
+        },
+        {
+          "name": "South Celder prairie grass 5,0",
+          "count": 179,
+          "hash": "d37cbda8a24f98a1ad285a3cb583919b43efcf372e6b868bdb734ac393d3e4a8"
+        },
+        {
+          "name": "South Celder prairie grass 5,1",
+          "count": 182,
+          "hash": "fc813cc45dc010368a4c11b3d75506e4e5fdc4ad62d3c89fe477511dd7814ba9"
+        },
+        {
+          "name": "South Celder prairie grass 6,0",
+          "count": 8,
+          "hash": "0f7846091ba572229a0fbbdc07d5d3ba02a05e6620b1aa581da4e4401e46ca44"
+        },
+        {
+          "name": "South Celder prairie grass 6,1",
+          "count": 8,
+          "hash": "84e3472848a4a9360242034e063d29a721c8832f83b8a7bb2b00115057e4f0fe"
+        },
+        {
+          "name": "South Celder terrace turf 4,0",
+          "count": 605,
+          "hash": "9c4111087ef3d55e2109b90d93b8bf5c7a8ffddaab34119d1f50f5ae0e67a034"
+        },
+        {
+          "name": "South Celder terrace turf 4,1",
+          "count": 66,
+          "hash": "6cb31bd4b0d6b36da3887295ec02eabfd330c32ee8c5cbe3830f9969c5656a97"
+        },
+        {
+          "name": "South Celder terrace turf 5,0",
+          "count": 280,
+          "hash": "57029e3d70f48ff56895bdf66e6a319641f9a28a8ce65b7c957958fe363ce21d"
+        },
+        {
+          "name": "South Celder terrace turf 5,1",
+          "count": 7,
+          "hash": "32fbe665b408905c73a768c18f01fa1448408ef1eccceba8bb89504f2cbe5147"
+        },
+        {
+          "name": "South Celder sedge and rush",
+          "count": 2,
+          "hash": "cd9e6fc803b2ea78d15fc99f651db250cf59251bc82d6380a2654f413dbe3d47"
+        },
+        {
+          "name": "South Celder prairie forbs",
+          "count": 1587,
+          "hash": "6cf5f13c9872ea3ff8d78f27aff33eb9096a40b322a0609ec564b68ebef8281a"
+        },
+        {
+          "name": "South Celder rose and silverberry scrub",
+          "count": 543,
+          "hash": "35be2fc6b69466e4241c15798f5b7d5a9c7a562cab0227191fd4f135338cce7d"
+        },
+        {
+          "name": "South Celder stone",
+          "count": 278,
+          "hash": "8c0bf558fb69ff5cdc7a10f2e0375ec5440ac14eb72c89c63cd8e4450b9f3f4b"
+        },
+        {
+          "name": "South Celder stream gravel",
+          "count": 89,
+          "hash": "6228b042136c962b7996a91db4703e8748f9077d8ff7c555a9dad8f065f1008b"
+        },
+        {
+          "name": "South Celder typed living trunks",
+          "count": 66,
+          "hash": "792fd4dc329ead27d4bc81b6eb993273fca450269e0dac07f2454c82565540db"
+        },
+        {
+          "name": "South Celder crowns",
+          "count": 198,
+          "hash": "583be4e795afa8d41fbc3696db236da4ce0c22bc593fc4d594fe1897721a755e"
+        }
+      ],
+      "hash": "c96ba83e441593d74613b906ffdc8c7f2c0a0aba678da86501fec987f30ee2e6",
+      "trees": [
+        {
+          "species": "hawthorn",
+          "x": -2844.7622049216884,
+          "z": -954.2955597618815
+        },
+        {
+          "species": "common-juniper",
+          "x": -2873.0933011592138,
+          "z": -975.1346893346157
+        },
+        {
+          "species": "silver-birch",
+          "x": -2876.265154624242,
+          "z": -893.2257853903096
+        },
+        {
+          "species": "white-oak",
+          "x": -2816.1956638180422,
+          "z": -928.9721256790903
+        },
+        {
+          "species": "hawthorn",
+          "x": -2859.7860022763493,
+          "z": -938.3940094605308
+        },
+        {
+          "species": "silver-birch",
+          "x": -2842.7766943200263,
+          "z": -917.1358510989916
+        },
+        {
+          "species": "common-juniper",
+          "x": -2879.608250557329,
+          "z": -970.6650908196565
+        },
+        {
+          "species": "common-juniper",
+          "x": -2771.567688727635,
+          "z": -951.8967887319844
+        },
+        {
+          "species": "common-juniper",
+          "x": -2754.3831507059513,
+          "z": -959.8421587951701
+        },
+        {
+          "species": "hawthorn",
+          "x": -2831.2906226225896,
+          "z": -826.4823875900727
+        },
+        {
+          "species": "silver-birch",
+          "x": -2844.41276568349,
+          "z": -867.2893838173147
+        },
+        {
+          "species": "common-juniper",
+          "x": -2763.724446491222,
+          "z": -838.8653124299269
+        },
+        {
+          "species": "white-oak",
+          "x": -2799.577406383003,
+          "z": -894.6193982892107
+        },
+        {
+          "species": "silver-birch",
+          "x": -2836.3510533784283,
+          "z": -842.1468680881333
+        },
+        {
+          "species": "white-oak",
+          "x": -2769.582128649461,
+          "z": -790.6028664036091
+        },
+        {
+          "species": "silver-birch",
+          "x": -2797.3204893608345,
+          "z": -784.644060999937
+        },
+        {
+          "species": "silver-birch",
+          "x": -2744.84132440656,
+          "z": -805.4712642774355
+        },
+        {
+          "species": "white-oak",
+          "x": -2714.1840010964083,
+          "z": -827.4151811849695
+        },
+        {
+          "species": "silver-birch",
+          "x": -2203.2993418480037,
+          "z": -841.9900591744479
+        },
+        {
+          "species": "silver-birch",
+          "x": -2127.6591557160723,
+          "z": -864.2374047104638
+        },
+        {
+          "species": "hawthorn",
+          "x": -2087.548378094915,
+          "z": -873.378370435759
+        },
+        {
+          "species": "silver-birch",
+          "x": -2897.2106421448993,
+          "z": -705.6544786075649
+        },
+        {
+          "species": "white-oak",
+          "x": -2854.4713172445777,
+          "z": -734.9100174259913
+        },
+        {
+          "species": "hawthorn",
+          "x": -2864.8920364294904,
+          "z": -790.1274870073942
+        },
+        {
+          "species": "hawthorn",
+          "x": -2844.5007521276134,
+          "z": -787.2244920617488
+        },
+        {
+          "species": "hawthorn",
+          "x": -2880.3274653236153,
+          "z": -740.5722792249692
+        },
+        {
+          "species": "white-oak",
+          "x": -2816.1594403058994,
+          "z": -761.6348473223445
+        },
+        {
+          "species": "hawthorn",
+          "x": -2869.9322088471386,
+          "z": -781.9999304943306
+        },
+        {
+          "species": "hawthorn",
+          "x": -2838.9992360341134,
+          "z": -774.3768737603498
+        },
+        {
+          "species": "silver-birch",
+          "x": -2787.208980399999,
+          "z": -803.0760000952107
+        },
+        {
+          "species": "white-oak",
+          "x": -2773.2785640134243,
+          "z": -772.5263990954084
+        },
+        {
+          "species": "white-oak",
+          "x": -2737.320437872666,
+          "z": -772.6256418888045
+        },
+        {
+          "species": "hawthorn",
+          "x": -2299.841377729434,
+          "z": -734.8271418575716
+        },
+        {
+          "species": "silver-birch",
+          "x": -2279.25194742519,
+          "z": -709.9136223242206
+        },
+        {
+          "species": "hawthorn",
+          "x": -2279.051495468128,
+          "z": -759.452781337179
+        },
+        {
+          "species": "hawthorn",
+          "x": -2234.2602697283733,
+          "z": -742.0244016441104
+        },
+        {
+          "species": "silver-birch",
+          "x": -2267.3656966387066,
+          "z": -754.4687918544334
+        },
+        {
+          "species": "hawthorn",
+          "x": -2244.440533601563,
+          "z": -746.343686079472
+        },
+        {
+          "species": "silver-birch",
+          "x": -2912.5199279132066,
+          "z": -664.1683894711283
+        },
+        {
+          "species": "white-oak",
+          "x": -2899.3688441895647,
+          "z": -655.3116791703475
+        },
+        {
+          "species": "silver-birch",
+          "x": -2867.5519836217863,
+          "z": -701.9012449131084
+        },
+        {
+          "species": "silver-birch",
+          "x": -2912.506423526327,
+          "z": -689.2364875682366
+        },
+        {
+          "species": "hawthorn",
+          "x": -2819.820992354187,
+          "z": -669.1431923321185
+        },
+        {
+          "species": "silver-birch",
+          "x": -2365.069324741024,
+          "z": -646.483983026698
+        },
+        {
+          "species": "silver-birch",
+          "x": -2370.700351646054,
+          "z": -629.1525333205906
+        },
+        {
+          "species": "silver-birch",
+          "x": -2309.831253284472,
+          "z": -703.4501719194201
+        },
+        {
+          "species": "silver-birch",
+          "x": -2310.568347302149,
+          "z": -716.6971095547748
+        },
+        {
+          "species": "silver-birch",
+          "x": -2313.842024080339,
+          "z": -620.2306006251571
+        },
+        {
+          "species": "silver-birch",
+          "x": -2964.3124967197655,
+          "z": -549.2534244366807
+        },
+        {
+          "species": "silver-birch",
+          "x": -2978.1827141613467,
+          "z": -576.7302840351012
+        },
+        {
+          "species": "silver-birch",
+          "x": -2962.3458795099286,
+          "z": -568.3804281827879
+        },
+        {
+          "species": "hawthorn",
+          "x": -2942.5852125127567,
+          "z": -540.2696057426629
+        },
+        {
+          "species": "silver-birch",
+          "x": -2951.286134201917,
+          "z": -542.2121989642155
+        },
+        {
+          "species": "silver-birch",
+          "x": -2962.3299252091674,
+          "z": -619.0347576764298
+        },
+        {
+          "species": "silver-birch",
+          "x": -2740.050082894857,
+          "z": -555.7820138092038
+        },
+        {
+          "species": "silver-birch",
+          "x": -2784.3876519788755,
+          "z": -546.7103217857775
+        },
+        {
+          "species": "hawthorn",
+          "x": -2744.3409717724426,
+          "z": -546.2804109527615
+        },
+        {
+          "species": "silver-birch",
+          "x": -2626.477085714112,
+          "z": -563.7485694958714
+        },
+        {
+          "species": "common-juniper",
+          "x": -2663.5640052695526,
+          "z": -569.2852723169026
+        },
+        {
+          "species": "white-oak",
+          "x": -2640.689489882323,
+          "z": -566.124355389632
+        },
+        {
+          "species": "white-oak",
+          "x": -2665.8830503550125,
+          "z": -579.1694875712392
+        },
+        {
+          "species": "hawthorn",
+          "x": -2650.045422216761,
+          "z": -546.7163726025146
+        },
+        {
+          "species": "silver-birch",
+          "x": -2473.802382786642,
+          "z": -610.2757665737417
+        },
+        {
+          "species": "silver-birch",
+          "x": -2446.865134671214,
+          "z": -583.6893409368467
+        },
+        {
+          "species": "silver-birch",
+          "x": -2441.556486449088,
+          "z": -609.5782970431146
+        },
+        {
+          "species": "hawthorn",
+          "x": -2375.5689357024385,
+          "z": -577.2066795955297
+        }
+      ],
+      "metrics": {
+        "cells": 37,
+        "grass": 6932,
+        "terraceGrass": 958,
+        "fanGrass": 1112,
+        "forbs": 529,
+        "scrub": 181,
+        "stones": 278,
+        "boulders": 102,
+        "outcrops": 22,
+        "gravel": 89,
+        "sedge": 2,
+        "trees": 66,
+        "oaks": 11,
+        "birches": 31,
+        "hawthorns": 18,
+        "junipers": 6,
+        "willows": 0,
+        "alders": 0,
+        "poplars": 0,
+        "batches": 30,
+        "instances": 11765,
+        "colliders": 168
+      }
+    },
+    {
+      "name": "North Celder - grass, scrub, stone and the water's margin",
+      "batches": [
+        {
+          "name": "North Celder prairie grass 0,0",
+          "count": 370,
+          "hash": "dc46cf97081dd9133e9a1a432719b21aaf69e6212a734b4304e8e4cf9bf6f65e"
+        },
+        {
+          "name": "North Celder prairie grass 0,1",
+          "count": 422,
+          "hash": "c8b1da0c8292207a5f7a09b646dd613c5327bb0f17caf0f30a694352c79c43a0"
+        },
+        {
+          "name": "North Celder prairie grass 0,2",
+          "count": 354,
+          "hash": "18c719f58c867437058fbd7097c08fe292d9cb1e81bad11e7c61e7d2ab05b58b"
+        },
+        {
+          "name": "North Celder prairie grass 1,0",
+          "count": 615,
+          "hash": "327a834ab29493055a498f379cb9e49d3f17fc25903a2bbd5abcc0d427b1a59f"
+        },
+        {
+          "name": "North Celder prairie grass 1,1",
+          "count": 854,
+          "hash": "2b7fb25ce0004630305599f868f9e9f43f2103a652d49f2ab40b8844198a41f1"
+        },
+        {
+          "name": "North Celder prairie grass 1,2",
+          "count": 615,
+          "hash": "ae30441d038c0db4c3ed8f874675ff9e39db464b59a4b08352581bc250b19bd0"
+        },
+        {
+          "name": "North Celder prairie grass 2,0",
+          "count": 274,
+          "hash": "0f99ab0d04bc2311481b9eeea048fea7ac3d4649f3364c75653af9ddfa08a4c0"
+        },
+        {
+          "name": "North Celder prairie grass 2,1",
+          "count": 490,
+          "hash": "be2cee84d691687851a1efdfc659ee954ed6415bfa6b45df6fab5add69c58fff"
+        },
+        {
+          "name": "North Celder prairie grass 2,2",
+          "count": 693,
+          "hash": "1fc5b460740d84df036f42850cdeb4ddcfd0050361538a4882a0a794353e3146"
+        },
+        {
+          "name": "North Celder prairie grass 3,2",
+          "count": 71,
+          "hash": "d3ba5e63962e62a66a7108f2bb2ea004e2b4f14626519f35d83b249a1b57cc9f"
+        },
+        {
+          "name": "North Celder prairie grass 5,1",
+          "count": 1,
+          "hash": "df84f6caf68c05236f9410293780f4f7a34d9c727ac6bc1b496bc98fdd4c3599"
+        },
+        {
+          "name": "North Celder terrace turf 2,0",
+          "count": 410,
+          "hash": "b26fc60214d621e675163679e0ee6958240fc6b908df6d0ce451f40f5e08a9f2"
+        },
+        {
+          "name": "North Celder terrace turf 2,1",
+          "count": 321,
+          "hash": "d79886758ed6e8017ef71c50de0a8c22098b5e5ef06d8b2df79a49a3af95b17a"
+        },
+        {
+          "name": "North Celder terrace turf 2,2",
+          "count": 2,
+          "hash": "41697380ab73a3cf4dd3526b9d28d9db6c9ba69abeb2c5b614d407d65330ffd3"
+        },
+        {
+          "name": "North Celder terrace turf 3,0",
+          "count": 237,
+          "hash": "5f2ba6b7c0083e23b79c819b5b6b5bebf4c00818c38bed08c0763e86c058f2e0"
+        },
+        {
+          "name": "North Celder terrace turf 3,1",
+          "count": 780,
+          "hash": "002b28694e1a34a703433b0163b2b0e3c51ac467ccff17dec85589774cbd8c30"
+        },
+        {
+          "name": "North Celder terrace turf 3,2",
+          "count": 603,
+          "hash": "3d4647a881555fdc42e3185ae36ad1a8c0816ac711be0639949d2540ce436a23"
+        },
+        {
+          "name": "North Celder terrace turf 4,1",
+          "count": 595,
+          "hash": "974dd86c0a3a06e3b5fd541c40c89d0b4b61c3c5c1fe0f396bde2950ac8306cf"
+        },
+        {
+          "name": "North Celder terrace turf 4,2",
+          "count": 466,
+          "hash": "d564819a99bd1b63ac3e56c744cd6c0394815f666742629dd7d750c7c2009ba6"
+        },
+        {
+          "name": "North Celder terrace turf 5,1",
+          "count": 366,
+          "hash": "2fce631739d961e2592973503e880eeb0fcbb0ba58e4ba29f8e17505141f24a2"
+        },
+        {
+          "name": "North Celder terrace turf 5,2",
+          "count": 97,
+          "hash": "1eaf88e5d6d2888123fcd4440b67d87b55b670bf8184ef76323c673e91875b61"
+        },
+        {
+          "name": "North Celder sedge and rush",
+          "count": 293,
+          "hash": "de160a90372e7bd484a598e1d025e3328ee6596d2802db7419521fd8f7388b3f"
+        },
+        {
+          "name": "North Celder prairie forbs",
+          "count": 1383,
+          "hash": "10a3e12cd3d398d1d9941c34bdf0eb2b9c1e799d98dd3d7c9e3db7fa7ef9a241"
+        },
+        {
+          "name": "North Celder rose and silverberry scrub",
+          "count": 435,
+          "hash": "eacfb62d7db2cf8e5d2ec7d80e39de86e4d76b4cac08b50f7877c2797d43352d"
+        },
+        {
+          "name": "North Celder stone",
+          "count": 207,
+          "hash": "43eec08dd9f37e03217cce699ccc3c7025cc5e8c8a031327c9de1117a56a0b69"
+        },
+        {
+          "name": "North Celder stream gravel",
+          "count": 279,
+          "hash": "0c565daf0146c5a898021e9f141b1efd8444a6257133cfe26c631fc88ccbedf1"
+        },
+        {
+          "name": "North Celder typed living trunks",
+          "count": 77,
+          "hash": "83e74b00b2e3d685853f7cfd5a3ad818c0325525a71f20ac1e640cbda4d4d1a5"
+        },
+        {
+          "name": "North Celder crowns",
+          "count": 231,
+          "hash": "7ebb07ba2fa775bcbb7220807e6c9f06555f2bdc2fcfe7199279a86c6a79adc1"
+        }
+      ],
+      "hash": "1308ed8570bb77a601e386c8adfb64b5957ae7b2080df7e96880dc9aedd23a7b",
+      "trees": [
+        {
+          "species": "common-juniper",
+          "x": -2846.8995016383706,
+          "z": -1310.5363715605283
+        },
+        {
+          "species": "common-juniper",
+          "x": -2784.7268357722787,
+          "z": -1360.8214939830298
+        },
+        {
+          "species": "white-oak",
+          "x": -2750.354187128949,
+          "z": -1322.5611693987096
+        },
+        {
+          "species": "common-juniper",
+          "x": -2816.007352349232,
+          "z": -1362.9735875546405
+        },
+        {
+          "species": "silver-birch",
+          "x": -2759.422103254008,
+          "z": -1407.3433236905778
+        },
+        {
+          "species": "white-oak",
+          "x": -2769.247671690653,
+          "z": -1412.333651196904
+        },
+        {
+          "species": "hawthorn",
+          "x": -2837.824697963777,
+          "z": -1382.9360862446422
+        },
+        {
+          "species": "silver-birch",
+          "x": -2767.800539367716,
+          "z": -1310.3350401304135
+        },
+        {
+          "species": "common-juniper",
+          "x": -2828.7610866212053,
+          "z": -1374.038893067039
+        },
+        {
+          "species": "silver-birch",
+          "x": -2805.5299200898735,
+          "z": -1307.373037520557
+        },
+        {
+          "species": "common-juniper",
+          "x": -2813.8300136047183,
+          "z": -1322.636082039907
+        },
+        {
+          "species": "white-oak",
+          "x": -2659.0339749901327,
+          "z": -1350.2731472847456
+        },
+        {
+          "species": "hawthorn",
+          "x": -2712.3064793263334,
+          "z": -1367.9981959822992
+        },
+        {
+          "species": "common-juniper",
+          "x": -2749.7244636610853,
+          "z": -1333.632967476494
+        },
+        {
+          "species": "hawthorn",
+          "x": -2671.1869346759054,
+          "z": -1356.329461734503
+        },
+        {
+          "species": "white-oak",
+          "x": -2582.6699114720104,
+          "z": -1358.5932452508653
+        },
+        {
+          "species": "common-juniper",
+          "x": -2555.262801362085,
+          "z": -1335.4446061530555
+        },
+        {
+          "species": "common-juniper",
+          "x": -2648.599613559316,
+          "z": -1401.9388169615934
+        },
+        {
+          "species": "silver-birch",
+          "x": -2582.490478929947,
+          "z": -1393.4488348781535
+        },
+        {
+          "species": "silver-birch",
+          "x": -2604.5904804569436,
+          "z": -1399.2972345303217
+        },
+        {
+          "species": "common-juniper",
+          "x": -2559.0299449245213,
+          "z": -1340.8249923416818
+        },
+        {
+          "species": "hawthorn",
+          "x": -2532.522644227254,
+          "z": -1381.7809749448145
+        },
+        {
+          "species": "common-juniper",
+          "x": -2451.0397357948823,
+          "z": -1337.5172380662927
+        },
+        {
+          "species": "silver-birch",
+          "x": -2519.2391598679824,
+          "z": -1391.289359302021
+        },
+        {
+          "species": "hawthorn",
+          "x": -2544.835224360111,
+          "z": -1378.8179216829533
+        },
+        {
+          "species": "silver-birch",
+          "x": -2439.691998747993,
+          "z": -1346.787987632438
+        },
+        {
+          "species": "common-juniper",
+          "x": -2747.1738437040476,
+          "z": -1223.0370016421746
+        },
+        {
+          "species": "silver-birch",
+          "x": -2781.681092953193,
+          "z": -1314.7424647666137
+        },
+        {
+          "species": "common-juniper",
+          "x": -2728.484979280154,
+          "z": -1243.8529915099587
+        },
+        {
+          "species": "common-juniper",
+          "x": -2715.9776317504,
+          "z": -1252.3825134465094
+        },
+        {
+          "species": "common-juniper",
+          "x": -2711.8895746151684,
+          "z": -1283.3510082743685
+        },
+        {
+          "species": "silver-birch",
+          "x": -2845.711441090214,
+          "z": -1187.8099433740372
+        },
+        {
+          "species": "silver-birch",
+          "x": -2801.595875163446,
+          "z": -1231.4558095287302
+        },
+        {
+          "species": "common-juniper",
+          "x": -2753.9990909247426,
+          "z": -1188.2052930200243
+        },
+        {
+          "species": "silver-birch",
+          "x": -2827.9910059262766,
+          "z": -1179.2940897986064
+        },
+        {
+          "species": "common-juniper",
+          "x": -2778.9136915550334,
+          "z": -1159.9176893930653
+        },
+        {
+          "species": "common-juniper",
+          "x": -2744.645144146751,
+          "z": -1213.4229540403703
+        },
+        {
+          "species": "white-oak",
+          "x": -2722.427489151131,
+          "z": -1164.4923156749228
+        },
+        {
+          "species": "common-juniper",
+          "x": -2725.0813556452053,
+          "z": -1195.958532859362
+        },
+        {
+          "species": "common-juniper",
+          "x": -2705.1985193359437,
+          "z": -1221.3536313695604
+        },
+        {
+          "species": "white-oak",
+          "x": -2729.59053764015,
+          "z": -1133.5042900524804
+        },
+        {
+          "species": "black-willow",
+          "x": -2018.9196514746875,
+          "z": -1183.6225930766905
+        },
+        {
+          "species": "silver-birch",
+          "x": -2745.247789457324,
+          "z": -1089.9156887687664
+        },
+        {
+          "species": "hawthorn",
+          "x": -2790.079772434081,
+          "z": -1039.4143770260657
+        },
+        {
+          "species": "white-oak",
+          "x": -2735.8782094985945,
+          "z": -1089.8219559768136
+        },
+        {
+          "species": "hawthorn",
+          "x": -2785.9245109687326,
+          "z": -1112.9692707199524
+        },
+        {
+          "species": "white-oak",
+          "x": -2718.14879617549,
+          "z": -1145.8364532047804
+        },
+        {
+          "species": "silver-birch",
+          "x": -2756.193902631174,
+          "z": -1065.591303637057
+        },
+        {
+          "species": "white-oak",
+          "x": -2718.3449213010026,
+          "z": -1093.8389238526966
+        },
+        {
+          "species": "white-oak",
+          "x": -2734.4409123611404,
+          "z": -1070.0813997646715
+        },
+        {
+          "species": "hawthorn",
+          "x": -2777.5747862261487,
+          "z": -1083.299777280345
+        },
+        {
+          "species": "silver-birch",
+          "x": -2796.735624558176,
+          "z": -1048.2297932829779
+        },
+        {
+          "species": "silver-birch",
+          "x": -2810.068838190171,
+          "z": -1010.4379172397848
+        },
+        {
+          "species": "silver-birch",
+          "x": -2812.6816784114344,
+          "z": -1054.3663035862219
+        },
+        {
+          "species": "white-oak",
+          "x": -2789.9398993084906,
+          "z": -984.9271635802534
+        },
+        {
+          "species": "silver-birch",
+          "x": -2824.6540403774707,
+          "z": -1049.4960627330538
+        },
+        {
+          "species": "hawthorn",
+          "x": -2808.4669348866446,
+          "z": -1001.0462067060243
+        },
+        {
+          "species": "hawthorn",
+          "x": -2813.5035144014983,
+          "z": -1015.565882373422
+        },
+        {
+          "species": "silver-birch",
+          "x": -2847.4034669426037,
+          "z": -1037.0299232889038
+        },
+        {
+          "species": "white-oak",
+          "x": -2728.867715791683,
+          "z": -1012.4559186518263
+        },
+        {
+          "species": "black-alder",
+          "x": -2311.3255016010953,
+          "z": -1275.1460616353372
+        },
+        {
+          "species": "black-willow",
+          "x": -2298.4619168516947,
+          "z": -1228.7410655755023
+        },
+        {
+          "species": "black-willow",
+          "x": -1991.7277623004047,
+          "z": -1224.1365796287948
+        },
+        {
+          "species": "black-alder",
+          "x": -1970.1026243808446,
+          "z": -1213.441023895278
+        },
+        {
+          "species": "black-willow",
+          "x": -2037.978551216307,
+          "z": -1210.5568220314974
+        },
+        {
+          "species": "black-alder",
+          "x": -1970.1763854705496,
+          "z": -1206.6188649951885
+        },
+        {
+          "species": "black-willow",
+          "x": -1964.5268458480714,
+          "z": -1186.6787594908321
+        },
+        {
+          "species": "black-alder",
+          "x": -1963.185394864413,
+          "z": -1171.9801854377085
+        },
+        {
+          "species": "black-alder",
+          "x": -1969.8556091411738,
+          "z": -1162.3992107359165
+        },
+        {
+          "species": "black-willow",
+          "x": -1972.768571266788,
+          "z": -1156.681348854437
+        },
+        {
+          "species": "black-alder",
+          "x": -1990.1900069302646,
+          "z": -1139.8790972193176
+        },
+        {
+          "species": "black-alder",
+          "x": -2003.4756502582459,
+          "z": -1125.3396051821703
+        },
+        {
+          "species": "black-alder",
+          "x": -2012.8023450941546,
+          "z": -1110.0613461292753
+        },
+        {
+          "species": "white-poplar",
+          "x": -2006.6684156925185,
+          "z": -1103.2240877605448
+        },
+        {
+          "species": "black-willow",
+          "x": -2159.614510696265,
+          "z": -1030.0101988201434
+        },
+        {
+          "species": "black-willow",
+          "x": -2158.1426902970998,
+          "z": -1004.1602784430081
+        },
+        {
+          "species": "black-willow",
+          "x": -2162.8666863039834,
+          "z": -981.6136365018258
+        }
+      ],
+      "metrics": {
+        "cells": 34,
+        "grass": 3581,
+        "terraceGrass": 3877,
+        "fanGrass": 1178,
+        "forbs": 461,
+        "scrub": 145,
+        "stones": 207,
+        "boulders": 99,
+        "outcrops": 24,
+        "gravel": 279,
+        "sedge": 293,
+        "trees": 77,
+        "oaks": 12,
+        "birches": 18,
+        "hawthorns": 10,
+        "junipers": 19,
+        "willows": 9,
+        "alders": 8,
+        "poplars": 1,
+        "batches": 28,
+        "instances": 11541,
+        "colliders": 176
+      }
+    }
+  ],
+  "zones": [
+    {
+      "id": "south-celder-swell-buffalo",
+      "species": "frostback",
+      "region": "South Celder",
+      "radius": 0.8,
+      "scale": 1.06,
+      "keepRegion": true,
+      "minX": -2700,
+      "maxX": -2490,
+      "minZ": -850,
+      "maxZ": -740,
+      "sites": [
+        [
+          -2512,
+          -796
+        ],
+        [
+          -2521,
+          -804
+        ],
+        [
+          -2526,
+          -788
+        ],
+        [
+          -2534,
+          -798
+        ],
+        [
+          -2541,
+          -790
+        ],
+        [
+          -2547,
+          -806
+        ],
+        [
+          -2556,
+          -797
+        ]
+      ],
+      "note": "The **frostback buffalo**, and Celder is half of its name in the lore: \"a heavy wild bovid of the Mithsla and Celder plains\". Seven together on the low swells of the middle plain, because a frostback is a herd animal before it is anything else - \"their herds follow grass quality rather than political boundaries\" - and a herd of three reads as three cows. Heavy and unhurried: walked at, they put their heads up, turn and give ground at a shade over a walk, the cattle answer in `src/west-regions-life.js`, which the frostback was given when Mithala was built.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "south-celder-swell-calves",
+      "species": "frostback",
+      "region": "South Celder",
+      "radius": 0.8,
+      "scale": 0.62,
+      "keepRegion": true,
+      "minX": -2700,
+      "maxX": -2490,
+      "minZ": -850,
+      "maxZ": -740,
+      "sites": [
+        [
+          -2530,
+          -794
+        ],
+        [
+          -2544,
+          -800
+        ]
+      ],
+      "note": "Two of the year's calves inside the swell herd, drawn at three-fifths of an adult. Extension in the sense that the lore does not mention calves; it does put the herds here at midsummer, which is when a wild bovid has them at foot.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "south-celder-south-buffalo",
+      "species": "frostback",
+      "region": "South Celder",
+      "radius": 0.8,
+      "scale": 1.06,
+      "keepRegion": true,
+      "minX": -2700,
+      "maxX": -2490,
+      "minZ": -685,
+      "maxZ": -585,
+      "sites": [
+        [
+          -2516,
+          -636
+        ],
+        [
+          -2526,
+          -628
+        ],
+        [
+          -2531,
+          -644
+        ],
+        [
+          -2541,
+          -634
+        ],
+        [
+          -2550,
+          -642
+        ]
+      ],
+      "note": "A second, smaller herd on the southern rows of the plain, towards the Yunethre steppe: the same circuit, a different year's grass. \"West through the mineral-rich Celder river terraces in some years, east and south across Mithsla in others.\"",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "south-celder-soar-bird",
+      "species": "turkey-vulture",
+      "region": "South Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2700,
+      "maxX": -2490,
+      "minZ": -850,
+      "maxZ": -740,
+      "sites": [
+        [
+          -2580,
+          -790
+        ]
+      ],
+      "note": "The overview's **black soar-bird**, \"technically a vulture-relative, not a bird of prey\", which \"follows both the herds and the predators at heights that allow it to monitor several kilometers of grazing landscape simultaneously\". The game has no bald vulture, so the turkey-vulture stands in for it and is labelled so; the bird and the herd under it are the lore's.",
+      "maxSlope": 0.5,
+      "air": 40
+    },
+    {
+      "id": "south-celder-north-hares",
+      "species": "upland-hare",
+      "region": "South Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2600,
+      "maxX": -2470,
+      "minZ": -935,
+      "maxZ": -825,
+      "sites": [
+        [
+          -2490,
+          -880
+        ],
+        [
+          -2502,
+          -872
+        ],
+        [
+          -2511,
+          -886
+        ]
+      ],
+      "note": "Extension: the upland hare, the hare the west already has, on the northern swells at the toe of the southern silt fan - the ground a hare wants on a plain, dry and a little above the grass round it, where a couple of metres of rise is enough to see a long way.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "south-celder-west-hares",
+      "species": "upland-hare",
+      "region": "South Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2800,
+      "maxX": -2680,
+      "minZ": -770,
+      "maxZ": -650,
+      "sites": [
+        [
+          -2700,
+          -712
+        ],
+        [
+          -2712,
+          -704
+        ],
+        [
+          -2720,
+          -718
+        ]
+      ],
+      "note": "Extension: a second band of hares on the western rows, where the plain begins to lift towards the foothills.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "south-celder-harrier",
+      "species": "harrier",
+      "region": "South Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2720,
+      "maxX": -2480,
+      "minZ": -740,
+      "maxZ": -600,
+      "sites": [
+        [
+          -2600,
+          -680
+        ]
+      ],
+      "note": "Extension from the Mithala: the harrier that quarters the West Mithala grass, here over the southern plain. Open grass with almost no tree in it is a harrier's whole living; it hunts low, nine metres up, and follows the swells as they rise and fall under it.",
+      "maxSlope": 0.5,
+      "air": 9,
+      "circle": 32,
+      "period": 19,
+      "quarter": 60,
+      "bob": 1.5,
+      "follow": true
+    },
+    {
+      "id": "south-celder-foothill-hawk",
+      "species": "plateau-hawk",
+      "region": "South Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2950,
+      "maxX": -2760,
+      "minZ": -900,
+      "maxZ": -640,
+      "sites": [
+        [
+          -2860,
+          -770
+        ]
+      ],
+      "note": "Extension from the West Lotharn's shoulder hawk: the overview's **dry-plateau hawk**, \"which hunts the upland grasslands\", circling high over the foothill margin where the plain meets the Oremindi.",
+      "maxSlope": 0.5,
+      "air": 30
+    },
+    {
+      "id": "south-celder-foothill-deer",
+      "species": "red-deer",
+      "region": "South Celder",
+      "radius": 0.55,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2945,
+      "maxX": -2800,
+      "minZ": -650,
+      "maxZ": -560,
+      "sites": [
+        [
+          -2814,
+          -604
+        ],
+        [
+          -2826,
+          -612
+        ],
+        [
+          -2836,
+          -598
+        ],
+        [
+          -2848,
+          -608
+        ]
+      ],
+      "note": "Extension: red deer, the game's deer, which the Yunethre steppe next door carries and the overview gives the lower Oremindi (\"the lower forested slopes support Ibenwood-adjacent fauna\"). Hinds on the open grass of the south-western foothills, with the oak and birch of the foothill draws a few paces off: feeding in the open, back in cover in a minute.",
+      "maxSlope": 0.5,
+      "hornless": true
+    },
+    {
+      "id": "south-celder-fox",
+      "species": "road-fox",
+      "region": "South Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2560,
+      "maxX": -2380,
+      "minZ": -720,
+      "maxZ": -620,
+      "sites": [
+        [
+          -2400,
+          -668
+        ],
+        [
+          -2414,
+          -660
+        ]
+      ],
+      "note": "Extension from East Pyros: the **road fox**, \"a lean, bold scavenger\", standing in for whatever fox works this plain. Nothing in the lore names a small predator for Celder, and a grass plain with wild herds on it has carrion and voles enough for a fox; it goes at twelve metres and does not come back until you have.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-terrace-buffalo",
+      "species": "frostback",
+      "region": "North Celder",
+      "radius": 0.8,
+      "scale": 1.06,
+      "keepRegion": true,
+      "minX": -2285,
+      "maxX": -2075,
+      "minZ": -1195,
+      "maxZ": -1085,
+      "sites": [
+        [
+          -2112,
+          -1142
+        ],
+        [
+          -2121,
+          -1150
+        ],
+        [
+          -2126,
+          -1134
+        ],
+        [
+          -2135,
+          -1146
+        ],
+        [
+          -2142,
+          -1136
+        ],
+        [
+          -2150,
+          -1152
+        ],
+        [
+          -2158,
+          -1142
+        ],
+        [
+          -2166,
+          -1132
+        ]
+      ],
+      "note": "The **frostback buffalo** on the ground the lore names for it: \"west through the mineral-rich Celder river terraces in some years\". Eight, the largest herd in either Celder, on the terrace grass between the West Arm and the Celder Water - the grass the Celder breeders say has \"a particular mineral quality... that has no equivalent further east on the plain\", which is the reason a wild herd with the whole of the Mithala to choose from comes this far west. It is also the reason the horse-breeders know it: the overview calls the frostback \"unusually visible to three very different knowledge systems\", one of which is \"Celder horse-breeding land management\".",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-terrace-calves",
+      "species": "frostback",
+      "region": "North Celder",
+      "radius": 0.8,
+      "scale": 0.62,
+      "keepRegion": true,
+      "minX": -2285,
+      "maxX": -2075,
+      "minZ": -1195,
+      "maxZ": -1085,
+      "sites": [
+        [
+          -2130,
+          -1140
+        ],
+        [
+          -2147,
+          -1144
+        ],
+        [
+          -2160,
+          -1136
+        ]
+      ],
+      "note": "Three calves at foot inside the terrace herd, drawn at three-fifths of an adult. The lore does not mention calves; it puts the herds on these terraces at midsummer, when they have them.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-soar-bird",
+      "species": "turkey-vulture",
+      "region": "North Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2285,
+      "maxX": -2075,
+      "minZ": -1195,
+      "maxZ": -1085,
+      "sites": [
+        [
+          -2180,
+          -1140
+        ]
+      ],
+      "note": "The **black soar-bird** over the terrace herd: \"its presence circling at low altitude indicates a kill within the hour and is used by both predators and human hunters as a locating signal\". The turkey-vulture stands in for it, labelled, as over every herd in the west.",
+      "maxSlope": 0.5,
+      "air": 40
+    },
+    {
+      "id": "north-celder-arm-herons",
+      "species": "wading-bird",
+      "region": "North Celder",
+      "radius": 0.4,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2250,
+      "maxX": -2060,
+      "minZ": -1240,
+      "maxZ": -1180,
+      "sites": [
+        [
+          -2148,
+          -1213
+        ],
+        [
+          -2198,
+          -1227
+        ],
+        [
+          -2098,
+          -1227
+        ]
+      ],
+      "note": "Extension upstream: grey herons on the Celder bank of the West Arm, a pace off the water. The overview gives the wading birds the Lizeem distributaries \"as both breeding grounds and wintering locations\"; this is the same system a few miles nearer the mountains, colder, quicker and over gravel, and a heron stands in a riffle as readily as in a backwater.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-celder-water-otters",
+      "species": "otter",
+      "region": "North Celder",
+      "radius": 0.35,
+      "scale": 1.1,
+      "keepRegion": true,
+      "minX": -2250,
+      "maxX": -2005,
+      "minZ": -1100,
+      "maxZ": -1035,
+      "sites": [
+        [
+          -2048,
+          -1051
+        ],
+        [
+          -2098,
+          -1069
+        ],
+        [
+          -2125,
+          -1060
+        ]
+      ],
+      "note": "Otters on the Celder Water, the one stream that comes onto the plain from the hill country. Lore, not extension: \"river otters and their larger relatives occupy the rivers from the Oremindi meltwater sources through the forest-margin watercourses\", and this is a meltwater stream within sight of the Oremindi.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-plain-buffalo",
+      "species": "frostback",
+      "region": "North Celder",
+      "radius": 0.8,
+      "scale": 1.06,
+      "keepRegion": true,
+      "minX": -2700,
+      "maxX": -2490,
+      "minZ": -1300,
+      "maxZ": -1190,
+      "sites": [
+        [
+          -2560,
+          -1200
+        ],
+        [
+          -2569,
+          -1208
+        ],
+        [
+          -2574,
+          -1193
+        ],
+        [
+          -2583,
+          -1204
+        ],
+        [
+          -2591,
+          -1196
+        ]
+      ],
+      "note": "A second herd on the open plain of the north-west, moving between the terraces and the Henborth road the lore gives them: \"north into Henborth only when the thaw and summer moisture make the upland pasture worth the risk\". North Celder is the last of Celder before Henborth, and this is the herd that is deciding.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-hares",
+      "species": "upland-hare",
+      "region": "North Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2700,
+      "maxX": -2570,
+      "minZ": -1130,
+      "maxZ": -1010,
+      "sites": [
+        [
+          -2590,
+          -1070
+        ],
+        [
+          -2602,
+          -1062
+        ],
+        [
+          -2612,
+          -1077
+        ]
+      ],
+      "note": "Extension: upland hares on the western swells, where the plain starts to lift towards the foothills.",
+      "maxSlope": 0.5
+    },
+    {
+      "id": "north-celder-harrier",
+      "species": "harrier",
+      "region": "North Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2520,
+      "maxX": -2320,
+      "minZ": -1250,
+      "maxZ": -1070,
+      "sites": [
+        [
+          -2420,
+          -1160
+        ]
+      ],
+      "note": "Extension from the Mithala: a harrier quartering the middle of the plain, low and following the ground. The West Mithala's harrier hunts the same grass a mile east.",
+      "maxSlope": 0.5,
+      "air": 9,
+      "circle": 32,
+      "period": 20,
+      "quarter": 64,
+      "bob": 1.5,
+      "follow": true
+    },
+    {
+      "id": "north-celder-fox",
+      "species": "road-fox",
+      "region": "North Celder",
+      "radius": 0.3,
+      "scale": 1,
+      "keepRegion": true,
+      "minX": -2640,
+      "maxX": -2450,
+      "minZ": -1180,
+      "maxZ": -1080,
+      "sites": [
+        [
+          -2470,
+          -1130
+        ],
+        [
+          -2486,
+          -1122
+        ]
+      ],
+      "note": "Extension from East Pyros: the road fox, \"a lean, bold scavenger\", standing in for the plain's fox. It goes at twelve metres, fast, and the herds' carrion and the voles in the grass are a living.",
+      "maxSlope": 0.5
+    }
+  ]
+}

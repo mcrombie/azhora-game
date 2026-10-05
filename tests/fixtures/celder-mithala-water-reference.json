@@ -1,0 +1,58 @@
+{
+  "meshes": [
+    {
+      "name": "The West Arm",
+      "hash": "cbb61b4566def4919cce4ba1e1cbbfafe58ad8932e2cf75c6364ecb9423587b9"
+    },
+    {
+      "name": "The North Braid",
+      "hash": "9e183b98577d21edbc8454286381586da1c7f188eb7f8485516d6c8629e9058d"
+    },
+    {
+      "name": "The Main Channel",
+      "hash": "8f018e85d52191ce3b56fcb86bdb8561c363a53912582ba34a6ecc8efc6786a9"
+    },
+    {
+      "name": "The Celder Water",
+      "hash": "bb236015338536ad02eb07f4262ee4054786443f8d04845531c8145c33bd6dd5"
+    },
+    {
+      "name": "The East Head",
+      "hash": "54ad126fbe2e2ea438859f1ed09d31812a9be9654d216d7f0a36c4e33ee6fb1c"
+    },
+    {
+      "name": "The Cross Braid",
+      "hash": "b8535ca5434551a2f6b828ffcc78f3505fd71ce60d478bcbaa2998477fb6e1a5"
+    },
+    {
+      "name": "The Upper Fan",
+      "hash": "167adecc1df3d3a9ac006d7b3c2b1fb98b6a15309a56c83b6dfe978abb0a3942"
+    },
+    {
+      "name": "The Lower Fan",
+      "hash": "e2bf80c0912d53b9b2a60cf16587b417963316bc1c7bfc59916d4bfab2300d6c"
+    },
+    {
+      "name": "The Main Channel thread 1",
+      "hash": "b302ddeaca3eff8c0c18e838e3dcde387f8d32e8ca953e1bbe37095848750ade"
+    },
+    {
+      "name": "The Main Channel thread 2",
+      "hash": "3bcd668bed2ddb64803ade453f42110130799303744934390f85ef8aabfdac32"
+    },
+    {
+      "name": "The North Braid thread 1",
+      "hash": "ef39ad8b3db69c95ffb1a766051ba97539b5ed8687089234c6d5a4459f05c120"
+    },
+    {
+      "name": "The North Braid thread 2",
+      "hash": "a6986e12dc9c2e1192fd77b9901312489f48a80bac1c2a34ea792f45345043c1"
+    }
+  ],
+  "colliders": "e7b918652925f9fa5b2c38f2ca2509898a38cc058362d8b8218ca6891694e015",
+  "count": 831,
+  "metrics": {
+    "water": 12,
+    "blockers": 831
+  }
+}

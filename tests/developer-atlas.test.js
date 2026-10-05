@@ -16,8 +16,8 @@ const svg = await read('../assets/azhora-world-map.svg');
 const atlas = createDeveloperAtlasData(metadata, svg, survey);
 
 test('all authored regions have exact polygons, matching survey cells, and their original terrain colors', () => {
-  assert.equal(atlas.regions.length, 131);
-  assert.equal(atlas.regions.reduce((count, region) => count + region.cells.length, 0), 3735);
+  assert.equal(atlas.regions.length, 132);
+  assert.equal(atlas.regions.reduce((count, region) => count + region.cells.length, 0), 3756);
   assert.equal(atlas.width, 3062.266);
   assert.equal(atlas.height, 4088);
   assert.equal(atlas.hexSize, 16);
@@ -120,11 +120,14 @@ test('every region selection supports a survey, while built destinations remain 
   assert.equal(developerRegionSelection(atlas, 'Drent').destinations.length, 1);
   assert.equal(developerRegionSelection(atlas, 'Luscia').destinations.length, 1);
   assert.equal(developerRegionSelection(atlas, 'East Suval').destinations.length, 1);
-  assert.equal(developerRegionSelection(atlas, 'Cape Thalmagar').destinations[0].scene, 'cape-thalmagar');
-  // East Izol is the unbuilt half of the island; West Izol is a playable region now.
-  const other = developerRegionSelection(atlas, 'East Izol');
+  const cape = developerRegionSelection(atlas, 'Cape Thalmagar').destinations;
+  assert.equal(cape[0].scene, 'playable-world');
+  assert.equal(cape[0].travelTarget, 'thalmagar-coast');
+  assert.ok(cape.some(destination => destination.id === 'cape-thalmagar' && destination.scene === 'cape-thalmagar'), 'the separate fortress prototype remains available');
+  // Maanub is still unbuilt, and is the last of the queue (docs/regional-completion-ledger.md).
+  const other = developerRegionSelection(atlas, 'Maanub');
   assert.equal(other.destinations[0].scene, 'terrain-survey');
-  assert.equal(other.destinations[0].travelTarget, 'East Izol');
+  assert.equal(other.destinations[0].travelTarget, 'Maanub');
   assert.equal(developerRegionSelection(atlas, 'invented-country'), null);
   assert.equal(hitAtlasRegion(atlas, 0, 0), null);
   assert.equal(hitAtlasRegion(atlas, NaN, 0), null);
@@ -145,13 +148,13 @@ test('overlapping region bounding boxes never substitute for exact land polygons
 
 test('map markup provides all exact region targets, labels and keyboard access without changing the atlas asset', () => {
   const markup = developerAtlasMarkup(atlas, { selectedRegionId: 'Drent' });
-  assert.equal((markup.match(/data-dev-region=/g) ?? []).length, 131);
-  assert.equal((markup.match(/tabindex="0"/g) ?? []).length, 131);
+  assert.equal((markup.match(/data-dev-region=/g) ?? []).length, 132);
+  assert.equal((markup.match(/tabindex="0"/g) ?? []).length, 132);
   assert.match(markup, /href="\.\/assets\/azhora-world-map\.svg"/);
   assert.match(markup, /aria-label="Drent · open playable destinations · level 0 Tutorial"/);
   assert.match(markup, /data-dev-region="Cold Stones" data-level="4"/);
-  assert.match(markup, /Cold Stones · open terrain survey; gameplay not built · level 4 Perilous \(provisional\)/);
-  assert.equal((markup.match(/data-level="/g) ?? []).length, 131);
+  assert.match(markup, /Cold Stones · open playable destinations · level 4 Perilous \(provisional\)/);
+  assert.equal((markup.match(/data-level="/g) ?? []).length, 132);
   assert.match(markup, /aria-pressed="true"/);
   assert.match(markup, /open terrain survey; gameplay not built/);
   assert.doesNotMatch(markup, /onclick=/);

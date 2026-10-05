@@ -94,3 +94,13 @@ test('long rays reuse local broadphase output without reading or copying the for
   assert.equal(forestLineClear(world, point(0), point(400)), true);
   assert.equal(calls, 50); assert.ok(maxReach <= 4.08 + 1e-9);
 });
+
+
+test('registered regional tree species have finite canopy height under their legacy collider kinds', () => {
+  for (const kind of ['region-tree', 'village-tree', 'feradom-tree']) {
+    const tree = { id: kind, x: 4, z: 0, r: .5, kind };
+    const world = fixture([tree], { treeRegistry: { get: id => id === kind ? { base: { y: 2 }, height: 7 } : null } });
+    assert.equal(forestSegmentHit(world, point(0, 8), point(8, 8)).collider, tree);
+    assert.equal(forestSegmentHit(world, point(0, 14), point(8, 14)), null, 'fire above the crown is unobstructed');
+  }
+});

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { regions } from './region-world.js';
 import { createCharacter } from './characters.js';
 import { createGhostFlight } from './ghost-camera.js';
 import { createThalmagarWorld } from './thalmagar-world.js';
@@ -54,7 +55,7 @@ export function createDeveloperMode({renderer,normalScene,world,player,onExit=()
     let start,bounds,target,subtitle;
     if(destination.scene==='playable-world'){
       const points={drent:{x:-15,z:29},luscia:{x:-386,z:183},moros:{x:-500,z:312},suval:{x:-56,z:636},'west-suval':{x:-530,z:875},pueth:{x:-110,z:-170},peblos:{x:334,z:428},'west-izol':{x:56,z:1725},elagos:{x:-1221,z:386},'south-suval':{x:-95,z:1215},iscare:{x:-650,z:1155},'east-lotharn':{x:-1087,z:-887},feradom:{x:-421.129,z:-608.917}};
-      const p=points[destination.travelTarget]||points.drent;start={x:p.x,y:world.heightAt(p.x,p.z)+8,z:p.z};target={x:p.x,y:start.y-2,z:p.z-30};bounds={...world.bounds,minY:-20,maxY:650};subtitle='Playable region · ghost inspection';
+      const p=points[destination.travelTarget]||regions.find(r=>r.id===destination.region)?.spawn||points.drent;start={x:p.x,y:world.heightAt(p.x,p.z)+8,z:p.z};target={x:p.x,y:start.y-2,z:p.z-30};bounds={...world.bounds,minY:-20,maxY:650};subtitle='Playable region · ghost inspection';
     }else{
       const dark=destination.scene==='cape-thalmagar';currentScene=makeScene(dark);
       const area=dark?createThalmagarWorld(currentScene):createSurveyWorld(currentScene,atlas.regions.find(r=>r.id===destination.regionId));isolated={scene:currentScene,world:area};

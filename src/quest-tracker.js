@@ -115,7 +115,7 @@ export function normalizeTrackableQuests({ main = {}, bridge = null, vastos = nu
 }
 
 export function createQuestTracker({ selectedId = 'main' } = {}) {
-  let wanted = typeof selectedId === 'string' ? selectedId : 'main', choices = null;
+  let wanted = typeof selectedId === 'string' ? selectedId : 'main', choices = null, exploration = null;
   function reconcile() {
     if (!choices) choices = normalizeTrackableQuests();
     if (!choices.some(quest => quest.id === wanted)) wanted = choices[0]?.id ?? 'free-roam';
@@ -124,11 +124,11 @@ export function createQuestTracker({ selectedId = 'main' } = {}) {
     reconcile();
     // Keep the player's chosen errand first without changing main-story state.
     const ordered = [...choices].sort((a, b) => Number(b.id === wanted) - Number(a.id === wanted));
-    const selected = choices.find(quest => quest.id === wanted) ?? normalize({title:'Your own road', detail:'The Imperial campaign is behind you. Explore, follow another quest, or seek a Republican introduction in Nothom.', trackable:false}, 'free-roam', 'tertiary');
+    const selected = choices.find(quest => quest.id === wanted) ?? normalize(exploration??{title:'Your own road', detail:'The Imperial campaign is behind you. Explore, follow another quest, or seek a Republican introduction in Nothom.', trackable:false}, 'free-roam', 'tertiary');
     if(selected.id==='free-roam')selected.label='Exploration';
     return { selectedId: wanted, selected: copyQuest(selected), choices: ordered.map(copyQuest) };
   }
-  function update(source) { choices = normalizeTrackableQuests(source); reconcile(); return view(); }
+  function update(source) { exploration=source?.exploration??null; choices = normalizeTrackableQuests(source); reconcile(); return view(); }
   function select(id) {
     reconcile();
     const ok = typeof id === 'string' && choices.some(quest => quest.id === id);

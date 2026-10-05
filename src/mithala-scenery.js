@@ -1,7 +1,12 @@
 import { forEachBuild } from './build-each.js';
+import { createMithalaWaterSteps } from './mithala-water.js';
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
+import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
 import { hexOwnerAt, REGION_CELLS, relief } from './region-world.js';
+// The sapling pass walks East and North Mithala as they were reviewed, before the city's hex trade (docs/mithala-city-brief.md).
+import { cellsBeforeMithalaTrade } from './game-atlas-adjustments.js';
 import { WORLD_SCALE } from './world-scale.js';
 import { MITHALA_RIVERS, MITHALA_MAIN, WEST_BRAIDS, westBareGround } from './west-regions.js';
 import { WEST_PROFILES, westWaterSurface, braidThreadOffset } from './west-ground.js';
@@ -64,90 +69,36 @@ export function* createMithalaScenerySteps(kit) {
   const smooth = (a, b, x) => { const v = Math.max(0, Math.min(1, (x - a) / (b - a))); return v * v * (3 - 2 * v); };
   const metrics = { water: 0, blockers: 0, reeds: 0, sedge: 0, grass: 0, forbs: 0, trees: 0, saplings: 0, silt: 0, bars: 0, stones: 0 };
   const gy = (x, z) => groundHeight(x, z);
+  const treeGroundAt = kit.renderedGroundHeight ?? gy;
   const OWN = new Set(MITHALA_REGIONS);
   const own = (x, z) => OWN.has(hexOwnerAt(x, z));
   /** Ground something may grow on: this plain's own hexes, out of the water and off a dry channel's floor. */
   const plantable = (x, z, margin) => own(x, z) && !westBareGround(x, z, margin)
     && westWaterSurface(x, z) === null && !mithalaClear(x, z, margin);
 
-  // -------------------------------------------------------------------------
-  // The water: eight channels, two of them braided
-  // -------------------------------------------------------------------------
-  /**
-   * Slow, brown-green, heavy with silt. This is a river that has carried the Oremindi down onto a
-   * plain and is putting it there: "a deep dark accumulation of mountain sediment that makes the
-   * Mithala the most productive grain land on the continent."
-   */
-  const waterMaterial = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 } }, side: THREE.DoubleSide,
-    vertexShader: 'varying vec3 p; void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'uniform float time; varying vec3 p; void main(){float w=sin(p.x*.26-time*.95+p.z*.72)*sin(p.x*.11+p.z*.83);vec3 c=vec3(.31,.38,.33)+vec3(.16,.17,.13)*pow(max(w,0.),8.);gl_FragColor=vec4(c,1.);}',
-  });
-  /** A ribbon over a line of samples, broken wherever the ground rises through it. */
-  function* ribbon(samples, name, halfOf = sample => sample.half) {
-    let run = [];
-    const flush = () => {
-      if (run.length < 2) { run = []; return; }
-      const vertices = [], indices = [];
-      run.forEach((sample, index) => {
-        const half = halfOf(sample);
-        vertices.push(sample.x - sample.nx * half, sample.y, sample.z - sample.nz * half,
-          sample.x + sample.nx * half, sample.y, sample.z + sample.nz * half);
-        if (index) { const v = index * 2; indices.push(v - 2, v, v - 1, v - 1, v, v + 1); }
-      });
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-      geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
-      const sheet = new THREE.Mesh(geometry, waterMaterial);
-      sheet.name = name; group.add(sheet); metrics.water++;
-      run = [];
-    };
-    for (const sample of samples) { if (++buildWork % 32 === 0) yield;
-      const y = westWaterSurface(sample.x, sample.z);
-      if (y === null) { flush(); continue; }
-      run.push({ ...sample, y });
-    }
-    flush();
-  }
-  for (const course of MITHALA_RIVERS) { if (++buildWork % 32 === 0) yield; (yield* ribbon(WEST_PROFILES.get(course.id), course.name)); }
-
-  /**
-   * **The braided reaches, which are what this plain is famous for.** A thread leaves the main line
-   * and comes back to it, so two run either side of the channel over the reach and a bar of silt
-   * stands between each thread and the middle. `WEST_BRAIDS` carries the two - the main channel's
-   * over almost its whole length and the north braid's over its lower half - and the threads are the
-   * same geometry Vastos, the Flats and Eer already use.
-   */
   const MITHALA_BRAIDS = WEST_BRAIDS.filter(item => item.id === 'mithala-main' || item.id === 'mithala-north-braid');
-  const braidThreads = braid => [1, -1].map(side => WEST_PROFILES.get(braid.course.id).map(sample => {
-    const offset = braidThreadOffset(braid, sample.along);
-    if (offset === null) return null;
-    return { ...sample, x: sample.x + sample.nx * offset * side, z: sample.z + sample.nz * offset * side };
-  }).filter(Boolean));
-  for (const braid of MITHALA_BRAIDS)
-    { if (++buildWork % 32 === 0) yield; yield* forEachBuild(braidThreads(braid), function* (thread, index) { return (yield* ribbon(thread, `${braid.course.name} thread ${index + 1}`, () => braid.half)); }); }
-
-  /**
-   * **The main channel is a wall below its first third**, which is the house rule for a medium river
-   * (the Isa, the Carica) and the reason South Mithala and East Mithala are different places. Its
-   * ford is the gravel of the upper reach, where the two arms have only just come together and it is
-   * not yet carrying what it carries below; from there to the sea nobody crosses it on foot. No other
-   * channel on the plain is walled: a small river on ground this flat is waded anywhere.
-   */
-  for (const sample of WEST_PROFILES.get(MITHALA_MAIN.id)) { if (++buildWork % 32 === 0) yield;
-    if (sample.ford) continue;
-    const step = Math.max(1, Math.round(sample.half / 3.2)), radius = sample.half / (step + .5) + 1.4;
-    for (let k = -step; k <= step; k++) { if (++buildWork % 32 === 0) yield;
-      const offset = sample.half * (k / (step + .5));
-      colliders.push({ x: sample.x + sample.nx * offset, z: sample.z + sample.nz * offset, r: radius, kind: 'west-deep-water' });
-      metrics.blockers++;
-    }
-  }
+  const water = kit.water ?? (yield* createMithalaWaterSteps({ root: group, colliders }));
+  metrics.water = water.metrics.water; metrics.blockers = water.metrics.blockers;
 
   // -------------------------------------------------------------------------
   // Silt: the bars in the braids, the summer channels' floors, and the levee crests
   // -------------------------------------------------------------------------
   const stoneMaterial = material('#ffffff', { flatShading: true });
+  // Seat the lower hull in the visible ground instead of balancing a tilted
+  // clump on one tip. Keep all authored horizontal shapes and seeded draws.
+  const lowerHull = [...new Map(Array.from({ length: round.attributes.position.count }, (_, i) => {
+    const p = round.attributes.position, v = [p.getX(i), p.getY(i), p.getZ(i)]; return [v.join(','), v];
+  })).values()].filter(v => v[1] < 0);
+  const footingMatrix = new THREE.Matrix4();
+  function lowerHullGap(matrix) {
+    const e = matrix.elements; let gap = -Infinity;
+    for (const [x, y, z] of lowerHull) {
+      const px = e[0] * x + e[4] * y + e[8] * z + e[12], py = e[1] * x + e[5] * y + e[9] * z + e[13];
+      const pz = e[2] * x + e[6] * y + e[10] * z + e[14];
+      gap = Math.max(gap, py - treeGroundAt(px, pz));
+    }
+    return gap;
+  }
   function* siltBatch(spots, name, tint, lift = .1) {
     if (!spots.length) return;
     const batch = new THREE.InstancedMesh(round, stoneMaterial, spots.length);
@@ -155,6 +106,9 @@ export function* createMithalaScenerySteps(kit) {
       dummy.position.set(spot.x, gy(spot.x, spot.z) + spot.s * lift, spot.z);
       dummy.rotation.set(range(-.1, .1), spot.rot, range(-.1, .1));
       dummy.scale.set(spot.s, spot.s * (spot.flat ?? range(.12, .26)), spot.s * range(.8, 1.4)); dummy.updateMatrix();
+      if (name === 'Mithala apron stones') {
+        dummy.position.y -= lowerHullGap(dummy.matrix) + .02; dummy.updateMatrix();
+      }
       batch.setMatrixAt(index, dummy.matrix); batch.setColorAt(index, tint(spot));
     });
     batch.name = name; batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch);
@@ -227,11 +181,23 @@ export function* createMithalaScenerySteps(kit) {
   function* bladeBatch(geometry, spots, name, tint, tall = 1) {
     if (!spots.length) return;
     const batch = new THREE.InstancedMesh(geometry, bladeMaterial, spots.length);
+    const p = geometry.attributes.position, roots = [];
+    for (let i = 0; i < p.count; i++) if (Math.abs(p.getY(i)) < 1e-6) roots.push([p.getX(i), p.getZ(i)]);
     yield* forEachBuild(spots, function* (spot, index) {
       dummy.position.set(spot.x, gy(spot.x, spot.z) + .02, spot.z);
       dummy.rotation.set(0, spot.rot, 0);
       dummy.scale.set(spot.s * (spot.wide ?? 1), spot.s * tall * (spot.high ?? 1), spot.s * (spot.wide ?? 1));
       dummy.updateMatrix();
+      // Analytic centre heights can bury these short sedges in the coarse
+      // ground or leave their roots in the air. Seat the complete retained
+      // blade-base footprint; only Y changes, with no extra random draws.
+      const e = dummy.matrix.elements; let gap = -Infinity;
+      for (const [x, z] of roots) {
+        const px = e[0] * x + e[8] * z + e[12], py = e[1] * x + e[9] * z + e[13];
+        const pz = e[2] * x + e[10] * z + e[14];
+        gap = Math.max(gap, py - treeGroundAt(px, pz));
+      }
+      dummy.position.y -= gap + .015; dummy.updateMatrix();
       batch.setMatrixAt(index, dummy.matrix); batch.setColorAt(index, tint(spot));
     });
     batch.name = name; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch);
@@ -256,25 +222,34 @@ export function* createMithalaScenerySteps(kit) {
   const trunkGeometry = new THREE.CylinderGeometry(.16, .3, 1, 6);
   const crownGeometry = new THREE.IcosahedronGeometry(1, 0);
   const barkMaterial = material('#6a5a46'), leafMaterial = material('#ffffff', { flatShading: true });
-  function* treeBatch(trees, name, tint, kind) {
+  function* treeBatch(trees, name, tint, kind, speciesFor) {
     if (!trees.length) return;
     const trunks = new THREE.InstancedMesh(trunkGeometry, barkMaterial, trees.length);
     const crowns = new THREE.InstancedMesh(crownGeometry, leafMaterial, trees.length * 3);
     let at = 0;
     yield* forEachBuild(trees, function* (tree, index) {
-      const y = gy(tree.x, tree.z), height = tree.h * tree.s;
+      let y = gy(tree.x, tree.z);
+      const height = tree.h * tree.s;
       dummy.position.set(tree.x, y + height * tree.bole * .5, tree.z);
       dummy.rotation.set(range(-.05, .05), tree.rot, range(-.05, .05));
       dummy.scale.set(tree.s * tree.girth, height * tree.bole, tree.s * tree.girth); dummy.updateMatrix();
+      const offset = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .3, segments: 6 });
+      y += offset; dummy.position.y += offset; dummy.updateMatrix();
+      const footY = dummy.matrix.elements[13] - dummy.matrix.elements[5] * .5;
       trunks.setMatrixAt(index, dummy.matrix);
-      colliders.push({ x: tree.x, z: tree.z, r: .42 * tree.s * tree.girth, kind });
+      const collider = { x: tree.x, z: tree.z, r: .42 * tree.s * tree.girth, kind };
+      colliders.push(collider);
+      const parts = [{ mesh: trunks, index }];
       for (let lobe = 0; lobe < 3; lobe++) { if (++buildWork % 32 === 0) yield;
         const a = tree.rot + lobe * 2.1, spread = lobe === 2 ? 0 : height * tree.spread;
         dummy.position.set(tree.x + Math.sin(a) * spread, y + height * (lobe === 2 ? tree.top : tree.top - .16), tree.z + Math.cos(a) * spread);
         dummy.rotation.set(range(-.2, .2), a, range(-.18, .18));
         dummy.scale.set(height * tree.wide, height * tree.deep, height * tree.wide); dummy.updateMatrix();
+        parts.push({ mesh: crowns, index: at });
         crowns.setMatrixAt(at, dummy.matrix); crowns.setColorAt(at++, tint(tree));
       }
+      registerWorldTree(colliders, { id: worldTreeId('mithala', tree.x, tree.z),
+        x: tree.x, z: tree.z, y: footY, height, species: speciesFor(tree) }, parts, collider);
     });
     trunks.name = `${name} trunks`; crowns.name = `${name} crowns`;
     for (const batch of [trunks, crowns]) { if (++buildWork % 32 === 0) yield; batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch); }
@@ -323,7 +298,8 @@ export function* createMithalaScenerySteps(kit) {
     : tree.willow
       ? color.set('#7f9060')      // willow: broad, grey-green, low over the water
       : color.set('#4f6c3e'))     // alder: dark, dense, and the one that stands in the water itself
-    .offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06)), 'mithala-tree'));
+    .offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06)), 'mithala-tree',
+    tree => tree.poplar ? 'black-poplar' : tree.willow ? 'black-willow' : 'black-alder'));
 
   /**
    * **The Acorwood coming over the horizon**, on the north-eastern margin of East and North Mithala.
@@ -335,7 +311,7 @@ export function* createMithalaScenerySteps(kit) {
    */
   const saplings = [];
   const FOREST = { fromX: -1700, toX: -1000, fromZ: -1500, toZ: -1950 };
-  for (const name of ['East Mithala', 'North Mithala']) { if (++buildWork % 32 === 0) yield; for (const cell of REGION_CELLS[name] ?? []) { if (++buildWork % 32 === 0) yield;
+  for (const name of ['East Mithala', 'North Mithala']) { if (++buildWork % 32 === 0) yield; for (const cell of cellsBeforeMithalaTrade(name, n => REGION_CELLS[n])) { if (++buildWork % 32 === 0) yield;
     for (let i = 0; i < 90; i++) { if (++buildWork % 32 === 0) yield;
       const x = cell.x + range(-50, 50), z = cell.z + range(-55, 55);
       if (!plantable(x, z, 2)) continue;
@@ -349,7 +325,9 @@ export function* createMithalaScenerySteps(kit) {
         girth: 1, bole: .45, top: .76, spread: .2, wide: .3, deep: .3 });
     }
   } }
-  (yield* treeBatch(saplings, 'Mithala Acorwood margin', () => color.set('#3f5c36').offsetHSL(range(-.02, .02), range(-.04, .06), range(-.04, .05)), 'mithala-tree'));
+  // Builder assignment for the previously unnamed broadleaf margin; keep its
+  // existing shape, location and seeded draws while making every trunk specific.
+  (yield* treeBatch(saplings, 'Mithala Acorwood margin', () => color.set('#3f5c36').offsetHSL(range(-.02, .02), range(-.04, .06), range(-.04, .05)), 'mithala-tree', () => 'white-oak'));
   metrics.saplings = saplings.length;
 
   // -------------------------------------------------------------------------
@@ -368,6 +346,14 @@ export function* createMithalaScenerySteps(kit) {
         dummy.rotation.set(range(-.16, .16), a, range(-.16, .16));
         dummy.scale.set(clump.s * .34, clump.s * clump.h * .42, clump.s * .32); dummy.updateMatrix();
         batch.setMatrixAt(at, dummy.matrix); batch.setColorAt(at++, tint(clump));
+      }
+      let gap = -Infinity;
+      for (let part = at - 3; part < at - 1; part++) {
+        batch.getMatrixAt(part, footingMatrix); gap = Math.max(gap, lowerHullGap(footingMatrix));
+      }
+      for (let part = at - 3; part < at; part++) {
+        batch.getMatrixAt(part, footingMatrix); footingMatrix.elements[13] -= gap + .02;
+        batch.setMatrixAt(part, footingMatrix);
       }
     }
     batch.name = name; batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch);
@@ -459,6 +445,6 @@ export function* createMithalaScenerySteps(kit) {
 
   return {
     group, metrics,
-    update(time) { waterMaterial.uniforms.time.value = time; },
+    update(time) { water.update(time); },
   };
 }

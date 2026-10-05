@@ -270,7 +270,7 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     ctx.closePath(); ctx.fillStyle = MINIMAP_PALETTE.timber; ctx.fill(); counts.bridges++;
   }
 
-  for (const c of world.colliders || []) {
+  for (const c of [...(world.colliders || []), ...(world.mapBuildings ?? [])]) {
     if (!c.kind || c.kind.endsWith('-water') || c.kind.endsWith('-tree')) continue;
     const house = c.kind === 'house', solid = house || c.kind === 'windmill' || c.kind === 'cart'
       || c.kind === 'bridge-rail' || c.kind === 'bridge-damage' || c.kind === 'ridge-rock' || c.kind === 'ruin-pillar';

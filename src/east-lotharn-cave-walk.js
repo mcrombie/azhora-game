@@ -6,6 +6,12 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const finite = p => p && Number.isFinite(p.x) && Number.isFinite(p.z);
 const copy = p => p ? { x: p.x, y: p.y, z: p.z } : null;
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
+const exitsExteriorSide = (cave, here, next, radius) => {
+  const [open, close] = cave.openings;
+  const outside = (here.along < open && next.along < open)
+    || (cave.kind !== 'chamber' && here.along > close && next.along > close);
+  return outside && next.distance > cave.half(next.along) - radius && next.distance > here.distance + 1e-5;
+};
 
 export function validLotharnCaveSave(saved) {
   return saved == null || (saved.version === 1 && typeof saved.id === 'string' && saved.id.length < 100
@@ -14,7 +20,7 @@ export function validLotharnCaveSave(saved) {
 }
 
 export function createLotharnCaveWalk({ caves = [], ground }) {
-  const walk = createCaveWalk(caves, ground);
+  const walk = createCaveWalk(caves, ground, { exteriorEntry: true });
   let entrance = 0, safeEntrance = null;
   const outside = (cave, end) => {
     const s = clamp(cave.openings[end] + (end ? 1.1 : -1.1), 0, cave.length), p = cave.at(s);
@@ -45,13 +51,17 @@ export function createLotharnCaveWalk({ caves = [], ground }) {
         if (position.x < b.minX - 2 || position.x > b.maxX + 2 || position.z < b.minZ - 2 || position.z > b.maxZ + 2) continue;
         const near = nearestPlain(cave.path, position.x, position.z);
         if (near.distance > cave.half(near.along) - .34 || Math.abs(position.y - cave.floor(near.along)) > .85) continue;
-        const p = cave.at(near.along), q = cave.at(clamp(near.along + .5, 0, cave.length));
-        const forward = dx * (q.x - p.x) + dz * (q.z - p.z), [open, close] = cave.openings;
+        const p = cave.at(near.along), q = cave.at(clamp(near.along + .5, 0, cave.length)), back = cave.at(Math.max(0, near.along - .5));
+        // At the exact upper endpoint q equals p; use the final segment's tangent instead.
+        const tangent = gap(p, q) > 1e-7 ? { x: q.x - p.x, z: q.z - p.z } : { x: p.x - back.x, z: p.z - back.z };
+        const forward = dx * tangent.x + dz * tangent.z, [open, close] = cave.openings;
         const next = nearestPlain(cave.path, position.x + dx, position.z + dz);
-        const lower = forward > 0 && near.along >= open - Math.max(.2, Math.hypot(dx, dz))
-          && near.along < open + .8 && next.along >= open;
-        const upper = cave.kind !== 'chamber' && forward < 0 && near.along <= close + Math.max(.2, Math.hypot(dx, dz))
-          && near.along > close - .8 && next.along <= close;
+        if (exitsExteriorSide(cave, near, next, .34)) continue;
+        // The authored line already extends outside the opening. Its floor is the actual
+        // surface there, so take ownership while heading inward along that short approach.
+        // Waiting for `open` makes a sloping doorstep impassable before entry can trigger.
+        const lower = forward > 0 && near.along < open + .8 && next.along >= near.along;
+        const upper = cave.kind !== 'chamber' && forward < 0 && near.along > close - .8 && next.along <= near.along;
         if (!lower && !upper) continue;
         entrance = upper ? 1 : 0; safeEntrance = outside(cave, entrance);
         walk.restore({ id: cave.id, along: near.along }); return cave;
@@ -60,6 +70,11 @@ export function createLotharnCaveWalk({ caves = [], ground }) {
     },
     move(position, dx, dz, radius = .34) {
       if (!walk.cave) return { outside: true, floor: null };
+      const here = nearestPlain(walk.cave.path, position.x, position.z);
+      const next = nearestPlain(walk.cave.path, position.x + dx, position.z + dz);
+      // The exterior approach has no passage sidewalls. Release before crossing its edge;
+      // the next frame's ordinary surface movement must check terrain and obstacles there.
+      if (exitsExteriorSide(walk.cave, here, next, radius)) { leave(); return { outside: true, floor: null }; }
       // The baseline walker treats line ends as open exits. A chamber instead has a solid
       // far wall; project motion along it rather than letting the traveler leave the room.
       if (walk.cave.kind === 'chamber') {

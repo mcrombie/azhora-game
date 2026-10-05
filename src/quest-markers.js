@@ -108,8 +108,9 @@ export function markerFor(id, view = {}) {
   const ashore = stage >= TUTORIAL_DONE;
   // The arc. The harbourmaster holds it until the letter is in the satchel, and Officer Glun
   // from then until the chart is handed over, which is the whole of subquests one and two.
-  if (id === ids.harbourmaster && stage < 2) kinds.push('main');
-  if (id === ids.instructor && stage === 2) kinds.push('main');
+  if (!view.mainDormant && id === ids.harbourmaster && stage < 2) kinds.push('main');
+  if (!view.mainDormant && id === ids.instructor && stage === 2 && !view.peninsulaEnlistment) kinds.push('main');
+  if (id === 'post-landing' && view.peninsulaEnlistment) kinds.push('main');
   if (holds(view.arcDestinations, id)) kinds.push('main');
   if (holds(view.chapterDestinations, id) && !busy) kinds.push('main');
   // Chip's copper good deed, while his bridge is unmended.

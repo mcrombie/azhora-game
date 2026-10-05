@@ -29,10 +29,10 @@
  * still somebody's flock. No sheep, no cattle, and no Sorten grazing of any kind
  * (docs/oves-brief.md: "Domestic stock is somebody's: none").
  *
- * **No new rig.** The overview's four other rain-shadow animals want models the game has not got —
- * the spine lizard (a new gait: bask, then dart), the bone-bird (a bald vulture over water), the road
- * fox and the sand-cat, which cannot be built at all until there is a night for it to be nocturnal
- * in. They are listed in docs/oves-report.md rather than approximated here.
+ * The two authored vulture ranges now use the existing bone-bird rig. Their
+ * original turkey-vulture stand-in predated that rig; IDs, sites and populations
+ * are unchanged. Road foxes and spine lizards have rigs too, but no new population
+ * is inferred here from that availability. The nocturnal sand-cat remains deferred.
  *
  * Every home site below was measured on the built world, not guessed, and `tests/oves-world.test.js`
  * holds each one to its ground.
@@ -67,8 +67,8 @@ export const OVES_WILDLIFE_ZONES = freeze([
   zone('oves-harrier', 'harrier', 'Ovesos', .3, [-2060, -1845, 550, 655], [[-1950, 600]],
     'Extension: neither lore file names a raptor. A steppe of bunch grass is a harrier’s whole living, as Nethereum’s wet meadow is, and a harrier quarters low over it rather than soaring — nine metres up, following the ground as it rises and falls under the beat.',
     { air: 9, circle: 34, period: 19, quarter: 70, bob: 1.6, follow: true }),
-  zone('oves-plain-vulture', 'turkey-vulture', 'Ovesos', .3, [-1890, -1700, 700, 850], [[-1790, 772]],
-    'Extension, and the brief’s own: a vulture over the dry southern plain, where the grass thins to bare ground and there is nothing to hide what dies on it. The overview’s bone-bird — "a heavy, bald-headed vulture relative … the most visible large animals of the Moroshé from caravan routes" — is what this country would want and is not a rig the game has; the turkey-vulture is the nearest bird already built.',
+  zone('oves-plain-vulture', 'bone-bird', 'Ovesos', .3, [-1890, -1700, 700, 850], [[-1790, 772]],
+    'The overview\'s large scavenger of the desert margins over the dry southern plain. This authored range originally used a turkey-vulture while the bone-bird rig was unavailable; the existing bone-bird now fills that same range, with its original ID and site preserved.',
     { air: 38 }),
   // ---------------------------------------------------------------------
   // The desert, where there is very little
@@ -78,7 +78,7 @@ export const OVES_WILDLIFE_ZONES = freeze([
   zone('oves-rim-hawk', 'plateau-hawk', 'Oves Desert', .3, [-2530, -2375, 730, 890], [[-2452, 806]],
     'The fauna overview’s dry-plateau hawk, which "hunts the upland grasslands" of the eastern rain-shadow country and reaches its densest concentrations on the rocky east-facing slopes of East Pyros — which is the far side of this ridge. It is not an extension here: this is the bird’s own country, riding the air over the rim hills.',
     { air: 34 }),
-  zone('oves-wedge-vulture', 'turkey-vulture', 'Oves Desert', .3, [-2320, -2130, 812, 958], [[-2222, 884]],
+  zone('oves-wedge-vulture', 'bone-bird', 'Oves Desert', .3, [-2320, -2130, 812, 958], [[-2222, 884]],
     'Extension: one vulture over the dry wedge, on the damp reach, because the overview says of the Moroshé’s bone-birds that "they are often the first indicator of water" and the damp reach is the nearest thing to water the Oves has. It is also the only large animal a traveler crossing the desert will see, which is the truthful population of a range that is unusable several years in every decade.',
     { air: 36 }),
 ]);

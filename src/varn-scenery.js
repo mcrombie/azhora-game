@@ -63,7 +63,8 @@ export function* createVarnScenerySteps(kit) {
     const { step, minX, minZ, maxX, maxZ } = VARN_PATCH, TILE = 48;
     const cols = Math.floor((maxX - minX) / step) + 1, rows = Math.floor((maxZ - minZ) / step) + 1;
     const heights = new Float32Array(cols * rows), theirs = new Uint8Array(cols * rows);
-    for (let j = 0; j < rows; j++) { if ((++work & 7) === 0) yield; for (let i = 0; i < cols; i++) {
+    for (let j = 0; j < rows; j++) { for (let i = 0; i < cols; i++) {
+      if (((j * cols + i) & 127) === 0) yield;
       const x = minX + i * step, z = minZ + j * step;
       heights[j * cols + i] = gy(x, z);
       // The slabs and their aprons are Varn's, wherever they stand, and are drawn here at this grid's pitch.
@@ -93,6 +94,7 @@ export function* createVarnScenerySteps(kit) {
       yield;
       const ci = Math.min(TILE, cols - 1 - ti), cj = Math.min(TILE, rows - 1 - tj), indices = [];
       for (let j = 0; j < cj; j++) for (let i = 0; i < ci; i++) {
+        if (((j * ci + i) & 255) === 0) yield;
         const k = (tj + j) * cols + ti + i;
         // A cell is the peaks' own when every corner of it is theirs.
         if (theirs[k] && theirs[k + 1] && theirs[k + cols] && theirs[k + cols + 1]) continue;
@@ -102,6 +104,7 @@ export function* createVarnScenerySteps(kit) {
       if (!indices.length) continue;
       const positions = new Float32Array((ci + 1) * (cj + 1) * 3), colours = new Float32Array((ci + 1) * (cj + 1) * 3);
       for (let j = 0; j <= cj; j++) for (let i = 0; i <= ci; i++) {
+        if (((j * (ci + 1) + i) & 63) === 0) yield;
         const gi = ti + i, gj = tj + j, x = minX + gi * step, z = minZ + gj * step, k = j * (ci + 1) + i, y = heights[gj * cols + gi];
         positions.set([x, y, z], k * 3);
         const east = heights[gj * cols + Math.min(cols - 1, gi + 1)], west = heights[gj * cols + Math.max(0, gi - 1)];
@@ -209,6 +212,7 @@ export function* createVarnScenerySteps(kit) {
       for (let rise = 8; rise < 54; rise += 8 + (course % 3) * 1.4, course++) {
         yield;
         for (let s = 6 + (course % 2) * 3.4; s < length - 9; s += 7.6) {
+          yield;
           const run = 4.6 + ((course * 7 + Math.round(s) + salt) % 5) * .55, mid = s + run / 2;
           const px = p0.x + dir.x * mid, pz = p0.z + dir.z * mid, foot = gy(px - into.x * .6, pz - into.z * .6);
           // Only where the jamb itself stands that high over its own foot: at the mountain's end the face runs out.
@@ -328,7 +332,10 @@ export function* createVarnScenerySteps(kit) {
   }
   // Paving, laid a hair over the floor in slabs: the street, the cross street, the square and the two courts.
   {
-    const slab = (tint, x, z, width, depth, lift = .05) => town.patchSteps(tint, groundHeight, x, z, width, depth, 0, lift, 2);
+    const slab = function* (tint, x, z, width, depth, lift = .05) {
+      yield;
+      yield* town.patchSteps(tint, groundHeight, x, z, width, depth, 0, lift, 2);
+    };
     const street = VARN_STREET;
     for (let i = 1; i < street.length; i++) {
       const a = street[i - 1], c = street[i], length = Math.hypot(c.x - a.x, c.z - a.z), steps = Math.max(1, Math.round(length / 4));

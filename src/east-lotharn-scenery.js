@@ -7,10 +7,16 @@ import {
   LOTHARN, KEMRATH, STONEGATE, PASS_INN, IRON_WORKINGS, BALDS, OLVETH_PASTURE, KEMRATH_FIELDS, KEMRATH_VINES,
   lotharnOpen, kemrathFloorAt, nearestOn, stonegateFloor, passRoadAt, PASS_ROAD_HALF,
   MOUNTAIN_PATCH, BANDS, PEAK_TOPS, peakUplift, peakLiftAt, onBald, onCliff, onRamp,
+  lotharnLandscapeDelta, lotharnCentralNorthDelta, lotharnRouteJoinDelta,
 } from './east-lotharn-world.js';
 import { LOTHARN_WATERS, STONEGATE_WATER, KEMRATH_WATER, LOTHARN_BORDER_WATER, inWestWater } from './west-regions.js';
 import { WEST_PROFILES, westWaterSurface } from './west-ground.js';
 import { nearestPlain } from './east-lotharn-caves.js';
+import { lotharnCanopyHabitat, LOTHARN_SHELTER_TREES, lotharnTreeFoot, lotharnCrestRows } from './east-lotharn-habitat.js';
+import { varnCaveAccessDelta, varnLandscapeSceneryDelta, varnRouteJoinSceneryDelta, CAVE_BENCH, CAVE_BENCHES, onWayShoulder, varnKeepsClear } from './varn-world.js';
+import { onPeakWay } from './lotharn-first-course.js';
+import { EAST_LOTHARN_WILDLIFE_ZONES } from './east-lotharn-wildlife.js';
+import { easternChamberTrim } from './east-lotharn-cave-trim.js';
 
 /**
  * What the East Lotharn looks like where the ground alone is not enough (the ground is
@@ -36,7 +42,10 @@ export function* createEastLotharnScenerySteps(kit) {
   const range = (a, b) => a + random() * (b - a);
   const pick = list => list[Math.floor(random() * list.length)];
   const gy = (x, z) => groundHeight(x, z);
-  const unbuilt = kit.unbuiltGround ?? gy;
+  const legacyHeight = (x, z) => gy(x, z) - lotharnLandscapeDelta(x, z) - varnCaveAccessDelta(x, z) - varnLandscapeSceneryDelta(x, z) - lotharnRouteJoinDelta(x, z) - varnRouteJoinSceneryDelta(x, z);
+  const unbuilt = (x, z) => (kit.unbuiltGround ?? gy)(x, z) - lotharnLandscapeDelta(x, z) - lotharnRouteJoinDelta(x, z);
+  let treeSurface = kit.renderedGroundHeight ?? gy;
+  let canopySurface = treeSurface;
   const push = collider => { colliders.push(collider); return collider; };
   const metrics = { water: 0, trees: 0, tufts: 0, crops: 0, vines: 0, rocks: 0, outcrops: 0, buildings: 0, batches: 0, rushes: 0 };
   const own = (x, z) => hexOwnerAt(x, z) === LOTHARN;
@@ -155,6 +164,41 @@ uniform float time; varying vec3 p; void main(){${body}
       if (Number.isNaN(heights[k])) heights[k] = gy(minX + i * step, minZ + j * step);
       return heights[k];
     };
+    const fineCells = new Map(), SUB = 6, FINE_STEP = step / SUB;
+    const quadHeight = (values, width, x, z) => {
+      const i = Math.min(width - 2, Math.floor(x)), j = Math.min(width - 2, Math.floor(z)), u = x - i, v = z - j;
+      const a = values[j * width + i], b = values[(j + 1) * width + i], c = values[j * width + i + 1], d = values[(j + 1) * width + i + 1];
+      return u + v <= 1 ? a + (c - a) * u + (b - a) * v : d + (b - d) * (1 - u) + (c - d) * (1 - v);
+    };
+    const outsideSurface = treeSurface;
+    treeSurface = (x, z) => {
+      const fx = (x - minX) / step, fz = (z - minZ) / step, i = Math.floor(fx), j = Math.floor(fz);
+      if (i < 0 || j < 0 || i >= cols - 1 || j >= rows - 1 || !drawn[j * (cols - 1) + i]) return outsideSurface(x, z);
+      const fine = fineCells.get(j * (cols - 1) + i);
+      if (fine) return quadHeight(fine, SUB + 1, (fx - i) * SUB, (fz - j) * SUB);
+      const u = fx - i, v = fz - j, a = heightOf(i, j), b = heightOf(i, j + 1), c = heightOf(i + 1, j), d = heightOf(i + 1, j + 1);
+      return u + v <= 1 ? a + (c - a) * u + (b - a) * v : d + (b - d) * (1 - u) + (c - d) * (1 - v);
+    };
+    // Existing supplementary canopy records were selected on the former drawn
+    // triangles. Preserve that eligibility, including Float32 rounding at each
+    // corner; subtracting the analytic delta after interpolation is not equivalent.
+    // The new shoulder is outside every fine cave cell and mouth patch.
+    const canopyHeights = new Map();
+    const canopyHeightOf = (i, j) => {
+      const key = j * cols + i;
+      if (!canopyHeights.has(key)) {
+        const x = minX + i * step, z = minZ + j * step, delta = lotharnCentralNorthDelta(x, z) + lotharnRouteJoinDelta(x, z) + varnRouteJoinSceneryDelta(x, z);
+        canopyHeights.set(key, delta ? Math.fround(gy(x, z) - delta) : heightOf(i, j));
+      }
+      return canopyHeights.get(key);
+    };
+    canopySurface = (x, z) => {
+      const fx = (x - minX) / step, fz = (z - minZ) / step, i = Math.floor(fx), j = Math.floor(fz);
+      if (i < 0 || j < 0 || i >= cols - 1 || j >= rows - 1 || !drawn[j * (cols - 1) + i]
+        || fineCells.has(j * (cols - 1) + i)) return treeSurface(x, z);
+      const u = fx - i, v = fz - j, a = canopyHeightOf(i, j), b = canopyHeightOf(i, j + 1), c = canopyHeightOf(i + 1, j), d = canopyHeightOf(i + 1, j + 1);
+      return u + v <= 1 ? a + (c - a) * u + (b - a) * v : d + (b - d) * (1 - u) + (c - d) * (1 - v);
+    };
     const rock = [new THREE.Color('#8d8374'), new THREE.Color('#7c7a72'), new THREE.Color('#948878'), new THREE.Color('#827d74')];
     const scree = new THREE.Color('#8f8a6c'), lowGrass = new THREE.Color('#5d7843'), highGrass = new THREE.Color('#7f8b55');
     const baldGrass = new THREE.Color('#a4a66f'), shade = new THREE.Color();
@@ -181,10 +225,24 @@ uniform float time; varying vec3 p; void main(){${body}
       const x = minX + (i + .5) * step, z = minZ + (j + .5) * step;
       return mouthPoints.some(({ p }) => Math.abs(x - p.x) < MOUTH - 1.5 && Math.abs(z - p.z) < MOUTH - 1.5);
     };
+    // A 2.7 m shelf and its narrow outer rim need finer ground than the massif
+    // grid. Refine only cells beside the approach; mouth patches keep the doors.
+    const refined = new Set(), reach = CAVE_BENCH.reach + step;
+    for (const bench of CAVE_BENCHES) for (let s = 1; s < bench.line.length; s++) { if ((++buildWork & 31) === 0) yield;
+      const a = bench.line[s - 1], b = bench.line[s], dx = b.x - a.x, dz = b.z - a.z, length2 = dx * dx + dz * dz;
+      const loX = Math.max(0, Math.floor((Math.min(a.x, b.x) - reach - minX) / step)), hiX = Math.min(cols - 2, Math.floor((Math.max(a.x, b.x) + reach - minX) / step));
+      const loZ = Math.max(0, Math.floor((Math.min(a.z, b.z) - reach - minZ) / step)), hiZ = Math.min(rows - 2, Math.floor((Math.max(a.z, b.z) + reach - minZ) / step));
+      for (let j = loZ; j <= hiZ; j++) for (let i = loX; i <= hiX; i++) { if ((++buildWork & 31) === 0) yield;
+        const key = j * (cols - 1) + i;
+        if (!drawn[key] || refined.has(key) || underMouth(i, j)) continue;
+        const x = minX + (i + .5) * step, z = minZ + (j + .5) * step, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / length2));
+        if (Math.hypot(x - a.x - dx * t, z - a.z - dz * t) < reach) refined.add(key);
+      }
+    }
     for (let tj = 0; tj < rows - 1; tj += TILE) { if ((++buildWork & 31) === 0) yield; for (let ti = 0; ti < cols - 1; ti += TILE) { if ((++buildWork & 31) === 0) yield;
       const ci = Math.min(TILE, cols - 1 - ti), cj = Math.min(TILE, rows - 1 - tj), indices = [];
       for (let j = 0; j < cj; j++) { if ((++buildWork & 31) === 0) yield; for (let i = 0; i < ci; i++) { if ((++buildWork & 31) === 0) yield;
-        if (!drawn[(tj + j) * (cols - 1) + ti + i] || (mouthPoints.length && underMouth(ti + i, tj + j))) continue;
+        if (!drawn[(tj + j) * (cols - 1) + ti + i] || refined.has((tj + j) * (cols - 1) + ti + i) || (mouthPoints.length && underMouth(ti + i, tj + j))) continue;
         const a = j * (ci + 1) + i;
         indices.push(a, a + ci + 1, a + 1, a + 1, a + ci + 1, a + ci + 2);
       } }
@@ -212,6 +270,92 @@ uniform float time; varying vec3 p; void main(){${body}
       ground.name = 'East Lotharn peaks ground'; ground.receiveShadow = true; group.add(ground);
       metrics.batches++;
     } }
+
+    // One batch for both shelves. At the outer edge retain the old triangle's
+    // height so the finer patch meets its neighbours without a crack.
+    if (refined.size) {
+      const savedJitter = jitter;
+      const positions = [], colours = [], indices = [], samples = new Map();
+      const fineHeight = (x, z) => { const key = `${x},${z}`; if (!samples.has(key)) samples.set(key, gy(x, z)); return samples.get(key); };
+      for (const key of refined) { if ((++buildWork & 31) === 0) yield;
+        const i = key % (cols - 1), j = Math.floor(key / (cols - 1));
+        const values = new Float32Array((SUB + 1) * (SUB + 1)), corner = [heightOf(i, j), heightOf(i + 1, j), heightOf(i, j + 1), heightOf(i + 1, j + 1)];
+        for (let z = 0; z <= SUB; z++) for (let x = 0; x <= SUB; x++) { if ((++buildWork & 31) === 0) yield;
+          const px = minX + (i + x / SUB) * step, pz = minZ + (j + z / SUB) * step;
+          const coarseNeighbour = (a, b) => !refined.has(b * (cols - 1) + a) && !underMouth(a, b);
+          const boundary = (x === 0 && coarseNeighbour(i - 1, j)) || (x === SUB && coarseNeighbour(i + 1, j))
+            || (z === 0 && coarseNeighbour(i, j - 1)) || (z === SUB && coarseNeighbour(i, j + 1));
+          values[z * (SUB + 1) + x] = boundary ? quadHeight(corner, 2, x / SUB, z / SUB) : fineHeight(px, pz);
+        }
+        fineCells.set(key, values);
+        const offset = positions.length / 3;
+        for (let z = 0; z <= SUB; z++) for (let x = 0; x <= SUB; x++) { if ((++buildWork & 31) === 0) yield;
+          const px = minX + (i + x / SUB) * step, pz = minZ + (j + z / SUB) * step, y = values[z * (SUB + 1) + x];
+          const ex = values[z * (SUB + 1) + Math.min(SUB, x + 1)] - values[z * (SUB + 1) + Math.max(0, x - 1)];
+          const ez = values[Math.min(SUB, z + 1) * (SUB + 1) + x] - values[Math.max(0, z - 1) * (SUB + 1) + x];
+          paint(px, pz, y, Math.hypot(ex, ez) / (2 * FINE_STEP), peakLiftAt(px, pz));
+          positions.push(px, y, pz); colours.push(shade.r, shade.g, shade.b);
+          if (x < SUB && z < SUB) { const a = offset + z * (SUB + 1) + x; indices.push(a, a + SUB + 1, a + 1, a + 1, a + SUB + 1, a + SUB + 2); }
+        }
+      }
+      const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3)); geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
+      const ground = new THREE.Mesh(geometry, material); ground.name = 'East Lotharn cave approach ground'; ground.receiveShadow = true; group.add(ground);
+      metrics.caveApproachCells = refined.size; metrics.batches++;
+      jitter = savedJitter;
+    }
+
+    // Sample the narrow shoulder's actual crest rather than hoping a square grid
+    // lands on it. Its concave apex lies above the grid's interpolated triangles;
+    // this small ribbon closes their sawtooth silhouette without changing physics.
+    {
+      const line = CAVE_BENCHES.flatMap((bench, i) => i ? bench.line.slice(1) : bench.line);
+      const rows = lotharnCrestRows(line), offsets = [CAVE_BENCH.half, CAVE_BENCH.rail - CAVE_BENCH.railHalf,
+        CAVE_BENCH.rail - .5, CAVE_BENCH.rail, CAVE_BENCH.rail + .5, CAVE_BENCH.rail + CAVE_BENCH.railHalf, CAVE_BENCH.reach];
+      const positions = [], colours = [], indices = [], inMouth = [], savedJitter = jitter;
+      const excluded = (x, z) => (onPeakWay(x, z) && !onWayShoulder(x, z))
+        || mouthPoints.some(({ p }) => Math.abs(x - p.x) <= MOUTH + .1 && Math.abs(z - p.z) <= MOUTH + .1);
+      for (const row of rows) for (const offset of offsets) { if ((++buildWork & 31) === 0) yield;
+        const x = row.x + row.nx * offset, z = row.z + row.nz * offset, y = gy(x, z);
+        positions.push(x, y, z);
+        const grade = Math.max(Math.abs(gy(x + row.nx * .15, z + row.nz * .15) - y), Math.abs(gy(x - row.nx * .15, z - row.nz * .15) - y)) / .15;
+        paint(x, z, y, grade, peakLiftAt(x, z)); colours.push(shade.r, shade.g, shade.b);
+        inMouth.push(excluded(x, z));
+      }
+      const width = offsets.length;
+      // The ramp mask ends the rim sharply. Clip mixed triangles against that
+      // boundary instead of spanning it with a false ledge or omitting the crest.
+      const crossings = new Map();
+      const crossing = (a, b) => {
+        const key = a < b ? `${a},${b}` : `${b},${a}`;
+        if (crossings.has(key)) return crossings.get(key);
+        const inside = inMouth[a] ? b : a, outside = inMouth[a] ? a : b;
+        let lo = 0, hi = 1;
+        const ax = positions[inside * 3], az = positions[inside * 3 + 2], dx = positions[outside * 3] - ax, dz = positions[outside * 3 + 2] - az;
+        for (let i = 0; i < 15; i++) { const t = (lo + hi) / 2; if (excluded(ax + dx * t, az + dz * t)) hi = t; else lo = t; }
+        const x = ax + dx * lo, z = az + dz * lo, index = positions.length / 3;
+        positions.push(x, gy(x, z), z); colours.push(...colours.slice(inside * 3, inside * 3 + 3));
+        crossings.set(key, index); return index;
+      };
+      const face = vertices => {
+        const polygon = [];
+        for (let i = 0; i < 3; i++) {
+          const a = vertices[i], b = vertices[(i + 1) % 3];
+          if (!inMouth[a]) polygon.push(a);
+          if (inMouth[a] !== inMouth[b]) polygon.push(crossing(a, b));
+        }
+        for (let i = 1; i < polygon.length - 1; i++) indices.push(polygon[0], polygon[i], polygon[i + 1]);
+      };
+      for (let j = 0; j < rows.length - 1; j++) for (let i = 0; i < width - 1; i++) { if ((++buildWork & 31) === 0) yield;
+        const a = j * width + i, b = a + width, c = a + 1, d = b + 1;
+        face([a, c, b]); face([c, d, b]);
+      }
+      const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3)); geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
+      const crestMaterial = material.clone(); crestMaterial.polygonOffset = true; crestMaterial.polygonOffsetFactor = -2; crestMaterial.polygonOffsetUnits = -2; crestMaterial.side = THREE.DoubleSide;
+      const crest = new THREE.Mesh(geometry, crestMaterial); crest.name = 'East Lotharn cave approach crest'; crest.receiveShadow = true; group.add(crest);
+      metrics.caveCrestVertices = positions.length / 3; metrics.batches++; jitter = savedJitter;
+    }
 
     // The ground round each mouth, thirty centimetres apart - a cliff is so steep that anything
     // coarser stands taller than the opening - with the passage's own section
@@ -331,6 +475,18 @@ uniform float time; varying vec3 p; void main(){${body}
         const collar = new THREE.Mesh(shape, caveMaterial);
         collar.name = `Cave mouth: ${cave.name}`; collar.castShadow = true; collar.receiveShadow = true; group.add(collar);
         metrics.batches++;
+        if (at === inAt) {
+          const contact = easternChamberTrim(cave, gy);
+          if (contact) {
+            const geometry = new THREE.BufferGeometry(), colours = [];
+            for (let i = 0; i < contact.positions.length; i += 3) colours.push(wall[1].r, wall[1].g, wall[1].b);
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(contact.positions, 3));
+            geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3));
+            geometry.setIndex(contact.indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
+            const trim = new THREE.Mesh(geometry, caveMaterial);
+            trim.name = 'Eastern chamber cliff contact'; trim.receiveShadow = true; group.add(trim); metrics.batches++;
+          }
+        }
       }
       // The arch of stones round each mouth.
       for (const at of mouths) { if ((++buildWork & 31) === 0) yield;
@@ -392,10 +548,15 @@ uniform float time; varying vec3 p; void main(){${body}
     if (!trees.length) return;
     const trunks = new THREE.InstancedMesh(trunkGeometry, barkMaterial, trees.length);
     const crowns = new THREE.InstancedMesh(crownGeometry, leafMaterial, trees.length * 3);
+    if (trees[0].prefix === 'lotharn-shelter-canopy') {
+      trunks.name = 'East Lotharn canopy trunks'; crowns.name = 'East Lotharn canopy crowns';
+    } else if (trees[0].prefix === 'lotharn-shelter') {
+      trunks.name = 'East Lotharn established shelter trunks'; crowns.name = 'East Lotharn established shelter crowns';
+    }
     let crownIndex = 0;
     for (const [index, tree] of trees.entries()) { if ((++buildWork & 31) === 0) yield;
-      const y = gy(tree.x, tree.z), height = tree.h, kind = tree.kind;
-      dummy.position.set(tree.x, y + height * .36, tree.z); dummy.rotation.set(0, tree.rot, 0);
+      const y = lotharnTreeFoot(tree, treeSurface), height = tree.h, kind = tree.kind;
+      dummy.position.set(tree.x, y + height * .37, tree.z); dummy.rotation.set(0, tree.rot, 0);
       dummy.scale.set(tree.s, height * .74, tree.s); dummy.updateMatrix();
       trunks.setMatrixAt(index, dummy.matrix);
       const parts = [{mesh:trunks,index}], collider = push({ x: tree.x, z: tree.z, r: .5 * tree.s, kind: 'lotharn-tree' });
@@ -418,7 +579,7 @@ uniform float time; varying vec3 p; void main(){${body}
         crowns.setColorAt(crownIndex++, color.set(kind.tint).offsetHSL(range(-.015, .015), range(-.05, .05), range(-.06, .05)));
       }
       const species = {oak:'white-oak',chestnut:'sweet-chestnut',maple:'red-maple',walnut:'black-walnut'}[kind.id]??kind.id;
-      registerWorldTree(colliders,{id:worldTreeId('lotharn',tree.x,tree.z),x:tree.x,z:tree.z,y,height,species},parts,collider);
+      registerWorldTree(colliders,{id:worldTreeId(tree.prefix ?? 'lotharn',tree.x,tree.z),x:tree.x,z:tree.z,y,height,species},parts,collider);
     }
     for (const batch of [trunks, crowns]) { if ((++buildWork & 31) === 0) yield;  batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch); }
     metrics.trees += trees.length; metrics.batches += 2;
@@ -461,10 +622,10 @@ uniform float time; varying vec3 p; void main(){${body}
       for (let i = 0; i < candidates; i++) { if ((++buildWork & 31) === 0) yield;
         const x = cell.x + range(-50, 50), z = cell.z + range(-57, 57);
         if (!own(x, z) || lotharnOpen(x, z, 1.5) || inWestWater(x, z, 3) || atMouth(x, z)) continue;
-        const y = gy(x, z);
-        // "To within a few hundred meters of their highest summits": the ledges are wooded high up
-        // the peaks, thinning from two hundred metres to nothing at about two hundred and eighty,
-        // and nothing grows out of a cliff or on a bald.
+        const y = legacyHeight(x, z);
+        // Compatibility pass: retain the established positions and random draws, including
+        // the old altitude filter. The isolated habitat pass below extends this forest into
+        // sheltered shoulders without moving a saved tree or the scenery following it.
         if (y > 200 && random() < (y - 200) / 80) continue;
         if (onCliff(x, z) || onBald(x, z, 2)) continue;
         if (trees.some(tree => Math.hypot(tree.x - x, tree.z - z) < 4.3)) continue;
@@ -730,6 +891,65 @@ uniform float time; varying vec3 p; void main(){${body}
     for (const sx of [-1.25, 1.25]) { if ((++buildWork & 31) === 0) yield;  const p = at(sx, back); push({ x: p.x, z: p.z, r: .35, kind: 'iron-workings' }); }
     { const p = at(0, back + 6); push({ x: p.x, z: p.z, r: .9, kind: 'iron-workings' }); }
     metrics.buildings++;
+  }
+
+  // Soil gathers in sheltered hollows and on broken shoulders, while exposed rock
+  // stays bare. Append these trees after every established seeded prop: neither
+  // accepting a new tree nor rendering its crown can change the original stream.
+  {
+    const savedSeed = seed; seed = 0x4c4f5448;
+    const treeCells = new Map(), bucketWidth = 8;
+    const key = (x, z) => `${Math.floor(x / bucketWidth)},${Math.floor(z / bucketWidth)}`;
+    const remember = tree => { const k = key(tree.x, tree.z); if (!treeCells.has(k)) treeCells.set(k, []); treeCells.get(k).push(tree); };
+    for (const collider of colliders) if (collider.kind === 'lotharn-tree') remember(collider);
+    const crowded = (x, z, spacing = 3) => {
+      const ix = Math.floor(x / bucketWidth), iz = Math.floor(z / bucketWidth);
+      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+        if ((treeCells.get(`${ix + dx},${iz + dz}`) ?? []).some(tree => Math.hypot(tree.x - x, tree.z - z) < spacing)) return true;
+      }
+      return false;
+    };
+    // These 31 already existed in a committed build. A new terrain profile must
+    // not change their saved identities by rerunning the old acceptance stream.
+    const established = new Map();
+    for (const [x, z, id, h, s, rot] of LOTHARN_SHELTER_TREES) {
+      const tree = { x, z, h, s, rot, kind: KINDS.find(kind => kind.id === id), prefix: 'lotharn-shelter' };
+      const tile = `${Math.floor(x / 80)},${Math.floor(z / 80)}`;
+      if (!established.has(tile)) established.set(tile, []);
+      established.get(tile).push(tree); remember(tree);
+    }
+    for (const trees of established.values()) yield* woodBatchSteps(trees);
+    metrics.shelterTrees = LOTHARN_SHELTER_TREES.length; metrics.canopyTrees = 0;
+    const wildlifeHomes = EAST_LOTHARN_WILDLIFE_ZONES.flatMap(zone => zone.sites);
+    for (const cell of cells) { if ((++buildWork & 31) === 0) yield;
+      // Each atlas cell has an independent stream, and every candidate consumes
+      // all of its values before rejection. A new soil decision in one place
+      // cannot shift the candidate coordinates in another grove.
+      seed = (0x574f4f44 ^ Math.imul(Math.round(cell.x * 1000), 73856093) ^ Math.imul(Math.round(cell.z * 1000), 19349663)) >>> 0;
+      const trees = [];
+      for (let i = 0; i < 540; i++) { if ((++buildWork & 31) === 0) yield;
+        const x = cell.x + range(-50, 50), z = cell.z + range(-57, 57);
+        const chance = random(), kindChoice = random(), stature = random(), girth = random(), rot = range(0, 6.28);
+        if (!own(x, z) || crowded(x, z) || atMouth(x, z, 2) || lotharnOpen(x, z, 2)
+          || inWestWater(x, z, 4) || onBald(x, z, 5) || onRamp(x, z, 2) || varnKeepsClear(x, z, 2)
+          || wildlifeHomes.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 3.5) || peakUplift(x, z) < 25) continue;
+        // The detailed mesh has already sampled this ground. Judge the soil the
+        // player sees and avoid resampling the whole terrain pipeline per tree.
+        const habitat = lotharnCanopyHabitat(x, z, canopySurface);
+        if (chance >= habitat.density || crowded(x, z, 3 + habitat.stature * 1.2)) continue;
+        // Deep hollows carry beech, maple and tall broadleaves; their irregular
+        // edges become shorter oak/chestnut crowns before yielding to bare rock.
+        const kinds = habitat.shelter > .7 ? [KINDS[2], KINDS[3], KINDS[4], KINDS[5], KINDS[6]] : [KINDS[0], KINDS[1], KINDS[3]];
+        const kind = kinds[Math.floor(kindChoice * kinds.length)];
+        const tree = { x, z, kind, h: (kind.h[0] + (kind.h[1] - kind.h[0]) * stature)
+            * (.35 + habitat.stature * .65) * (.6 + habitat.grove * .4),
+          s: .55 + girth * .4 + habitat.stature * .2, rot, prefix: 'lotharn-shelter-canopy' };
+        trees.push(tree); remember(tree);
+      }
+      metrics.shelterTrees += trees.length; metrics.canopyTrees += trees.length;
+      yield* woodBatchSteps(trees);
+    }
+    seed = savedSeed;
   }
 
   function update(time) {

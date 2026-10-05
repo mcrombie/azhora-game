@@ -1,0 +1,625 @@
+{
+  "status": "read-only planning evidence; no implementation",
+  "atlas": "..\\world-builder\\map\\resources\\examples\\azhora.wwmap",
+  "sha256": "b36c32babaf85213a93459c87eeabe79455268db714681f88444831a221588df",
+  "regions": [
+    {
+      "name": "South Ibenal",
+      "count": 30,
+      "terrain": {
+        "plains": 30
+      },
+      "climate": {
+        "Csb": 30
+      },
+      "boundaryEdges": {
+        "coast": 25,
+        "North Ibenal": 8,
+        "West Ibenwood": 18,
+        "Alezhor": 3
+      },
+      "cells": [
+        {
+          "q": -30,
+          "r": 106,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -29,
+          "r": 106,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -31,
+          "r": 107,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -30,
+          "r": 107,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -29,
+          "r": 107,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -28,
+          "r": 107,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -32,
+          "r": 108,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -31,
+          "r": 108,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -30,
+          "r": 108,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -29,
+          "r": 108,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -33,
+          "r": 109,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -32,
+          "r": 109,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -31,
+          "r": 109,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -34,
+          "r": 110,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -33,
+          "r": 110,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -32,
+          "r": 110,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -35,
+          "r": 111,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -34,
+          "r": 111,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -33,
+          "r": 111,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -36,
+          "r": 112,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -35,
+          "r": 112,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -34,
+          "r": 112,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -36,
+          "r": 113,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -35,
+          "r": 113,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -37,
+          "r": 114,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -36,
+          "r": 114,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -38,
+          "r": 115,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -37,
+          "r": 115,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -36,
+          "r": 115,
+          "terrain": "plains",
+          "climate": "Csb"
+        },
+        {
+          "q": -37,
+          "r": 116,
+          "terrain": "plains",
+          "climate": "Csb"
+        }
+      ],
+      "riverEdges": [
+        {
+          "edge": "-35,114|-36,114",
+          "kind": "small",
+          "owners": [
+            "West Ibenwood",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-35,114|-36,115",
+          "kind": "small",
+          "owners": [
+            "West Ibenwood",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-35,115|-36,115",
+          "kind": "small",
+          "owners": [
+            "West Ibenwood",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-36,115|-36,116",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "Alezhor"
+          ]
+        },
+        {
+          "edge": "-36,116|-37,116",
+          "kind": "small",
+          "owners": [
+            "Alezhor",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-37,116|-37,117",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "Alezhor"
+          ]
+        },
+        {
+          "edge": "-34,111|-35,111",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-34,110|-35,111",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-32,109|-33,109",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-32,108|-33,109",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-30,107|-31,107",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-30,106|-31,107",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-29,105|-29,106",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-29,105|-30,106",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-30,107|-31,108",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-34,111|-35,112",
+          "kind": "small",
+          "owners": [
+            "South Ibenal",
+            "South Ibenal"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "North Ibenal",
+      "count": 34,
+      "terrain": {
+        "plains": 33,
+        "hills": 1
+      },
+      "climate": {
+        "Csc": 34
+      },
+      "boundaryEdges": {
+        "coast": 18,
+        "South Oremindi Mountains": 8,
+        "North Ibenwood": 8,
+        "South Ibenal": 8,
+        "West Ibenwood": 6
+      },
+      "cells": [
+        {
+          "q": -22,
+          "r": 99,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -21,
+          "r": 99,
+          "terrain": "hills",
+          "climate": "Csc"
+        },
+        {
+          "q": -23,
+          "r": 100,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -22,
+          "r": 100,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -21,
+          "r": 100,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -24,
+          "r": 101,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -23,
+          "r": 101,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -22,
+          "r": 101,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -21,
+          "r": 101,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -26,
+          "r": 102,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -25,
+          "r": 102,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -24,
+          "r": 102,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -23,
+          "r": 102,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -22,
+          "r": 102,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -21,
+          "r": 102,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -27,
+          "r": 103,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -26,
+          "r": 103,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -25,
+          "r": 103,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -24,
+          "r": 103,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -23,
+          "r": 103,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -28,
+          "r": 104,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -27,
+          "r": 104,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -26,
+          "r": 104,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -25,
+          "r": 104,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -24,
+          "r": 104,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -29,
+          "r": 105,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -28,
+          "r": 105,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -27,
+          "r": 105,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -26,
+          "r": 105,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -25,
+          "r": 105,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -28,
+          "r": 106,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -27,
+          "r": 106,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -26,
+          "r": 106,
+          "terrain": "plains",
+          "climate": "Csc"
+        },
+        {
+          "q": -27,
+          "r": 107,
+          "terrain": "plains",
+          "climate": "Csc"
+        }
+      ],
+      "riverEdges": [
+        {
+          "edge": "-29,105|-29,106",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-29,105|-30,106",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "South Ibenal"
+          ]
+        },
+        {
+          "edge": "-24,104|-25,104",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "North Ibenal"
+          ]
+        },
+        {
+          "edge": "-24,103|-25,104",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "North Ibenal"
+          ]
+        },
+        {
+          "edge": "-24,103|-25,103",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "North Ibenal"
+          ]
+        },
+        {
+          "edge": "-24,102|-25,103",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "North Ibenal"
+          ]
+        },
+        {
+          "edge": "-24,102|-25,102",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "North Ibenal"
+          ]
+        },
+        {
+          "edge": "-24,101|-25,102",
+          "kind": "small",
+          "owners": [
+            "North Ibenal",
+            "North Ibenal"
+          ]
+        }
+      ]
+    }
+  ]
+}

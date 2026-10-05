@@ -9,6 +9,7 @@ const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
 scene.updateMatrixWorld(true);
 const forest = scene.getObjectByName('West Lotharn scenery');
+const fineGround = scene.getObjectByName('West Lotharn fine ground');
 const trees = world.treeRegistry.trees.filter(tree => tree.id.startsWith('west-lotharn-'));
 
 // Read the actual drawn ground, including which summit triangles exist. This
@@ -18,7 +19,7 @@ const xs = [], zs = [];
 for (let i = 0; ground[i + 2] === ground[2]; i += 3) xs.push(ground[i]);
 for (let i = 0; i < ground.length; i += xs.length * 3) zs.push(ground[i + 2]);
 const { minX, minZ, step } = MOUNTAIN_PATCH, cells = new Map();
-for (const mesh of forest.children.filter(child => child.name === 'West Lotharn summits ground')) {
+for (const mesh of fineGround.children.filter(child => child.name === 'West Lotharn summits ground')) {
   const p = mesh.geometry.attributes.position, indices = mesh.geometry.index.array;
   for (let i = 0; i < indices.length; i += 6) {
     const a = indices[i], b = indices[i + 1], c = indices[i + 2], d = indices[i + 5];
@@ -28,7 +29,7 @@ for (const mesh of forest.children.filter(child => child.name === 'West Lotharn 
 }
 // Cave mouths replace whole coarse cells with a finer, cut-out surface. Include
 // those actual triangles instead of mistaking the hidden base mesh for ground.
-const mouthGround = forest.children.filter(child => child.name.startsWith('Ground at the mouth of '));
+const mouthGround = fineGround.children.filter(child => child.name.startsWith('Ground at the mouth of '));
 for (const mesh of mouthGround) mesh.geometry.computeBoundingBox();
 const groundRay = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0));
 const surface = (x, z) => {

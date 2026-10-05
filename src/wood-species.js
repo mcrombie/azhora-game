@@ -4,6 +4,7 @@
 const freeze = Object.freeze;
 const timber = (species, name, woodKind = species, log = null, plank = null, carriageUse = null) => freeze({ species, woodName: name, woodKind, log, plank, carriageUse });
 export const WOOD_SPECIES = freeze({
+  acor: timber('acor', 'Acor', 'acor', 'acor-logs'),
   kapok: timber('kapok', 'Kapok', 'kapok', 'kapok-logs'),
   'strangler-fig': timber('strangler-fig', 'Strangler fig', 'strangler-fig', 'strangler-fig-logs'),
   'coconut-palm': timber('coconut-palm', 'Coconut palm', 'coconut-palm', 'coconut-palm-logs'),
@@ -47,6 +48,10 @@ export const WOOD_SPECIES = freeze({
   'fig': timber('fig', 'Common fig', 'fig', 'fig-logs'),
   'apple': timber('apple', 'Domestic apple', 'apple', 'apple-logs'),
   'hawthorn': timber('hawthorn', 'Common hawthorn', 'hawthorn', 'hawthorn-logs'),
+  // Builder identity for the existing Meroshe thorn; no botanical species is specified in the lore.
+  'desert-thorn': timber('desert-thorn', 'Desert thorn', 'desert-thorn', 'desert-thorn-logs'),
+  'red-mangrove': timber('red-mangrove', 'Red mangrove', 'red-mangrove', 'red-mangrove-logs'),
+  'black-poplar': timber('black-poplar', 'Black poplar', 'black-poplar', 'black-poplar-logs'),
 });
 
 export const WOOD_KIND_SPECIES = freeze(Object.fromEntries(Object.values(WOOD_SPECIES).filter(wood => wood.log).map(wood => [wood.woodKind, wood.species])));

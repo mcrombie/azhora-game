@@ -7,6 +7,10 @@
   "type": "module",
   "main": "main.cjs",
   "scripts": {
+    "test:pyra": "node --test --test-isolation=none tests/pyra.test.js",
+    "review:pyra": "node scripts/launch.cjs --smoke-test --fast-load --review-views=pyra,pyra-bridge,pyra-palace,pyra-stair,pyra-market --review-clean --review-size=1440x900",
+    "test:canerd": "node scripts/run-tests.cjs tests/canerd-world.test.js tests/canerd-scenery.test.js tests/canerd-traversal.test.js",
+    "review:canerd": "node scripts/launch.cjs --smoke-test --fast-load --review-views=canerd,canerd-ascent,canerd-court,canerd-high-tower --review-clean --review-size=1440x900",
     "test:south-oremindi": "node --test --test-isolation=none tests/south-oremindi-metadata.test.js tests/south-oremindi-world.test.js tests/south-oremindi-wildlife.test.js tests/south-oremindi-integration.test.js tests/south-oremindi-ground.test.js",
     "test:south-oremindi:desktop": "node scripts/launch.cjs --smoke-test --south-oremindi-checks",
     "start": "node scripts/launch.cjs",

@@ -32,7 +32,7 @@ export function createIzolScenery(...args) { return finishBuild(createIzolScener
 export function* createIzolScenerySteps(kit) {
   let buildWork = 0;
   const { root, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, sign,
-    groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, roofGeometry, cylinder, round,
+    groundHeight, legacyGroundHeight = groundHeight, colliders, dummy, color, wood, woodLight, darkWood, cream, roofGeometry, cylinder, round,
     movingGroups } = kit;
   const district = new THREE.Group(); district.name = 'West Izol scenery'; root.add(district);
   let seed = 1780521;
@@ -42,6 +42,8 @@ export function* createIzolScenerySteps(kit) {
     turf: 0, gorse: 0, thorn: 0, rock: 0, pines: 0, landmarks: 0 };
   const push = (...items) => { for (const item of items) colliders.push(item); metrics.colliders += items.length; return items; };
   const gy = (x, z) => groundHeight(x, z);
+  // Preserve the original eligibility and colour decisions, including RNG order.
+  const legacyGy = (x, z) => legacyGroundHeight(x, z);
 
   // Izol builds out of Izol: dark granite below, lime-washed rubble above, slate
   // weighted with stones on top. Nothing here is marble.
@@ -747,9 +749,11 @@ export function* createIzolScenerySteps(kit) {
   // The Three Presences, on the skyline inland
   // -------------------------------------------------------------------------
   // Kept out of the merge and out of the shadow pass: they are a skyline, not scenery.
+  // Drawn only where the ground does not stand at the peak's own height: East Izol's ground carries them (src/east-izol-world.js).
   const presences = new THREE.Group(); presences.name = 'The Three Presences'; root.add(presences); movingGroups?.add(presences);
   const summitMaterial = material('#7b8079', { flatShading: true });
   for (const [index, peak] of THREE_PRESENCES.entries()) { if (++buildWork % 8 === 0) yield;
+    if (gy(peak.x + peak.lean, peak.z - 1.5) > peak.topY - 3) continue;
     const baseY = gy(peak.x, peak.z) - 4, height = peak.topY - baseY, positions = [], indices = [];
     for (let ring = 0; ring < 3; ring++) { if (++buildWork % 8 === 0) yield; for (let i = 0; i < 7; i++) { if (++buildWork % 8 === 0) yield;
       const angle = i * Math.PI * 2 / 7 + peak.phase, radius = [1, .68, .27][ring] * (1 + Math.sin(i * 1.83 + peak.phase) * .14);
@@ -838,7 +842,7 @@ export function* createIzolScenerySteps(kit) {
       const usable = (x, z, margin) => isLandHex(x, z) && landDistance(x, z) > 1.5 && !clear(x, z, margin) && !onPath(x, z);
       for (let i = 0; i < (plains ? 0 : PINES * 5); i++) { if (++buildWork % 8 === 0) yield;
         const { x, z } = sample();
-        if (!usable(x, z, 4) || landDistance(x, z) < 26 || gy(x, z) < 11) continue;
+        if (!usable(x, z, 4) || landDistance(x, z) < 26 || legacyGy(x, z) < 11) continue;
         if (pines.some(p => Math.hypot(p.x - x, p.z - z) < 9)) continue;
         pines.push({ x, z, s: range(.8, 1.15), h: range(5.5, 8.5), rot: range(0, 6.28), lean: range(.1, .24) });
       }
@@ -857,14 +861,14 @@ export function* createIzolScenerySteps(kit) {
       for (let i = 0; i < ROCKS; i++) { if (++buildWork % 8 === 0) yield;
         const { x, z } = sample();
         if (!usable(x, z, 1.5) || landDistance(x, z) < .5) continue;
-        const shore = landDistance(x, z), high = gy(x, z) > 17;
+        const shore = landDistance(x, z), high = legacyGy(x, z) > 17;
         if (random() > (shore < 16 ? 1 : hills || high ? .7 : .34)) continue;
         rocks.push({ x, z, s: range(.4, shore < 14 ? 2.4 : hills ? 2.8 : 1.3), rot: range(0, 6.28), high });
       }
       for (let i = 0; i < TUFTS; i++) { if (++buildWork % 8 === 0) yield;
         const { x, z } = sample();
         if (!usable(x, z, .5) || landDistance(x, z) < 1.5) continue;
-        tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28), high: gy(x, z) > 17 });
+        tufts.push({ x, z, s: range(.7, 1.7), rot: range(0, 6.28), high: legacyGy(x, z) > 17 });
       }
     }
     if (pines.length) {

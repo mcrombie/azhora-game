@@ -4,7 +4,7 @@
   "width": 3062.266,
   "height": 4088,
   "hexCount": 18700,
-  "regionCount": 131,
+  "regionCount": 132,
   "riverCount": 572,
   "settlementCount": 0,
   "grid": {
@@ -30,18 +30,21 @@
   "uncharted": [],
   "gameAdjustments": [
     "tidehaven-northeast-bank-v1",
-    "drent-forested-peninsula-v1"
+    "drent-forested-peninsula-v1",
+    "northern-region-names-v1",
+    "mithala-city-quarters-v1",
+    "urubond-island-v1"
   ],
   "terrainCounts": {
-    "ocean": 13622,
+    "ocean": 13601,
     "coast": 1330,
-    "mountain": 165,
+    "mountain": 170,
     "high_mountain": 116,
     "plains": 1482,
-    "hills": 432,
+    "hills": 420,
+    "deep_forest": 313,
     "highland": 14,
     "forest": 164,
-    "deep_forest": 285,
     "wetland": 28,
     "grassland": 658,
     "lake": 28,
@@ -302,17 +305,6 @@
       "hexCount": 35
     },
     {
-      "id": "East Gorgi Mountains",
-      "name": "East Gorgi Mountains",
-      "x": 1884.471,
-      "y": 1344,
-      "width": 166.277,
-      "height": 152,
-      "centerX": 1970.579,
-      "centerY": 1426.857,
-      "hexCount": 28
-    },
-    {
       "id": "East Ibenwood",
       "name": "East Ibenwood",
       "x": 928.379,
@@ -324,8 +316,8 @@
       "hexCount": 30
     },
     {
-      "id": "East Inseld",
-      "name": "East Inseld",
+      "id": "East Ithzel",
+      "name": "East Ithzel",
       "x": 2369.446,
       "y": 1848,
       "width": 166.277,
@@ -370,12 +362,12 @@
     {
       "id": "East Mithala",
       "name": "East Mithala",
-      "x": 1357.928,
+      "x": 1399.497,
       "y": 2064,
-      "width": 249.415,
+      "width": 207.846,
       "height": 104,
-      "centerX": 1497.094,
-      "centerY": 2123.826,
+      "centerX": 1504.324,
+      "centerY": 2119.652,
       "hexCount": 23
     },
     {
@@ -498,6 +490,17 @@
       "centerX": 1057.192,
       "centerY": 3023.111,
       "hexCount": 27
+    },
+    {
+      "id": "Gorgiwood",
+      "name": "Gorgiwood",
+      "x": 1732.051,
+      "y": 1344,
+      "width": 193.99,
+      "height": 128,
+      "centerX": 1827.561,
+      "centerY": 1408.857,
+      "hexCount": 28
     },
     {
       "id": "Haatrul",
@@ -802,9 +805,9 @@
       "x": 1274.789,
       "y": 1968,
       "width": 235.559,
-      "height": 152,
-      "centerX": 1398.631,
-      "centerY": 2051.5,
+      "height": 176,
+      "centerX": 1393.435,
+      "centerY": 2054.5,
       "hexCount": 32
     },
     {
@@ -1105,6 +1108,17 @@
       "hexCount": 35
     },
     {
+      "id": "South Gorgi Mountains",
+      "name": "South Gorgi Mountains",
+      "x": 1884.471,
+      "y": 1344,
+      "width": 166.277,
+      "height": 152,
+      "centerX": 1970.579,
+      "centerY": 1426.857,
+      "hexCount": 28
+    },
+    {
       "id": "South Ibenal",
       "name": "South Ibenal",
       "x": 540.4,
@@ -1270,6 +1284,17 @@
       "hexCount": 29
     },
     {
+      "id": "Urubond",
+      "name": "Urubond",
+      "x": 831.384,
+      "y": 1536,
+      "width": 138.564,
+      "height": 152,
+      "centerX": 900.666,
+      "centerY": 1606.857,
+      "hexCount": 21
+    },
+    {
       "id": "Vastos",
       "name": "Vastos",
       "x": 1357.928,
@@ -1347,17 +1372,6 @@
       "hexCount": 46
     },
     {
-      "id": "West Gorgi Mountains",
-      "name": "West Gorgi Mountains",
-      "x": 1732.051,
-      "y": 1344,
-      "width": 193.99,
-      "height": 128,
-      "centerX": 1827.561,
-      "centerY": 1408.857,
-      "hexCount": 28
-    },
-    {
       "id": "West Ibenwood",
       "name": "West Ibenwood",
       "x": 609.682,
@@ -1369,8 +1383,8 @@
       "hexCount": 35
     },
     {
-      "id": "West Inseld",
-      "name": "West Inseld",
+      "id": "West Ithzel",
+      "name": "West Ithzel",
       "x": 2203.169,
       "y": 1944,
       "width": 221.703,

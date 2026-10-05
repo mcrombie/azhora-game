@@ -1584,3 +1584,21 @@ Asked by question after Telemonia stage 2 and Varn landed. The user's choices:
 - **The Lotharn pass forts** "can be bypassed by climbers": they stop walkers, and that is what was meant.
 - **The eastern peak's caves**: a way was restored to the high chimney and the three doors over the Empire's ground were railed; asked whether the eastern chamber
   and the low chimney should be reopened too, the user answered "one is enough".
+
+### 2026-10-04: The city of Mithala - the user's answers
+
+Asked to trade four hexes so that all four Mithalas meet in one circle and to build the central city of Mithala there with
+north, east, west and south districts, the user took every recommendation in two rounds of questions
+(`docs/mithala-city-brief.md` has the whole design and the measured site):
+
+- **The trade**: North Mithala's 9,86 and 10,86 to East Mithala; East Mithala's 5,88 and 6,88 to North Mithala. Built as the game
+  atlas correction `mithala-city-quarters-v1`, not as a World Builder edit, so no other checkout's provenance check breaks.
+- **Name**: Mithala, the land's own name; the campaign's "river-city of Mithala".
+- **Who holds it**: the Cref king, at the old seat; the south's "Mithalan Empire" is what is left of Mithala, and its rebellion is the
+  warlords who broke away.
+- **Defence**: flood banks round every district, and a stone curtain round the Fork only.
+- **Look**: dark brick of fired flood clay, pale timber and reed thatch, on stone footings; granaries on posts.
+- **The sky tower**: climbable, about 40 metres, with an open platform over the whole plain.
+- **Districts**: the Fork (West), the Braid Bank (North), the Quays (East) and the Ford (South).
+- **Gates**: open from the start; only the king's hall stays shut until it has people.
+- **Scope**: the city first and the people later.

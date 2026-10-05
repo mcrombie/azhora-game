@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { treeGroundingOffset } from './tree-grounding.js';
 import { hexOwnerAt, landDistance, regions, REGION_CELLS } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
 import {
@@ -43,10 +44,13 @@ export function createSelemisScenery(kit) {
   const metrics = { batches: 0, rocks: 0, outcrops: 0, scrub: 0, maquis: 0, tufts: 0, trees: 0, pines: 0, olives: 0, tamarisks: 0, bedStones: 0, wrack: 0, cliffRocks: 0 };
   const push = collider => { colliders.push(collider); return collider; };
   const gy = (x, z) => groundHeight(x, z);
+  const treeGroundAt = kit.renderedGroundHeight ?? gy;
   const per = count => Math.round(count * WORLD_SCALE * WORLD_SCALE);
 
   /** Where a traveler is set down by the developer's travel button: kept clear of anything solid. */
-  const spawns = regions.filter(region => region.name === SELEMI).map(region => region.spawn);
+  // Keep the original scatter exclusion fixed when the city arrival moves:
+  // otherwise the seeded candidate stream would move plants outside its streets.
+  const spawns = [{x:-790,z:2436}];
   const nearSpawn = (x, z, r) => spawns.some(s => Math.hypot(s.x - x, s.z - z) < r);
   const ours = (x, z) => hexOwnerAt(x, z) === SELEMI;
   /** On the face of a cliff, or so near its edge that anything put there would hang over it. */
@@ -260,18 +264,21 @@ export function createSelemisScenery(kit) {
       if (!list.length) continue;
       const trunks = new THREE.InstancedMesh(trunkGeometry, bark, list.length);
       list.forEach((tree, i) => {
-        const y = gy(tree.x, tree.z), height = tree.h * tree.s;
+        let y = gy(tree.x, tree.z); const height = tree.h * tree.s;
         const bole = tree.kind === 'pine' ? .74 : tree.kind === 'olive' ? .42 : .5, length = height * bole;
         // Leant toward the lee: the trunk turns about the level axis square to the wind, and its top
         // stands that far downwind of its own foot.
         const sin = Math.sin(tree.lean), cos = Math.cos(tree.lean);
-        const topX = tree.x + LEE.x * sin * length, topZ = tree.z + LEE.z * sin * length, topY = y + cos * length;
+        const topX = tree.x + LEE.x * sin * length, topZ = tree.z + LEE.z * sin * length; let topY = y + cos * length;
         dummy.position.set((tree.x + topX) / 2, (y + topY) / 2, (tree.z + topZ) / 2);
         // A rotation about (LEE.z, 0, -LEE.x) by the lean carries +Y toward the lee.
         turn.setFromAxisAngle(axis, tree.lean); spin.setFromAxisAngle(up, tree.rot);
         dummy.quaternion.copy(turn).multiply(spin);
         const girth = tree.kind === 'pine' ? .9 : tree.kind === 'olive' ? 1 : .6;
         dummy.scale.set(tree.s * girth, length, tree.s * girth); dummy.updateMatrix();
+        const grounding = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .26, segments: 6 });
+        y += grounding; topY += grounding; dummy.position.y += grounding; dummy.updateMatrix();
+        const footY = dummy.matrix.elements[13] - dummy.matrix.elements[5] * .5;
         trunks.setMatrixAt(i, dummy.matrix);
         const parts = [{ mesh: trunks, index: i }];
         for (let c = 0; c < lumpsOf(tree); c++) {
@@ -298,7 +305,7 @@ export function createSelemisScenery(kit) {
         }
         dummy.rotation.set(0, 0, 0);
         const collider = push({ x: tree.x, z: tree.z, r: (tree.kind === 'tamarisk' ? .3 : .42) * tree.s, kind: 'selemis-tree' });
-        registerWorldTree(colliders, { id: worldTreeId('selemis', tree.x, tree.z), x: tree.x, z: tree.z, y, height,
+        registerWorldTree(colliders, { id: worldTreeId('selemis', tree.x, tree.z), x: tree.x, z: tree.z, y: footY, height,
           species: tree.kind === 'pine' ? 'stone-pine' : tree.kind === 'olive' ? 'olive' : 'tamarisk' }, parts, collider);
         metrics.trees++;
         if (tree.kind === 'pine') metrics.pines++; else if (tree.kind === 'olive') metrics.olives++; else metrics.tamarisks++;
@@ -340,8 +347,8 @@ export function createSelemisScenery(kit) {
 
   /**
    * **The wrack line**: what the sea leaves at the top of the swash on a sheltered strand - a broken
-   * dark line of weed along the bay, a couple of metres up the sand. Swept rather than thrown, for
-   * the reason the cliffs' rock is: it is a band a metre and a half wide.
+   * patches of washed weed along the bay, with bare sand between them. Each has its own width,
+   * density and curled fragments; the surrounding scenery keeps its original random stream.
    */
   {
     const weed = [];
@@ -354,16 +361,58 @@ export function createSelemisScenery(kit) {
       weed.push({ x, z: zz, s: range(.45, 1.1), rot: range(0, 6.28) });
     }
     if (weed.length) {
-      const batch = new THREE.InstancedMesh(round, cushionMaterial, weed.length);
-      weed.forEach((clump, i) => {
-        dummy.position.set(clump.x, gy(clump.x, clump.z) + .03, clump.z);
-        dummy.rotation.set(0, clump.rot, 0);
-        dummy.scale.set(clump.s * 1.3, clump.s * .13, clump.s * .7); dummy.updateMatrix();
-        batch.setMatrixAt(i, dummy.matrix);
-        batch.setColorAt(i, color.setHSL(range(.08, .13), range(.25, .4), range(.15, .23), THREE.SRGBColorSpace));
+      // Consume every original colour draw before making patch decisions. The
+      // cliff rocks below keep their exact seeded transforms and colours.
+      const tints = weed.map(() => color.setHSL(range(.08, .13), range(.25, .4), range(.15, .23), THREE.SRGBColorSpace).clone());
+      let wrackSeed = 319771;
+      const variation = () => { wrackSeed = (Math.imul(wrackSeed, 1664525) + 1013904223) >>> 0; return wrackSeed / 4294967296; };
+      const candidates = weed.map((clump, i) => ({ ...clump, tint: tints[i], order: variation() })).sort((a, b) => a.order - b.order);
+      const patches = [], pieces = [];
+      for (const candidate of candidates) {
+        const half = 2.2 + variation() * 4.3, width = .3 + variation() * 1.1, gap = 3 + variation() * 6;
+        if (patches.some(p => Math.hypot(p.x - candidate.x, p.z - candidate.z) < p.half + half + gap)) continue;
+        const nx = landDistance(candidate.x + .7, candidate.z) - landDistance(candidate.x - .7, candidate.z);
+        const nz = landDistance(candidate.x, candidate.z + .7) - landDistance(candidate.x, candidate.z - .7);
+        const length = Math.hypot(nx, nz); if (length < .01) continue;
+        const normal = { x: nx / length, z: nz / length }, tangent = { x: normal.z, z: -normal.x };
+        patches.push({ x: candidate.x, z: candidate.z, half });
+        const count = 7 + Math.floor(variation() * 20), phase = variation() * 6.28;
+        for (let i = 0; i < count; i++) {
+          const along = (variation() * 2 - 1) * half;
+          const across = (variation() * 2 - 1) * width + Math.sin(along / half * 2 + phase) * .38;
+          const x = candidate.x + tangent.x * along + normal.x * across;
+          const z = candidate.z + tangent.z * along + normal.z * across, d = landDistance(x, z);
+          if (!ours(x, z) || d < .7 || d > 6 || strandWeight(x, z) < .65) continue;
+          pieces.push({ x, z, yaw: Math.atan2(-tangent.z, tangent.x) + (variation() - .5) * 1.5,
+            length: .5 + variation(), width: .55 + variation() * .65, tint: candidate.tint.clone().multiplyScalar(.8 + variation() * .65) });
+        }
+      }
+      // Three curled, tapered ribbons read as washed weed, rather than stones.
+      const positions = [], indices = [];
+      for (const [angle, length, offset] of [[-.45, 1.05, 0], [.9, .82, .09], [2.4, .68, -.08]]) {
+        const base = positions.length / 3, c = Math.cos(angle), s = Math.sin(angle);
+        for (let i = 0; i <= 4; i++) {
+          const t = i / 4, along = (t - .5) * length, curve = Math.sin(t * Math.PI * 2) * .065 + offset;
+          const halfWidth = .007 + Math.sin(t * Math.PI) * .047;
+          for (const side of [-1, 1]) positions.push(c * along - s * (curve + side * halfWidth),
+            .004 + Math.sin(t * Math.PI) * .018, s * along + c * (curve + side * halfWidth));
+          if (i < 4) { const a = base + i * 2; indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        }
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setIndex(indices); geometry.computeVertexNormals();
+      const batch = new THREE.InstancedMesh(geometry, material('#ffffff', { side: THREE.DoubleSide, flatShading: true }), pieces.length);
+      const up = new THREE.Vector3(0, 1, 0), normal = new THREE.Vector3(), tilt = new THREE.Quaternion(), spin = new THREE.Quaternion();
+      pieces.forEach((piece, i) => {
+        const gx = (treeGroundAt(piece.x + .35, piece.z) - treeGroundAt(piece.x - .35, piece.z)) / .7;
+        const gz = (treeGroundAt(piece.x, piece.z + .35) - treeGroundAt(piece.x, piece.z - .35)) / .7;
+        normal.set(-gx, 1, -gz).normalize(); tilt.setFromUnitVectors(up, normal); spin.setFromAxisAngle(up, piece.yaw);
+        dummy.position.set(piece.x, treeGroundAt(piece.x, piece.z) + .012, piece.z);
+        dummy.quaternion.copy(tilt).multiply(spin); dummy.scale.set(piece.length, 1, piece.width); dummy.updateMatrix();
+        batch.setMatrixAt(i, dummy.matrix); batch.setColorAt(i, piece.tint);
       });
       batch.receiveShadow = true; batch.computeBoundingSphere(); batch.name = 'Strand wrack'; group.add(batch);
-      metrics.wrack = weed.length; metrics.batches++;
+      metrics.wrack = pieces.length; metrics.batches++;
     }
   }
 

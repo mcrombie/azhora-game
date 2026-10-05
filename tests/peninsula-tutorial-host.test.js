@@ -81,6 +81,8 @@ test('Skipping with the real host provides chart, movement, swimming, rod and fo
   for (const id of ['jojo-sandwich', 'cooked-fish', 'fishing-rod', 'tutorial-letter']) assert.equal(f.inventory.count(id), 1, id);
   assert.equal(f.inventory.count('raw-fish'), 0); assert.equal(f.inventory.count('harbor-letter'), 0);
   assert.equal(f.host.enlisted, false); assert.equal(f.gateOpen, true); assert.equal(f.host.objective().title, 'Report to Tidewater Haven');
+  const ottar=f.npcById.get('post-landing');ottar.actor.group.position.set(-14,1,44);
+  assert.equal(f.host.objective().at,ottar.actor.group.position,'The quest follows Ottar during the harbor alarm');
 });
 
 
@@ -112,4 +114,19 @@ test('Synchronous skip grant listeners can render every intermediate objective',
   assert.doesNotThrow(() => host.choose('skip'));
   assert.ok(objectives.length > 8); assert.ok(objectives.every(objective => objective && typeof objective.title === 'string'));
   assert.equal(objectives.at(-1).title, 'Report to Tidewater Haven');
+});
+
+test('The lesson objective follows the remaining practice action and survives Continue', () => {
+  const f=fixture(); f.host.choose('tutorial'); const m=f.host.model;
+  m.introduce('inventory'); assert.match(f.host.objective().detail,/Press I/); m.noteInventoryInspected();
+  m.introduce('walking'); m.practice('walking','walk',2);
+  assert.match(f.host.objective().detail,/2\/4 seconds/);
+  m.practice('walking','walk',2); m.practice('walking','arrive'); m.introduce('running');
+  assert.match(f.host.objective().detail,/Shift or Tab/); m.practice('running','run',6);
+  assert.match(f.host.objective().detail,/Release Shift or Tab/); m.practice('running','recover',2);
+  m.introduce('combat'); assert.match(f.host.objective().detail,/left mouse or R/);
+  m.practice('combat','strike',2); assert.match(f.host.objective().detail,/hold V/);
+  m.practice('combat','guard',1.5); assert.match(f.host.objective().detail,/press C/);
+  const save=f.host.snapshot(); assert.ok(f.host.restore(save)); assert.match(f.host.objective().detail,/press C/);
+  m.practice('combat','dodge'); assert.equal(f.host.objective().title,"Bear's chart");
 });

@@ -182,6 +182,22 @@ test('world profiles respect authored health and creature size without making fo
 
 const customPerson=(id,extra={})=>({id,name:id,actor:{group:{position:vec(0,1),rotation:{y:0},visible:true}},...extra});
 
+test('wildlife lookup misses never enumerate the cast and extra actors remain live',()=>{
+  const puck=customPerson('puck'),duplicate=customPerson('harbormaster');
+  let extras=[null,puck,puck,duplicate];
+  const f=fixture({additionalPeople:()=>extras});
+  // Large ambient populations ask this once per animal. A lookup miss must not
+  // allocate a copy of every named NPC, regardless of how large the world gets.
+  f.npcById.keys=()=>{throw new Error('A lookup enumerated the whole cast');};
+  for(let i=0;i<2000;i++)assert.equal(f.host.isDown('ambient-animal-'+i),false);
+  assert.deepEqual(f.host.extraPeople(),[puck]);
+  assert.equal(f.host.person('harbormaster'),f.npcById.get('harbormaster'));
+  assert.equal(f.host.person('puck'),puck);
+  extras=[customPerson('ed')];
+  assert.equal(f.host.person('puck'),null);
+  assert.equal(f.host.person('ed'),extras[0]);
+});
+
 test('custom animated people share melee, arrows and direct magic damage without adding duplicate cast records',()=>{
   const puck=customPerson('puck'),ed=customPerson('ed'),bosco=customPerson('bosco',{dog:true}),batman=customPerson('batman',{maxHp:180});
   let extras=[puck,puck,null];const f=fixture({additionalPeople:()=>extras});

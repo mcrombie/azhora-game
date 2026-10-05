@@ -8,13 +8,13 @@ const atlas = JSON.parse(readFileSync(fileURLToPath(new URL('../assets/azhora-de
   .regions.map(region => region.name);
 
 test('every country on the atlas has a level, and nothing has a level that is not a country', () => {
-  assert.equal(atlas.length, 131);
+  assert.equal(atlas.length, 132);
   assert.deepEqual(Object.keys(REGION_LEVELS).sort(), [...atlas].sort(), 'the table and the atlas name the same places');
   for (const [name, level] of Object.entries(REGION_LEVELS)) {
-    assert.ok(Number.isInteger(level) && level >= 0 && level <= 10, `${name} is level ${level}`);
+    assert.ok(Number.isInteger(level) && level >= 0 && level <= 11, `${name} is level ${level}`);
   }
-  // Eleven is the hidden island, which is not on the atlas and so cannot be in the table.
-  assert.ok(!Object.values(REGION_LEVELS).includes(11));
+  // Eleven is reserved for Urubond, whose location characters cannot reveal.
+  assert.equal(regionLevel('Urubond'),11);
   assert.equal(regionLevel('Drent'), 0);
   assert.equal(regionLevel('Lizeem'), null, 'the Lizeem is a river through Caricas, never a region');
   assert.equal(regionLevel('Midy Mountains'), null, 'the Midy were the Oremindi said twice');

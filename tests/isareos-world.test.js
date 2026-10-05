@@ -119,7 +119,8 @@ test('Isareos is the country that spent most of the hex budget', () => {
   // maxX 2209.998, minZ -3899.247, the world 68.20 by 73.369 hexes, the window's maxQ 60 and minR 59.
   // Babon now sets the southern edge at z3437.632, two atlas rows beyond Trogo.
   // Every assertion below that holds one of those numbers holds the Baldros' and nothing of this country's.
-  assert.ok(wide > 68.1 && wide < 68.3, `the world is ${wide.toFixed(2)} hexes wide`);
+  // ...and 70.70 since Alezhor's and South Ibenal's coasts took the western edge to -4860.002 (4 October 2026).
+  assert.ok(wide > 70.6 && wide < 70.8, `the world is ${wide.toFixed(2)} hexes wide`);
   // North to south was 30.93 hexes, set by West Izol and Amod, and nothing here touched it; the
   // East Lotharn took it to 35.26 by reaching north to the Mithala border, the Ascarth Peninsula
   // to 37.00 (36.996) by reaching south past West Izol to its tip, and the four Mithala countries

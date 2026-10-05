@@ -282,3 +282,15 @@ test('the difficulty is a number in the journal and words everywhere else', () =
     'the journal keeps the number, and the words beside it');
   assert.equal(levelWords(regionLevel('Drent')), 'A quiet country', 'which is what the card says instead');
 });
+
+
+test('renamed northern regions keep old discoveries without duplicating knowledge or awarding XP', () => {
+  const {skills,chart}=fixture();
+  const pairs=[['West Gorgi Mountains','Gorgiwood'],['East Gorgi Mountains','South Gorgi Mountains'],['West Inseld','West Ithzel'],['East Inseld','East Ithzel']];
+  const regions=Object.fromEntries(pairs.flatMap(([old,name])=>[[old,{state:'explored',named:true,hexes:9}],[name,{state:'heard',named:true,hexes:1}]]));
+  const before=xp(skills);
+  assert.ok(chart.restore({version:1,met:true,regions}));
+  for(const [old,name] of pairs){assert.equal(chart.state(name),'explored');assert.equal(chart.hexes(name),9);assert.equal(chart.snapshot().regions[old],undefined);}
+  assert.equal(xp(skills),before);
+  assert.equal(Object.keys(chart.snapshot().regions).length,4);
+});

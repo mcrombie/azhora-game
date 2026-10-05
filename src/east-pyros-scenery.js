@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { pyraClear } from './pyra-world.js';
 import { createSceneryBuilder } from './scenery-builder.js';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
 import { treeGroundingOffset } from './tree-grounding.js';
@@ -33,7 +34,7 @@ export function* createEastPyrosScenerySteps({parent,heightAt,renderedGroundHeig
   const range=(a,b)=>a+random()*(b-a);
   const dummy=new THREE.Object3D(),color=new THREE.Color();
   const grade=(x,z)=>Math.hypot(heightAt(x+1,z)-heightAt(x-1,z),heightAt(x,z+1)-heightAt(x,z-1))/2;
-  const blocked=(x,z,margin=0)=>eastPyrosClear(x,z,margin)||eastPyrosWildlifeClear(x,z,margin)
+  const blocked=(x,z,margin=0)=>pyraClear(x,z,margin)||eastPyrosClear(x,z,margin)||eastPyrosWildlifeClear(x,z,margin)
     ||EAST_PYROS_OUTCROPS.some(p=>Math.hypot(x-p.x,z-p.z)<p.radius+margin);
   function part(kind,tint,x,y,z,sx,sy,sz,yaw=0){
     const key=`${Math.floor(x/180)},${Math.floor(z/180)}:${kind}`;
@@ -97,7 +98,7 @@ export function* createEastPyrosScenerySteps({parent,heightAt,renderedGroundHeig
     for(let i=0;i<24;i++){
       if(i%6===0)yield;
       const a=i*2.39996323,rad=site.radius*Math.sqrt(i/24)*.87,x=site.x+Math.cos(a)*rad,z=site.z+Math.sin(a)*rad;
-      if(eastPyrosClear(x,z,2)||eastPyrosWildlifeClear(x,z,2))continue;
+      if(pyraClear(x,z,2)||eastPyrosClear(x,z,2)||eastPyrosWildlifeClear(x,z,2))continue;
       const y=renderedGroundHeight(x,z),s=range(1.2,2.9),h=site.kind==='basalt'?range(2.2,8.5):range(1.4,4.6);
       const base=Math.min(y,renderedGroundHeight(x+s,z),renderedGroundHeight(x-s,z),renderedGroundHeight(x,z+s),renderedGroundHeight(x,z-s))-.35;
       if(site.kind==='basalt'){

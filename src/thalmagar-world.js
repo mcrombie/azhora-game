@@ -5,7 +5,7 @@ const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
 const smooth = (a, b, value) => { const t = clamp((value - a) / (b - a)); return t * t * (3 - 2 * t); };
 
 /** An isolated art study for developer flight; this does not unlock the cape. */
-export function createThalmagarWorld(scene) {
+export function createThalmagarWorld(scene, { fortressOnly = false } = {}) {
   const root = new THREE.Group(); root.name = 'Cape Thalmagar — developer art study'; scene.add(root);
   let disposed = false, seed = 0x4c1739aa;
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
@@ -99,6 +99,7 @@ export function createThalmagarWorld(scene) {
     return ashBase.clone().lerp(ashDark, broad * .46).lerp(ashPale, (1 - broad) * .30)
       .lerp(ashRust, vein * .13).multiplyScalar(1 + Math.sin(x * .19 + z * .13) * .018);
   }
+  if (!fortressOnly) {
   for (let tileZ = 0; tileZ < 3; tileZ++) for (let tileX = 0; tileX < 2; tileX++) {
     const terrain = builder(`Cape terrain ${tileX}:${tileZ}`), left = -240 + tileX * 240, top = -365 + tileZ * (520 / 3);
     const stepsX = 60, stepsZ = 44, dx = 240 / stepsX, dz = 520 / 3 / stepsZ;
@@ -125,6 +126,7 @@ export function createThalmagarWorld(scene) {
     crag.shape('spike', '#485047', x * 1.1, base + 7, fortress.z + (z - fortress.z) * 1.12, 6, 19 + i % 4 * 3, 8, [.10 * Math.sin(i), angle, .10]);
   }
   crag.finish();
+  }
 
   const fort = builder('Outer fortress walls and battlements'), windows = builder('Dull furnace light in fortress slits', glowMaterial);
   const masonry = ['#353e3b', '#3d4743', '#46504b', '#303b38'];
@@ -218,6 +220,16 @@ export function createThalmagarWorld(scene) {
     keep.shape('spike', '#26332d', side * 31, 99.5, -157 + side * 9, 12, 15, 26, [0, Math.PI / 4, 0]);
   }
   keep.finish(); windows.finish({ castShadow: false });
+  if (fortressOnly) {
+    root.name = 'The Black Fortress';
+    for (const geometry of Object.values(shapes)) geometry.dispose();
+    waterMaterial.dispose();
+    return { root, metadata: { statistics }, dispose() {
+      if (disposed) return; disposed = true;
+      root.traverse(object => { if (object.isMesh) object.geometry.dispose(); });
+      solidMaterial.dispose(); glowMaterial.dispose(); root.removeFromParent();
+    } };
+  }
 
   const road = builder('Ruined ceremonial causeway');
   for (let i = 0; i < 32; i++) {

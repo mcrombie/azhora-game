@@ -30,7 +30,7 @@ export async function runFastLoadingChecks(h) {
   const dwarf = await h.dwarfAutoplay();
   assert(dwarf.ok, 'The public Dwarfland playtest can load its destination, earn entry and finish its smithing lesson');
   const backgroundFrames = h.read().frames, backgroundStarted = performance.now();
-  loader.start();
+  loader.preloadAll().start();
   while (loader.state().completed < loader.state().total) {
     const failed = loader.state().jobs.filter(job => job.status === 'failed');
     if (failed.length) throw new Error('Background region construction failed: ' + JSON.stringify(failed));

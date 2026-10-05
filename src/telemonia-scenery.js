@@ -1,6 +1,8 @@
 import * as THREE from 'three';
+import { finishBuild } from './build-steps.js';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
-import { groundTint } from './world-terrain.js';
+import { treeGroundingOffset } from './tree-grounding.js';
+import { createTelemoniaGroundSteps } from './telemonia-ground.js';
 import { drawCircuit } from './fortworks.js';
 import { hexOwnerAt, regions } from './region-world.js';
 import {
@@ -50,7 +52,9 @@ export const TELEMONIA_STONE = Object.freeze({
   tower: '#958c7b', towerDark: '#7d7568', roof: '#5a5246', ditch: '#4b4940', ditchSide: '#66655a', spike: '#5a4a38', slit: '#22201c',
 });
 
-export function createTelemoniaScenery(kit) {
+export function createTelemoniaScenery(kit) { return finishBuild(createTelemoniaScenerySteps(kit)); }
+export function* createTelemoniaScenerySteps(kit) {
+  let buildWork = 0;
   const { root, material, groundHeight, colliders, dummy, color, round } = kit;
   const group = new THREE.Group(); group.name = 'Telemonia scenery'; root.add(group);
   let seed = 5220301;
@@ -69,33 +73,9 @@ export function createTelemoniaScenery(kit) {
   // -------------------------------------------------------------------------
   // The ground, drawn finer; the lattice it is drawn from is what everything else reads
   // -------------------------------------------------------------------------
-  const STEP = 1.5, TILE = 64, B = TELEMONIA_BOX;
-  const cols = Math.floor((B.maxX - B.minX) / STEP) + 1, rows = Math.floor((B.maxZ - B.minZ) / STEP) + 1;
-  const heights = new Float32Array(cols * rows).fill(NaN), owned = new Uint8Array(cols * rows);
-  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) owned[j * cols + i] = ours(B.minX + i * STEP, B.minZ + j * STEP) ? 1 : 0;
-  // A cell is drawn when any of the sixteen samples round it is Telemonia's, or when it is within
-  // `TELEMONIA_PATCH_REACH` of the border outside: every cell of the world's grid with a corner sunk
-  // under this country is covered, and out there this ground is the neighbours' own, so where the two
-  // grids meet at the same height this one wins the tie and nothing shows.
-  const drawn = new Uint8Array((cols - 1) * (rows - 1));
-  for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
-    let any = borderDepth(B.minX + (i + .5) * STEP, B.minZ + (j + .5) * STEP) > -TELEMONIA_PATCH_REACH;
-    for (let b = -1; b <= 2 && !any; b++) for (let a = -1; a <= 2 && !any; a++) {
-      const ii = i + a, jj = j + b;
-      if (ii >= 0 && jj >= 0 && ii < cols && jj < rows && owned[jj * cols + ii]) any = true;
-    }
-    if (any) drawn[j * (cols - 1) + i] = 1;
-  }
-  const heightOf = (i, j) => {
-    i = Math.max(0, Math.min(cols - 1, i)); j = Math.max(0, Math.min(rows - 1, j));
-    const k = j * cols + i;
-    if (Number.isNaN(heights[k])) heights[k] = gy(B.minX + i * STEP, B.minZ + j * STEP);
-    return heights[k];
-  };
-  /** The ground's slope at a lattice sample, from its four neighbours. */
-  const slopeOf = (i, j) => Math.hypot(heightOf(i + 1, j) - heightOf(i - 1, j), heightOf(i, j + 1) - heightOf(i, j - 1)) / (2 * STEP);
-  /** The slope at a world point, off the lattice: what the scatter decides by. */
-  const slopeAt = (x, z) => slopeOf(Math.round((x - B.minX) / STEP), Math.round((z - B.minZ) / STEP));
+  const ground = kit.fineGround ?? (yield* createTelemoniaGroundSteps({ ...kit, group }));
+  const { STEP, B, cols, rows, owned, heightOf, slopeOf, slopeAt, treeGroundAt } = ground;
+  metrics.batches += ground.metrics.batches; metrics.groundVertices += ground.metrics.groundVertices;
   /**
    * Room round a point for something solid: no cliff, riser or wall within `reach`. A tree or a boulder
    * on a ledge a few metres wide, against the cliff above it, can close the ledge, and a traveler who
@@ -106,53 +86,6 @@ export function createTelemoniaScenery(kit) {
     for (let a = 0; a < 8; a++) if (slopeAt(x + Math.cos(a * Math.PI / 4) * reach, z + Math.sin(a * Math.PI / 4) * reach) > .7) return false;
     return slopeAt(x, z) < .5;
   };
-  {
-    const rock = [new THREE.Color('#8b8376'), new THREE.Color('#847c70'), new THREE.Color('#94897a'), new THREE.Color('#7e776c')];
-    const scree = new THREE.Color('#9b917c'), shade = new THREE.Color(), pale = new THREE.Color('#bfb59d');
-    const groundMaterial = material('#ffffff', { vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-    let jitter = 60211;
-    const wobble = () => { jitter = (Math.imul(jitter, 1664525) + 1013904223) >>> 0; return .955 + jitter / 4294967296 * .09; };
-    const paint = (x, z, y, grade) => {
-      groundTint(shade, x, z, THREE);
-      // Scree where it is steep, and bare rock in courses where it is too steep for anybody: the
-      // courses are the cliff bands' own beds, a couple of metres deep, so a face reads as layered stone.
-      shade.lerp(scree, Math.min(1, Math.max(0, (grade - .55) / .4)) * .7);
-      shade.lerp(rock[((Math.floor(y / 2.2) % 4) + 4) % 4], Math.min(1, Math.max(0, (grade - .85) / .5)));
-      // The crests: "bare along the crests" - pale stone on the highest ground of the rim.
-      shade.lerp(pale, smooth(54, 66, y) * .35);
-      shade.multiplyScalar(wobble());
-    };
-    for (let tj = 0; tj < rows - 1; tj += TILE) for (let ti = 0; ti < cols - 1; ti += TILE) {
-      const ci = Math.min(TILE, cols - 1 - ti), cj = Math.min(TILE, rows - 1 - tj), indices = [];
-      for (let j = 0; j < cj; j++) for (let i = 0; i < ci; i++) {
-        if (!drawn[(tj + j) * (cols - 1) + ti + i]) continue;
-        const a = j * (ci + 1) + i;
-        indices.push(a, a + ci + 1, a + 1, a + 1, a + ci + 1, a + ci + 2);
-      }
-      if (!indices.length) continue;
-      const positions = new Float32Array((ci + 1) * (cj + 1) * 3), colours = new Float32Array((ci + 1) * (cj + 1) * 3);
-      for (let j = 0; j <= cj; j++) for (let i = 0; i <= ci; i++) {
-        const gi = ti + i, gj = tj + j, x = B.minX + gi * STEP, z = B.minZ + gj * STEP, k = j * (ci + 1) + i;
-        const used = [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([a, b]) => {
-          const ii = gi + a, jj = gj + b;
-          return ii >= 0 && jj >= 0 && ii < cols - 1 && jj < rows - 1 && drawn[jj * (cols - 1) + ii];
-        });
-        if (!used) { positions.set([x, 0, z], k * 3); continue; }
-        const y = heightOf(gi, gj);
-        positions.set([x, y, z], k * 3);
-        paint(x, z, y, slopeOf(gi, gj));
-        colours.set([shade.r, shade.g, shade.b], k * 3);
-        metrics.groundVertices++;
-      }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
-      geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
-      const ground = new THREE.Mesh(geometry, groundMaterial);
-      ground.name = 'Telemonia ground'; ground.receiveShadow = true; group.add(ground);
-      metrics.batches++;
-    }
-  }
 
   // -------------------------------------------------------------------------
   // The terraces' walls, the gullies' check-walls and the Rothkar way's parapets
@@ -245,6 +178,7 @@ export function createTelemoniaScenery(kit) {
     const level = new Float32Array(cols * rows).fill(NaN), wallable = new Uint8Array(cols * rows);
     const levelOf = (i, j) => level[j * cols + i];
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+      if ((++buildWork & 63) === 0) yield;
       const k = j * cols + i;
       if (!owned[k]) continue;
       const x = B.minX + i * STEP, z = B.minZ + j * STEP, pd = plainDistance(x, z);
@@ -273,6 +207,7 @@ export function createTelemoniaScenery(kit) {
         return { x: B.minX + (i0 + (i1 - i0) * f) * STEP, z: B.minZ + (j0 + (j1 - j0) * f) * STEP, key: edgeKey(i0, j0, i1, j1) };
       };
       for (let j = 0; j < rows - 1; j++) for (let i = 0; i < cols - 1; i++) {
+        if ((++buildWork & 63) === 0) yield;
         const c = [[i, j], [i + 1, j], [i + 1, j + 1], [i, j + 1]];
         if (c.some(([a, b]) => Number.isNaN(levelOf(a, b)) || !wallable[b * cols + a])) continue;
         const hits = [];
@@ -301,6 +236,7 @@ export function createTelemoniaScenery(kit) {
         return line;
       };
       for (let s = 0; s < segments.length; s++) {
+        if ((++buildWork & 63) === 0) yield;
         if (used[s]) continue;
         const traced = chain(s);
         // Resample a metre apart and lay the face at the riser's foot; a wall is cut wherever the ground
@@ -310,6 +246,7 @@ export function createTelemoniaScenery(kit) {
         const lengths = [0]; for (let k = 1; k < traced.length; k++) lengths.push(lengths[k - 1] + Math.hypot(traced[k].x - traced[k - 1].x, traced[k].z - traced[k - 1].z));
         const total = lengths.at(-1), count = Math.max(1, Math.round(total / 1));
         for (let n = 0, k = 1; n <= count; n++) {
+          if ((++buildWork & 63) === 0) yield;
           const want = total * n / count;
           while (k < traced.length - 1 && lengths[k] < want) k++;
           const a = traced[k - 1], b = traced[k], f = lengths[k] > lengths[k - 1] ? (want - lengths[k - 1]) / (lengths[k] - lengths[k - 1]) : 0;
@@ -340,6 +277,7 @@ export function createTelemoniaScenery(kit) {
       };
       let last = floorAt(a.x, a.z).raw;
       for (let s = .1; s < length; s += .1) {
+        if ((++buildWork & 63) === 0) yield;
         const x = a.x + dx * s, z = a.z + dz * s, { raw } = floorAt(x, z);
         // The middle of a riser: where the raw floor crosses (k + .95) steps over the bottom, going down.
         const k = Math.floor(last / g.checks - .95);
@@ -370,6 +308,7 @@ export function createTelemoniaScenery(kit) {
         let face = [];
         const flush = () => { if (face.length >= 2) { metrics.wayWallMetres += wall(face, { depth: .4 }); } face = []; };
         for (let s = 0; s <= w.length; s += 1) {
+          if ((++buildWork & 63) === 0) yield;
           const c = along(s), at = wayAt(c.x, c.z), nx = -c.dz * side, nz = c.dx * side, walled = s >= w.lipFrom;
           const out = at.half + (walled ? up + w.lipTop : 0) + .05, top = at.floor + (walled ? w.lip + .1 : .14);
           const ex = c.x + nx * out, ez = c.z + nz * out, beyond = gy(ex + nx * 1.2, ez + nz * 1.2);
@@ -400,6 +339,7 @@ export function createTelemoniaScenery(kit) {
     }
 
     for (const t of tiles.values()) {
+      yield;
       if (!t.i.length) continue;
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.Float32BufferAttribute(t.p, 3));
@@ -464,6 +404,7 @@ export function createTelemoniaScenery(kit) {
   for (let z = B.minZ + 2; z < B.maxZ; z += 6) for (let x = B.minX + 2; x < B.maxX; x += 6) if (ours(x, z)) cells.push([x, z]);
   // Five candidates every six metres, and twice that in the Belketh, which is the one place that grows a wood.
   for (const [cx, cz] of cells) for (let n = 0, count = belkethShare(cx, cz) > .35 ? 10 : 5; n < count; n++) {
+    if ((++buildWork & 31) === 0) yield;
     const x = cx + range(-3, 3), z = cz + range(-3, 3);
     if (!ours(x, z) || borderDepth(x, z) < 1.2) continue;
     const place = telemoniaPlace(x, z);
@@ -517,6 +458,7 @@ export function createTelemoniaScenery(kit) {
   }
   // The fallen rock at the foot of the cliffs: wherever the lattice steps from a cliff onto something flat.
   for (let j = 2; j < rows - 2; j += 2) for (let i = 2; i < cols - 2; i += 2) {
+    if ((++buildWork & 63) === 0) yield;
     if (!owned[j * cols + i] || random() > .14) continue;
     const s0 = slopeOf(i, j);
     if (s0 > .5) continue;
@@ -530,7 +472,8 @@ export function createTelemoniaScenery(kit) {
 
   if (tufts.length) {
     const batch = new THREE.InstancedMesh(grassGeometry, grassMaterial, tufts.length);
-    tufts.forEach((tuft, i) => {
+    for (const [i, tuft] of tufts.entries()) {
+      if ((++buildWork & 31) === 0) yield;
       // Stage 2 ploughs the plain and builds on the rock (src/telemonia-town.js): what grew there is not drawn,
       // and every number it drew from the stream is still drawn, so nothing after it moves.
       const gone = townCovers(tuft.x, tuft.z); if (gone) metrics.underTown++;
@@ -540,13 +483,14 @@ export function createTelemoniaScenery(kit) {
       // Buff bunch grass, eleven months of the year; a little green in the hollows.
       batch.setColorAt(i, tuft.green ? color.setHSL(range(.18, .24), range(.22, .32), range(.34, .44))
         : color.setHSL(range(.1, .135), range(.32, .44), tuft.dry ? range(.45, .55) : range(.5, .6), THREE.SRGBColorSpace));
-    });
+    }
     batch.receiveShadow = true; batch.computeBoundingSphere(); batch.name = 'Telemonia bunch grass'; group.add(batch);
     metrics.tufts = tufts.length; metrics.batches++;
   }
   if (shrubs.length) {
     const batch = new THREE.InstancedMesh(round, shrubMaterial, shrubs.length);
-    shrubs.forEach((bush, i) => {
+    for (const [i, bush] of shrubs.entries()) {
+      if ((++buildWork & 31) === 0) yield;
       const tall = bush.kind === 'maquis' ? .55 : bush.kind === 'thorn' ? .5 : .3, gone = townCovers(bush.x, bush.z);
       if (gone) metrics.underTown++;
       dummy.position.set(bush.x, gy(bush.x, bush.z) + bush.s * tall * .45, bush.z);
@@ -558,13 +502,14 @@ export function createTelemoniaScenery(kit) {
         : bush.kind === 'thorn' ? color.setHSL(range(.08, .14), range(.14, .24), range(.22, .3))
           : color.setHSL(range(.24, .3), range(.22, .32), range(.19, .27)));
       if (bush.kind === 'wormwood') metrics.wormwood++; else if (bush.kind === 'thorn') metrics.thorn++;
-    });
+    }
     batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); batch.name = 'Telemonia scrub'; group.add(batch);
     metrics.shrubs = shrubs.length; metrics.batches++;
   }
   if (rocks.length) {
     const batch = new THREE.InstancedMesh(round, rockMaterial, rocks.length);
-    rocks.forEach((rock, i) => {
+    for (const [i, rock] of rocks.entries()) {
+      if ((++buildWork & 31) === 0) yield;
       // Cleared off the fields, the street, and the floors of the halls and the huts (stage 2).
       const gone = townCovers(rock.x, rock.z); if (gone) metrics.underTown++;
       dummy.position.set(rock.x, gy(rock.x, rock.z) + rock.s * .15, rock.z);
@@ -576,19 +521,20 @@ export function createTelemoniaScenery(kit) {
       // Only a big stone with room round it is solid; fallen rock at a cliff's foot is drawn and walked through.
       if (!gone && rock.s > 1.25 && !rock.talus && !nearSpawn(rock.x, rock.z, 5) && roomy(rock.x, rock.z, rock.s + 1.5)) push({ x: rock.x, z: rock.z, r: rock.s * .55, kind: 'ridge-rock' });
       if (rock.talus) metrics.talus++;
-    });
+    }
     batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); batch.name = 'Telemonia stone'; group.add(batch);
     metrics.rocks = rocks.length; metrics.batches++;
   }
   if (washStones.length) {
     const batch = new THREE.InstancedMesh(round, rockMaterial, washStones.length);
-    washStones.forEach((rock, i) => {
+    for (const [i, rock] of washStones.entries()) {
+      if ((++buildWork & 31) === 0) yield;
       dummy.position.set(rock.x, gy(rock.x, rock.z) + rock.s * .1, rock.z);
       dummy.rotation.set(range(-.2, .2), rock.rot, range(-.2, .2));
       dummy.scale.set(rock.s, rock.s * range(.4, .6), rock.s * range(.8, 1.25)); dummy.updateMatrix();
       batch.setMatrixAt(i, dummy.matrix);
       batch.setColorAt(i, stone(.56, .68));
-    });
+    }
     batch.receiveShadow = true; batch.computeBoundingSphere(); batch.name = 'Telemonia wash stones'; group.add(batch);
     metrics.washStones = washStones.length; metrics.batches++;
   }
@@ -606,13 +552,17 @@ export function createTelemoniaScenery(kit) {
     for (const [list, bark] of [[trees.filter(t => t.kind !== 'pine'), barkMaterial], [trees.filter(t => t.kind === 'pine'), pineBark]]) {
       if (!list.length) continue;
       const trunks = new THREE.InstancedMesh(trunkGeometry, bark, list.length);
-      list.forEach((tree, i) => {
-        const y = gy(tree.x, tree.z), height = tree.h * tree.s;
+      for (const [i, tree] of list.entries()) {
+        if ((++buildWork & 31) === 0) yield;
+        let y = gy(tree.x, tree.z);
+        const height = tree.h * tree.s;
         const bole = tree.kind === 'pine' ? .7 : tree.kind === 'juniper' ? .3 : .4, length = height * bole;
         dummy.position.set(tree.x, y + length / 2, tree.z);
         dummy.rotation.set(0, tree.rot, 0);
         const girth = tree.kind === 'pine' ? .9 : tree.kind === 'juniper' ? .6 : tree.belketh ? 1.1 : .8;
         dummy.scale.set(tree.s * girth, length, tree.s * girth); dummy.updateMatrix();
+        const grounding = treeGroundingOffset(dummy.matrix, treeGroundAt, { radius: .24, segments: 6 });
+        y += grounding; dummy.position.y += grounding; dummy.updateMatrix();
         trunks.setMatrixAt(i, dummy.matrix);
         const parts = [{ mesh: trunks, index: i }];
         for (let c = 0; c < lumpsOf(tree); c++) {
@@ -643,7 +593,7 @@ export function createTelemoniaScenery(kit) {
         metrics.trees++;
         if (tree.belketh) metrics.belkethTrees++;
         if (tree.kind === 'pine') metrics.pines++; else if (tree.kind === 'juniper') metrics.junipers++; else metrics.oaks++;
-      });
+      }
       trunks.castShadow = true; trunks.receiveShadow = true; trunks.computeBoundingSphere(); group.add(trunks); metrics.batches++;
     }
     crowns.count = crown;

@@ -48,10 +48,13 @@ import { eastPyrosBoundaryDistance } from '../src/east-pyros-world.js';
  * with the game's own climbing rule over the whole country, and **nobody is sealed in**, on the rim, in
  * the basin or on the rock.
  */
-const { createWorld } = await sourceModule('../src/world.js');
+const { scopedWorld } = await import('./scoped-world.js');
 const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/west-regions-life.js');
 const scene = new THREE.Scene();
-const world = createWorld(scene);
+// Build this country and its actual registered neighbors through Fast's production
+// jobs. The fixture retains real neighboring meshes and colliders for seam tests.
+const reviewNames = new Set([TELEMONIA, ...BORDER.map(edge => edge.neighbour)]);
+const world = await scopedWorld(scene, regions.filter(region => reviewNames.has(region.name)).map(region => region.id));
 const country = regions.find(region => region.name === TELEMONIA);
 const cells = REGION_CELLS[TELEMONIA];
 const WWMAP = new URL('../../world-builder/map/resources/examples/azhora.wwmap', import.meta.url);

@@ -1,3 +1,4 @@
+import {isLegendaryRegion} from './urubond-atlas.js';
 import { BARRETT } from './willowmere-family.js';
 
 export const BARRETT_GEOGRAPHY_COOLDOWN = 120;
@@ -20,7 +21,7 @@ export function createBarrettGeography({ cartography, regions = () => [], random
   let state = empty();
   const atlas = () => {
     const source = typeof regions === 'function' ? regions() : regions;
-    return [...new Map((source ?? []).filter(entry => nameValid(entry?.name ?? entry?.id))
+    return [...new Map((source ?? []).filter(entry => nameValid(entry?.name ?? entry?.id)&&!isLegendaryRegion(entry.name??entry.id))
       .map(entry => [entry.name ?? entry.id, { ...entry, name: entry.name ?? entry.id }])).values()];
   };
   const remaining = clock => state.lastAt === null ? 0 : Math.max(0, state.lastAt + BARRETT_GEOGRAPHY_COOLDOWN - (clockValid(clock) ? clock : state.lastAt));

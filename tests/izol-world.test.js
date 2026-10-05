@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
+import { scopedWorld } from './scoped-world.js';
 import { canStand } from '../src/game-state.js';
 import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
 import {
@@ -20,8 +21,7 @@ import { BUILD_STATUS, regionBuildStatus } from '../src/build-status.js';
 import { REGION_DESIGN, SETTLEMENTS } from '../src/campaign-world.js';
 
 const { SIGN_LABELS } = await sourceModule('../src/signs.js');
-const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const world = await scopedWorld(new THREE.Scene(), [8]);
 const region = world.regions.find(entry => entry.name === 'West Izol');
 
 /** A flood over whole metres inside a box: can a walker of `radius` get from `from` to `to`? */
@@ -63,7 +63,8 @@ test('West Izol is a playable region true to the atlas: twenty-one hexes of rock
   // ...and Trogo further again, from 3177.824 to 3264.426 (docs/southwest-4-report.md). West Izol is
   // further from the southern edge with every job in that quarter, and the edge is never its own.
   assert.ok(Math.abs(WORLD_BOUNDS.maxZ - 3437.6315612998296) < 1e-6, 'and the edge is Babon\u2019s, not the island\u2019s');
-  assert.ok(WORLD_BOUNDS.maxX > 600 && WORLD_BOUNDS.maxX < 620);
+  assert.ok(WORLD_BOUNDS.maxX >= region.bounds.maxX && WORLD_BOUNDS.minX <= region.bounds.minX,
+    'the combined world bounds contain the island after later eastern countries are added');
   assert.equal(REGION_BIOMES['West Izol'].id, 'izoli-rock');
   assert.equal(REGION_BIOMES['West Izol'].ownScatter, true, 'West Izol scatters its own ground');
   // An island: every hex of it is ringed by sea or by East Izol, never by another playable region.

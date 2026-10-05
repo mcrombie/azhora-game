@@ -32,10 +32,13 @@ export function createCrimeHost({world,npcById,additionalPeople=()=>[],inventory
   let offeredId=null,nextOffer=0,leadId=null,saveClock=0,nextProtectionNotice=0;
   // Some authored creatures have their own animation host rather than a row in the
   // ordinary cast. Resolve them here too, without mutating that cast or saving meshes.
-  const extraPeople=()=>{const seen=new Set(npcById.keys());return (additionalPeople()??[]).filter(npc=>{
-    if(!npc?.id||!location(npc)||seen.has(npc.id))return false;seen.add(npc.id);return true;});};
+  const extraPeople=()=>{const seen=new Set();return (additionalPeople()??[]).filter(npc=>{
+    if(!npc?.id||!location(npc)||npcById.has(npc.id)||seen.has(npc.id))return false;seen.add(npc.id);return true;});};
   const people=()=>[...npcById.values(),...extraPeople()];
-  const npcFor=id=>npcById.get(id)??extraPeople().find(npc=>npc.id===id)??null;
+  // Wildlife IDs are checked frequently and usually are not law-controlled NPCs.
+  // A miss must not copy the entire cast into a Set and filter another roster.
+  // Query the small, live extra roster directly: additions/removals stay immediate.
+  const npcFor=id=>npcById.get(id)??(additionalPeople()??[]).find(npc=>npc?.id===id&&location(npc))??null;
   const getNpc=value=>typeof value==='string'?npcFor(value):value;
   const available=npc=>!!location(npc)&&!npc.hidden&&!npc.fallen&&npc.actor.group.visible!==false
     &&(typeof npc.available!=='function'||npc.available());

@@ -25,6 +25,7 @@ export function createWorldMap() {
   let opened = false;
   let chart = { cells: [], glimpsed: [], reveal: false, status: [], silhouettes: [], labels: [] };
   let visited = new Set(), terrainCells = new Map(), terrainSource = null;
+  const builtNames=new Set(PLAYABLE_SURVEY.regions.map(r=>r.name)), unbuiltCells=new Set();
   let localDetail = atlasLocalDetail(null);
   let authoredLabels = null;
   const cityLayer = document.createElementNS(SVG_NS, 'svg');
@@ -179,7 +180,7 @@ export function createWorldMap() {
       const [q, r] = key.split(',').map(Number);
       if (!Number.isFinite(q) || !Number.isFinite(r)) continue;
       const terrain = terrainCells.get(key) ?? (terrainSource ? 'ocean' : 'unknown');
-      glimpse.append(node('polygon', { points: polygonPoints(q, r), fill: GLIMPSED_TERRAIN[terrain] ?? GLIMPSED_TERRAIN.unknown }));
+      glimpse.append(node('polygon', { points: polygonPoints(q, r), fill: unbuiltCells.has(key)?'#777d7c':GLIMPSED_TERRAIN[terrain] ?? GLIMPSED_TERRAIN.unknown }));
     }
     overlay.append(glimpse);
     // A heard-of country gets its original inked name, without revealing its terrain. The
@@ -312,7 +313,8 @@ export function createWorldMap() {
     visited = scope.visited;
     if (terrainRegions && terrainRegions !== terrainSource) {
       terrainSource = terrainRegions;
-      for (const region of terrainRegions) for (const cell of region.cells ?? []) terrainCells.set(`${cell.q},${cell.r}`, cell.terrain);
+      unbuiltCells.clear();
+      for (const region of terrainRegions) for (const cell of region.cells ?? []) { const key=`${cell.q},${cell.r}`;terrainCells.set(key, cell.terrain);if(!builtNames.has(region.name??region.id))unbuiltCells.add(key); }
     }
     if (marks) places = marks.filter(place => Number.isFinite(place?.x) && Number.isFinite(place?.y)).map(place => ({ ...place }));
     drawPlaces(); drawOverlay(); render();

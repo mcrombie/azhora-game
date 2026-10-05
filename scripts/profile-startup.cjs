@@ -35,7 +35,7 @@ app.whenReady().then(async()=>{
   win.webContents.on('render-process-gone',(_,details)=>{console.error(details);app.exit(1);});
   const timeout=setTimeout(()=>{console.error('Startup exceeded 15 minutes');app.exit(1);},900000);
   const start=performance.now();
-  await win.loadURL(`http://127.0.0.1:${server.address().port}/?test=1`);
+  await win.loadURL(`http://127.0.0.1:${server.address().port}/?test=1${process.argv.includes('--fast-load')?'&load=fast':''}`);
   const result=await win.webContents.executeJavaScript(`(async()=>{
     const start=performance.now();
     while(!window.__AZHORA__){const fatal=document.getElementById('fatal');if(fatal&&!fatal.classList.contains('hidden'))throw new Error(fatal.dataset.stack||fatal.textContent);if(performance.now()-start>900000)throw new Error('Startup timed out');await new Promise(r=>setTimeout(r,100));}
@@ -43,6 +43,15 @@ app.whenReady().then(async()=>{
     return {timings:globalThis.__AZHORA_STARTUP__??null,state:window.__AZHORA__.state()};
   })()`);
   result.wallMs=performance.now()-start;result.errors=errors;
+  const observeSeconds=Math.max(0,Math.min(120,Number(option('profile-observe'))||0));
+  if(observeSeconds)result.observation=await win.webContents.executeJavaScript(`(async()=>{
+    const start=performance.now(),gaps=[];let last=start;
+    while(performance.now()-start<${observeSeconds*1000}){await new Promise(requestAnimationFrame);const now=performance.now();gaps.push(now-last);last=now;}
+    gaps.sort((a,b)=>a-b);
+    return {elapsedMs:performance.now()-start,frames:gaps.length,p95Ms:gaps[Math.floor(gaps.length*.95)],maxMs:gaps.at(-1),stallsOver50ms:gaps.filter(ms=>ms>50).length,
+      heapBytes:performance.memory?.usedJSHeapSize,loading:window.__AZHORA__.loading.state(),state:window.__AZHORA__.state()};
+  })()`);
+  result.processes=app.getAppMetrics().map(p=>({type:p.type,memory:p.memory}));
   // Let the chart's async image.decode finish before navigating away; reloading
   // a pending image creates an AbortError unrelated to game startup.
   await win.webContents.executeJavaScript(`(async()=>{const begin=performance.now();while(!document.getElementById('atlas-loading')?.hidden){if(performance.now()-begin>20000)throw new Error('Atlas did not finish loading');await new Promise(r=>setTimeout(r,50));}})()`);

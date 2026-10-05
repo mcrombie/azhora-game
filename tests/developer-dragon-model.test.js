@@ -82,3 +82,35 @@ test('The seated player meets the dragon saddle and remains upright through wing
     }
   }
 });
+
+test('Dragon fire opens the lower jaw and its muzzle follows the actual posed and parented mouth',()=>{
+  const dragon=createDeveloperDragon(),parent=new THREE.Group();parent.add(dragon.group);
+  parent.position.set(11,70,-18);parent.rotation.y=.48;
+  dragon.group.position.set(2,3,5);dragon.group.rotation.y=-.9;
+  dragon.update(.8,{flying:true,speed:25,bank:.23});
+  assert.equal(dragon.jaw.rotation.x,0);assert.equal(dragon.throatGlow.visible,false);
+  const closed=dragon.mouthWorldPosition(new THREE.Vector3());
+  dragon.update(.8,{flying:true,speed:25,bank:.23,breathing:true,breathIntensity:1,breathPitch:.48});
+  assert.ok(dragon.jaw.rotation.x>.65);assert.ok(dragon.throatGlow.visible);
+  assert.ok(dragon.throatGlow.material.opacity>.5);
+  const out=new THREE.Vector3(),result=dragon.mouthWorldPosition(out);
+  assert.equal(result,out);assert.ok(out.distanceTo(closed)>.1);
+  assert.ok(out.distanceTo(dragon.mouthAnchor.getWorldPosition(new THREE.Vector3()))<1e-9);
+  const direction=dragon.mouthWorldDirection(new THREE.Vector3());
+  assert.ok(Math.abs(direction.length()-1)<1e-10);assert.ok(direction.y<-.35,'Aimed fire leaves the mouth downward');
+  const actual=new THREE.Vector3(0,0,1).transformDirection(dragon.mouthAnchor.matrixWorld);
+  assert.ok(direction.distanceTo(actual)<1e-10,'Damage and VFX can use the same articulated nozzle');
+  dragon.animate(1,25,false,{flying:true,breathing:false});
+  assert.equal(dragon.jaw.rotation.x,0);assert.equal(dragon.throatGlow.visible,false);
+});
+
+test('Dragon breathing is deterministic, bounded and preserves its ordinary flight animation',()=>{
+  const dragon=createDeveloperDragon(),pose={flying:true,speed:25,breathing:true,breathIntensity:.7,breathPitch:.4};
+  dragon.animate(2,25,false,pose);
+  const first=[dragon.jaw.rotation.x,dragon.head.rotation.x,dragon.throatGlow.material.opacity,...dragon.mouthWorldPosition().toArray()];
+  dragon.animate(5,25,false,{...pose,breathIntensity:Infinity,breathPitch:NaN});
+  assert.ok(Number.isFinite(dragon.head.rotation.x));assert.ok(Number.isFinite(dragon.jaw.rotation.x));
+  dragon.animate(2,25,false,pose);
+  assert.deepEqual([dragon.jaw.rotation.x,dragon.head.rotation.x,dragon.throatGlow.material.opacity,...dragon.mouthWorldPosition().toArray()],first);
+  assert.ok(dragon.legs.every(leg=>leg.rotation.x>.5));
+});

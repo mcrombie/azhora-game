@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { sourceModule } from './module-loader.js';
+import { scopedWorld } from './scoped-world.js';
 import { createClimbing, sampleClimbSurface, climbSurfaceClear, canWalkSlope } from '../src/climbing.js';
 import { canStand } from '../src/game-state.js';
 import { closedRegionEntered } from '../src/closed-border.js';
@@ -11,8 +11,7 @@ import { SUVAL_RIDGE_COLLIDERS, SUVAL_HILL_PASSES, hillPassPoint } from '../src/
 import { catieCaveRoute } from '../src/catie-autopilot.js';
 import { KATY_STAND } from '../src/katy.js';
 
-const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const world = await scopedWorld(new THREE.Scene(), [2, 4, 5, 18]);
 world.canClimbMove = (from, to) => !closedRegionEntered(from, to);
 const point = (x, z) => ({ x, z, y: world.heightAt(x, z) });
 const WEST_LEDGE = point(-501.981207, 610.925240);

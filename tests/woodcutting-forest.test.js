@@ -10,9 +10,12 @@ import { createCampcraft } from '../src/campcraft.js';
 const master = () => { const skills = createSkills(); skills.learn('woodcutting'); skills.gain('woodcutting', MAX_XP); return skills; };
 const axe = id => id === 'bronze-axe';
 const tree = (id, species, extra = {}) => ({ id, species, x: 10, z: 20, harvestable: true, ...extra });
+// Explicit authored exceptions, not a filter that silently skips missing recipes.
+const protectedIbenwood = ['grey-vault', 'pale-witness', 'bloodoak', 'midnight-elm', 'ridgeback', 'deeproot'];
 
 test('every ordinary timber species can be harvested without substituting a different species of log', () => {
-  const trees = Object.values(WOOD_SPECIES).map(wood => tree(`wild-${wood.species}`, wood.species));
+  const trees = Object.values(WOOD_SPECIES).filter(wood => !protectedIbenwood.includes(wood.species))
+    .map(wood => tree(`wild-${wood.species}`, wood.species));
   const wood = createWoodcutting({ skills: master(), trees, random: () => 0 });
   assert.equal(wood.catalog.length, trees.length + WOODLOT_TREES.length);
   for (const t of trees) {
@@ -24,6 +27,22 @@ test('every ordinary timber species can be harvested without substituting a diff
   }
   assert.notEqual(wood.tree('wild-red-oak').log, wood.tree('wild-white-oak').log);
   assert.notEqual(wood.tree('wild-silver-fir').log, wood.tree('wild-loblolly-pine').log);
+});
+
+test('all six protected Ibenwood species retain identity without a recipe, product or ordinary harvest even when a caller requests one', () => {
+  const skills=master(),trees=protectedIbenwood.map(species=>tree(`protected-${species}`,species));
+  const wood=createWoodcutting({skills,trees,random:()=>0}),before=wood.snapshot(),beforeSkills=skills.snapshot();
+  for(const source of trees){
+    const timber=WOOD_SPECIES[source.species];assert.ok(timber,source.species);
+    assert.equal(timber.log,null);assert.equal(timber.plank,null);
+    assert.equal(TREE_KINDS[timber.woodKind],undefined,'protected identity must not acquire a harvesting recipe');
+    assert.equal(wood.tree(source.id)?.species,source.species);
+    assert.equal(wood.tree(source.id)?.harvestable,false,'requested harvestable:true cannot override the authored protection');
+    assert.equal(wood.canChop(source.id,axe).ok,false);
+    const swing=wood.swing(source.id,axe);assert.equal(swing.ok,false);assert.equal(swing.log,null);
+  }
+  assert.deepEqual(wood.snapshot(),before,'refused swings never alter stock, rewards or saved state');
+  assert.deepEqual(skills.snapshot(),beforeSkills,'refused swings grant no experience');
 });
 
 test('a supplied species controls timber and required level even when a collider or silhouette says otherwise', () => {

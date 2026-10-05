@@ -116,6 +116,23 @@ test('water and building descriptors come from actual local geometry and are fil
   assert.equal(model(world, { regionId: 2 }).waters.length, 0, 'missing water metadata must not manufacture a river');
 });
 
+test('display-only building footprints appear on the local chart without entering collision geometry', () => {
+  const world = fixture(), location = at(-40, 35);
+  world.mapBuildings = [
+    { id: 'open-court-hall', kind: 'house', ...location, width: 26, depth: 22, angle: .3 },
+    { id: 'distant-hall', kind: 'house', ...at(120, 620), width: 18, depth: 12 },
+  ];
+  const collisions = world.colliders, before = JSON.stringify(collisions);
+  deepFreeze(world);
+  const chart = model(world), hall = chart.buildings.find(b => b.x === location.x && b.z === location.z);
+  assert.deepEqual(hall, { ...location, width: 26, depth: 22, angle: .3 });
+  assert.equal(chart.buildings.length, 2, 'the chart adds the nearby footprint and retains its existing cottage');
+  assert.equal(world.colliders, collisions);
+  assert.equal(JSON.stringify(collisions), before, 'a map footprint cannot add a solid block across an open room');
+  hall.width = 99;
+  assert.equal(world.mapBuildings[0].width, 26, 'returned chart geometry is independent of the world descriptor');
+});
+
 test('chart creation neither mutates world facts nor lets callers change facts through returned objects', () => {
   const world = deepFreeze(fixture()), position = Object.freeze(at(-15, 29));
   const before = JSON.stringify(world), discoveries = new Set(['village']);

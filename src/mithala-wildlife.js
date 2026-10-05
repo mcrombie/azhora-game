@@ -66,8 +66,10 @@ export const MITHALA_WILDLIFE_ZONES = freeze([
   // -----------------------------------------------------------------------
   // South Mithala: the meeting, the flood plain and the apron
   // -----------------------------------------------------------------------
-  zone('mithala-meeting-otters', 'otter', 'South Mithala', .35, [-1780, -1640, -1410, -1330],
-    [[-1748, -1386], [-1724, -1338], [-1664, -1362]],
+  // Two of the three homes moved off the city that now stands round the meeting (docs/mithala-city-brief.md) to the main
+  // channel's south bank just below the Ford, the nearest open bank in South Mithala; the range reaches 40 m further east for it.
+  zone('mithala-meeting-otters', 'otter', 'South Mithala', .35, [-1780, -1600, -1410, -1330],
+    [[-1748, -1386], [-1642, -1384], [-1606, -1396]],
     'The fauna overview puts otters on the whole Lizeem system - "river otters and their larger relatives occupy the rivers from the Oremindi meltwater sources through the forest-margin watercourses" - and names the great river otter, which takes fish the size of a river-horn calf and is not loved by the farming communities for it. These are on the bank at the meeting of the arms, where three channels come together and the fish that are going anywhere on this plain have to pass.',
     { scale: 1.2 }),
   zone('south-mithala-buffalo', 'frostback', 'South Mithala', .8, [-1540, -1370, -1390, -1270],
@@ -122,7 +124,7 @@ export const MITHALA_WILDLIFE_ZONES = freeze([
     'Duck on the main channel’s ford reach, floating, where the water is shallow over gravel and the threads are just beginning to separate. "In high flood years, the extended inundation of the lower plains creates temporary wetland habitat that draws concentrations of birds... high flood years correlate with exceptional hunting seasons for waterfowl across the eastern plains." This is an ordinary year and an ordinary raft of them.',
     { float: true }),
   zone('east-mithala-deer', 'red-deer', 'East Mithala', .55, [-1700, -1570, -1590, -1470],
-    [[-1660, -1494], [-1624, -1554], [-1594, -1536]],
+    [[-1640, -1506], [-1624, -1554], [-1594, -1536]],
     'Extension: red deer, the game’s deer, on the open grass behind the gallery. The overview gives the Plains their own grazers and the forests their deer, and this ground is the seam between the two - open country with the Acorwood a few miles north and a wood two trees deep on every channel. A deer that can feed in the open and be back in cover in a minute is the animal that lives on a boundary like that.',
     { hornless: true }),
   zone('river-mouth-stilts', 'stilt', 'East Mithala', .4, [-1150, -1040, -1490, -1410],

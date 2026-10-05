@@ -1,5 +1,9 @@
 ﻿# Azhora: An Adventure Game
 
+**5 October update:** [33 northern and island environments](docs/outer-regions-environments.md) are integrated, including Gorgiwood, South Gorgi Mountains and both Ithzel regions. Unbuilt countries are gray on the map. Southern jungle development is on hold; further loading optimization is paused.
+
+**Additional 5 October integration:** [Eshtor Plateau](docs/eshtor-plateau.md) is built, and Claude's South/North Ibenal, Henborth and Mithala city are [reviewed and integrated](docs/region-reviews/main-integration-2026-10-05.md) into the desktop working copy. Find them in F8 travel.
+
 A standalone 3D adventure across six authored regions of Azhora: **Drent**, the Ambroni Empire’s quietest forested province; **Luscia** beyond the Caloss; the open **Moros Plain**; **West Suval** and the walled city of Solis above the sea; **Pueth**, the cold timber country north of Drent; and the stone hills of **East Suval**, whose frontier is shut. Their shapes, sizes and positions come straight from the World Builder atlas at 100 metres per authored hex. A mercenary hired from across the sea lands at Tidehaven on Drent’s east coast during a goblin attack, carries Jojo’s introduction to the Ambroni Legion, and follows the road south-west through the forest, over the Caloss, past the Legion’s outpost on the Moros and on to the parley at Solis, where the war forks. North of Tidehaven the road crosses the Tessen into Pueth. The regions connect without loading screens, and the road stays open for return visits.
 
 Drent’s forest includes small working places, optional woodland errands, deer, insects and understory plants; the goblin scout camp that raids it now sits across the Tessen in Pueth. Along the way there are towns with their own people, Legion posts, a hired mercenary company that walks the road on its own clock, a horse to ride from Lumber Town on, and **birding**, the first of the traveler’s skills: Jean teaches Birding and Animal Husbandry beside the departing village road. Twenty-five kinds of bird can be recorded, repeat observations earn practice, and familiar bird calls open at level 2. Her feeder garden remains in Tidehaven, and her two tame sheep give the traveler livestock to practise with. The traveler’s chart begins blank and is charted as you walk, naming the ground you reach. A separate developer ghost mode inspects the authored world atlas, flies through the playable regions, visits a Cape Thalmagar fortress prototype, or surveys terrain from the wider map.
@@ -11,6 +15,12 @@ The Greenway ambushers keep their individual health and positions between attack
 The **civil-war campaign** runs to the border battle and the day after it in 3D; the branches beyond are designed and executable but not yet built. See [docs/campaign-design.md](docs/campaign-design.md). Every authored region has a difficulty level (0 tutorial to 5 deadly), a controlling faction and its threats (`src/campaign-world.js`); the main quest runs Drent → Luscia → Moros Plain → West Suval, forks at Solis between the Ambroni Empire and the Republican Coalition, and continues along mirrored branches to the South Oremindi Mountains (`src/campaign.js`). Regional side arcs flip provinces on the political map, faction trust rises and falls, and double-dealing is eventually exposed. The journal’s **The civil war** section shows the current chapter, your standing, and the regions around Drent; the developer atlas tints every region by level.
 
 Suval now has [terrain climbing](docs/climbing-suval.md): Space grips a reachable steep face, WASD climbs or traverses, Space boosts upward, and X releases. Moving and hanging consume stamina; clear ledges restore it. The first grip introduces Climbing, and practice improves efficiency. Checkpoints return a suspended climber to the last foothold with skill progress retained. The sealed East Suval border remains closed.
+
+## Canerd
+
+Canerd now stands directly on the flat plain in North Celder. Follow the direct approach from the horse-fair ground to the open south gate, the chief lord's court and hall, and the stair to the southern battlement outlook. Successive bands of older rough stone, refaced curtain walls and tall upper works give the castle its layered silhouette above the plain. The highest tower is an exterior landmark; the ruler, residents, seasonal fair and political quests remain future work.
+
+Use **F8 → Go anywhere → Canerd** to visit, or approach across North Celder. The castle and fairground appear on the traveler's chart as you explore. `npm run test:canerd` checks terrain, scenery and actual traveler movement; `npm run review:canerd` runs the native build and captures four views. See [the Canerd build record](docs/canerd.md).
 
 ## Play
 
@@ -180,6 +190,9 @@ Press **F8**, use the opening screen's testing button, or choose **Testing tools
 
 **Hacks** is at the top, with the developer dragon, developer bat, fast developer horse and whole-map reveal. Older character jumps, individual location buttons, supplies, ordinary horses, and ghost view are removed from the panel.
 
+The **Developer dragon** breathes fire with the attack control: hold **LMB or R** for a sustained jet, or tap for a short burst. Hold **RMB** and move the view to aim the dragon. Fire kills enemies and wildlife, burns trees, collapses small buildings and wooden props, and leaves brief ground fires and charred wreckage. Stone fortifications remain standing. Returning to the normal adventure restores the testing destruction. The dragon uses the existing flight controls, including **Tab** turbo and **G** to land.
+
+
 `npm run test:testing-tools` checks the gold, silver and named playtests, repeatable resets, story jumps, travel controls, and hacks while verifying that the normal checkpoint is unchanged. `npm run test:silver-autoplay` plays both silver demos through ordinary movement, dialogue and combat. Review the panel with `--smoke-test --review-views=testing-tools`.
 
 The **TESTING SESSION** badge identifies the override. Testing supplies and travel **never overwrite the normal road checkpoint**. Reopen the game and choose Continue to recover the normal saved road, or begin from the boat for a fresh playthrough.
@@ -314,14 +327,20 @@ starts immediately. The second button selects experimental Fast mode for that
 launch only.
 
 Fast prepares Drent first, then builds nearby terrain and scenery in cooperative
-batches while play continues. The queue favors the current region, its neighbors,
-and the direction of travel; explicit travel destinations take priority. A small
-progress indicator disappears when construction finishes. F8 jumps, Continue,
-ferries, quest travel and flight wait safely if their destination is unfinished.
-Some shared scenery builders cover a group of neighboring regions; those regions
-become available together. The queue has one active build and a four-millisecond
-frame budget, though a single geometry operation or garbage collection can exceed
-that budget. Fast reads a compatible terrain cache but never writes a partial one.
+batches while play continues. It favors the current region, its neighbors and the
+direction of travel; faster flight looks farther ahead. Explicit destinations
+interrupt background work at a safe yield. Unvisited distant regions stay queued,
+and loading sleeps when the nearby work is done. The indicator returns when travel
+wakes the queue. F8 jumps, Continue, ferries, quest travel and flight wait safely
+if their destination is unfinished. Shared builders can load several regions together.
+
+The background budget is two milliseconds, reduced after slow frames; explicit
+travel waits allow eight milliseconds. Individual geometry operations and garbage
+collection can still exceed these budgets. Distant completed scenery is detached
+and its eligible GPU buffers released, then restored on return. CPU objects,
+collisions, terrain and gameplay changes remain in memory: this is not full CPU
+eviction. Fast reads a compatible terrain cache but never writes a partial one.
+See [Fast loading locality](docs/fast-loading-locality.md) for measurements and limits.
 
 World metadata and quest state remain available throughout. Late trees preserve
 saved stumps, roads and collision queries see newly built objects, and elevated
@@ -348,7 +367,7 @@ passed. Native checks passed for both Baldro cities (49 assertions), the complet
 dwarf autoplay (31), and Willowmere character loading and fishing (39), with no
 renderer errors. The dwarf run included mid-lesson save/resume and a fresh repeat.
 
-The loading-mode pass also passes 71 startup/scheduling/scenery tests and 59
+The original loading-mode pass passed 71 startup/scheduling/scenery tests and 59
 save, woodcutting, walk-surface and road tests. The native chooser confirms the
 button order, ten-second countdown and successful Fast launch. An isolated Full
 run took 96.4 seconds cold and 67.2 seconds with a cache hit, with no renderer
@@ -359,7 +378,8 @@ quest checks passed, including deferred travel, late collisions and walkways,
 saved progress, and a fresh quest repeat. The conservative background run took
 about twenty minutes to finish the remaining world while rendering continued;
 nearby regions and requested destinations become available earlier. These are
-single-run timings, and Fast remains experimental.
+single-run historical timings. Fast now intentionally leaves distant jobs pending;
+the exhaustive test explicitly requests the whole queue. Fast remains experimental.
 
 ## Code and validation
 
@@ -501,3 +521,5 @@ West Lotharn is integrated into the main desktop build. In F8 testing tools, use
 The range has seven summits, forested limestone and sandstone ledges, two main valleys, four watercourses, and nine empty caves. Climbing, falling, the discovery map, and persistent wildlife use the same systems as the surrounding world. Its seven woodland species support ordinary woodcutting, visible felling, and saved regrowth. This terrain pass adds no people or settlements.
 
 `npm run test:northern-regions:desktop` covers F8 travel to both Lotharn regions and Feradom, named trees and wildlife, cave entry/checkpoint recovery, and the live climbing controls. Focused geometry and traversal coverage lives in `tests/west-lotharn-*.test.js`. The integration and visual refinements are recorded in `docs/west-lotharn-integration.md`.
+
+Pyra is now built across East and West Pyros: golden city walls, a river bridge, markets and quays, and an immaculate suspended palace reached by a walkable spiral staircase. Use F8 / Go anywhere and search for Pyra. Design and validation: [docs/pyra.md](docs/pyra.md); `npm run test:pyra` and `npm run review:pyra`.

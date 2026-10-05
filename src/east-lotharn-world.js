@@ -1,3 +1,5 @@
+import { createCentralRampJoinCorrection } from './east-lotharn-route-joins.js';
+import { createCentralNorthShoulder } from './east-lotharn-north-shoulder.js';
 /**
  * The East Lotharn Mountains: the ground, the water lines and the made places of the old range
  * north of Amod, as pure numbers.
@@ -764,6 +766,56 @@ export function peakGround(x, z, u = peakUplift(x, z)) {
   return best ? lerp(rampLevel(best.ramp, best.along), height, smooth(RAMP.half, reach, best.distance)) : height;
 }
 
+/**
+ * Weathered shoulders on the northern faces. The original contour field still
+ * locates caves, ledges and ramps. Between those routes, broad unequal patches
+ * recover the underlying continuous slope across complete rock courses, rather
+ * than putting another small outcrop on each identical cliff ring.
+ *
+ * The fortified southern/eastern faces are deliberately left for their own
+ * route review: changing a lip there can open a survivable fall past Varn.
+ * Export the exact added height so legacy scenery can keep its seeded choices
+ * while newly placed vegetation samples the actual ground.
+ */
+export const LOTHARN_WESTERN_SHOULDER = freeze({ minX: -1440, maxX: -1355, minZ: -980, maxZ: -918, feather: 15 });
+function landscapeBeforeCentralNorth(x, z) {
+  if (!inLotharnBox(x, z) || x >= -1140 || z >= -918) return 0;
+  // A bounded shoulder on the western peak faces Upper Olveth. The northern
+  // field alone missed this face: all its visible courses lie south of -975.
+  // Keep the first two courses and soften only the higher rock between the
+  // established ways; the window is zero well before either nearby cave.
+  const u = peakUplift(x, z);
+  const s = LOTHARN_WESTERN_SHOULDER;
+  const shoulderWindow = smooth(0, s.feather, x - s.minX) * smooth(0, s.feather, s.maxX - x)
+    * smooth(0, s.feather, z - s.minZ) * smooth(0, s.feather, s.maxZ - z) * smooth(80, 100, u);
+  const northWindow = smooth(0, 30, -975 - z) * smooth(0, 30, -1140 - x);
+  const window = Math.max(northWindow, shoulderWindow);
+  if (!window) return 0;
+  // The central chimney is the only cave in this northern shaping area. Its
+  // complete roof and both mouth searches must stay fixed, not just the ledge
+  // height at the nominal endpoints. Keep its surveyed corridor plus 12 m clear.
+  const caveDistance = Math.max(-1250 - x, x + 1170, -1120 - z, z + 1057, 0);
+  const guard = window * smooth(0, 12, caveDistance);
+  if (!guard) return 0;
+  if (u <= 35 || onBald(x, z, 10)) return 0;
+  let pathDistance = Infinity;
+  for (const ramp of RAMPS) {
+    if (outside(ramp.line, x, z) > 18) continue;
+    pathDistance = Math.min(pathDistance, lineDistance(ramp.line, x, z, 18));
+  }
+  const path = Number.isFinite(pathDistance) ? smooth(7, 18, pathDistance) : 1;
+  if (!path) return 0;
+  // A soil-covered shoulder can cross several courses. The field is measured
+  // in horizontal space, never elevation, so intact outcrops terminate in
+  // different places. Keep scattered steep ribs among the broader slopes.
+  const shoulder = .58 * Math.sin(x * .019 + z * .011 + 1.4)
+    + .28 * Math.sin(z * .029 - x * .009 + 2.1)
+    + .14 * Math.sin(x * .047 + z * .023);
+  const weathering = .32 + .68 * smooth(-.35, .34, shoulder);
+  const rounding = Math.max(0, u - terrace(u));
+  return rounding * weathering * guard * path * smooth(12, 35, edgeDistance(x, z));
+}
+
 /** The seamless correction (see South Suval): the hex blend's steps taken out of the range's own ground. */
 function seamlessLift(x, z, share) {
   if (!share) return 0;
@@ -1035,7 +1087,7 @@ export function eastLotharnGround(x, z, ground) {
     const road = passRoadAt(x, z);
     if (road.distance < PASS_ROAD_HALF + 6) height = lerp(road.grade, height, smooth(PASS_ROAD_HALF + .6, PASS_ROAD_HALF + 6, road.distance));
   }
-  return height;
+  return height + lotharnLandscapeDelta(x, z) + lotharnRouteJoinDelta(x, z);
 }
 
 // ---------------------------------------------------------------------------
@@ -1073,3 +1125,18 @@ export const EAST_LOTHARN_LANDMARKS = freeze([
   freeze({ id: 'border-water', name: 'The border water', ...(BORDER ? alongPoint(BORDER, .4) : point(-1300, -1220)), radius: 60,
     description: 'The range’s northern foot, where the forest gives out and the Mithala plain begins: a mountain river, wadeable, running east along the whole border to the sea.' }),
 ]);
+
+// Keep the previous field separate: the new lobe fills only the remaining relief,
+// and saved canopy eligibility can remove precisely this revision.
+export const lotharnCentralNorthDelta = createCentralNorthShoulder({
+  peakUplift, terrace, onBald, PEAK_TOPS, RAMPS, edgeDistance, baseLandscapeDelta: landscapeBeforeCentralNorth,
+});
+export function lotharnLandscapeDelta(x, z) {
+  return landscapeBeforeCentralNorth(x, z) + lotharnCentralNorthDelta(x, z);
+}
+
+// Independent traversal repair. Exact endpoint stations remove the old tiny
+// steps; the wider cliff field and other nearestOn consumers remain unchanged.
+const centralRouteJoins = createCentralRampJoinCorrection({ RAMPS, RAMP, nearestOn, lotharnShare, peakUplift, level: rampLevel });
+export const lotharnRouteJoinDelta = centralRouteJoins.delta;
+export const nearLotharnRouteJoin = centralRouteJoins.near;

@@ -23,17 +23,17 @@
  * never `world-terrain.js`, so the ground module can call into it without a
  * cycle — the same arrangement `amod-terraces.js` uses.
  */
-import { terrainMix, relief } from './region-world.js';
+import { terrainMix, seamlessTerrainMix, relief } from './region-world.js';
 import { lotharnGround, lotharnCoast } from './east-lotharn-world.js';
 import { westLotharnGround } from './west-lotharn-world.js';
 import { galaRise, galaWash } from './gala-world.js';
 import { ovesGround } from './oves-world.js';
 import { mithalaGround } from './mithala-world.js';
-import { southwestGround } from './southwest-world.js';
+import { southwestGround, southwestSeamWeight } from './southwest-world.js';
 import {
   WEST_RIVERS, WEST_POOLS, WEST_GROUND, VASTOS_SINTER, VASTOS_BRAID, VASTOS_RIVER,
   MENETH_RIDGES, menethRidgePhase, CARICAS_SHELF, WEST_BRAIDS, WEST_REGION_BOXES, inBox,
-  NETHEREUM_HOLLOW, ISAREOS_RIVER, LIZEEM,
+  NETHEREUM_HOLLOW, ISAREOS_RIVER, LIZEEM, VAELLIR, ALEZHOR_WATER,
   courseDistance, coursePosition, courseHalfAt, courseCutAt,
 } from './west-regions.js';
 
@@ -84,11 +84,11 @@ function sinterRise(x, z) {
  * Meneth ends and the lake country begins." So the amplitude is gone before the
  * region is, and the last valley floor simply opens out and keeps going.
  */
-export function menethAmplitude(x, z) {
+export function menethAmplitude(x, z, mix = null) {
   if (!inBox(WEST_REGION_BOXES.Meneth, x, z)) return 0;
   const south = 1 - smooth(MENETH_RIDGES.fadeFrom, MENETH_RIDGES.fadeTo, z);
   if (south <= 0) return 0;
-  const weight = terrainMix(x, z).weights.Meneth ?? 0;
+  const weight = (mix ?? terrainMix(x, z)).weights.Meneth ?? 0;
   // The threshold is set high on purpose. A point on the far side of Meneth's
   // eastern border still carries a quarter of Meneth in its blend, and a quarter
   // of seven metres of trough is enough to cut a metre out of the bank of Lake
@@ -97,8 +97,8 @@ export function menethAmplitude(x, z) {
 }
 
 /** Metres above (at a crest) or below (in a trough) the mean line of the upland. */
-export function menethRidge(x, z) {
-  const amplitude = menethAmplitude(x, z);
+export function menethRidge(x, z, mix = null) {
+  const amplitude = menethAmplitude(x, z, mix);
   return amplitude ? amplitude * Math.cos(menethRidgePhase(x, z) * Math.PI * 2) : 0;
 }
 
@@ -405,8 +405,20 @@ function channel(x, z, ground) {
     const reach = course.maxHalf + Math.max(course.cut, course.cutEnd) * 3 + 20;
     const distance = courseDistance(course, x, z, reach);
     if (distance >= reach) continue;
-    const sample = course.blend ? courseBetween(course, x, z) : courseSample(course, x, z);
+    let sample = course.blend ? courseBetween(course, x, z) : courseSample(course, x, z);
     if (sample.strength <= 0) continue;
+    // The old nearest-sample bank leaves a small step where its perpendicular
+    // bisector meets a newly seamless northern-country join. Interpolate only
+    // these two rivers' dry outer banks inside that same bounded correction.
+    // Keep every possible wet-channel footprint on its original profile.
+    if (!course.blend && (course === VAELLIR || course === ALEZHOR_WATER) && distance > course.maxHalf + .5) {
+      const weight = southwestSeamWeight(x, z) * smooth(course.maxHalf + .5, course.maxHalf + 2.5, distance);
+      if (weight > 0) {
+        const between = courseBetween(course, x, z);
+        sample = { surface: lerp(sample.surface, between.surface, weight), half: lerp(sample.half, between.half, weight),
+          strength: lerp(sample.strength, between.strength, weight) };
+      }
+    }
     const depth = clamp(ground - sample.surface, 0, 14) * sample.strength;
     const valley = sample.half + 4 + depth * 2.2;
     if (distance >= valley) continue;
@@ -451,10 +463,13 @@ export function westShaping(x, z) {
  * channels last because a river cuts through whatever it finds.
  * `natural` is the region's own blended relief; everything here only reshapes it.
  */
-export function westGround(x, z, natural) {
+export function westGround(x, z, natural, baseCorrection = 0) {
   if (!westShaping(x, z)) return natural;
-  return channel(x, z, pooled(x, z, southwestGround(x, z, mithalaGround(x, z, westLotharnGround(x, z, lotharnGround(x, z, natural))
-    + sinterRise(x, z) + menethRidge(x, z) + caricasShelf(x, z) - nethereumHollow(x, z) + galaRise(x, z) - galaWash(x, z)
+  // Correct this ridge's physical share in the same tiny dry band. Its default
+  // remains the saved scatter/water-profile field used by menethBand and callers.
+  const menethMix=baseCorrection>0?{weights:{Meneth:lerp(terrainMix(x,z).weights.Meneth??0,seamlessTerrainMix(x,z).weights.Meneth??0,baseCorrection)}}:null;
+  return channel(x, z, pooled(x, z, southwestGround(x, z, mithalaGround(x, z, westLotharnGround(x, z, lotharnGround(x, z, natural), baseCorrection)
+    + sinterRise(x, z) + menethRidge(x, z, menethMix) + caricasShelf(x, z) - nethereumHollow(x, z) + galaRise(x, z) - galaWash(x, z)
     + ovesGround(x, z)))));
 }
 

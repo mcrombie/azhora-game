@@ -119,7 +119,8 @@ test('this country does not grow the world box, and the four north of it do', ()
   // the north, the southwest spent the west - twice - **and West Ibenwood then took the west a third
   // time, to -4610.002 and 52.20**, when the Ibenwood belt landed alongside: its rim is at x = -4550,
   // two hundred and fifty metres past Cape Heth's. Nothing of this range moved for that either.
-  assert.ok(Math.abs(WORLD_BOUNDS.minX - -4610.001927939127) < 1e-6, `minX is ${WORLD_BOUNDS.minX}`);
+  // ...and to -4860.002 when Alezhor's and South Ibenal's coasts landed (4 October 2026); still not this range's.
+  assert.ok(Math.abs(WORLD_BOUNDS.minX - -4860.001927939128) < 1e-6, `minX is ${WORLD_BOUNDS.minX}`);
   // Since the Baldro Mountains landed as regions 52 and 53 the eastern and northern edges are theirs:
   // maxX 2209.998, minZ -3899.247, the world 68.20 by 73.369 hexes, the window's maxQ 60 and minR 59.
   // Babon now sets the southern edge at z3437.632, two atlas rows beyond Trogo.

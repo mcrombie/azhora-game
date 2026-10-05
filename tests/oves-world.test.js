@@ -465,7 +465,7 @@ test('what grows is a steppe and a stone desert, and nothing in either country i
 
 test('every animal here stands where its kind would, and none of them is anybody’s', () => {
   const species = new Set(OVES_WILDLIFE_ZONES.map(zone => zone.species));
-  for (const kind of ['otter', 'duck', 'wading-bird', 'river-fox', 'upland-hare', 'harrier', 'turkey-vulture', 'plateau-hawk'])
+  for (const kind of ['otter', 'duck', 'wading-bird', 'river-fox', 'upland-hare', 'harrier', 'bone-bird', 'plateau-hawk'])
     assert.ok(species.has(kind), `there is no ${kind}`);
   for (const kind of ['longhorn', 'hill-sheep', 'nethrani-cattle']) assert.ok(!species.has(kind), `${kind} is somebody’s stock`);
   const byRegion = {};

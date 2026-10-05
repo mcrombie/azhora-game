@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import { createDeveloperWildlifeDamage } from './developer-wildlife-damage.js';
 import { GROVE_WOOD } from './ibenwood-pilot.js';
 import { createIbenwoodGatheringSites } from './ibenwood-gathering.js';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
 import { canStand } from './game-state.js';
 import { REGION_CELLS } from './region-world.js';
 
-// Small wildlife is scenery with a memory of its own tree, never a combat target.
+// Small wildlife remembers its own tree. Developer damage is temporary and unsaved.
 // Acorns are separate, individually owned pickup sites; a squirrel cannot consume
 // one that the player needs for the village errand. Fallen branches have their
 // own pickup sites, so taking a stick never removes an acorn or a squirrel prop.
@@ -227,10 +228,15 @@ export function createWoodlandLife(scene, world) {
     const branchDirection = branchEnd.clone().sub(branchStart);
     branch.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), branchDirection.clone().normalize());
     branch.scale.y = branchDirection.length(); branch.castShadow = true; root.add(branch);
-    squirrels.push({ group, body, tail, legs, branch, tree, home, radial, axis, branchHeight, branchStart,
+    squirrels.push({ id: `woodland-squirrel-${tree.id}`, species: 'red-squirrel', group, body, tail, legs, branch, tree, home, radial, axis, branchHeight, branchStart,
       x: home.x, z: home.z, mode: 'idle', clock: index * 1.7, timer: 3 + index % 4, target: home,
       elevation: 0, flees: 0, climbs: 0, branchStep: 0 });
   }
+
+  const damageState = createDeveloperWildlifeDamage({ creatures: squirrels,
+    body: squirrel => squirrel.group.visible ? { x: squirrel.x, y: squirrel.group.position.y + .25, z: squirrel.z, radius: .3 } : null,
+    changed: squirrel => { squirrel.group.visible = !damageState.dead(squirrel.id) && treeStanding(squirrel) && squirrel.branch.visible; },
+  });
 
   // Pawpaws form low, broad-leaved understory patches. Folded leaf surfaces and
   // drooping tips distinguish these saplings from the tall round oak canopies.
@@ -402,7 +408,9 @@ export function createWoodlandLife(scene, world) {
     for (const squirrel of squirrels) {
       const distance = Math.hypot(squirrel.x - playerPosition.x, squirrel.z - playerPosition.z);
       const standing = treeStanding(squirrel);
-      squirrel.group.visible = squirrel.branch.visible = standing && distance < 75;
+      squirrel.branch.visible = standing && distance < 75;
+      squirrel.group.visible = !damageState.dead(squirrel.id) && squirrel.branch.visible;
+      if (damageState.dead(squirrel.id)) continue;
       if (!standing) {
         // No squirrel perches on a floating branch after its tree comes down.
         // Its familiar ground pocket is still here when the tree regrows.
@@ -478,9 +486,13 @@ export function createWoodlandLife(scene, world) {
   update(0, { x: 0, z: 43 });
   return {
     update,
+    bodies: damageState.bodies, damage: damageState.damage, resetDamage: damageState.resetDamage,
     setObserver(position) {
       if (!Number.isFinite(position?.x) || !Number.isFinite(position?.z)) return;
-      for (const squirrel of squirrels) squirrel.group.visible = squirrel.branch.visible = treeStanding(squirrel)&&Math.hypot(squirrel.x-position.x,squirrel.z-position.z)<75;
+      for (const squirrel of squirrels) {
+        squirrel.branch.visible = treeStanding(squirrel)&&Math.hypot(squirrel.x-position.x,squirrel.z-position.z)<75;
+        squirrel.group.visible = !damageState.dead(squirrel.id) && squirrel.branch.visible;
+      }
     },
     nearestAcorn(position, maxDistance = 2) {
       let nearest = null, distance = maxDistance;
@@ -547,7 +559,7 @@ export function createWoodlandLife(scene, world) {
         sticks: sticks.map(({ id, x, z, collected, name }) => ({ id, x, z, collected, name })),
         fruits: fruits.map(({ id, x, z, collected, name, patch }) => ({ id, x, z, collected, name, patch })),
         fruitPatches: fruitPatches.map(patch => ({ ...patch })),
-        squirrels: squirrels.map(s => ({ x: s.x, y: s.group.position.y, z: s.z, mode: s.mode,
+        squirrels: squirrels.map(s => ({ id: s.id, species: s.species, x: s.x, y: s.group.position.y, z: s.z, mode: damageState.dead(s.id) ? 'dead' : s.mode, hidden: !s.group.visible, ...damageState.view(s.id),
           tree: { id: s.tree.id, x: s.tree.x, z: s.tree.z, height: s.tree.height }, flees: s.flees, climbs: s.climbs })) };
     },
   };

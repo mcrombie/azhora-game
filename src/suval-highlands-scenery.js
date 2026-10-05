@@ -1,70 +1,15 @@
 import { finishBuild } from './build-steps.js';
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
-import { BAT_CAVE, SUVAL_HIGHLAND_TRAILS, SUVAL_PASSAGE_ROCKS, SUVAL_PEAK_CRAGS, SUVAL_TERRAIN_PATCHES, IMLAMDRIS_REBUILD, NANVIR_SCARS, highlandFineDistance } from './suval-highlands.js';
-import { groundTint } from './world-terrain.js';
-import { imlamdrisTerrainSink } from './south-suval-world.js';
+import { BAT_CAVE, SUVAL_HIGHLAND_TRAILS, SUVAL_PASSAGE_ROCKS, SUVAL_PEAK_CRAGS, IMLAMDRIS_REBUILD, NANVIR_SCARS } from './suval-highlands.js';
+import { createSuvalHighlandGroundSteps } from './suval-highland-ground.js';
 
 /** Peak barriers are the mountain's exposed bedrock, not rings of detached props.
  * The skin follows the same height field and fades into its existing ground colour. */
 function* addHighlandOutcropsSteps(group, rocks, groundHeight, material) {
   let buildWork = 0;
-  const peakRocks = rocks.filter(rock => rock.kind === 'suval-peak-face');
   const passageRocks = rocks.filter(rock => rock.kind !== 'suval-peak-face');
   const hash = value => { const n = Math.sin(value * 12.9898 + 78.233) * 43758.5453; return n - Math.floor(n); };
-  const smooth = (a, b, value) => { const t = Math.max(0, Math.min(1, (value - a) / (b - a))); return t * t * (3 - 2 * t); };
-  if (peakRocks.length) {
-    const bucketSize = 16, buckets = new Map(), step = 2;
-    for (const rock of peakRocks) { if ((++buildWork & 31) === 0) yield;
-      const key = `${Math.floor(rock.x / bucketSize)},${Math.floor(rock.z / bucketSize)}`;
-      if (!buckets.has(key)) buckets.set(key, []); buckets.get(key).push(rock);
-    }
-    const coverage = (x, z) => {
-      const bx = Math.floor(x / bucketSize), bz = Math.floor(z / bucketSize); let weight = 0;
-      for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
-        for (const rock of buckets.get(`${bx + dx},${bz + dz}`) ?? []) {
-          const distance = Math.hypot(x - rock.x, z - rock.z) / rock.radius;
-          weight = Math.max(weight, 1 - smooth(.4, 1.5, distance));
-        }
-      }
-      return weight;
-    };
-    const minX = Math.floor(Math.min(...peakRocks.map(rock => rock.x - rock.radius * 1.6)) / step) * step;
-    const maxX = Math.ceil(Math.max(...peakRocks.map(rock => rock.x + rock.radius * 1.6)) / step) * step;
-    const minZ = Math.floor(Math.min(...peakRocks.map(rock => rock.z - rock.radius * 1.6)) / step) * step;
-    const maxZ = Math.ceil(Math.max(...peakRocks.map(rock => rock.z + rock.radius * 1.6)) / step) * step;
-    const positions = [], colours = [], indices = [], samples = new Map(), vertices = new Map();
-    const tint = new THREE.Color(), stone = new THREE.Color('#838777');
-    const sample = (i, j) => {
-      const key = `${i},${j}`; if (samples.has(key)) return samples.get(key);
-      // The irregular grid breaks the perfectly circular outline without adding raised blocks.
-      const x = minX + i * step + (hash(i * 31 + j * 17) - .5) * .65;
-      const z = minZ + j * step + (hash(i * 43 + j * 29) - .5) * .65;
-      const result = { key, x, z, weight: coverage(x, z) }; samples.set(key, result); return result;
-    };
-    const vertex = point => {
-      if (vertices.has(point.key)) return vertices.get(point.key);
-      const { x, z, weight } = point, index = positions.length / 3;
-      const roughness = .07 + hash(x * .7 + z * .3) * .19;
-      positions.push(x, groundHeight(x, z) + .045 + weight * roughness, z);
-      groundTint(tint, x, z, THREE);
-      tint.lerp(stone, weight * (.81 + Math.sin(x * .031 + z * .044) * .035));
-      colours.push(tint.r, tint.g, tint.b); vertices.set(point.key, index); return index;
-    };
-    for (let j = 0; j < (maxZ - minZ) / step; j++) { if ((++buildWork & 31) === 0) yield; for (let i = 0; i < (maxX - minX) / step; i++) { if ((++buildWork & 31) === 0) yield;
-      const points = [sample(i, j), sample(i + 1, j), sample(i, j + 1), sample(i + 1, j + 1)];
-      if (!points.some(point => point.weight > .005)) continue;
-      const [a, b, c, d] = points.map(vertex); indices.push(a, c, b, b, c, d);
-    } }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3));
-    geometry.setIndex(indices); geometry.computeVertexNormals();
-    const skin = new THREE.Mesh(geometry, material('#ffffff', { vertexColors: true, flatShading: true,
-      polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
-    skin.name = 'Suval exposed limestone faces'; skin.receiveShadow = true;
-    skin.userData.outcropCount = peakRocks.length; group.add(skin);
-  }
   // Individual passage obstacles remain low broken boulders beside the walking strip.
   // Their eight-sided tops have no pointed crown and no repeated terraced shelf pattern.
   const positions = [], colours = [], tint = new THREE.Color('#858478');
@@ -98,34 +43,14 @@ function* addHighlandOutcropsSteps(group, rocks, groundHeight, material) {
 
 /** Sparse, readable landmarks on the actual shaped terrain. No new residents are invented. */
 export function createSuvalHighlandScenery(...args) { return finishBuild(createSuvalHighlandScenerySteps(...args)); }
-export function* createSuvalHighlandScenerySteps({ root, material, mesh, box, post, round, groundHeight, colliders, roofGeometry, wornPatch }) {
+export function* createSuvalHighlandScenerySteps({ root, material, mesh, box, post, round, groundHeight, colliders, roofGeometry, wornPatch, fineGround }) {
   let buildWork = 0;
   const group = new THREE.Group(); group.name = 'Suvali highlands and recovery'; root.add(group);
   const stone = material('#848177'), pale = material('#aaa08c'), char = material('#383732');
   const wood = material('#947653'), board = material('#b59870'), slate = material('#605956');
   const metrics = { passageRocks: 0, cave: 1, woodenHomes: 0, buildingFrames: 0, scars: NANVIR_SCARS.length, trailMetres: 0 };
-  // Graded hairpins need more ground samples than the broad country's grid. The city already
-  // supplies its own finer terrace mesh, so leave its fully covered interior to that mesh.
-  for (const patch of SUVAL_TERRAIN_PATCHES) { if ((++buildWork & 31) === 0) yield;
-    const nx = Math.ceil((patch.maxX - patch.minX) / patch.step), nz = Math.ceil((patch.maxZ - patch.minZ) / patch.step);
-    const vertices = [], colours = [], triangles = [], tint = new THREE.Color(), vertexMap = new Map();
-    const vertex = (i, j) => {
-      const key = j * (nx + 1) + i; if (vertexMap.has(key)) return vertexMap.get(key);
-      const x = patch.minX + (patch.maxX - patch.minX) * i / nx, z = patch.minZ + (patch.maxZ - patch.minZ) * j / nz;
-      const index = vertices.length / 3; vertexMap.set(key, index);
-      vertices.push(x, groundHeight(x, z), z); groundTint(tint, x, z, THREE); colours.push(tint.r, tint.g, tint.b);
-      return index;
-    };
-    for (let j = 0; j < nz; j++) { if ((++buildWork & 31) === 0) yield; for (let i = 0; i < nx; i++) { if ((++buildWork & 31) === 0) yield;
-      const x = patch.minX + (patch.maxX - patch.minX) * (i + .5) / nx, z = patch.minZ + (patch.maxZ - patch.minZ) * (j + .5) / nz;
-      if (highlandFineDistance(x, z) > 30 || imlamdrisTerrainSink(x, z) > 1) continue;
-      const a = vertex(i,j), b = vertex(i+1,j), c = vertex(i,j+1), d = vertex(i+1,j+1);
-      triangles.push(a,c,b,b,c,d);
-    } }
-    const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colours, 3)); geometry.setIndex(triangles); geometry.computeVertexNormals();
-    const ground = new THREE.Mesh(geometry, material('#ffffff', { vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
-    ground.name = 'Suval switchback ground'; ground.receiveShadow = true; group.add(ground);
-  }
+  // Standalone builders retain the same ground; the world supplies its shared job.
+  if (!fineGround) yield* createSuvalHighlandGroundSteps({ root, group, material, groundHeight });
   const outcrops = [...SUVAL_PASSAGE_ROCKS, ...SUVAL_PEAK_CRAGS];
   yield* addHighlandOutcropsSteps(group, outcrops, groundHeight, material);
   for (const rock of outcrops) { if ((++buildWork & 31) === 0) yield;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAutopilot } from '../src/autopilot.js';
+import { createAutopilot, planGoal, chooseReply } from '../src/autopilot.js';
 import { createCombat } from '../src/combat.js';
 import { BODY, bodyWorld } from '../src/bodies.js';
 import { moveCharacter, QUEST_DONE } from '../src/game-state.js';
@@ -54,4 +54,20 @@ test('autoplay completes real strike, held shield and dodge practice with solid 
   assert.equal(questStage, QUEST_DONE, `Stopped at ${pilot.intent}: hits=${hits}, guards=${guards}, dodges=${dodges}`);
   assert.equal(hits, 2); assert.equal(guards, 1); assert.equal(dodges, 1);
   assert.deepEqual(actions, ['issue', 'map', 'report']); assert.equal(chart.stage, 'complete');
+});
+
+test('main-road autoplay follows the peninsula letter to enlistment before legacy drills or the road', () => {
+  const world={npcPositions:{instructor:{x:178,z:-8},'post-landing':{x:-25,z:0}},border:{x:-300,z:0}};
+  for(const path of ['tutorial','skip']) {
+    const s={mode:'playing',questStage:2,lessonSet:true,practiceHits:2,practiceGuards:1,practiceDodges:1,
+      position:{x:110,z:-67},chartLesson:'complete',mapTutorial:2,combat:{phase:'peaceful',hp:100},
+      weapon:{usable:true},inventory:{},journey:{started:false},tutorial:{path,completed:true,enlisted:false}};
+    const goal=planGoal(s,world); assert.equal(goal.npcId,'post-landing'); assert.deepEqual(goal.target,world.npcPositions['post-landing']);
+    s.tutorialEnlistment={x:-14,z:44}; assert.deepEqual(planGoal(s,world).target,s.tutorialEnlistment,'Follow Ottar when the harbor alarm moves him');
+    const choices=[{id:'peninsula-enlist',enabled:true},{id:'leave',label:'Leave'}];
+    assert.equal(chooseReply(choices,s),'peninsula-enlist');
+    assert.equal(chooseReply([{...choices[0],enabled:false},choices[1]],s),'leave');
+    s.tutorial.enlisted=true;s.questStage=QUEST_DONE;
+    assert.equal(planGoal(s,world).kind,'walk'); assert.equal(chooseReply(choices,s),'leave');
+  }
 });

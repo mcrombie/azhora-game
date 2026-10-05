@@ -371,6 +371,8 @@ export function freeDirection(position, point, world, preferredSide = 1) {
 export function chooseReply(choices, snapshot, { side = 'empire' } = {}) {
   const enabled = choices.filter(choice => choice.enabled !== false);
   if (!enabled.length) return null;
+  if (snapshot.tutorial?.completed && !snapshot.tutorial.enlisted
+    && ['tutorial','skip'].includes(snapshot.tutorial.path) && enabled.some(choice=>choice.id==='peninsula-enlist')) return 'peninsula-enlist';
   // Listening secures the courier's single satchel without selecting a faction.
   // Autoplay never betrays the network merely because the default route is Imperial.
   for(const id of ['luscia-listen-republican','luscia-onward-muster'])if(enabled.some(choice=>choice.id===id))return id;
@@ -467,6 +469,8 @@ export function planGoal(snapshot, world) {
     }
     return { kind: 'fight', intent: 'Fighting' };
   }
+  if (!bypassIntro && snapshot.tutorial?.completed && !snapshot.tutorial.enlisted
+    && ['tutorial','skip'].includes(snapshot.tutorial.path)) return { kind:'talk',target:snapshot.tutorialEnlistment??world.npcPositions['post-landing'],npcId:'post-landing',intent:"Taking Glun's letter to Footman Ottar in Tidewater Haven" };
   if (!bypassIntro && snapshot.chartLesson === 'open-map') return { kind: 'open-chart', intent: "Reading Glun's world map" };
   if (!bypassIntro && snapshot.chartLesson === 'return-to-glun') return { kind: 'talk', target: world.npcPositions.instructor, npcId: 'instructor', intent: 'Returning to Glun after reading the map' };
   if (!bypassIntro && snapshot.mapTutorial === 1) return { kind: 'open-chart', intent: 'Reading the chart of Azhora' };

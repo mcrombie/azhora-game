@@ -305,10 +305,11 @@ test('the lips: a rim on the brink of every edge within Varn’s reach that a wa
   assert.ok(RIB.height >= 2 && RIB.height <= 3.5 && RIB.most >= RIB.height && RIB.cliff > .9 && RIB.lift.low >= 28);
   const ground = { heightAt: groundWithRiver, regionAt: () => ({ id: 20, name: EAST_LOTHARN }) };
   // Down a column toward an edge: the rim stands on the brink, a walker from the ledge is stopped short of it, and the ledge
-  // itself is as it was. Six edges: the eastern massif's south face over Amod at three columns, the south-west peak's south
-  // face over Vastos where the least-fall search found its jump (-1426, -648), the ledge that runs out at the Vastos Gate's
-  // eastern end, and the central massif's face over the forecourt.
-  for (const [x, from, to] of [[-1020, -755, -745], [-1000, -752, -740], [-980, -747, -735], [-1426, -656, -640], [-1497, -670, -650], [-1250, -900, -885]]) {
+  // itself is as it was. The unchanged southwest ledge, Vastos end and central massif retain this
+  // natural-rim profile. The three former eastern columns now carry the restored cave shelf and its
+  // retaining fill; its actual movement and outer-corner closure are in r1-cave-access.test.js and
+  // the eastern flood below. A retaining face is not limited to the natural rim's five-metre lift.
+  for (const [x, from, to] of [[-1426, -656, -640], [-1497, -670, -650], [-1250, -900, -885]]) {
     let rim = null, tallest = 0;
     for (let z = from; z <= to; z += .25) { const r = lipRib(x, z); if (r > tallest) { tallest = r; rim = z; } }
     assert.ok(rim !== null && tallest > .5, `no rim between ${from} and ${to} at x ${x}`);
@@ -382,7 +383,7 @@ test('the stop: a rim stood by hand at the head of the south-west peak’s slide
   for (const [x, z] of [[-1418, -651], [-1394, -652], [-1410, -644], [-1250, -740], [-1020, -750]]) assert.equal(stopRib(x, z), 0);
 });
 
-test('the caves’ way and the rails: the eastern peak’s fourth ledge keeps its hold from the peak’s way to the high chimney, off every rim; three doors railed beyond the door', () => {
+test('the caves’ way and the rails: the eastern peak’s fourth ledge keeps its hold from the peak’s way to the high chimney, off every rim; five doors railed beyond the door', () => {
   // The user, 3 October 2026: "give the eastern peak back one climbing way to its caves that does not lead past Varn, and rail
   // the cave doors that open over the Empire's ground". One way: a stretch of one ledge's tread, nothing else.
   assert.equal(CAVE_WAY.stretches.length, 1);
@@ -407,15 +408,16 @@ test('the caves’ way and the rails: the eastern peak’s fourth ledge keeps it
     assert.ok(Math.hypot(b.x - chimney.points[0].x, b.z - chimney.points[0].z) < 3, 'the way does not come to the high chimney’s door');
   }
   assert.ok(kept > 250 && area < 600, `${kept} m2 of the ledge keep a hold, of ${area} m2 on the way`);
-  // The rails: the chamber's door and both of the high chimney's, the three over the Empire's ground (docs/varn-report.md).
-  assert.deepEqual(CAVE_RAILS.map(rail => rail.id), ['eastern-chamber', 'eastern-high-chimney-lower', 'eastern-high-chimney-upper']);
+  // The rails: the chamber and both mouths of each chimney, all five over the Empire's ground.
+  assert.deepEqual(CAVE_RAILS.map(rail => rail.id), ['eastern-chamber', 'eastern-high-chimney-lower', 'eastern-high-chimney-upper', 'eastern-low-chimney-lower', 'eastern-low-chimney-upper']);
   assert.ok(RAIL.radius - RAIL.inner >= 2 && RAIL.height >= RIB.height && RAIL.height / RAIL.outer > RAIL.height / RAIL.inner, 'outside the door, a rim’s height, steeper outward');
   const at = (mouth, degrees, r) => [mouth.x + Math.cos(degrees * Math.PI / 180) * r, mouth.z + Math.sin(degrees * Math.PI / 180) * r];
   for (const rail of CAVE_RAILS) {
     const line = CAVE_LINES.find(cave => cave.id === rail.cave), mouth = rail.end ? line.points.at(-1) : line.points[0], level = varnBeforeLips(mouth.x, mouth.z);
     assert.ok(Math.hypot(mouth.x - rail.mouth.x, mouth.z - rail.mouth.z) < 1e-9, `${rail.id} is not at its cave's mouth`);
     // The crest, all round the arc: the rail's height over the ground at the mouth, and no hold on it.
-    for (let a = rail.from + 1; a <= rail.to - 1; a += 2) {
+    const arc = ((rail.to - rail.from) % 360 + 360) % 360;
+    for (let a = rail.from + 1; a <= rail.from + arc - 1; a += 2) {
       const [x, z] = at(mouth, a, RAIL.radius);
       assert.ok(groundWithRiver(x, z) >= level + RAIL.height - .01, `${rail.id}'s crest at ${a} degrees is ${(groundWithRiver(x, z) - level).toFixed(2)} m over the door`);
       assert.equal(unclimbableAt(x, z), true, `a hold on ${rail.id} at ${a} degrees`);
@@ -884,14 +886,14 @@ test('the caves’ way: a climber from the Col comes to the high chimney’s two
   assert.deepEqual(empire(climber), { area: 0, first: null }, 'but for the slabs a climber from the Col is on the Empire’s ground');
   // The high chimney's two doors: a climber comes to them with no fall that costs anything, by the peak's way and the fourth
   // ledge; a walker does not (the ledge tilts past his grade). Without the way's hold he does not come to them at all - which
-  // is what cut them off. The chamber's door is railed and nobody comes to it (src/varn-world.js, `CAVE_WAY`).
+  // is what cut them off. The restored lower shelf also connects the chamber and low chimney.
   const without = leastFall(E, world, [col], { ...climb, forbidden: (x, z) => slabsShut(x, z) || onCaveWay(x, z) });
   for (const rail of CAVE_RAILS) {
-    const p = doorAt(rail), reached = rail.cave === 'eastern-high-chimney';
+    const p = doorAt(rail);
     t.diagnostic(`${rail.id}'s door at ${p.x.toFixed(1)}, ${p.z.toFixed(1)}: a climber from the Col ${atDoor(climber, p)}, a walker ${atDoor(walker, p)}, without the way ${atDoor(without, p)}`);
-    assert.equal(atDoor(climber, p) < TERRAIN_FALL.safeDrop, reached, `${rail.id}'s door: a climber from the Col by ${atDoor(climber, p)}`);
+    assert.ok(atDoor(climber, p) < TERRAIN_FALL.safeDrop, `${rail.id}'s door: a climber from the Col by ${atDoor(climber, p)}`);
     assert.equal(atDoor(walker, p), Infinity, `a walker comes to ${rail.id}'s door`);
-    assert.equal(atDoor(without, p), Infinity, `without the way a climber comes to ${rail.id}'s door`);
+    if (rail.cave === 'eastern-high-chimney') assert.equal(atDoor(without, p), Infinity, `without the high way a climber comes to ${rail.id}'s door`);
   }
   // From the doors themselves, walking and climbing, by any fall: none of the Empire's ground.
   const doors = CAVE_RAILS.map(rail => { const p = doorAt(rail); return E.near(p.x, p.z, 2); });
@@ -910,7 +912,7 @@ test('the caves’ way: a climber from the Col comes to the high chimney’s two
         `out of ${rail.id} on ${a} degrees at ${speed}: at ${went.at.x.toFixed(1)}, ${went.at.z.toFixed(1)}, ${went.at.y.toFixed(1)} m, worst fall ${went.worst.toFixed(1)} m`);
     }
   }
-  t.diagnostic(`${sent} travelers sent out of the three railed doors`);
+  t.diagnostic(`${sent} travelers sent out of the five railed doors`);
 });
 
 test('the slabs, climbed with the game’s own controller and its own wind: level 17 finishes both, level 16 falls from under the lip, and a walker cannot use any part of them', t => {
