@@ -25,6 +25,7 @@ import { regionBuildStatus } from '../src/build-status.js';
 import { regionLevel, levelWords } from '../src/region-levels.js';
 import { REGION_LANGUAGE, LANGUAGES, DIALECTS } from '../src/languages.js';
 import { CHAMELEON_SPOTS } from '../src/chameleon.js';
+import { NETHEREUM_FARM_LANDMARKS, NETHEREUM_NPC_STANDS } from '../src/nethereum-farm.js';
 
 /**
  * Nethereum: the third of the six south-western countries, and the one the atlas took a whole
@@ -466,7 +467,7 @@ test('the cattle on the floor, the hares on the rim, the otters in the deep Neth
   life.dispose();
 });
 
-test('the Nethrani beast gives ground instead of bolting, and the country is charted, tongued and empty of people', () => {
+test('the Nethrani beast gives ground instead of bolting, and the country is charted and tongued, with Haethom’s seven its only people', () => {
   /**
    * The cattle law, spelled out for the breed this country is for. `tests/west-life.test.js`
    * holds it for every cow in the world; here it is with the numbers, because the branch that
@@ -493,16 +494,28 @@ test('the Nethrani beast gives ground instead of bolting, and the country is cha
   life.dispose();
 
   const here = regions.find(region => region.name === 'Nethereum');
-  assert.deepEqual([...here.npcIds], [], 'terrain and wildlife only');
+  /**
+   * **Terrain and wildlife only, until the Farmlands of the Lizeem** (the design of 5 October 2026, built
+   * 6 October 2026): the user asked for Haethom and its seven (docs/lizeem-farmlands-design.md §6.4), and
+   * nobody else. Before they are wired into the region the list is empty; after, it is exactly them.
+   */
+  const seven = Object.keys(NETHEREUM_NPC_STANDS).sort();
+  assert.equal(seven.length, 7);
+  assert.ok(here.npcIds.length === 0 || JSON.stringify([...here.npcIds].sort()) === JSON.stringify(seven),
+    `Nethereum's people are ${[...here.npcIds].join(', ')}`);
   for (const id of here.landmarks) assert.ok(world.landmarks.some(mark => mark.id === id), `the chart knows ${id}`);
-  for (const mark of WEST_REGION_LANDMARKS.filter(item => here.landmarks.includes(item.id)))
+  const built = NETHEREUM_FARM_LANDMARKS.map(mark => mark.id);
+  for (const mark of [...WEST_REGION_LANDMARKS, ...NETHEREUM_FARM_LANDMARKS].filter(item => here.landmarks.includes(item.id)))
     assert.equal(hexOwnerAt(mark.x, mark.z), 'Nethereum', `${mark.id} stands outside Nethereum`);
-  // Nothing anybody built is named on the chart: no Nethermere, no weir, no levee, no council.
+  for (const id of here.landmarks) assert.ok(WEST_REGION_LANDMARKS.some(mark => mark.id === id) || built.includes(id), `${id} is neither ground nor Haethom's`);
+  // The country's own ground names nothing anybody built: no Nethermere, no weir, no levee, no council.
   // The names, not the descriptions — a description is allowed to say what is *not* here, and
-  // the Lower Neth's says exactly that about the fish weirs.
+  // the Lower Neth's says exactly that about the fish weirs. What Haethom built is named by Haethom's
+  // own chart entries (src/nethereum-farm.js), and those are the only names here that may say weir or levee.
   const banned = /Nethermere|weir|levee|council|village|town|mill/i;
   for (const mark of WEST_REGION_LANDMARKS.filter(item => here.landmarks.includes(item.id)))
     assert.equal(banned.test(mark.name), false, `${mark.id} names something somebody built`);
+  for (const mark of NETHEREUM_FARM_LANDMARKS) assert.equal(/Nethermere|town|mill|council/i.test(mark.name), false, `${mark.id} names a work Haethom does not have`);
   assert.ok(SUBREGIONS.filter(area => area.region === 'Nethereum').length >= 3);
   for (const area of SUBREGIONS.filter(item => item.region === 'Nethereum'))
     assert.equal(hexOwnerAt(area.x, area.z), 'Nethereum', `the chart puts ${area.id} outside Nethereum`);

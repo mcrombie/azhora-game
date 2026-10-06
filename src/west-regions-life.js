@@ -1392,10 +1392,11 @@ export const WEST_LIFE_ZONES = Object.freeze([
   }),
   Object.freeze({
     id: 'nethereum-hares', species: 'upland-hare', region: 'Nethereum', radius: .3, scale: 1,
-    // The rim, not the floor: `nethereumWet` is .07 or less at all three, and a hare on ground
-    // that is under water every spring is a drowned hare.
-    minX: -2346, maxX: -2252, minZ: 282, maxZ: 368,
-    sites: Object.freeze([[-2300, 330], [-2276, 318], [-2322, 306]]),
+    // The rim, not the floor: `nethereumWet` is under .2 at all three, and a hare on ground
+    // that is under water every spring is a drowned hare. Moved south along the rim on 6 October 2026,
+    // off Haethom's common and the Sacred Way's end (src/nethereum-farm.js).
+    minX: -2340, maxX: -2250, minZ: 380, maxZ: 470,
+    sites: Object.freeze([[-2300, 402], [-2270, 420], [-2318, 446]]),
     note: 'Extension: the same Ganoss upland hare as on the Vastos plain, the Meneth ridges and the Isareos shoulders, here on the dry north-eastern rim above the basin — which is the only ground in this country that is not under water in a wet spring.',
   }),
   Object.freeze({
