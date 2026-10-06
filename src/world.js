@@ -158,6 +158,18 @@ import { clearScatter } from './world/scenery/scenery-clearing.js';
 import { MENORA, MENORA_PATHS, MENORA_BUILDINGS, menoraDeckHeight } from './content/regions/minora-frontier/menora-city.js';
 import { CARICAS_TOWN, CARICAS_ROADS } from './content/regions/minora-frontier/caricas-settlement.js';
 import { createCaricasSettlementSteps } from './content/regions/minora-frontier/caricas-settlement-scenery.js';
+// The Farmlands of the Lizeem, Builds 2 and 3 (the design of 5 October 2026, built 6 October 2026): Haethom, its levee,
+// meadow and weir in Nethereum; Ninehands, the hazel wood, the Counted Water and the Way in Nesdor.
+import { createNethereumFarmScenerySteps } from './content/regions/nethereum/nethereum-farm-scenery.js';
+import { NETHEREUM_PATHS, NETHEREUM_FARM_LANDMARKS, nethereumFarmHeight } from './content/regions/nethereum/nethereum-farm.js';
+import { createNesdorFarmScenerySteps } from './content/regions/nesdor/nesdor-farm-scenery.js';
+import { NESDOR_PATHS, NESDOR_FARM_LANDMARKS } from './content/regions/nesdor/nesdor-farm.js';
+// The Farmlands of the Lizeem, Builds 4 and 5 (the design of 5 October 2026, built 6 October 2026): Velsorten, its canal,
+// the divider, the mills and Lahar's camp in Ovesos; Amalthea's hamlet in the Isareos hills.
+import { createOvesosFarmScenerySteps } from './content/regions/oves/ovesos-farm-scenery.js';
+import { OVESOS_PATHS, OVESOS_FARM_LANDMARKS, ovesosFarmHeight } from './content/regions/oves/ovesos-farm.js';
+import { createIsareosHamletScenerySteps } from './content/regions/minora-frontier/isareos-hamlet-scenery.js';
+import { ISAREOS_HAMLET_PATHS, ISAREOS_HAMLET_LANDMARKS } from './content/regions/minora-frontier/isareos-hamlet.js';
 import { createWestScenerySteps } from './content/regions/western-regions/west-regions-scenery.js';
 import { createGalaScenerySteps } from './content/regions/gala/gala-scenery.js';
 import { GALA_LANDMARKS } from './content/regions/gala/gala-world.js';
@@ -502,6 +514,10 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     const menoraDeck=menoraDeckHeight(x,z);if(menoraDeck!==null)return menoraDeck;
     const causeway = ambronDeckHeight(x, z);
     if (causeway !== null) return causeway;
+    // The Haethom levee and Liban's hummock (src/content/regions/nethereum/nethereum-farm.js, 6 October 2026): the ground with the bank on it.
+    const haethom=nethereumFarmHeight(x,z,groundHeight);if(haethom!==null)return haethom;
+    // The Velsorten canal's banks and its carried bed (src/content/regions/oves/ovesos-farm.js, 6 October 2026): built ground, as the levee is.
+    const velsorten=ovesosFarmHeight(x,z,groundHeight);if(velsorten!==null)return velsorten;
     if(inPortCalos(x,z))return portGroundAt(x,z);
     return roadHeightAt(x, z) ?? groundHeight(x, z);
   }
@@ -1710,6 +1726,19 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   const menora=yield* regionBuild('menora',[16],stage=>createMenoraScenerySteps({parent:stage,heightAt:groundHeight,colliders}),{});
   yield 'Caricas';
   const caricasSettlement=yield* regionBuild('caricasSettlement',[13],stage=>createCaricasSettlementSteps({parent:stage,heightAt:groundHeight,colliders}),{});
+  // Haethom on the Nethereum rim and Ninehands on the Nesdor Flats (the Farmlands of the Lizeem, Builds 2 and 3; 6 October
+  // 2026). The game sets the hatch and the water on the meadow as the meadow runs (src/content/regions/nethereum/meadow-water.js); before Fast mode
+  // has loaded the region they are remembered here and put on the scenery when it is built.
+  yield 'Haethom';
+  const nethereumFarmState={hatch:'broken',meadow:'dry'};
+  const nethereumFarm=yield* regionBuild('nethereumFarm',[17],stage=>createNethereumFarmScenerySteps({parent:stage,heightAt:groundHeight,colliders}),
+    {metrics:{},mapFeatures:[],hatch:{set:state=>(nethereumFarmState.hatch=state),state:()=>nethereumFarmState.hatch},meadowWater:{set:state=>(nethereumFarmState.meadow=state),state:()=>nethereumFarmState.meadow}},
+    built=>{built.hatch.set(nethereumFarmState.hatch);built.meadowWater.set(nethereumFarmState.meadow);});
+  yield 'Ninehands';
+  const nesdorFarm=yield* regionBuild('nesdorFarm',[14],stage=>createNesdorFarmScenerySteps({parent:stage,heightAt:groundHeight,colliders}),{metrics:{},mapFeatures:[]});
+  // Amalthea's hamlet on a grass shoulder north-west of the Muster Gate (the Farmlands of the Lizeem, Build 5; 6 October 2026).
+  yield 'The cheese-maker’s hamlet';
+  const isareosHamlet=yield* regionBuild('isareosHamlet',[16],stage=>createIsareosHamletScenerySteps({parent:stage,heightAt:groundHeight,colliders}),{metrics:{},mapFeatures:[]});
   yield 'Western country';
   const westScenery=yield* regionBuild('westScenery',[11, 12, 13, 14, 15, 16, 17],stage=>createWestScenerySteps({ root:stage, material, mesh, pebble, groundHeight, colliders, wornPatch, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
   yield 'Aevis';
@@ -1743,6 +1772,10 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // after Gala's, so nothing already built moves for it. Nobody's.
   yield 'Oves';
   const ovesScenery=yield* regionBuild('ovesScenery',[25, 26],stage=>createOvesScenerySteps({ root:stage, material, groundHeight, renderedGroundHeight:westFineGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
+  // Velsorten (the Farmlands of the Lizeem, Build 4; 6 October 2026): the village on the terrace, the canal from the divider
+  // to its dry tail, the twelve plots, the two mills and Lahar's camp, built after the Oves's own scatter so none of it moves.
+  yield 'Velsorten';
+  const ovesosFarm=yield* regionBuild('ovesosFarm',[25],stage=>createOvesosFarmScenerySteps({parent:stage,heightAt:groundHeight,colliders}),{metrics:{},mapFeatures:[],canal:{set:()=>{},state:()=>'running'},update:()=>{}});
   // The Mithala plain (src/content/regions/mithala/mithala-scenery.js): eight channels with their reed and their gallery of
   // willow, poplar and alder, two braided reaches with silt bars between the threads, the tall
   // warm-season prairie grass and the forbs in it, the sedge of the fen margin going north, and the
@@ -1930,7 +1963,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   paths.push(...BALDRO_PATHS.map(p=>Object.assign([...p.points],{width:p.width,kind:p.kind,id:p.id})));
   // Region scenery already draws these roads; append navigation only after the original main road.
   paths.push(...yunethre.paths.map(p=>Object.assign([...p.points],{width:p.width})));
-  paths.push(...[...MENORA_PATHS,...CARICAS_ROADS,...NYLON_PATHS,...AEVIS_PATHS,...MITHALA_STREETS].map(p=>Object.assign([...p.points],{width:p.width})));
+  paths.push(...[...MENORA_PATHS,...CARICAS_ROADS,...NYLON_PATHS,...AEVIS_PATHS,...MITHALA_STREETS,...NETHEREUM_PATHS/* Haethom's ways and the Nesdor Way, 6 October 2026 */,...NESDOR_PATHS,...OVESOS_PATHS/* Velsorten's ways and the cheese-maker's track, 6 October 2026 */,...ISAREOS_HAMLET_PATHS].map(p=>Object.assign([...p.points],{width:p.width})));
   // The peninsula tutorial's trails (drawn by its own scenery) go after the main road too: paths[0] is the main road.
   paths.push(...peninsulaTutorial.paths);
 
@@ -2406,6 +2439,10 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     },
     onRegionReady(listener){readyListeners.add(listener);return ()=>readyListeners.delete(listener);},
     menora, nylon, aevis, mithalaCity, caricasSettlement, inquestHome, peninsulaTutorial,
+    /** Haethom (its `hatch` and `meadowWater`) and Ninehands: the Farmlands of the Lizeem, Builds 2 and 3 (6 October 2026). */
+    nethereumFarm, nesdorFarm,
+    /** Velsorten (its `canal`) and Amalthea's hamlet: the Farmlands of the Lizeem, Builds 4 and 5 (6 October 2026). */
+    ovesosFarm, isareosHamlet,
     heightAt, groundHeight, urubondGround, urubondScenery, outerRegions, acorRegions, northernRegions, selamus, selamusGround, selamusHarbor, pyra, pyraGround, westLotharnGround, mithalaWater, eastPyros, netherDesert, legemum, babon, southCelder, northCelder, canerd, canerdGround, eastIzol, alezhor, southIbenal, northIbenal, henborth, baldro, westOremindi, lotharnCaves, westLotharnCaves, southOremindi, yunethre, ibenwood, ibenwoodForest, ibenwoodRivers, ibenwoodWater, ibenwoodAlezhorGround,
     // Displayed terrain triangles, for visual grounding only; collision still uses heightAt.
     renderedGroundHeight: (x,z)=>urubondSurface?.fineGroundHeight(x,z)??((outerOwns(x,z)||acorOwns(x,z))?treeGroundAt(x,z):northernSurfaces.get(northernCellAt(x,z)?.region)?.heightAt(x,z)??selamusGround.fineGroundHeight(x,z)??pyraGround.fineGroundHeight(x,z)??canerdGround.fineGroundHeight(x,z)??(babonSurface&&babonOwns(x,z)?babonSurface(x,z):(ibenwoodAlezhorGround.fineGroundHeight(x,z)??Math.max(westFineGroundAt(x,z),galaScenery.fineGroundHeight?.(x,z)??-Infinity,suvalSurface.fineGroundHeight(x,z)??-Infinity)))),
@@ -2672,6 +2709,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
       ...ISCARE_RUIN_SITES.map(site => ({ ...site, description: site.id === 'zecron-ruins' ? 'The Blood Prince burned this island port. Roofless houses, a broken lighthouse and burned quay piles remain; nobody lives here.' : 'A small island settlement burned in the Blood Prince\'s passage. Wildlife lives among the fallen rafters.' })),
       ...ASCARTH_LANDMARKS,
       ...WEST_REGION_LANDMARKS,
+      ...NETHEREUM_FARM_LANDMARKS, ...NESDOR_FARM_LANDMARKS, ...OVESOS_FARM_LANDMARKS, ...ISAREOS_HAMLET_LANDMARKS,
       ...GALA_LANDMARKS,
       ...OVES_LANDMARKS,
       ...MITHALA_LANDMARKS,
@@ -2703,7 +2741,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
       for(const entry of acorRegions)entry.scenery.update(time);
       for(const entry of outerRegions)entry.scenery.update(time);
       galaScenery.update(time);
-      ovesScenery.update(time);
+      ovesScenery.update(time);ovesosFarm.update(time)/* the mill wheels on the Velsorten canal, 6 October 2026 */;
       mithalaWater.update(time);
       mithalaScenery.update(time);
       southwestScenery.update(time);

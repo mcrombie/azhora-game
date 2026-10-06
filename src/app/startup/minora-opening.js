@@ -1,8 +1,19 @@
 import { MENORA } from '../../content/regions/minora-frontier/menora-city.js';
 
-export const MINORA_START = Object.freeze({ x: -2308, z: 135, yaw: Math.PI / 2 });
+/**
+ * Where a free start stands (the user, 5 October 2026: Rollo starts "right outside of that
+ * Sorcerer's Tower in Menora"). On the forecourt south of the Guild tower, facing its door: yaw 0
+ * faces north, and +x is east and +z south. Taleth stands a few steps ahead and to the right
+ * (src/content/quests/lizeem-farmlands/taleth.js). `pitch` is the follow camera's tilt at the start, low enough that the tower
+ * rises over him instead of the paving filling the screen. Moving this also moves the parked
+ * player behind the menu and the fallback for restoring a free-start save.
+ */
+export const MINORA_START = Object.freeze({ x: -2414, z: 63, yaw: 0, pitch: 0.15 });
 export const MAIN_QUEST_RECRUITERS = Object.freeze(['harbormaster', 'instructor', 'relay-clerk']);
-export const FREE_ROAM_GUIDANCE = Object.freeze({ title: 'Your own road', detail: 'Explore Azhora at your own pace. Jojo or Glun in Drent, or Iven in Nothom, can introduce you to the main quest whenever you choose.' });
+/** The first objective of a free start: the Master Sorcerer on the forecourt (docs/lizeem-farmlands-design.md, section 2). */
+export const FREE_ROAM_GUIDANCE = Object.freeze({ title: 'Speak with the Master Sorcerer',
+  detail: 'Taleth, Master Sorcerer of the Guild, is waiting on the forecourt of the tower in front of you. Jojo or Glun in Drent, or Iven in Nothom, can still introduce you to the main quest whenever you choose.',
+  destinationIds: Object.freeze(['taleth']) });
 export const freshMinoraStart = () => ({ version: 1, origin: 'minora', joined: false });
 export const validMinoraStart = s => s == null || (s.version === 1 && s.origin === 'minora' && typeof s.joined === 'boolean');
 export const mainQuestDormant = s => s?.origin === 'minora' && s.joined === false;

@@ -30,7 +30,7 @@ function entryView(source, status, fallbackType) {
   const type = typeFor(source, fallbackType);
   const entry = { id: source.id, title: source.title, type, grade: grades[type], status,
     detail: typeof source.detail === 'string' ? source.detail : '' };
-  for (const key of ['kicker', 'region', 'map', 'trackable', 'actions', 'steps', 'notes', 'rewards']) {
+  for (const key of ['kicker', 'region', 'map', 'trackable', 'actions', 'steps', 'notes', 'rewards', 'measure']) {
     if (source[key] !== undefined) entry[key] = copy(source[key]);
   }
   // Most quest views have a single instruction in detail. Do not print it a second time.
@@ -45,7 +45,7 @@ function entryView(source, status, fallbackType) {
  * its next stage, or enumerates content from another region. `live` mirrors the quest slate.
  */
 export function buildJournalEntries({ tracker = {}, mainSteps = [], completedChapters = [],
-  bridge = null, spider = null, murder = null, cat = null, batman = null, burying = null, vastos = null, drent = null, notes = [], live = questLive } = {}) {
+  bridge = null, spider = null, murder = null, cat = null, batman = null, burying = null, vastos = null, drent = null, farmlands = null, notes = [], live = questLive } = {}) {
   const entries = [], ids = new Set();
   function add(entry) {
     if (typeof entry?.id !== 'string' || !entry.id || typeof entry.title !== 'string' || !entry.title || ids.has(entry.id)) return;
@@ -112,6 +112,17 @@ export function buildJournalEntries({ tracker = {}, mainSteps = [], completedCha
       .map(([id, faction]) => `${faction} favor +${drent.favor[id]}`);
     add(entryView({ ...drent, id: 'civil-war-drent', title: drent.title || 'Civil War in Drent', type: 'secondary',
       region: 'Drent', notes: drent.notes ?? drent.entries, rewards }, 'complete'));
+  }
+
+  // The Farmlands of the Lizeem (src/content/quests/lizeem-farmlands/lizeem-farmlands.js): Taleth's charge stays open in the tracker
+  // until all four countries are walked, so each country restored is written up as its own entry.
+  // `farmlands` is the quest's snapshot.
+  if (farmlands?.caricas?.stage === 'done' && allowed({ id: 'lizeem-farmlands', slateId: 'lizeem-farmlands' }, live)) {
+    const hid = farmlands.caricas.claim === 'hidden';
+    add(entryView({ id: 'lizeem-farmlands-caricas', title: 'Caricas: the rested ground', type: 'skill', region: 'Caricas',
+      kicker: 'The Farmlands of the Lizeem',
+      detail: `You worked the North Farm on Egeria’s lease, rested its ground with beans, and ${hid ? 'hid the garrison’s tenth for the families in the upland' : 'handed the garrison its tenth'}. Consus sealed your soft-fruit tart and you carried it to Taleth, who taught you Call the Dew.`,
+      rewards: ['Call the Dew', 'Farming experience', 'A second farmstead offered', 'Messor back on the North Farm'] }, 'complete'));
   }
 
   for (const note of list(notes)) {

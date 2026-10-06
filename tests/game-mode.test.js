@@ -133,7 +133,7 @@ test('normal mode filters hidden and reserved skills, pays none of the Linguist,
   assert.deepEqual([...hiddenSkillsIn(GAME_MODE_HARD)], [], 'hard mode hides nothing');
   assert.deepEqual([...hiddenSkillsIn(undefined)], ['linguist'], 'and the default is normal');
   const shown = SKILL_IDS.filter(id => !hiddenSkillsIn(GAME_MODE_NORMAL).includes(id));
-  assert.equal(shown.length, 37, 'the mode includes the guarded Smithing specialization while retaining the seven Arms and six Sorcery schools');
+  assert.equal(shown.length, 38, 'the mode includes the guarded Smithing specialization while retaining the seven Arms and seven Sorcery schools (Taleth’s field sorcery the seventh, 5 October 2026)');
   assert.equal(shown.includes('linguist'), false, 'the tile is not on the sheet');
   assert.equal(SKILL_IDS.includes('linguist'), true, 'and the registry keeps it all the same');
 

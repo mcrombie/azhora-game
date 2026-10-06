@@ -102,9 +102,36 @@ import { createLongRoad, validateLongRoadSnapshot } from '../../content/chapters
 import { createFarming, validateFarmingSnapshot } from '../../gameplay/skills/farming/farming.js';
 import { createSunflowerLesson, validateSunflowerLesson } from '../../content/quests/skill-lessons/sunflower-lesson.js';
 import { createSylviaIvy, validateSylviaIvy } from '../../content/quests/sylvia/sylvia-ivy.js';
+// The Farmlands of the Lizeem and the Lizeem market (5 October 2026). Both sections are optional: older saves start them fresh.
+import { createLizeemFarmlands, validateLizeemFarmlands } from '../../content/quests/lizeem-farmlands/lizeem-farmlands.js';
+import { validateMerchants } from '../../gameplay/inventory/merchants.js';
+// The Farmlands of the Lizeem, Builds 2 and 3 (6 October 2026): the Haethom meadow and Gwyddno's weir, and the Nethereum and
+// Nesdor arcs nested in the farmlands' section. All optional: a save from before them starts them fresh. Importing the meadow
+// registers Nethereum's beds and crops, and the people modules their buyers and the Way board, so the farm and the market
+// validate a save that has used them; Nesdor's beds, floodwheat and the coppice are registered below.
+import { createMeadowWater, createWeir, validateMeadowWater, validateWeir } from '../../content/regions/nethereum/meadow-water.js';
+import { createNethereumArc, validateNethereumArc } from '../../content/quests/lizeem-farmlands/lizeem-nethereum.js';
+import { createNesdorArc, validateNesdorArc } from '../../content/quests/lizeem-farmlands/lizeem-nesdor.js';
+import { registerNesdorFarming } from '../../content/regions/nesdor/flats-ground.js';
+import '../../content/quests/lizeem-farmlands/lizeem-nethereum-people.js';
+import '../../content/quests/lizeem-farmlands/lizeem-nesdor-people.js';
+// The Farmlands of the Lizeem, Builds 4 and 5 (6 October 2026): the Velsorten canal and Ezina's mill, and the Ovesos arc and
+// the Dividing nested in the farmlands' section. All optional: a save from before them starts them fresh. Importing the canal
+// registers Ovesos's beds and crops, and the people modules their buyers (the barge and Amalthea among them) and the register
+// board, so the farm and the market validate a save that has used them.
+import { createCanalTurns, createMill, validateCanalTurns, validateMill } from '../../content/regions/oves/canal-turns.js';
+import { createOvesosArc, validateOvesosArc } from '../../content/quests/lizeem-farmlands/lizeem-ovesos.js';
+import { createDividing, validateDividing } from '../../content/quests/lizeem-farmlands/dividing.js';
+import '../../content/quests/lizeem-farmlands/lizeem-ovesos-people.js';
+import '../../content/quests/lizeem-farmlands/lizeem-minora-people.js';
 import { createLusciaChapter } from '../../content/chapters/civil-war/luscia-chapter.js';
 import {validateLivingStorySnapshot} from '../../gameplay/company/living-story.js';
 import {createLusciaCivilWar,validateLusciaCivilWarSnapshot} from '../../content/chapters/civil-war/luscia-civil-war.js';
+// Nesdor's beds (Baugi's long strip with them), floodwheat and Idunn's coppice, and both arcs on a hub, so the farmlands'
+// validator here knows them as the running game's does (6 October 2026).
+registerNesdorFarming(createFarming());
+{ const hub = createLizeemFarmlands(); hub.registerArc('nethereum', createNethereumArc()); hub.registerArc('nesdor', createNesdorArc());
+  hub.registerArc('ovesos', createOvesosArc()); hub.registerArc('dividing', createDividing())/* Builds 4 and 5, 6 October 2026 */; }
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
 export const ROAD_CHECKPOINT_VERSION = 1;
@@ -266,6 +293,17 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateBarrettGeography(data.barrettGeography,{playSeconds:data.playSeconds??0})) return failed('The saved conversation with Barrett is invalid.');
     if (!validateSunflowerLesson(data.sunflowerLesson)) return failed('The saved sunflower lesson is invalid.');
     if (!validateSylviaIvy(data.sylviaIvy)) return failed('The saved ivy clearing is invalid.');
+    if (!validateLizeemFarmlands(data.lizeemFarmlands)) return failed('The saved Farmlands of the Lizeem are invalid.');
+    if (!validateNethereumArc(data.lizeemFarmlands?.arcs?.nethereum)) return failed('The saved Nethereum arc is invalid.');
+    if (!validateNesdorArc(data.lizeemFarmlands?.arcs?.nesdor)) return failed('The saved Nesdor arc is invalid.');
+    if (!validateOvesosArc(data.lizeemFarmlands?.arcs?.ovesos)) return failed('The saved Ovesos arc is invalid.');
+    if (!validateDividing(data.lizeemFarmlands?.arcs?.dividing)) return failed('The saved Dividing is invalid.');
+    { const at = Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity;
+      if (!validateMeadowWater(data.meadow, { playSeconds: at })) return failed('The saved flood meadow is invalid.');
+      if (!validateWeir(data.weir, { playSeconds: at })) return failed('The saved weir is invalid.');
+      if (!validateCanalTurns(data.canal, { playSeconds: at })) return failed('The saved canal is invalid.');
+      if (!validateMill(data.mill)) return failed('The saved mill is invalid.'); }
+    if (!validateMerchants(data.merchants)) return failed('The saved market is invalid.');
     if (!validateFarmingSnapshot(data.farming, { playSeconds: Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity })) return failed('The saved rows at the commons are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
@@ -471,6 +509,13 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.barrettGeography) result.barrettGeography={...data.barrettGeography,told:[...data.barrettGeography.told]};
     if (Object.hasOwn(data, 'sunflowerLesson')) { const lesson = createSunflowerLesson(); lesson.restore(data.sunflowerLesson); result.sunflowerLesson = lesson.snapshot(); }
     if (Object.hasOwn(data, 'sylviaIvy')) { const ivy = createSylviaIvy(); ivy.restore(data.sylviaIvy); result.sylviaIvy = ivy.snapshot(); }
+    if (Object.hasOwn(data, 'lizeemFarmlands')) { const quest = createLizeemFarmlands(); quest.restore(data.lizeemFarmlands); result.lizeemFarmlands = quest.snapshot(); }
+    // Copied as written: the market's appetites and orders are dated by game day, which only the running game's clock can read.
+    if (Object.hasOwn(data, 'merchants')) result.merchants = JSON.parse(JSON.stringify(data.merchants));
+    if (Object.hasOwn(data, 'meadow')) { const water = createMeadowWater(); water.restore(data.meadow); result.meadow = water.snapshot(); }
+    if (Object.hasOwn(data, 'weir')) { const trap = createWeir(); trap.restore(data.weir); result.weir = trap.snapshot(); }
+    if (Object.hasOwn(data, 'canal')) { const canal = createCanalTurns(); canal.restore(data.canal); result.canal = canal.snapshot(); }
+    if (Object.hasOwn(data, 'mill')) { const mill = createMill(); mill.restore(data.mill); result.mill = mill.snapshot(); }
     if (Object.hasOwn(data, 'farming')) { const farm = createFarming(); farm.restore(data.farming); result.farming = farm.snapshot(); }
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }

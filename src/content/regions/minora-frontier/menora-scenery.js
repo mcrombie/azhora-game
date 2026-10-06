@@ -2,7 +2,7 @@ import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
 import { MENORA, MENORA_OUTLINE, MENORA_GATES, MENORA_BUILDINGS, MENORA_PATHS,
-  MENORA_BRIDGES, MENORA_GARDENS, MENORA_CAMP, menoraRiverClearance, menoraDeckHeight } from './menora-city.js';
+  MENORA_BRIDGES, MENORA_GARDENS, MENORA_CAMP, LIZEEM_MARKET_STANDS, menoraRiverClearance, menoraDeckHeight } from './menora-city.js';
 
 const WHITE='#e2e2d2', IVORY='#eee9d4', SHADE='#b9c4bd', DARK='#385052', GOLD='#c6ad6b';
 const WOOD='#726052', PAVING='#c4c2ac', WATER='#548985', RED='#713e45';
@@ -13,7 +13,7 @@ export function createMenoraScenery(...args) { return finishBuild(createMenoraSc
 export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
   let buildWork = 0;
   const root=new THREE.Group();root.name='Minora — white walls at the river fork';parent.add(root);
-  const metrics={buildings:0,towers:0,wallSegments:0,bridges:0,gardens:0,tents:0,batches:0,vertices:0,colliders:0};
+  const metrics={buildings:0,towers:0,wallSegments:0,bridges:0,gardens:0,stalls:0,tents:0,batches:0,vertices:0,colliders:0};
   const push=c=>{colliders.push(c);metrics.colliders++;return c;};
   const finish=function* (b) {metrics.vertices+=b.vertexCount;if((yield* b.finishSteps(root)))metrics.batches++;};
   const ground=(x,z)=>menoraDeckHeight(x,z)??heightAt(x,z);
@@ -41,6 +41,7 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
   } }
   (yield* streets.patchSteps('#d4d1b9',ground,-2338,137,34,28,0,.06,8));
   (yield* streets.patchSteps('#b8b8a2',ground,-2370,152,24,13,0,.04,6));
+  (yield* streets.patchSteps('#b8b8a2',ground,-2365,140,13,6,0,.04,4));
   (yield* streets.patchSteps('#bfbea6',ground,-2414,60,25,13,0,.04,5));
   (yield* finish(streets));
 
@@ -222,6 +223,18 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
   }
   for(const [x,z] of [[-2328,129],[-2348,129],[-2418,150],[-2408,156],[-2354,179]]) { if (++buildWork % 8 === 0) yield;
     const y=ground(x,z);gardens.box(WOOD,x,y+.55,z,2.8,.23,.7);for(const s of [-1,1]){ if (++buildWork % 8 === 0) yield; gardens.block(SHADE,x+s*.95,y,z,.35,.5,.55); }
+  }
+  // The factors' market corner (the Farmlands of the Lizeem, 5 October 2026), built as the Caricas grain
+  // court's stalls are: corner posts, an awning in the factor's country colour and a counter of produce
+  // on the street side, open to walk round. It shares this batch, so it costs no extra draw.
+  const AWNINGS={Caricas:'#6f7f4f',Nesdor:'#9a7a4c',Nethereum:'#58717a',Ovesos:'#b08a55'};
+  for(const stand of LIZEEM_MARKET_STANDS) { if (++buildWork % 8 === 0) yield;
+    const {x,z,width,depth}=stand.stall,y=ground(x,z),front=Math.cos(stand.yaw)<0?-1:1,cz=z+front*(depth/2-.45);
+    for(const sx of [-1,1])for(const sz of [-1,1])gardens.block(WOOD,x+sx*(width/2-.15),y,z+sz*(depth/2-.15),.15,2.7,.15);
+    gardens.roof(AWNINGS[stand.country]??RED,x,y+2.7,z,width+.6,depth+.6,.5,0,IVORY);
+    gardens.block(WOOD,x,y,cz,width-.4,.95,.7);gardens.box(PAVING,x,y+1,cz,width-.3,.1,.8);
+    for(let n=0;n<5;n++)gardens.rock(['#c5ac75','#9c6b4a','#d8c27a','#7c8a4a','#b4875a'][(n*2+stand.factor.length)%5],x-1.6+n*.8,y+1.22,cz,.32,.22,.3);
+    metrics.stalls++;
   }
   (yield* finish(gardens));
 

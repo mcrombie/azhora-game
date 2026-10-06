@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { COPPER_ITEM, CURRENCIES, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, peddlerOffers, purchase } from '../src/gameplay/inventory/economy.js';
-import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { COPPER_ITEM, CURRENCIES, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, earn, pay, peddlerOffers, purchase, purse, till } from '../src/gameplay/inventory/economy.js';
+import { INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
 test('the Empire’s coin runs ten to one and only copper is built yet; the rebels’ paper has no copper value', () => {
   assert.equal(CURRENCIES.silver.inCopper, 10 * CURRENCIES.copper.inCopper);
@@ -50,4 +50,39 @@ test('the peddler explains all three coins and the rebels’ paper, and stands o
   for (const word of ['copper', 'silver', 'gold', 'scrip', 'Ten coppers to a silver']) assert.match(speech, new RegExp(word));
   assert.equal(PEDDLER.lines.length, 3);
   assert.ok(Number.isFinite(PEDDLER.stand.x) && Number.isFinite(PEDDLER.stand.z));
+});
+
+test('the purse is the copper stack, and paying takes the whole sum or none of it', () => {
+  const inventory = createInventoryState();
+  assert.equal(purse(inventory), 0);
+  assert.equal(earn(inventory, 10), true);
+  assert.equal(purse(inventory), 10);
+  assert.equal(pay(inventory, 3), true);
+  assert.equal(purse(inventory), 7);
+  assert.equal(pay(inventory, 8), false, 'eight is more than seven');
+  assert.equal(purse(inventory), 7, 'and none of it was taken');
+  assert.equal(pay(inventory, 0), true, 'nothing costs nothing');
+  for (const bad of [-1, 1.5, NaN, '3']) {
+    assert.equal(pay(inventory, bad), false, `pay ${bad}`);
+    assert.equal(earn(inventory, bad), false, `earn ${bad}`);
+  }
+  assert.equal(purse(inventory), 7);
+  assert.equal(purse(null), 0);
+});
+
+test('a till hands over the goods for the price, and gives back only what it took', () => {
+  const inventory = createInventoryState();
+  earn(inventory, 10);
+  assert.deepEqual(till(inventory, { price: 3, itemId: 'boiled-egg' }), { ok: true, reason: '', price: 3, remaining: 7 });
+  assert.equal(inventory.count('boiled-egg'), 1);
+  const short = till(inventory, { price: 8, itemId: 'tinderbox' });
+  assert.equal(short.ok, false);
+  assert.match(short.reason, /8 copper/);
+  assert.equal(purse(inventory), 7, 'a purse too small is left alone and never added to');
+  inventory.add('tinderbox', 1);
+  assert.match(till(inventory, { price: 2, itemId: 'tinderbox', stackable: false }).reason, /already carry/);
+  // Told nothing about stacking, the till pays first and the satchel refuses: the refund is exact.
+  assert.equal(till(inventory, { price: 2, itemId: 'tinderbox' }).ok, false);
+  assert.equal(purse(inventory), 7);
+  assert.equal(inventory.count('tinderbox'), 1);
 });

@@ -1,4 +1,4 @@
-import { CROPS, FARMER, FARM_ROWS, FARMING_LESSON, WATERING_XP } from './farming.js';
+import { CROPS, FARMER, FARM_ROWS, FARMING_LESSON, GRADE_NAMES, WATERING_XP, growsOn, rotates } from './farming.js';
 
 export const farmWait = seconds => {
   const whole = Math.max(0, Math.ceil(seconds)), minutes = Math.floor(whole / 60);
@@ -71,12 +71,17 @@ export function farmRowConversation(id, context) {
   if (!here) return false;
   const rowNumber = FARM_ROWS.findIndex(row => row.id === id) + 1;
   const field = { id, name: `Commons row ${rowNumber}`, role: 'Farming \u00b7 field work', ...here };
-  const act = action => { closeDialogue(); const result = action(); onChange(); if (!result.ok) notify(result.reason, 'FARMING'); };
+  // A share taken at harvest is shown in the taker's own words (docs/lizeem-farmlands-design.md §7.3):
+  // "12 bridge rye, Fine. The holder's share: 3. Yours: 9."
+  const act = action => { closeDialogue(); const result = action(); onChange(); if (!result.ok) notify(result.reason, 'FARMING');
+    else if (result.notes?.length) notify(result.notes.join(' '), 'FARMING'); };
   const choices = [];
   let detail;
   if (here.stage === 'bare') {
     detail = 'Choose a crop. One seed packet plants this bed; every harvest gives seed back for replanting. The shared bin beside these beds supplies seeds. Growing time counts only while you are playing.';
-    for (const kind of Object.values(CROPS)) {
+    // Caricas farms by rotation (src/gameplay/skills/farming/farming.js): the bed says what it last grew, and the staff says the rest.
+    if (rotates(id)) detail += ` ${here.last ? `This bed last grew ${CROPS[here.last].name.toLowerCase()}.` : 'Nobody has worked this bed in a while.'} Beans rest the ground, grain and fruit draw it down, and the same crop twice running comes up plain.`;
+    for (const kind of Object.values(CROPS).filter(entry => growsOn(entry.id, id))) {
       const unlocked = farming.view(clock()).level >= kind.level;
       const available = farming.sowable(id).find(item => item.id === kind.id)?.seeds ?? 0;
       choices.push({ id: `farm-sow-${kind.id}`, label: `${kind.name} \u00b7 ${farmWait(kind.seconds)} \u00b7 ${kind.xp} XP${unlocked ? ` \u00b7 ${available} seed` : ` \u00b7 level ${kind.level}`}`,
@@ -84,10 +89,11 @@ export function farmRowConversation(id, context) {
         action: () => act(() => farming.sow(id, kind.id, clock())) });
     }
     choices.push({ id: 'farm-shared-seeds', label: 'Take seeds from the shared bin', action: () => {
-      farming.stockSeeds(); onChange(); farmRowConversation(id, context);
+      farming.stockSeeds(id); onChange(); farmRowConversation(id, context);
     } });
   } else if (here.stage === 'ripe') {
-    detail = `${here.cropName} are ready. Harvest ${here.quantity}, save one seed packet, and earn ${CROPS[here.crop].xp} Farming XP. The bed can be replanted immediately.`;
+    const grade = here.grade && here.grade !== 'plain' ? `, ${GRADE_NAMES[here.grade]}` : '';
+    detail = `${here.cropName} are ready. Harvest ${here.quantity}${grade}, save one seed packet, and earn ${here.xp ?? CROPS[here.crop].xp} Farming XP. The bed can be replanted immediately.`;
     choices.push({ id: 'farm-harvest', label: `Harvest ${here.cropName.toLowerCase()}`, action: () => act(() => farming.reap(id, clock())) });
   } else {
     detail = `${here.cropName} are growing: ${farmWait(here.left)} until harvest. ${here.watered ? 'The soil is watered. You can leave it to grow.'

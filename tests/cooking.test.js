@@ -78,3 +78,45 @@ test('hot chocolate is a drink in the satchel, and Wendel sells what it is made 
     assert.ok(PEDDLER_STOCK.some(entry => entry.id === id), `Wendel sells ${id}`);
   }
 });
+
+test('the Caricas dishes are learned like any recipe, and each fine form comes with its plain one', () => {
+  // docs/lizeem-farmlands-design.md §7.6, built 6 October 2026: the plain dish heals as the table says,
+  // and the same dish from fine produce is its own row and its own item, healing 10 more.
+  const dishes = { 'rye-cheese-loaf': 25, 'bean-pottage': 40, 'soft-fruit-tart': 45 };
+  for (const [id, heals] of Object.entries(dishes)) {
+    const plain = RECIPES[id], fine = RECIPES[plain.fine];
+    assert.equal(FOODS[plain.makes].healing, heals, id);
+    assert.equal(fine.fineOf, id);
+    assert.equal(FOODS[fine.makes].healing, Math.min(50, heals + 10), `${fine.id} heals 10 more, up to the larder's 50`);
+    assert.equal(INVENTORY_ITEMS[fine.makes].type, 'Food');
+    assert.deepEqual(Object.keys(fine.needs).map(need => need.replace(/-fine$/, '')), Object.keys(plain.needs), `${fine.id} wants the fine kind of the same things`);
+  }
+  assert.deepEqual(RECIPES['rye-cheese-loaf'].needs, { 'bridge-rye': 2, 'ewe-cheese': 1 });
+  assert.deepEqual(RECIPES['bean-pottage'].needs, { 'field-beans': 2, barley: 1 });
+  assert.deepEqual(RECIPES['soft-fruit-tart'].needs, { 'soft-fruit': 2, 'bridge-rye': 1 });
+  assert.ok(PEDDLER_STOCK.some(entry => entry.id === 'ewe-cheese'), 'Wendel sells the cheese');
+  const skills = createSkills(), cooking = createCooking({ skills });
+  assert.equal(cooking.knows('bean-pottage-fine'), false);
+  assert.equal(cooking.learn('bean-pottage').ok, true);
+  assert.equal(cooking.knows('bean-pottage-fine'), true, 'known with the plain dish');
+  const bag = satchel({ 'field-beans': 2, barley: 1 });
+  assert.equal(cooking.make('bean-pottage-fine', bag).ok, false);
+  assert.deepEqual(cooking.missing('bean-pottage-fine', bag), ['field-beans-fine', 'barley-fine']);
+  const pot = cooking.make('bean-pottage', bag);
+  assert.ok(pot.ok && pot.xp === RECIPES['bean-pottage'].xp);
+  bag.add('field-beans-fine', 2); bag.add('barley-fine', 1);
+  assert.equal(cooking.make('bean-pottage-fine', bag).ok, true);
+  assert.deepEqual([bag.count('bean-pottage'), bag.count('bean-pottage-fine'), bag.count('field-beans-fine')], [1, 1, 0]);
+  // Learning the fine form teaches the plain one; the fire offers both.
+  cooking.learn('soft-fruit-tart-fine');
+  assert.equal(cooking.knows('soft-fruit-tart'), true);
+  const known = cooking.view().entries.filter(entry => entry.known).map(entry => entry.id);
+  for (const id of ['bean-pottage', 'bean-pottage-fine', 'soft-fruit-tart', 'soft-fruit-tart-fine']) assert.ok(known.includes(id), id);
+  assert.ok(!known.includes('rye-cheese-loaf-fine'), 'not before the loaf is taught');
+  assert.equal(cooking.learn('nothing-at-all').ok, false);
+  assert.equal(cooking.learn('__proto__').ok, false);
+  const again = createCooking();
+  assert.equal(validateCookingSnapshot(cooking.snapshot()), true);
+  assert.equal(again.restore(cooking.snapshot()), true);
+  assert.deepEqual([again.knows('soft-fruit-tart-fine'), again.knows('rye-cheese-loaf')], [true, false]);
+});

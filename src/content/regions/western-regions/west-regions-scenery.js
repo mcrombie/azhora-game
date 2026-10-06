@@ -5,7 +5,13 @@ import { yunethreReserved } from '../minora-frontier/yunethre-world.js';
 import { menoraReserved } from '../minora-frontier/menora-city.js';
 import { caricasSettlementReserved } from '../minora-frontier/caricas-settlement.js';
 import { regionalFarmlandClear } from '../../../world/scenery/regional-farmland.js';
-const frontierReserved=(x,z)=>menoraReserved(x,z,2)||caricasSettlementReserved(x,z,2)||regionalFarmlandClear(x,z,2)||yunethreReserved(x,z,1);
+import { nethereumFarmReserved } from '../nethereum/nethereum-farm.js';
+import { nesdorFarmReserved } from '../nesdor/nesdor-farm.js';
+import { isareosHamletReserved } from '../minora-frontier/isareos-hamlet.js';
+// Haethom, its levee, meadow and weir (src/content/regions/nethereum/nethereum-farm.js), and Ninehands, the hazel wood, the inn and the Way
+// (src/content/regions/nesdor/nesdor-farm.js), 6 October 2026, keep the scatter off as the towns do; so do Amalthea's hamlet and its track in the
+// Isareos hills (src/content/regions/minora-frontier/isareos-hamlet.js, Build 5, the same day).
+const frontierReserved=(x,z)=>menoraReserved(x,z,2)||caricasSettlementReserved(x,z,2)||regionalFarmlandClear(x,z,2)||yunethreReserved(x,z,1)||nethereumFarmReserved(x,z,1)||nesdorFarmReserved(x,z,1)||isareosHamletReserved(x,z,1);
 import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-registry.js';
 import { hexOwnerAt, REGION_CELLS, SURVEY, hexAt, hexCentre, METRES_PER_HEX, landDistance } from '../../../world/terrain/region-world.js';
 import { WORLD_SCALE } from '../../../world/terrain/world-scale.js';

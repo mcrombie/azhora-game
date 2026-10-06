@@ -34,6 +34,14 @@ import { createCubHoneyQuest, CUB_STAND, CUB_HONEY_ITEM, CUB_HONEY_SOURCE } from
 import { BEAR_HOME_ROUTE } from '../src/content/quests/bear-family/bear-family.js';
 import { LIZ_STAND } from '../src/content/quests/roadside/cat-quest.js';
 import {createSevronState} from '../src/content/regions/sevron/sevron-state.js';
+import { createLizeemFarmlands } from '../src/content/quests/lizeem-farmlands/lizeem-farmlands.js';
+import { createMerchants } from '../src/gameplay/inventory/merchants.js';
+import { createMeadowWater, createWeir } from '../src/content/regions/nethereum/meadow-water.js';
+import { createNethereumArc } from '../src/content/quests/lizeem-farmlands/lizeem-nethereum.js';
+import { createNesdorArc } from '../src/content/quests/lizeem-farmlands/lizeem-nesdor.js';
+import { createCanalTurns, createMill } from '../src/content/regions/oves/canal-turns.js';
+import { createOvesosArc } from '../src/content/quests/lizeem-farmlands/lizeem-ovesos.js';
+import { createDividing } from '../src/content/quests/lizeem-farmlands/dividing.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -777,4 +785,93 @@ test('canopy floor identity survives a checkpoint while legacy positions remain 
   assert.deepEqual(checkpoint.read().data.position, data.position);
   for (const surfaceId of [null, 42, '', 'a'.repeat(129), '../floor'])
     assert.equal(checkpoint.save({ ...data, position: { ...data.position, surfaceId } }).ok, false);
+});
+
+test('the Farmlands of the Lizeem and its market ride along in the checkpoint, and a save from before them loads fresh', () => {
+  // Build 1 of the farmlands (the user, 5 October 2026). A key src/app/saves/road-checkpoint.js does not copy is dropped on save.
+  const { data, checkpoint } = fixture();
+  const quest = createLizeemFarmlands(); quest.offer(); quest.accept(); quest.lease();
+  const market = { version: 1, appetites: { consus: { day: 3, taken: 5 } }, standing: { nepri: 1 }, sealed: {}, prizes: [], bounties: [], orders: {} };
+  assert.equal(checkpoint.save({ ...data, lizeemFarmlands: quest.snapshot(), merchants: market }).ok, true);
+  const kept = checkpoint.read().data;
+  assert.deepEqual(kept.lizeemFarmlands, quest.snapshot());
+  assert.deepEqual(kept.merchants, market, 'the market is kept as written: its days are game days');
+  for (const bad of [{ lizeemFarmlands: { ...quest.snapshot(), stage: 'finished' } }, { merchants: { ...market, version: 2 } },
+    { merchants: { ...market, appetites: { nobody: { day: 1, taken: 1 } } } }])
+    assert.equal(checkpoint.save({ ...data, ...bad }).ok, false, Object.keys(bad)[0]);
+  assert.deepEqual(checkpoint.read().data.lizeemFarmlands, quest.snapshot(), 'a refused save leaves the last one alone');
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before the farmlands is still a save');
+  const old = checkpoint.read().data, farmlands = createLizeemFarmlands(), merchants = createMerchants();
+  assert.equal(Object.hasOwn(old, 'lizeemFarmlands') || Object.hasOwn(old, 'merchants'), false);
+  assert.equal(farmlands.restore(old.lizeemFarmlands), true); assert.equal(farmlands.stage, 'unmet');
+  assert.equal(merchants.restore(old.merchants), true); assert.deepEqual(merchants.snapshot().appetites, {});
+});
+
+test('the Haethom meadow, the weir and the Nethereum and Nesdor arcs ride along, and a save from before them loads fresh', () => {
+  // Builds 2 and 3 of the farmlands (6 October 2026): the meadow and the weir are sections of their own; the arcs ride
+  // nested in the farmlands' section; the Nethereum and Nesdor beds, Baugi's long strip among them, are the farm's.
+  const { data, checkpoint } = fixture();
+  const quest = createLizeemFarmlands(), nethereum = createNethereumArc(), nesdor = createNesdorArc();
+  quest.registerArc('nethereum', nethereum); quest.registerArc('nesdor', nesdor);
+  quest.offer(); quest.accept(); nethereum.meet(); nesdor.meet();
+  const bag = { count: id => ({ 'pine-plank': 2, 'salvaged-metal': 1 })[id] ?? 0, remove: () => true, add: () => true };
+  const meadow = createMeadowWater(); assert.equal(meadow.mendHatch({ inventory: bag }).ok, true); assert.equal(meadow.openHatch(100).ok, true);
+  const weir = createWeir(); assert.equal(weir.take(120).ok, true);
+  const farming = { version: 2, met: true, reaped: 0, trees: {}, beds: {},
+    rows: { 'nethereum-meadow-1': { crop: 'flood-oats', sownAt: 10 }, 'nesdor-long-1': { crop: 'barley', sownAt: 10 }, 'nesdor-bench-1': { crop: 'floodwheat', sownAt: 20 } } };
+  const saved = { ...data, playSeconds: 500, lizeemFarmlands: quest.snapshot(), meadow: meadow.snapshot(), weir: weir.snapshot(), farming };
+  assert.equal(checkpoint.save(saved).ok, true);
+  const kept = checkpoint.read().data;
+  assert.deepEqual(kept.lizeemFarmlands.arcs, { nethereum: nethereum.snapshot(), nesdor: nesdor.snapshot() });
+  assert.deepEqual([kept.meadow, kept.weir], [meadow.snapshot(), weir.snapshot()]);
+  assert.deepEqual(Object.keys(kept.farming.rows).sort(), ['nesdor-bench-1', 'nesdor-long-1', 'nethereum-meadow-1']);
+  for (const bad of [{ meadow: { ...meadow.snapshot(), version: 2 } }, { meadow: { ...meadow.snapshot(), openedAt: 900 } }, { weir: { ...weir.snapshot(), day: -1 } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, nethereum: { ...nethereum.snapshot(), stage: 'drowned' } } } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, nesdor: { ...nesdor.snapshot(), stage: 'done' } } } },
+    { farming: { ...farming, rows: { 'nesdor-long-9': { crop: 'barley', sownAt: 10 } } } }])
+    assert.equal(checkpoint.save({ ...saved, ...bad }).ok, false, JSON.stringify(Object.keys(bad)));
+  assert.deepEqual(checkpoint.read().data.meadow, meadow.snapshot(), 'a refused save leaves the last one alone');
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before Builds 2 and 3 is still a save');
+  const old = checkpoint.read().data, water = createMeadowWater(), trap = createWeir();
+  assert.equal(['meadow', 'weir'].some(key => Object.hasOwn(old, key)), false);
+  assert.equal(water.restore(old.meadow), true); assert.equal(water.view(0).hatch, 'broken');
+  assert.equal(trap.restore(old.weir), true); assert.equal(trap.view(0).ready, true);
+});
+
+test('the Velsorten canal, Ezina’s mill, the Ovesos arc and the Dividing ride along, and a save from before them loads fresh', () => {
+  // Builds 4 and 5 of the farmlands (6 October 2026): the canal and the mill are sections of their own; the Ovesos arc and
+  // the Dividing ride nested in the farmlands' section; the twelve Ovesos plots are the farm's.
+  const { data, checkpoint } = fixture();
+  const quest = createLizeemFarmlands(), ovesos = createOvesosArc(), dividing = createDividing({ farmlands: quest });
+  quest.registerArc('ovesos', ovesos); quest.registerArc('dividing', dividing);
+  quest.offer(); quest.accept(); assert.equal(ovesos.enter(), true);
+  const canal = createCanalTurns(); assert.equal(canal.setSeniority(3).ok, true); assert.equal(canal.shortNext(.5, 100).ok, true);
+  const held = new Map([['hard-wheat', 6]]);
+  const bag = { count: id => held.get(id) ?? 0, remove: (id, n) => { held.set(id, (held.get(id) ?? 0) - n); return true; }, add: (id, n) => { held.set(id, (held.get(id) ?? 0) + n); return true; } };
+  const mill = createMill(); assert.equal(mill.grind(bag, 6, { item: 'hard-wheat' }).ok, true);
+  const farming = { version: 2, met: true, reaped: 0, trees: {}, beds: {},
+    rows: { 'ovesos-tail-1': { crop: 'barley', sownAt: 10 }, 'ovesos-tail-2': { crop: 'silver-millet', sownAt: 10 }, 'ovesos-head-1': { crop: 'hard-wheat', sownAt: 20 } } };
+  const saved = { ...data, playSeconds: 500, lizeemFarmlands: quest.snapshot(), canal: canal.snapshot(), mill: mill.snapshot(), farming };
+  assert.equal(checkpoint.save(saved).ok, true);
+  const kept = checkpoint.read().data;
+  assert.deepEqual(kept.lizeemFarmlands.arcs, { ovesos: ovesos.snapshot(), dividing: dividing.snapshot() });
+  assert.deepEqual([kept.canal, kept.mill], [canal.snapshot(), mill.snapshot()]);
+  assert.deepEqual(Object.keys(kept.farming.rows).sort(), ['ovesos-head-1', 'ovesos-tail-1', 'ovesos-tail-2']);
+  for (const bad of [{ canal: { ...canal.snapshot(), version: 2 } }, { canal: { ...canal.snapshot(), seniority: 9 } },
+    { canal: { ...canal.snapshot(), plantings: { 'ovesos-tail-9': { crop: 'barley', units: 1 } } } },
+    { mill: { ...mill.snapshot(), tolls: 5 } }, { mill: { ...mill.snapshot(), waived: 'yes' } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, ovesos: { ...ovesos.snapshot(), stage: 'done' } } } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, dividing: { version: 1, stage: 'feasting' } } } },
+    { farming: { ...farming, rows: { 'ovesos-tail-9': { crop: 'barley', sownAt: 10 } } } }])
+    assert.equal(checkpoint.save({ ...saved, ...bad }).ok, false, JSON.stringify(bad));
+  assert.deepEqual(checkpoint.read().data.canal, canal.snapshot(), 'a refused save leaves the last one alone');
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before Builds 4 and 5 is still a save');
+  const old = checkpoint.read().data, water = createCanalTurns(), stones = createMill();
+  assert.equal(['canal', 'mill'].some(key => Object.hasOwn(old, key)), false);
+  assert.equal(water.restore(old.canal), true); assert.equal(water.seniority(), 1);
+  assert.equal(stones.restore(old.mill), true); assert.deepEqual(stones.view(), { milled: 0, tolls: 0, waived: false, toNextToll: 16 });
+  const fresh = createLizeemFarmlands(), arc = createOvesosArc(), feast = createDividing();
+  fresh.registerArc('ovesos', arc); fresh.registerArc('dividing', feast);
+  assert.equal(fresh.restore(old.lizeemFarmlands), true);
+  assert.deepEqual([arc.stage(), feast.stage()], ['arrive', 'waiting']);
 });

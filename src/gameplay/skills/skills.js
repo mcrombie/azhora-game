@@ -225,8 +225,33 @@ export const SKILLS = Object.freeze({
       unlock(1, 'Water each planting once: 4 experience, earlier growth and one extra crop'),
       unlock(1, 'Four reusable commons rows; Stanley shares seeds and farm recipes'),
       unlock(1, 'Pick Applegarth orchard apples; trees bear again in ten minutes'),
+      unlock(1, 'Bridge rye on the Caricas farms: four minutes, 30 experience; it wants lean ground'),
+      unlock(1, 'Field beans on the Caricas farms: 150 seconds, 26 experience; they put heart back into a bed'),
+      unlock(1, 'Flood oats on the Haethom meadow in Nethereum: four minutes, 30 experience; they want fresh silt'),
+      // The rest of the ladder (docs/lizeem-farmlands-design.md 4.6), Build 5 of the Farmlands of the Lizeem, 6 October 2026:
+      // the Ovesos lines for that country's builders, the grades the farm already gives, and what is still to come.
+      unlock(1, 'Silver millet on the Ovesos canal: 150 seconds, 24 experience; it wants the least water, and owes no dues'),
       unlock(2, 'Beets: 150 seconds, 32 experience per harvest'),
-      unlock(5, 'Drent leaf: eight minutes, 45 experience per harvest')]),
+      unlock(3, 'Soft fruit on the Caricas farms: five minutes, 40 experience; it wants rich, rested ground'),
+      unlock(5, 'Drent leaf: eight minutes, 45 experience per harvest'),
+      unlock(5, 'Meadow hay: the Haethom meadow grows it after every draw-off; three minutes, 35 experience a cut'),
+      unlock(5, 'A practised hand: from here every harvest counts a point nearer Fine'),
+      unlock(7, 'A second farmstead in Caricas, leased from Egeria once Caricas is restored: to come'),
+      unlock(8, 'Floodwheat on the Nesdor strips: six minutes, 60 experience; it wants a drained bench'),
+      unlock(10, 'A second cut of meadow hay off a bed left bare for five minutes after the first'),
+      unlock(10, 'Hard wheat on the Ovesos canal: six minutes, 60 experience; the thirstiest crop the canal waters'),
+      unlock(12, 'Pick hazelnuts at Idunn’s coppice in Nesdor; each stool bears again ten minutes later'),
+      unlock(14, 'Orchard trees of your own on the Caricas farms: to come'),
+      unlock(16, 'Liban’s deep plots below the line, once Nethereum is restored; hazelnuts picked Fine'),
+      unlock(18, 'Madder, the dye crop, on the Ovesos canal: 70 experience; grown only to sell, and only Uttu the fuller buys it'),
+      unlock(20, 'Prize grade: a perfect harvest comes in Prize, for the gold lines of the Measure; hazelnuts picked Prize'),
+      unlock(20, 'Seed-saving: keep your best seed, and the next sowing starts a grade higher: to come'),
+      unlock(24, 'Baugi’s long strip at Ninehands, once Nesdor is restored'),
+      unlock(24, 'More farmsteads on the idle ground of Caricas: to come'),
+      unlock(28, 'A senior water right on the Ovesos canal, bought outright from Nisaba at the register house'),
+      unlock(30, 'Grafting: to come'),
+      unlock(40, 'A farmstead of your own: to come'),
+      unlock(50, 'Your own seal as a measurer: to come')]),
   }),
   visualarts: Object.freeze({
     id: 'visualarts', name: 'Visual Arts', kind: 'working',
@@ -352,6 +377,25 @@ export const SKILLS = Object.freeze({
     unlocks: Object.freeze([unlock(1, 'After Liz’s lesson: summon bees to harry an enemy'),
       unlock(25, 'They stay longer and sting harder'), unlock(50, 'Twice the swarm of that first one'),
       unlock(75, 'They come quicker and cost less'), unlock(99, 'Sixteen seconds of them, and they do not lose interest')]),
+  }),
+  /**
+   * **Field Sorcery** (the user, 5 October 2026: the farming techniques are sorcery cast with the
+   * staff, and Taleth, Master Sorcerer of the Guild at Minora, teaches them). A fourth released
+   * school, and nobody else's to teach: Sound the Soil when he gives the charge of the Lizeem
+   * farmlands, Call the Dew when Caricas is brought back to work (src/gameplay/magic/sorcery.js). Quicken and
+   * the Work of Nine are learned in Nethereum and Nesdor (6 October 2026), never at the tower door.
+   */
+  field: Object.freeze({
+    id: 'field', name: 'Field Sorcery', group: SORCERY_HEADING,
+    blurb: 'The ground, the water and what grows between them. It will never kill a spider, and it has fed more people than every fireball ever thrown.',
+    teacher: 'Taleth, Master Sorcerer of the Guild, outside the tower in Minora, if you take his charge',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'After Taleth’s charge: Sound the Soil tells you what a bed needs'),
+      unlock(1, 'After Caricas is restored: Call the Dew waters every growing bed on a farm at once'),
+      unlock(1, 'After Nethereum is restored: Quicken ripens one growing bed at once, once a game day'),
+      unlock(1, 'After Nesdor is restored: the Work of Nine reaps and sows a whole farmstead in one act'),
+      unlock(50, 'Call the Dew for sixteen focus rather than twenty, Quicken for twenty-four, the Work of Nine for thirty-two'),
+      unlock(99, 'Call the Dew for twelve, Quicken for eighteen, the Work of Nine for twenty-four, and Sound the Soil for three')]),
   }),
   frost: Object.freeze({
     id: 'frost', name: 'Frost', group: SORCERY_HEADING, reserved: true,

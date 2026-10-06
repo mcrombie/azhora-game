@@ -1,6 +1,8 @@
 # The Farmlands of the Lizeem
 
-Design record, begun 5 October 2026. **Design only: the user has not authorised building.** His words: "come up with this whole system, design it, ask questions as you need to, and once we refine your questions, I'll tell you when to implement it."
+Design record, begun 5 October 2026. Implementation was authorized on October 5 and continued on October 6; the original proposals and open questions below are retained alongside the as-built record.
+
+> **Built, 6 October 2026.** The user said "go ahead and implement" on 5 October 2026 and "keep building everything" on 6 October 2026. All five builds of section 8 are on branch `lizeem-farmlands`; section 10 records what was built and where it departs from this text.
 
 How to read this file:
 
@@ -208,7 +210,7 @@ The arcs can be taken in any order. Each country's first crop needs no level, an
 **The steps.**
 
 1. Cross the bridge and find the North Farm idle. The Voice of the Council lends it for a season, for a share of what it bears.
-2. Sow rye in two beds and beans in two. Harvest, swap them over, and see the rye come up Good on the bean ground.
+2. Sow rye in two beds and beans in two. Harvest, swap them over, and see the rye come up Good on the bean ground. *(Built differently, 6 October 2026: under the rotation rules in `src/gameplay/skills/farming/farming.js` rye straight after beans comes up Plain, because beans leave fresh ground too rich for rye. The swap step accepts any grade and Vertumnus says so; the Fine rotation is beans, a day's rest, fruit or barley, then rye.)*
 3. The trouble (see question 1): either the garrison captain's quartermaster claims part of the first harvest for Cedric's granary, and Rollo hands it over or hides a share for the families in the upland; or rust takes a bed sown rye after rye and has to be broken with beans and a rest.
 4. Bring in Fine rye.
 5. Bake the tart, have it sealed at the grain court, and carry it to Taleth.
@@ -549,6 +551,237 @@ The feast on the forecourt, fork stew, and Taleth's later topics unlocked.
 1. **The war.** By the user's newest ruling, Rollo leaves Cedric's capital for four countries in rebellion against it. Should the quest show that: people wary of a man from Minora until the first harvest is in, the garrison's claim on the Caricas rye, foragers on the Flats, and a choice in each of those two moments that changes who is friendly and nothing in the main story? Or should the war stay in the background and the quest be only about farming? Both versions of each step are written in section 5.
 2. **Names.** The dictation gave "mythological names". Was that meant literally, or was it "Mittoli names"?
 3. **Taleth's hat.** None by default. A tall pointed hat would suit a Merlin, and would be the first in the game.
+
+## 10. As built (6 October 2026)
+
+**Builds 2 and 3.** Nethereum and Nesdor were built on 6 October 2026 under the user's "keep building everything", by six agents working
+by file ownership on branch `lizeem-farmlands` after the groundwork for Builds 2 to 5, and wired into the game by an
+integrator the same day. The report, the files and the evidence are in
+[`docs/region-reviews/lizeem-farmlands-handoff.md`](region-reviews/lizeem-farmlands-handoff.md). What follows records
+what the build is, step by step against sections 5.2 and 5.3, and where it departs from the text above.
+
+### Nethereum: Haethom and the meadow (section 5.2)
+
+- **The place.** Haethom, four houses round a common on the north-east rim where the Sacred Way runs out (-2290, 335),
+  above the reliable line (18 m). The levee is a 1.1 m turf bank along the north-east thread from the rim to the basin
+  floor, its head a round where the Council sits and Fintan speaks the Recall; the hatch is a timber sluice in a notch
+  of it. Eight meadow beds lie inside the levee and four deep plots below the line by Liban's house on its hummock.
+  Boann's byre is on the north rim; Gwyddno's weir, smoke-house and hut are on the Neth below the ford. The levee and
+  the hummock are built ground in `world.heightAt` (`nethereumFarmHeight`), not terrain.
+- **Timing the water** (`src/content/regions/nethereum/meadow-water.js`). Mended with two planks and a piece of salvaged metal, the hatch is
+  worked with F from the meadow side: open, the water goes in black for three minutes, the silt shines for four, then
+  the frogs start. Drawn off at the shine, the meadow and the deep plots take fine silt (flood oats fit 2), black thin
+  (1), after the frogs sour (0). The silt feeds one sowing. The meadow grows its own hay after every draw-off; a farmer
+  of Farming 10 gets a second cut off a bed left bare five minutes after the first. The scenery shows the hatch broken,
+  shut or open and the water black, shining or souring.
+- **The steps** (`src/content/quests/lizeem-farmlands/lizeem-nethereum.js`): Mererid on the levee; mend the hatch with Seithenyn; learn the water,
+  drown the meadow and draw it off at the shine; flood oats and the first cut; Boann's wolves (three, on the rim
+  pasture west of her byre, a fight); Fine oats and the second cut; oatcakes and smoked fish in hand at Fintan's Recall,
+  where Ceridwen is among the names of the Long Water and the name may be carried; the dish to Taleth, who teaches
+  *Quicken*. Experience lumps 150, 200, 300, 400 and 1,000 as in Build 1.
+- **The levee tenth** is taken on every Nethereum bed and waived for a game day after a turn of levee work with
+  Mererid. **The deep plots** open at the end at Farming 16; the water takes one planting in five there.
+- **The weir** gives three fish a game day (five at Fishing 5), Fine before noon. Smoked fish is cooked at any lit fire
+  (the kitchen has no place in it); Gwyddno teaches it at the smoke-house.
+- **Seithenyn's minding**: for one dish he draws the meadow off at the shine once while Rollo is away.
+
+### Nesdor: Ninehands and the strips (section 5.3)
+
+- **The place.** Ninehands on the western Flats (-1595, 585): a long house, a barn and Byggvir's malt-house round a yard,
+  Beyla's hives, the seed bench, and three strips of three beds laid down the fall toward the braids, the rise
+  (7.6 m), the drained bench (7.5 m) and the wet strip (7.3 m); Baugi's long strip of six beds lies on bench ground to
+  the west. Idunn's six hazel stools and her house are at the valley head; the Counted Water and Forseti's house stand
+  where the Way meets the army's rope line; the Carica ford is marked with a post. The farm road comes down the valley
+  head from the ford, rounds the Ela-south and wades the reach into the yard.
+- **Right crop, right ground** (`src/content/regions/nesdor/flats-ground.js`): floodwheat on the bench, rye on the rise, barley either; nothing
+  thrives on the wet. *Sound the Soil* reads what the strips are dressed with, as Baugi does: rushes and red-stemmed dock
+  on the wet, broad green dock on the cracking silt of the bench, yellowing dock among stones on the rise.
+- **The steps** (`src/content/quests/lizeem-farmlands/lizeem-nesdor.js`): ford the Carica and find Baugi; read the strips and sow a whole strip each of
+  floodwheat, barley and rye on its ground (the wet strip remembered as the trap); reap a whole strip by walking it
+  from its end post (two seconds a bed); the foragers (give a quarter to Cedric's men or the rebellion's, bargain to a
+  tenth on Forseti's three-copper paper, or drive them off in a fight with three); Fine floodwheat; white bread and a
+  nut cake, sealed by Nepri or Consus and carried to Taleth, who teaches *The Work of Nine*. Baugi lends the long strip
+  at Farming 24. Nesdor takes no share. The rebellion pays in paper, which Forseti changes at a copper a note.
+
+### Where Builds 2 and 3 depart from the text, and why
+
+- **Bolverk's match** (settled at integration): he takes five seconds over a strip and the match is won only by a reap
+  no slower, with no margin. A walk takes six, so the walk always loses, as he says it will; the Work of Nine, cast on
+  Ninehands while the match stands, takes no time and wins it.
+- **Hazelnuts are graded by the picker's hand**: Fine at Farming 16, Prize at 20, coming in as `hazelnuts-fine`. A
+  picking has no fit or watering to grade, and without it the Measure's hazelnut line and the fine nut cake could not be
+  reached. A Prize picking is written in the Measure at once, as a Prize harvest is.
+- **Airmid's basket** adds its one through the farm (`onHarvest` handlers may now return `{ added }`), so the harvest's
+  count says so and a full satchel adds nothing.
+- **The long strip** is registered at start-up and kept shut, rather than left out of the farm, so a save that has
+  worked it always validates; the bed prompt, the reaping and the field workings all pass it over until Baugi lends it.
+  Liban's deep plots are shut to sowing, and to the staff, the same way until she lets them.
+- **The first cut of hay** is not gated on Farming 5: the meadow grows it for anybody, and the level counts towards its
+  grade as every crop's does. The skill sheet lists hay at 5 and the second cut at 10.
+- **No order board in Nethereum** (section 7.7 names none there). The Way board is Forseti's.
+- **Nesdor's region record still lists nobody** (`tests/eer-world.test.js` holds Nesdor, like Caricas, to placing no
+  one itself); its eight are stood up by the game after the cast is trimmed, as Caricas's are. Nethereum's record lists
+  its seven.
+- The people's looks are the design's, written in the figure kit's words; they still want the user's approval.
+
+
+**Builds 4 and 5.** Ovesos (Build 4), the Dividing, the rest of Minora's people, Amalthea's hamlet and the rest of the
+Farming ladder (Build 5) were built on 6 October 2026 under the same "keep building everything", by four agents working
+by file ownership on branch `lizeem-farmlands` (Ovesos's terrain and scenery; the canal and the mill; the Ovesos arc and
+its people; the Dividing and the rest of Minora), and wired in by an integrator the same day. The report, the files and
+the evidence are in the same handoff. What follows records the build against sections 4.6, 5.4, 5.5, 6.2, 6.6 and 7,
+and where it departs from the text.
+
+### Ovesos: Velsorten and the canal (section 5.4)
+
+- **The green belt** (`src/content/regions/oves/oves-world.js` `ovesosBelt`, the user's ruling of 5 October): Ovesos is tinted and planted
+  by its distance from the water, full green within 45 m of the Lizeem and gone by 165 m (30 and 120 m in the south,
+  22 and 100 m along the Neth). Poplar, willow and tamarisk stand in a gallery along the Lizeem and the Neth with lone
+  trees in the belt; green grass comes from a second seeded stream, and wormwood and saltbush thin out inside the belt.
+  The heights are unchanged and every hex stays `BSh`, so the dry south-west is distance from water and not a climate.
+  A new chart name, the Lizeem Bank, and four rewritten landmark descriptions. No stock is placed (twenty tests read
+  the west's life zones), so Lahar's flock is in his words only.
+- **Velsorten** (`src/content/regions/oves/ovesos-farm.js`, `src/content/regions/oves/ovesos-farm-scenery.js`): the Water Council's village on the terrace above
+  the Sorten, round a square of beaten earth at (-1895, 699) that holds the region's spawn: Nisaba's register house
+  (-1873, 700) with the register board before it, Ninkasi's brewhouse (-1886, 677), Ezina's mill (-1911, 684) and
+  Uttu's fulling mill (-1927.5, 701) across the canal, each with a wheel in the canal that turns while it runs, Uttu's
+  tenters and dye vats, Ziusudra's great house by the head plots (-1997, 551), Ashnan's cottage past the tail
+  (-1915, 730), the warden's hut by the divider (-1948, 539.5), and Lahar's camp on the upland grass (-2050, 598): two
+  tents, a hearth, a cheese rack, a rick and a fold. Mailboxes for Ziusudra, Ashnan and Enbilulu. Building pads stand
+  at least 235 m from Gala.
+- **The canal** leaves the Lizeem at the divider (-1962, 536), a dressed stone with three sluices on the bank, and runs
+  222.6 m south on banks of its own through (-1918, 682) to a dry tail at (-1936, 748). Its banks and carried bed are
+  built ground in `world.heightAt` (`ovesosFarmHeight`), as Haethom's levee is. Twelve plots lie on it in three
+  reaches, the oldest rights by the river: the head (four plots 40 m from the Lizeem, full belt), the middle (four,
+  about 116 m out) and the tail (four, about 150 m out, no belt at all). The way comes over the Neth at its ford, east
+  across the upland grass past Lahar's camp, round Ziusudra's house, over the canal below the divider and down its
+  east bank to the square.
+- **Sharing the water** (`src/content/regions/oves/canal-turns.js`): five rights share the canal by turns of four minutes of play, the oldest
+  first, round and round from the first second of play. Rollo comes in as the newest (seniority 1, the fifth turn) and
+  each step up moves his turn one place nearer the divider. His turn gives him a measure of units to divide at the
+  divider, 3 plus his seniority (4 at the tail, 8 at the top). Each crop has a thirst: hard wheat 3, barley and madder
+  2, silver millet 1. The fit is judged at harvest from the water the planting was given (exactly its thirst 2, one short
+  1, anything else 0), so a wrong measure gives a Plain crop and never kills one. Water past the thirst leaves salt, and
+  the next crop in that bed comes to nothing unless it is barley or the bed has rested bare a game day. `src/gameplay/skills/farming/farming.js`
+  now lets a country judge at harvest (`registerCountry(..., { judge: 'harvest' })`) for this.
+- **The divider** in the game: within reach of its stone, F says whose the water is and when Rollo's comes; in his turn
+  it opens on his measure ("Measure 4/4"), lists each growing plot with its crop and its water against its thirst, and
+  gives one, two or three units at a time until he leaves the rest. The toast "Your turn at the divider" announces each
+  of his turns once he is in the register.
+- **The dues** (section 7.3): a measure of grain is owed for every ten units drawn, reconciled at the Harvest Close from
+  the satchel, barley before hard wheat and plain before fine; millet's water counts for nothing. A day's work on the
+  canal head with Enbilulu (once the head is clear) writes a measure off in the warden's book, up to thirty.
+- **Ezina's mill** grinds two sheaves of hard wheat into a measure of flour (Fine wheat into fine flour) and keeps every
+  sixteenth measure, counted across grindings, until the arc waives the toll. Grinding is a choice in her conversation.
+- **The steps** (`src/content/quests/lizeem-farmlands/lizeem-ovesos.js`): ford the Neth to Velsorten and be entered by Nisaba at the tail; hear
+  Enbilulu on the turns; the first turn at the tail (barley and silver millet sown there, a turn's water divided, and
+  salt learned from Enbilulu, Ashnan or a bed given too much); clear the canal head with Enbilulu, a stretch between
+  turns, three in all, and bring in a full barley harvest (Good or better), for which the Council moves Rollo up a turn;
+  sow hard wheat (Farming 10); Ziusudra's house lifts the head sluice out of turn and Rollo's next turn comes down half
+  short, answered before the Water Council at the register house from Nisaba's register (wins, and up a turn), on
+  Ashnan's witness (wins, the half turn given back, and her season's dues called in, which Rollo may pay, 30 copper) or
+  settled quietly (40 copper, and nothing but peace); Fine hard wheat; ground at Ezina's mill; flatbread (taught by
+  Ezina) sealed by Nepri or Consus and carried to Taleth. Lumps 150, 200, 300, 400 and 1,000.
+- **What he earns**: a senior right (seniority 4, "second at the stone", after only Ziusudra's house), the mill's toll
+  waived, and his name read by Nisaba at the next Harvest Close, once. The plots open by seniority (the tail at 1, the
+  middle at 3, the head at 5), so the head plots need a right bought outright from Nisaba: 1,500 copper a step, sold
+  only at Farming 28.
+- **The people** (`src/content/quests/lizeem-farmlands/lizeem-ovesos-people.js`): the eight of section 6.6 at their stands, in the design's looks,
+  nobody in a hat; King Melos is spoken of and never placed. Buyers: Ezina, Ninkasi, Uttu and Lahar (who serves roasted
+  barley before he trades, and takes a refusal badly), and Nisaba's register board.
+
+### The Dividing (section 5.5)
+
+- **When** (`src/content/quests/lizeem-farmlands/dividing.js`): Taleth's topic "The Dividing" is shown locked until the charge is taken and all four
+  countries are restored (the Caricas arc and the Nethereum, Nesdor and Ovesos arcs at `done`). The Dividing is then
+  the hub's fifth arc: a card on the tracker, Taleth marked, and a trestle with four stone bowls of river water and the
+  jug (`src/content/quests/lizeem-farmlands/dividing-scenery.js`) on the west side of the forecourt (-2420.5, 59.5), clear of the start and of Taleth,
+  from that day on.
+- **Asked**, Taleth teaches fork stew both ways: bridge rye, flood oats, a weir fish and a wheat from either bank,
+  floodwheat (`fork-stew`) or hard wheat (`fork-stew-oveth`). It is cooked at any lit fire and heals 60, the one food
+  over the larder's 50. **Served**, Taleth pours the four bowls and names the countries, Seshat and Nepri each say a
+  line in their own voices, the stew is eaten standing as the Old Island eats it, 1,000 Farming experience is paid, and
+  the journal enters "Walker of the Measure". Afterwards his greeting changes and the two later charges stay locked
+  with "After the Dividing: not yet written."
+
+### The rest of Minora and Amalthea's hamlet (section 6.2)
+
+- **Manawydan, Njord and Adapa** keep the three market stalls that stood empty since Build 1; **Hapi** stands on the
+  river side of the River storehouse (-2337, 209.6). Njord carries Forseti's Way board, so an order filled at his stall
+  is filled at hers. Hapi's news follows the farmlands down the river. With them every person of section 6.2 is placed.
+- **Hapi's terms** (settled at integration): `src/gameplay/inventory/merchants.js` now lets a `rate` buyer keep a finite appetite, and
+  takes `fineOnly` and `secondLot: false`. The barge buys sealed Fine or Prize goods only, a lot of ten of each of the
+  river's goods a day, at twice the home price, with no second lot.
+- **Amalthea's hamlet** (`src/content/regions/minora-frontier/isareos-hamlet.js`, `src/content/regions/minora-frontier/isareos-hamlet-scenery.js`): one house, a byre, the cheese press
+  under a lean-to, her stand, a rick, a trough and a stack of turves on the open grass top of the shoulder between the
+  west and middle becks, 228 m north-west of the Muster Gate, 121 m from Wilhelm's camp and 145 m from the centaurs'
+  route. Nothing is sown there. A 160 m track runs from the end of the Muster road inside the camp, out between its
+  tent rows, over the middle beck and along the shoulder. Amalthea buys hay, sells ewe cheese, and teaches the rye loaf
+  with onion and river cheese to a man nobody has taught it to yet.
+
+### The Farming ladder (section 4.6)
+
+`src/gameplay/skills/skills.js` lists the whole of the table: silver millet at 1, a practised hand at 5, hard wheat at 10, madder at
+18, Prize grade at 20 and the water right at 28 are in play; the second farmstead (7), orchard trees of your own (14),
+seed-saving (20), more farmsteads (24), grafting (30), a farmstead of your own (40) and a measurer's seal of your own
+(50) are listed "to come".
+
+### Where Builds 4 and 5 depart from the text, and why
+
+- **The water is judged at harvest**, not at sowing: the canal's units arrive after the seed goes in, so `src/gameplay/skills/farming/farming.js`
+  asks the canal afresh each time it reads an Ovesos planting (three lines, settled at integration).
+- **Ziusudra's half turn is the arc's**, not the canal's: the divider allots through the arc, which holds that one
+  turn to half its measure. "A full barley harvest" is read as Good or better.
+- **The canal head is cleared in three stretches**, one between turns (nobody digs in running water), and after it is
+  clear a day's work there counts a measure toward the dues.
+- **The head plots need a bought right.** The plots open by seniority (tail 1, middle 3, head 5) and the arc's reward
+  is 4, so the head is reached only by Nisaba's sale, gated at Farming 28 (settled at integration) as section 4.6 has it.
+- **Ezina teaches the flatbread** and Ashnan the porridge; section 6.6 names no teacher for the bread.
+- **The dye crop is madder**, by name, so the price table's `dye-crop` became `madder`; `millet` became `silver-millet`
+  and `flour` became `hard-wheat-flour`, which keeps the kind `flour` so the Nesdor carter still buys it. Cloth (8) and
+  mutton (3) are priced.
+- **Ovesos takes no share at harvest**: its dues are reckoned at the Close, from the water drawn.
+- **Looks the kit could not draw**: Ninkasi has the kit's short curls (its long curls are over a civilian's triangles);
+  Uttu is drawn as a woman, as the goddess is (section 6.6 does not say); the scarves and hair-cloths, the wet hem, the
+  reed pens, the sling, the flour and the blue hands are left to the lines.
+- **Fork stew** takes a named grain from each country (bridge rye, flood oats, floodwheat or hard wheat) and a weir
+  fish, and heals 60, against section 7.6's "1 rye, 1 oats, 1 wheat, 1 fish"; the larder test now allows it alone
+  over 50.
+- **Seshat and Nepri speak at the Dividing in their own boxes**, from wherever they stand. The places kept for them by
+  the trestle (`DIVIDING_PLACES.guests`) are not used: nobody walks them up from the Library and the storehouse.
+- **The canal always shows water.** Its scenery can be set dry or running, and the game leaves it running: some right's
+  turn is always on.
+
+### First-pass numbers in Builds 4 and 5
+
+| what | value | where |
+| --- | --- | --- |
+| Crops | hard wheat 360 s, 60 XP, level 10, yield 2; silver millet 150 s, 24 XP, level 1, yield 3; madder 480 s, 70 XP, level 18, yield 2; barley stays the commons' 240 s | `src/content/regions/oves/ovesos-produce.js` |
+| Turns | 240 s a turn, five rights, a round of 1,200 s; measure 3 + seniority (4 to 8) | `src/content/regions/oves/canal-turns.js` |
+| Thirst and fit | hard wheat 3, barley 2, madder 2, millet 1; exact 2, one short 1, else 0 | `OVESOS_THIRST`, `fitForUnits` |
+| Salt | any unit past the thirst; spoils the next crop but barley unless the bed rests a game day (1,440 s) | `src/content/regions/oves/canal-turns.js` |
+| Dues | a measure of grain per 10 units drawn, millet exempt; a day on the head writes off one, up to 30 | `DUES_UNITS`, `MOST_CREDIT` |
+| Mill | 2 sheaves a measure; every 16th measure the toll; waived on restoring Ovesos | `MILL_GRAIN`, `MILL_TOLL` |
+| Arc | lumps 150, 200, 300, 400, 1,000; settling 40; Ashnan's dues 30; a right 1,500 at Farming 28; plots tail 1, middle 3, head 5; reward seniority 4 | `src/content/quests/lizeem-farmlands/lizeem-ovesos.js` |
+| Dishes | flatbread 30 (fine 40), recipe XP 25 (35); millet porridge 30 (40), 20 (30); mutton 25; fork stew 60, 60 XP | `src/content/regions/oves/ovesos-produce.js`, `src/content/quests/lizeem-farmlands/dividing.js` |
+| The Dividing | 1,000 Farming XP once | `DIVIDING_XP` |
+| Prices | silver millet 1, hard wheat 2, hard-wheat flour 3, madder 4, flatbread 4, porridge 2, fork stew 12, cloth 8, mutton 3 | `src/gameplay/inventory/prices.js` |
+| Ovesos buyers | Ezina hard wheat 24 (flour 3); Ninkasi barley 24 (ale 3); Uttu madder 12 (cloth 8); Lahar barley 12 and hay 12 (mutton 3, ewe cheese 4); Nisaba's board, eight postings | `src/content/quests/lizeem-farmlands/lizeem-ovesos-people.js` |
+| Minora buyers | Manawydan east-bank goods 20; Njord flour and dishes 12; Adapa rye, oats, fish and hay 20 (flour 3, cloth 8, hard-wheat seed 2); Hapi 10 of each good, Fine or Prize sealed, x2, no second lot; Amalthea hay 12 (ewe cheese 4) | `src/content/quests/lizeem-farmlands/lizeem-minora-people.js` |
+| Belt | full within 45 m of the Lizeem, none past 165 m (30 / 120 m in the south; Neth 22 / 100 m) | `src/content/regions/oves/oves-world.js` |
+
+### Open questions for the user (Builds 4 and 5)
+
+1. **The canal's lift.** The canal's head stands about 3 m above the Lizeem's surface, so water could not run into it
+   from the river by itself. It is left as built. A noria (a water wheel lifting the river into the head) at the
+   divider would explain it; should one be added?
+2. **The looks.** Every person of Builds 4 and 5 wears the design's look in the kit's words, and none has the user's
+   approval; nor do the hamlet, Velsorten or the Dividing's trestle.
+3. **Seed-saving** at Farming 20 is listed "to come": the farm has no hook yet for the next sowing's grade.
+4. **The first cut of hay** in Nethereum is still not gated at Farming 5 (the meadow grows it for anybody); the ladder
+   lists it at 5.
+5. **Barley at the tail** ripens in one turn's length (240 s), so it must be sown at the start of Rollo's turn, or just
+   before it, to be given its water at all. Should barley or the turn be longer?
 
 ---
 

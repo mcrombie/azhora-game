@@ -49,7 +49,8 @@
 export const TRIMMED = true;
 
 /** What may be started while the slate is trimmed. */
-export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer', 'civil-war-drent', 'batman-suval']);
+// 'lizeem-farmlands': Taleth's charge (the user, 5 October 2026: "go ahead and implement"; src/content/quests/lizeem-farmlands/lizeem-farmlands.js).
+export const LIVE = Object.freeze(['main', 'bridge', 'doomsayer', 'civil-war-drent', 'batman-suval', 'lizeem-farmlands']);
 
 /** Everything the trim closes, by the name this file knows it under. */
 export const CLOSED = Object.freeze(['courier', 'waymarkers', 'greenway', 'acorns', 'forest',

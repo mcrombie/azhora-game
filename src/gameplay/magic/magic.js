@@ -1,4 +1,7 @@
-import { SPELLS, SPELL_IDS, FOCUS_WEAPONS, castWith, focusAt, spellXp, readingXp, learnableSpell } from './sorcery.js';
+import { SPELLS, SPELL_IDS, FOCUS_WEAPONS, SORCERY, castWith, focusAt, spellXp, readingXp, learnableSpell, fieldXp, soundingText } from './sorcery.js';
+import { ALL_FARM_ROWS, farmRow } from '../skills/farming/farming.js';
+import { bedOpen } from '../../content/regions/nesdor/flats-ground.js';
+import { gameDay } from '../inventory/merchants.js';
 import { meleeLineClear } from '../combat/melee-contact.js';
 import { forestSegmentHit } from '../combat/forest-sightline.js';
 import { forestBodyHit } from '../combat/forest-arrows.js';
@@ -11,6 +14,9 @@ const alive = actor => finite(actor) && !actor.dead && actor.active !== false &&
   && !(Number.isFinite(actor.hp) && actor.hp <= 0);
 const gap = (a,b) => Math.hypot(a.x-b.x,a.z-b.z);
 const forestRanger = actor => (actor.npcId ?? actor.id)?.startsWith('ibenwood-ranger-');
+/** How many beds a dew reached, whatever shape the farm answered in (src/gameplay/skills/farming/farming.js `waterAllWithin`). */
+const wateredCount = answer => Number.isFinite(answer) ? Math.max(0, Math.floor(answer))
+  : Array.isArray(answer) ? answer.length : Number.isFinite(answer?.count) ? answer.count : Array.isArray(answer?.watered) ? answer.watered.length : 0;
 
 /** Thoughts are authored flavour, never extra testimony or a substitute for Troy's case. */
 export function thoughtOf(npc) {
@@ -27,6 +33,8 @@ export function thoughtOf(npc) {
 
 export function validateMagicSnapshot(data) {
   return !!data && data.version === MAGIC_VERSION && Array.isArray(data.learned)
+    // The game day Quicken was last worked (6 October 2026); a save from before it has none.
+    && (data.quickened === undefined || (Number.isSafeInteger(data.quickened) && data.quickened >= 0))
     && data.learned.every(id => SPELL_IDS.includes(id) && learnableSpell(id)) && new Set(data.learned).size === data.learned.length
     && (data.selected === null || data.learned.includes(data.selected))
     && Number.isFinite(data.focus) && data.focus >= 0 && data.focus <= 200
@@ -37,11 +45,16 @@ export function validateMagicSnapshot(data) {
 /** Small spell runtime shared by the game and tests. Only learned spells are castable:
  * level one in a school does not mean its teacher has already shown the spell.
  * `damageWorld` applies one external NPC contact and returns actual {damage,hp,maxHp,dead}.
+ * Field sorcery (Taleth's, 5 October 2026) works on the farm: `farming` is the farming model
+ * (`describeBed`, `waterAllWithin`, `rowState`, `ripen`, `sowable`, `harvestAll`, `sowAll`), `clock`
+ * the play clock it grows on, and `fieldBeds` where the beds are (the farm's live list, so a country's
+ * beds registered at start-up are worked too); a working that finds nothing to work on costs nothing.
  */
 export function createMagic({ skills, inventory, weapons, combat, position, world,
-  getBodies = () => [], damageWorld = () => null, getCastOrigin = () => null, onEvent = () => {} } = {}) {
+  getBodies = () => [], damageWorld = () => null, getCastOrigin = () => null, onEvent = () => {},
+  farming = null, clock = () => 0, fieldBeds = ALL_FARM_ROWS, fieldOpen = () => true } = {}) {
   const learned = new Set(), read = new Set();
-  let selected = null, focus = 60, pending = null, recovery = null, sequence = 0;
+  let selected = null, focus = 60, pending = null, recovery = null, sequence = 0, quickened = null;
   const projectiles = [], swarms = [];
   const emit = (type, value = {}) => onEvent({ type, ...value });
   const caster = () => typeof position === 'function' ? position() : position;
@@ -115,14 +128,112 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
     if (!FOCUS_WEAPONS[weapon.id]) return result(false,'equipment','Equip your wand or oak staff in the satchel first.');
     if (!weapon.usable) return result(false,'broken','Your casting weapon is broken. Equip a usable wand or oak staff.');
     if (focus < cost) return result(false,'focus','Not enough focus. It returns outside combat.');
+    if (SPELLS[id].daily && quickened === today()) return result(false,'spent',`${SPELLS[id].name} has been worked today. The ground will hurry again tomorrow.`);
     return result(true,'ready');
   }
+  const now = () => Number(typeof clock === 'function' ? clock() : clock) || 0;
+  const today = () => gameDay(now());
 
-  function cast(id = selected, { target = null, yaw = caster()?.yaw ?? 0 } = {}) {
+  /**
+   * Whether the staff may work a bed (6 October 2026): not one the farm keeps shut (src/content/regions/nesdor/flats-ground.js `bedOpen`,
+   * Baugi's long strip before he lends it), nor one the host shuts (`fieldOpen`: Liban's deep plots before they are let).
+   */
+  const workable = bed => (!farmRow(bed.id) || bedOpen(bed.id)) && fieldOpen(bed.id) !== false;
+  /** The bed nearest a point, within `reach` metres, that `accepts` takes, or null. Shut beds are passed over. */
+  function nearestBed(at, reach, accepts = () => true) {
+    let best = null, gapTo = Infinity;
+    for (const bed of fieldBeds ?? []) { const d = gap(bed, at); if (d <= reach && d < gapTo && workable(bed) && accepts(bed)) { best = bed; gapTo = d; } }
+    return best;
+  }
+  const stageOf = (bedId, at) => farming?.rowState?.(bedId, at)?.stage ?? null;
+
+  /**
+   * **Quicken** (6 October 2026): the nearest bed within reach that is sown and still growing is ripe
+   * at once (the farm's `ripen`). Once a game day; the day is saved with the spells.
+   */
+  function quicken(id, profile, from, at) {
+    if (quickened === gameDay(at)) return {ok:false,code:'spent',reason:`${SPELLS[id].name} has been worked today. The ground will hurry again tomorrow.`};
+    const bed = nearestBed(from, profile.range, entry => stageOf(entry.id, at) === 'sown');
+    if (!bed) return {ok:false,code:'no-growing-bed',reason:`Stand within ${profile.range} paces of a bed that is growing, then plant the staff.`};
+    const answer = farming?.ripen?.(bed.id, at) ?? null;
+    if (!answer?.ok) return {ok:false,code:'unripened',reason:answer?.reason ?? 'The ground will not hurry.'};
+    focus -= profile.cost; selected = id; quickened = gameDay(at); skills.gain(profile.school, fieldXp('quicken'));
+    const crop = String(answer.cropName ?? 'crop').toLowerCase();
+    const result = {ok:true,id,kind:'quicken',bedId:bed.id,name:bed.name ?? 'The bed',crop:answer.crop ?? null,
+      text:`The staff goes into the ground and the ground hurries the ${crop} to the sickle. It is ripe now.`};
+    emit('field-working', result); return result;
+  }
+
+  /**
+   * **The Work of Nine** (6 October 2026): the farmstead of the nearest bed within reach, worked whole.
+   * Every ripe bed is reaped and every bed that was bare is sown, with `seed` (a crop id) when given, or
+   * with the one kind he carries that will grow there. Carrying more than one kind and naming none, the
+   * working asks (`code: 'choose-seed'`, with `choices`) and costs nothing until he answers.
+   */
+  function workOfNine(id, profile, from, at, seed) {
+    const near = nearestBed(from, profile.range);
+    if (!near) return {ok:false,code:'no-farm',reason:`Stand within ${profile.range} paces of a farm, then plant the staff.`};
+    const farmstead = near.farmstead ?? near.farmId ?? null;
+    const beds = farmstead ? (fieldBeds ?? []).filter(bed => (bed.farmstead ?? bed.farmId) === farmstead && workable(bed)) : [near];
+    const ripe = beds.filter(bed => stageOf(bed.id, at) === 'ripe').map(bed => bed.id);
+    const bare = beds.filter(bed => stageOf(bed.id, at) === 'bare').map(bed => bed.id);
+    const choices = [];
+    for (const bedId of bare) for (const kind of farming?.sowable?.(bedId) ?? [])
+      if (kind.seeds > 0 && !choices.some(choice => choice.id === kind.id)) choices.push({id:kind.id,name:kind.name,seeds:kind.seeds});
+    if (bare.length && !seed && choices.length > 1)
+      return {ok:false,code:'choose-seed',id,farmstead,ripe:ripe.length,bare:bare.length,choices,reason:'Which seed should the bare beds take?'};
+    if (bare.length && seed && !choices.some(choice => choice.id === seed)) return {ok:false,code:'no-seed',reason:'You carry no seed of that kind that these beds will take.'};
+    const sowWith = bare.length ? seed ?? (choices.length === 1 ? choices[0].id : null) : null;
+    const options = {working:id};
+    const reaped = !ripe.length ? [] : farming?.harvestAll ? farming.harvestAll(ripe, at, options).reaped ?? []
+      : ripe.filter(bedId => farming?.harvest?.(bedId, at, options)?.ok);
+    const sown = !sowWith ? [] : farming?.sowAll ? farming.sowAll(bare, sowWith, at, options).sown ?? []
+      : bare.filter(bedId => farming?.sow?.(bedId, sowWith, at, options)?.ok);
+    const count = reaped.length + sown.length;
+    if (!count) return {ok:false,code:'idle',reason:ripe.length ? 'There is no room in your satchel for the harvest. It is still in the ground.'
+      : bare.length ? 'You carry no seed that these beds will take.' : 'Nothing on this farm is ripe or bare. It is all growing.'};
+    focus -= profile.cost; selected = id; skills.gain(profile.school, fieldXp('nine', count));
+    const seedName = choices.find(choice => choice.id === sowWith)?.name?.toLowerCase();
+    const said = [reaped.length ? `${reaped.length === 1 ? 'one bed' : `${reaped.length} beds`} reaped` : '',
+      sown.length ? `${sown.length === 1 ? 'one bed' : `${sown.length} beds`} sown${seedName ? ` with ${seedName}` : ''}` : ''].filter(Boolean).join(' and ');
+    const result = {ok:true,id,kind:'nine',farmstead,reaped,sown,crop:sowWith,count,name:SPELLS[id].name,
+      text:`Nine pairs of hands go over the farm at once: ${said}.`};
+    emit('field-working', result); return result;
+  }
+
+  /**
+   * A field working, cast with the staff on the ground in front of him: no throw and no hit. Sound
+   * the Soil reads the nearest bed through the farm (`describeBed`); Call the Dew waters every
+   * growing bed within reach (`waterAllWithin`). Focus is spent only when the ground answered.
+   */
+  function work(id, profile, from, { seed = null } = {}) {
+    const now = Number(typeof clock === 'function' ? clock() : clock) || 0;
+    if (profile.field === 'quicken') return quicken(id, profile, from, now);
+    if (profile.field === 'nine') return workOfNine(id, profile, from, now, seed);
+    if (profile.field === 'sound') {
+      const bed = nearestBed(from, profile.range);
+      if (!bed) return {ok:false,code:'no-bed',reason:`Stand within ${profile.range} paces of a crop bed, then plant the staff.`};
+      const reading = farming?.describeBed?.(bed.id, now) ?? null, text = reading ? soundingText(reading) : '';
+      if (!text) return {ok:false,code:'silent',reason:'The ground here does not answer.'};
+      focus -= profile.cost; selected = id; skills.gain(profile.school, fieldXp('sound'));
+      const result = {ok:true,id,kind:'sound',bedId:bed.id,name:bed.name ?? 'The ground',text,reading};
+      emit('field-working', result); return result;
+    }
+    const answer = farming?.waterAllWithin?.({x:from.x,z:from.z}, profile.range, now) ?? null, count = wateredCount(answer);
+    if (!count) return {ok:false,code:'dry',reason:answer?.reason ?? 'No growing bed within reach wants water.'};
+    focus -= profile.cost; selected = id; skills.gain(profile.school, fieldXp('water', count));
+    const result = {ok:true,id,kind:'water',count,bedIds:Array.isArray(answer?.watered) ? [...answer.watered] : [],name:SPELLS[id].name,
+      text:`The dew settles on ${count === 1 ? 'one growing bed' : `${count} growing beds`} and the ground drinks.`};
+    emit('field-working', result); return result;
+  }
+
+  /** `seed` answers the Work of Nine's question: which crop the bare beds take. */
+  function cast(id = selected, { target = null, yaw = caster()?.yaw ?? 0, seed = null } = {}) {
     const ready = readiness(id);
     if (!ready.ok) return ready;
     const profile = castWith(id, {level:skills.level(SPELLS[id].school),weapon:ready.weaponId});
     const from = {...caster()};
+    if (profile.field) return work(id, profile, from, { seed });
     if (profile.spoken) {
       const candidates = bodies();
       const person = target ? candidates.find(body => body.id === target.id || body.npcId === target.id) :
@@ -226,12 +337,14 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
   function restore(data) {
     if(!validateMagicSnapshot(data))return false;
     learned.clear();data.learned.forEach(id=>learned.add(id));read.clear();data.read.forEach(id=>read.add(id));
-    selected=data.selected??[...learned][0]??null;focus=Math.min(data.focus,capacity().focus);stop();return true;
+    selected=data.selected??[...learned][0]??null;focus=Math.min(data.focus,capacity().focus);quickened=data.quickened??null;stop();return true;
   }
   function select(id) {if(!learned.has(id))return false;selected=id;return true;}
+  /** Focus given back from outside a cast: a harvest pays a little (`SORCERY.harvestFocus`, design section 3). */
+  function refocus(amount = SORCERY.harvestFocus) {const before=focus;focus=Math.min(capacity().focus,focus+Math.max(0,Number(amount)||0));return focus-before;}
   function cycle() {const ids=[...learned];if(ids.length)selected=ids[(ids.indexOf(selected)+1)%ids.length];return selected;}
-  return {learn,cast,readiness,update,select,cycle,restore,stop,pose,known:id=>learned.has(id),
-    snapshot:()=>({version:MAGIC_VERSION,learned:[...learned],selected,focus,read:[...read]}),
+  return {learn,cast,readiness,update,select,cycle,restore,stop,pose,refocus,known:id=>learned.has(id),
+    snapshot:()=>({version:MAGIC_VERSION,learned:[...learned],selected,focus,read:[...read],...(quickened===null?{}:{quickened})}),
     view:()=>({learned:[...learned],selected,focus,maxFocus:capacity().focus,casting:pending?.profile.id??null,readiness:readiness(),
       remaining:pending?.remaining??0,projectiles:projectiles.map(ball=>({...ball})),swarms:swarms.map(swarm=>({...swarm}))})};
 }

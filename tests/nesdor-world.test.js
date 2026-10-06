@@ -14,6 +14,8 @@ import { ELAGOS_REACHES, inElagosWater } from '../src/content/regions/ambron/ela
 import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 import { SUBREGIONS } from '../src/ui/map/map-fog.js';
 import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { LIZEEM_CARICAS_IDS } from '../src/content/quests/lizeem-farmlands/lizeem-people.js';
+import { NESDOR_PEOPLE_IDS, NESDOR_FARM_LANDMARKS } from '../src/content/regions/nesdor/nesdor-farm.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
@@ -161,17 +163,24 @@ test('The cattle of the Flats are the Vastos longhorn drawn smaller, as the lore
   life.dispose();
 });
 
-test('Nesdor is charted and listed, and nobody lives there', () => {
+test('Nesdor is charted and listed, and only the farmlands’ people live there', () => {
   const nesdor = regions.find(region => region.name === 'Nesdor');
-  assert.deepEqual([...nesdor.npcIds], [], 'terrain and wildlife only');
+  // Nesdor's people are the eight of the Farmlands of the Lizeem (the user, 5 October 2026; on 6 October
+  // 2026, "keep building everything"; src/content/regions/nesdor/nesdor-farm.js), listed by their contract ids or the farmlands'
+  // `lizeem-` ids, and nobody else. Its chart may name Ninehands, the hazel wood, the inn and the ford.
+  const nesdorPerson = id => NESDOR_PEOPLE_IDS.includes(String(id).replace(/^lizeem-/, ''));
+  assert.ok([...nesdor.npcIds].every(nesdorPerson), `only the farmlands’ people: ${[...nesdor.npcIds].join(', ')}`);
   for (const id of nesdor.landmarks)
     assert.ok(world.landmarks.some(landmark => landmark.id === id), `the chart knows ${id}`);
-  for (const landmark of WEST_REGION_LANDMARKS.filter(item => nesdor.landmarks.includes(item.id)))
+  for (const landmark of [...WEST_REGION_LANDMARKS, ...NESDOR_FARM_LANDMARKS].filter(item => nesdor.landmarks.includes(item.id)))
     assert.equal(hexOwnerAt(landmark.x, landmark.z), 'Nesdor', `${landmark.id} stands in Nesdor`);
   assert.ok(SUBREGIONS.filter(area => area.region === 'Nesdor').length >= 3);
   assert.equal(regionBuildStatus('Nesdor').playable, true);
-  // Every western region is terrain and wildlife: not one of them places a person.
-  for (const name of ['Vastos', 'Meneth', 'Caricas', 'Nesdor'])
+  // Every other western region is terrain and wildlife, except that Caricas now has the people of the
+  // Farmlands of the Lizeem (the user, 5 October 2026; src/content/quests/lizeem-farmlands/lizeem-people.js), and may list them and nobody else.
+  for (const name of ['Vastos', 'Meneth'])
     assert.deepEqual([...regions.find(region => region.name === name).npcIds], [], `${name} places nobody`);
+  assert.ok(regions.find(region => region.name === 'Caricas').npcIds.every(id => LIZEEM_CARICAS_IDS.includes(id)),
+    'Caricas places only the farmlands’ people');
   assert.equal(NESDOR_BECK.fordUntil, 1, 'the beck is shallow enough to walk through, like every beck out here');
 });

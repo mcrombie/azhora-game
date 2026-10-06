@@ -1,4 +1,4 @@
-import { MINORA_START, MAIN_QUEST_RECRUITERS } from '../../app/startup/minora-opening.js';
+import { MINORA_START, MAIN_QUEST_RECRUITERS, FREE_ROAM_GUIDANCE } from '../../app/startup/minora-opening.js';
 
 /** Native opening/save regression. All storage belongs to the isolated smoke profile. */
 export async function runMinoraOpeningChecks(h, expected = null) {
@@ -28,6 +28,23 @@ export async function runMinoraOpeningChecks(h, expected = null) {
     assert(dormant(),'Start leaves tutorial and main quest unaccepted');
     assert(h.state().region===16&&Math.hypot(h.state().position[0]-MINORA_START.x,h.state().position[2]-MINORA_START.z)<2,'Start stands in Minora');
     assert(h.canStand(),'Minora spawn is on clear walkable ground');
+    // Rollo outside the Guild tower, facing its door, with Taleth on the forecourt (5 October 2026).
+    assert(h.player()==='rollo','Developer Start walks as Rollo');
+    const kit=h.state();
+    assert(kit.inventory.includes('oak-staff')&&!kit.inventory.includes('simple-sword')&&kit.weapons.equippedId==='oak-staff','Rollo holds the oak staff and carries no sword');
+    assert(h.spells().includes('fireball'),'Rollo knows Fireball from the first moment');
+    const eye=h.camera();
+    assert(eye[2]>kit.position[2]&&eye[1]-kit.position[1]<4,'The camera stands behind him, facing the tower door, low enough to show the tower');
+    assert(document.getElementById('quest-title').textContent===FREE_ROAM_GUIDANCE.title,'The first objective is to speak with the Master Sorcerer');
+    h.talk('taleth');
+    // His greeting is two lines, and the hub's choices are drawn on the last one: read on to them (integration, 6 October 2026).
+    for(let i=0;i<10&&!document.querySelector('#dialogue-choices [data-choice]');i++)document.getElementById('dialogue-next').click();
+    assert(h.state().mode==='dialogue','Taleth answers on the forecourt');
+    for(const id of ['taleth-guild','taleth-river','taleth-war','taleth-sorcery','taleth-charge'])assert(!!document.querySelector(`[data-choice="${id}"]`),'Taleth offers '+id);
+    assert(document.querySelector('[data-choice="taleth-second-charge"]')?.disabled,'Taleth shows the later charges locked');
+    await capture('taleth');
+    choose('taleth-leave');
+    assert(h.state().mode==='playing'&&dormant(),'Leaving Taleth returns to play with the main quest still unaccepted');
     assert(!h.state().inventory.some(id=>['tutorial-letter','harbor-letter','road-token','jojo-sandwich'].includes(id)),'Start grants no tutorial letters, sandwich, or travel token');
     assert(h.state().arrivalClock<0,'Free exploration does not start the tutorial arrival event');
     await capture('start');

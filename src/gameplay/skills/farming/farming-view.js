@@ -19,14 +19,20 @@ export function createFarmingView({ scene, world, farming }) {
   };
   const beds = FARM_ROWS.map((row, index) => {
     const rowGroup = new THREE.Group(); rowGroup.name = row.name; group.add(rowGroup);
+    // A bed turned by its `yaw` (6 October 2026: the Nesdor strips lie their beds end to end, long side down the
+    // strip): a point in the bed's own frame, to the world. Unturned beds come out exactly where they always did.
+    const yaw = Number.isFinite(row.yaw) ? row.yaw : 0, cos = Math.cos(yaw), sin = Math.sin(yaw);
+    const at = (dx, dz) => [row.x + dx * cos + dz * sin, row.z - dx * sin + dz * cos];
     const ground = new THREE.PlaneGeometry(2.8, 3.1, 2, 2); ground.rotateX(-Math.PI / 2);
     const vertex = ground.attributes.position;
-    for (let i = 0; i < vertex.count; i++) vertex.setY(i, height(row.x + vertex.getX(i), row.z + vertex.getZ(i)) + .035);
+    for (let i = 0; i < vertex.count; i++) { const [x, z] = at(vertex.getX(i), vertex.getZ(i)); vertex.setY(i, height(x, z) + .035); }
     ground.computeVertexNormals(); geometries.push(ground);
     const bed = new THREE.Mesh(ground, soil); bed.name = `${row.name} soil`;
-    bed.position.set(row.x, 0, row.z); bed.receiveShadow = true; rowGroup.add(bed);
-    for (const dx of [-1.5, 1.5]) for (const dz of [-1.65, 1.65])
-      rowGroup.add(box('Low garden stake', row.x + dx, height(row.x + dx, row.z + dz) + .14, row.z + dz, .07, .28, .07));
+    bed.position.set(row.x, 0, row.z); bed.rotation.y = yaw; bed.receiveShadow = true; rowGroup.add(bed);
+    for (const dx of [-1.5, 1.5]) for (const dz of [-1.65, 1.65]) {
+      const [x, z] = at(dx, dz);
+      rowGroup.add(box('Low garden stake', x, height(x, z) + .14, z, .07, .28, .07));
+    }
     const foliage = new THREE.InstancedMesh(leaves, leaf, 24), roots = new THREE.InstancedMesh(round, produce.clone(), 8);
     const stalks = new THREE.InstancedMesh(unit, stem.clone(), 8);
     const petals = new THREE.InstancedMesh(petal, material(0xf1c735), 80);
@@ -37,7 +43,7 @@ export function createFarmingView({ scene, world, farming }) {
     materials.push(roots.material, stalks.material);
     foliage.name = `Row ${index + 1} crop leaves`; roots.name = `Row ${index + 1} crop produce`; stalks.name = `Row ${index + 1} crop stalks`;
     for (const mesh of [foliage, roots, stalks, petals, seedheads]) { mesh.castShadow = true; mesh.receiveShadow = true; mesh.frustumCulled = false; rowGroup.add(mesh); }
-    return { row, rowGroup, bed, foliage, roots, stalks, petals, seedheads, key: null };
+    return { row, at, rowGroup, bed, foliage, roots, stalks, petals, seedheads, key: null };
   });
   // A shared seed crate and watering can sit on the edge; neither blocks feet or row access.
   for (const supply of [{ x: FARMER.x + .2, z: FARMER.z - 1.9 }, ARI_GARDEN_SUPPLIES]) {
@@ -49,43 +55,67 @@ export function createFarmingView({ scene, world, farming }) {
   box('Watering can spout', supply.x + 1.32, y + .37, supply.z, .35, .07, .07, can.material).rotation.z = .4;
   }
 
-  const instance = (mesh, index, x, y, z, sx, sy, sz, rotation = 0) => {
-    pose.position.set(x, y, z); pose.scale.set(sx, sy, sz); pose.rotation.set(0, rotation, 0); pose.updateMatrix(); mesh.setMatrixAt(index, pose.matrix);
+  const instance = (mesh, index, x, y, z, sx, sy, sz, rotation = 0, tilt = 0) => {
+    pose.position.set(x, y, z); pose.scale.set(sx, sy, sz); pose.rotation.set(tilt, rotation, 0); pose.updateMatrix(); mesh.setMatrixAt(index, pose.matrix);
   };
   function update(playSeconds, observer = null) {
     for (const part of beds) {
       part.rowGroup.visible = !observer || Math.hypot(part.row.x - observer.x, part.row.z - observer.z) < 110;
       if (!part.rowGroup.visible) continue;
       const row = farming.rowState(part.row.id, playSeconds), growth = Math.floor(row.progress * 12) / 12;
-      const key = `${row.crop}:${row.stage}:${growth}:${row.watered}`;
+      // Bridge rye lodges on rich ground (src/gameplay/skills/farming/farming.js): a heart-3 bed lays its ripening rye over.
+      const lodged = row.crop === 'bridge-rye' && row.heart >= 3 && growth >= .6;
+      const key = `${row.crop}:${row.stage}:${growth}:${row.watered}:${lodged}`;
       if (part.key === key) continue; part.key = key;
       part.bed.material = row.watered ? wetSoil : soil;
       for (const mesh of [part.foliage, part.roots, part.stalks]) mesh.visible = row.stage !== 'bare';
       const sunflower = row.crop === 'sunflower', flowering = sunflower && growth >= .58;
       part.petals.visible = flowering; part.seedheads.visible = flowering;
       if (row.stage === 'bare') continue;
-      part.roots.visible = !sunflower;
-      const cereal = row.crop === 'barley', tobacco = row.crop === 'drent-leaf', beet = row.crop === 'beet';
+      // Madder shows its red roots at the foot only when they are ready to lift (6 October 2026).
+      part.roots.visible = !sunflower && !(row.crop === 'madder' && row.stage !== 'ripe');
+      const barley = row.crop === 'barley', rye = row.crop === 'bridge-rye', cereal = barley || rye, tobacco = row.crop === 'drent-leaf', beet = row.crop === 'beet';
+      // The Caricas three (6 October 2026): tall grey-eared rye, bushy beans in pod, and red-fruited canes.
+      const beans = row.crop === 'field-beans', canes = row.crop === 'soft-fruit';
+      // Nethereum and Nesdor (6 October 2026): flood oats in loose nodding panicles, short meadow grass in seed, and floodwheat's
+      // bronze bearded heads on medium straw. All three carry their heads on top of the stalk, as barley and rye do.
+      // Ovesos (6 October 2026): hard wheat short and stiff with dense golden ears; silver millet with small pale silver heads
+      // that nod a little; madder sprawling low in whorls of leaves, its red roots at the foot once they are ready.
+      const hardWheat = row.crop === 'hard-wheat', millet = row.crop === 'silver-millet', madder = row.crop === 'madder';
+      const oats = row.crop === 'flood-oats', hay = row.crop === 'meadow-hay', wheat = row.crop === 'floodwheat', headed = cereal || oats || hay || wheat || hardWheat || millet;
       const size = .22 + .78 * growth, ripe = row.stage === 'ripe';
-      part.roots.material.color.setHex(cereal ? 0xd5b15c : tobacco ? 0x74934c : beet ? 0x913c54 : 0xe58b30);
-      part.stalks.material.color.setHex(cereal && ripe ? 0xc7aa65 : 0x6d8b42);
+      part.roots.material.color.setHex(barley ? 0xd5b15c : rye ? (ripe ? 0xb7a678 : 0x93a06a) : oats ? (ripe ? 0xdccb8f : 0xa4b66f) : hay ? (ripe ? 0xb0a35f : 0x8aa34f)
+        : wheat ? (ripe ? 0xa8692f : 0x9fae62) : hardWheat ? (ripe ? 0xd9ab3f : 0x9db05e) : millet ? (ripe ? 0xd3d4c8 : 0xa9b98a) : madder ? 0xa3352b
+        : tobacco ? 0x74934c : beet ? 0x913c54
+        : beans ? (ripe ? 0x3d3326 : 0x6e8f3c) : canes ? (growth >= .7 ? 0xb3283c : 0x9cb04e) : 0xe58b30);
+      part.stalks.material.color.setHex(cereal && ripe ? (rye ? 0xb9a77a : 0xc7aa65) : oats && ripe ? 0xcdb985 : wheat && ripe ? 0xc8a764 : hay ? (ripe ? 0x9a9a55 : 0x6f9142)
+        : hardWheat && ripe ? 0xcfb266 : millet && ripe ? 0xb8b48c : madder ? 0x5d7f36
+        : canes ? 0x7a4b3a : beans && ripe ? 0x5b5a33 : 0x6d8b42);
       for (let n = 0; n < 8; n++) {
-        const x = row.x + (n % 2 ? .57 : -.57), z = row.z + (Math.floor(n / 2) - 1.5) * .64, ground = height(x, z) + .07;
-        const tall = sunflower ? (1.5 + n % 3 * .12) * size : cereal ? 1.05 * size : tobacco ? .85 * size : .33 * size;
-        instance(part.stalks, n, x, ground + tall / 2, z, sunflower ? .045 : .025, tall, sunflower ? .045 : .025);
-        instance(part.roots, n, x, ground + (cereal ? tall : tobacco ? tall * .6 : .065), z,
-          cereal ? .085 * size : tobacco ? .08 * size : .12 * size,
-          cereal ? .22 * size : tobacco ? .12 * size : beet ? .1 * size : .075 * size,
-          cereal ? .085 * size : tobacco ? .08 * size : .12 * size);
+        const [x, z] = part.at(n % 2 ? .57 : -.57, (Math.floor(n / 2) - 1.5) * .64), ground = height(x, z) + .07;
+        const tall = sunflower ? (1.5 + n % 3 * .12) * size : rye ? 1.35 * size : oats ? 1.2 * size : wheat ? 1.15 * size : hardWheat ? .88 * size : millet ? .78 * size
+          : madder ? .52 * size : hay ? (.55 + n % 3 * .08) * size
+          : cereal ? 1.05 * size : tobacco ? .85 * size : beans ? .62 * size : canes ? (.82 + n % 3 * .08) * size : .33 * size;
+        // Madder scrambles: its stems lie over to one side or the other rather than stand.
+        const tilt = lodged ? .95 + n % 3 * .12 : madder ? (n % 2 ? .72 : -.72) + n % 3 * .06 : 0, upright = Math.cos(tilt), over = Math.sin(tilt);
+        const thin = sunflower ? .045 : canes ? .032 : hardWheat ? .03 : hay || madder ? .018 : .025;
+        instance(part.stalks, n, x, ground + tall / 2 * upright, z + tall / 2 * over, thin, tall, thin, 0, tilt);
+        // An oat panicle hangs its head, and a millet head nods a little; the others hold theirs up. A madder root lies along the ground.
+        const head = oats ? .12 : hay ? .035 : wheat ? .09 : hardWheat ? .1 : millet ? .055 : madder ? .045 : cereal ? .085 : tobacco ? .08 : beans ? .045 : canes ? .07 : .12;
+        instance(part.roots, n, x, ground + (headed ? tall * upright : tobacco ? tall * .6 : beans ? tall * .55 : canes ? tall * .62 : .065), z + (headed ? tall * over : 0),
+          head * size, (oats ? .2 : hay ? .11 : wheat ? .29 : hardWheat ? .24 : millet ? .15 : madder ? .24 : rye ? .26 : cereal ? .22 : tobacco ? .12 : beet ? .1 : beans ? .13 : canes ? .07 : .075) * size,
+          head * size, 0, oats ? tilt + .5 : millet ? tilt + .3 : madder ? Math.PI / 2 : tilt);
         for (let side = 0; side < 3; side++) {
-          const angle = side * Math.PI * 2 / 3 + n * .55, spread = sunflower ? .17 : tobacco ? .18 : .105;
-          instance(part.foliage, n * 3 + side, x + Math.cos(angle) * spread * size, ground + tall * (.42 + side * .15),
-            z + Math.sin(angle) * spread * size, (sunflower ? .14 : cereal ? .025 : tobacco ? .12 : beet ? .09 : .04) * size,
-            (cereal ? .20 : tobacco ? .19 : .18) * size, (sunflower ? .32 : cereal ? .16 : tobacco ? .31 : .19) * size, angle);
+          const angle = side * Math.PI * 2 / 3 + n * .55, spread = sunflower ? .17 : tobacco ? .18 : beans ? .14 : canes ? .16 : hay ? .15 : madder ? .03 : .105;
+          const rise = tall * (hay ? .2 + side * .12 : madder ? .3 + side * .25 : .42 + side * .15);
+          // A madder whorl is a flat ring of narrow leaves round the stem, three to a stem.
+          instance(part.foliage, n * 3 + side, x + Math.cos(angle) * spread * size, ground + rise * upright,
+            z + Math.sin(angle) * spread * size + rise * over, (sunflower ? .14 : hay ? .022 : madder ? .17 : headed ? .025 : tobacco ? .12 : beet ? .09 : beans ? .1 : canes ? .12 : .04) * size,
+            (hay ? .3 : madder ? .035 : headed ? .20 : tobacco ? .19 : beans ? .14 : canes ? .1 : .18) * size, (sunflower ? .32 : hay ? .1 : madder ? .17 : headed ? .16 : tobacco ? .31 : beans ? .2 : canes ? .22 : .19) * size, angle);
         }
       }
       for (let n = 0; n < 8; n++) {
-        const x = row.x + (n % 2 ? .57 : -.57), z = row.z + (Math.floor(n / 2) - 1.5) * .64;
+        const [x, z] = part.at(n % 2 ? .57 : -.57, (Math.floor(n / 2) - 1.5) * .64);
         const y = height(x, z) + .07 + (1.5 + n % 3 * .12) * size;
         instance(part.seedheads, n, x, y, z + .045, .15 * size, .15 * size, 1);
         for (let p = 0; p < 10; p++) {

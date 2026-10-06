@@ -28,10 +28,14 @@ test('the larder lists a couple dozen foods, and each one is a stackable satchel
   for (const [id, item] of Object.entries(INVENTORY_ITEMS)) assert.ok(ICON_KINDS.includes(item.icon), `${id} icon "${item.icon}" is not drawn`);
 });
 
+// Fork stew, the dish of the Dividing, is the one food allowed past 50: it heals 60 (src/content/quests/lizeem-farmlands/dividing.js; Build 5 of the
+// Farmlands of the Lizeem, 6 October 2026). Every other food stays at 50 or less.
+const HEALING_CAP = Object.freeze({ 'fork-stew': 60 });
+
 test('every food heals a whole, modest amount and its missing message names where it comes from', () => {
   for (const id of foodIds) {
     const { healing, missing } = FOODS[id];
-    assert.ok(Number.isInteger(healing) && healing >= 10 && healing <= 50, `${id} heals ${healing}`);
+    assert.ok(Number.isInteger(healing) && healing >= 10 && healing <= (HEALING_CAP[id] ?? 50), `${id} heals ${healing}`);
     assert.match(missing, /^You have no .+\. .+\.$/, `${id} missing message`);
     assert.ok(Object.isFrozen(FOODS[id]), `${id} entry is frozen`);
   }

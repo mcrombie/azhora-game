@@ -29,15 +29,31 @@ export const PLAYER_ALIASES = Object.freeze({ crom: 'cromb', [CROMB_OLD_ID]: 'cr
 
 const sword = Object.freeze([Object.freeze({ id: 'simple-sword', quantity: 1 })]);
 const swordAnd = id => Object.freeze([...sword, Object.freeze({ id, quantity: 1 })]);
+/** What the satchel is given at boot for everybody, before anybody is chosen (src/main.js). */
+export const BOOT_KIT = Object.freeze(['simple-sword']);
+
+/**
+ * **Rollo's look** (the user, 5 October 2026): "a dark brown hood and a gray beard, wears a brown
+ * cloak, and is basically a brown-cloaked, gray wizard character", "sure gray robe". Long grey
+ * beard and grey hair, a grey robe to the ankle, a long brown cloak over it, and a dark brown hood
+ * worn up. He is on nobody's roster, so his look is his own data here, in the same words the
+ * hired company's looks are written in (src/gameplay/company/mercenaries.js); `hood` and `longCloak` are the two
+ * colours the kit had no part for (src/content/characters/characters.js). The staff is the oak staff he equips.
+ */
+export const ROLLO_LOOK = Object.freeze({
+  tunic: 0x9a9890, hair: 0xa8a59d, skin: 0xcfa985, build: 'tall-lean', headgear: 'raised-hood', hood: 0x3b2a1d,
+  hairStyle: 'long-loose', facialHair: 'long', garment: 'robe', jerkin: false, longCloak: 0x5e4331, marks: Object.freeze([]),
+});
 
 const playable = (id, name, title, roster, blurb, weapon, inventory, skills, extra = {}) =>
   Object.freeze({ id, name, title, roster, blurb, weapon, inventory, skills: Object.freeze(skills),
     startingLanguages: Object.freeze({}), ...extra });
 
 /**
- * The eleven, in the order the user gave them. `roster` is the hired sword whose place in the
- * world this character is; Cromb has none, because when you are Cromb the ten on the road are
- * already the ten. `skills` is experience at the moment you step ashore, by skill id; ids that
+ * The eleven, in the order the user gave them, and Rollo after them. `roster` is the hired sword
+ * whose place in the world this character is; Cromb has none, because when you are Cromb the ten
+ * on the road are already the ten, and Rollo has none, because he was never one of the company.
+ * `skills` is experience at the moment you step ashore, by skill id; ids that
  * every id here is registered in src/gameplay/skills/skills.js, so every number below is handed over whole.
  */
 export const PLAYABLE = Object.freeze([
@@ -93,10 +109,28 @@ export const PLAYABLE = Object.freeze([
   playable('mus', 'Mus', 'Does not use the road', 'merc-mus',
     'Beaches his own boat round the headland and walks to the muster through the woods, because a road goes where everybody knows it goes.',
     'simple-sword', sword, { cartography: 200 }),
+  // **Rollo** (the user, 5 October 2026): "Make the character named Rollo. He is a new character."
+  // A wandering sorcerer of the Guild, back at the tower in Minora, and the one Developer Start
+  // plays (docs/lizeem-farmlands-design.md, section 2). Like Cromb he is left open: that is all the
+  // game says about him. `developerOnly` keeps him off the Chapter 1 line (src/app/startup/character-select.js),
+  // and he is in this list at all so that a save written as him names somebody real
+  // (src/app/saves/road-checkpoint.js). The oak staff and nothing else: no sword, no shield. "Let's make
+  // Rollo start with the fireball spell through his staff" - `spells`, learned at creation.
+  playable('rollo', 'Rollo', 'A wandering sorcerer of the Guild', null,
+    'Grey-bearded, brown-cloaked and back at the tower in Minora after long years on the road, with an oak staff and one spell he has never stopped using.',
+    'oak-staff', Object.freeze([Object.freeze({ id: 'oak-staff', quantity: 1 })]), {},
+    { developerOnly: true, look: ROLLO_LOOK, spells: Object.freeze(['fireball']) }),
 ]);
 
 /** The order the opening screen shows them in, which is the user's order, Cromb first. */
 export const PLAYABLE_IDS = Object.freeze(PLAYABLE.map(entry => entry.id));
+/**
+ * The eleven of the company, without anybody kept for the Developer Start: who the Chapter 1 line
+ * offers (src/app/startup/character-select.js). Rollo is playable and saveable, and not one of them.
+ */
+export const COMPANY_PLAYABLE = Object.freeze(PLAYABLE.filter(entry => !entry.developerOnly));
+/** The one Developer Start plays (the user, 5 October 2026). */
+export const DEVELOPER_PLAYER = 'rollo';
 
 /**
  * **Who the opening screen offers.** The user, 21 September 2026: build out the one main quest
@@ -170,9 +204,12 @@ export function rosterEntryFor(playerId = DEFAULT_PLAYER) {
 /**
  * What the player's own model is built from: the chosen character's look with his weapon and
  * whether he trades, in the shape `createCharacter({ role: 'traveler', look })` wants. Cromb
- * has no look, and gets none: the traveler's own model is his, unchanged.
+ * has no look, and gets none: the traveler's own model is his, unchanged. Somebody who is on no
+ * roster and still has a look of his own (Rollo) is built from that, with the staff he carries.
  */
 export function playerLook(playerId = DEFAULT_PLAYER) {
+  const own = playableCharacter(playerId);
+  if (own?.roster === null && own.look) return Object.freeze({ ...own.look, weapon: 'staff', trades: false });
   const entry = rosterEntryFor(playerId);
   return entry ? Object.freeze({ ...entry.look, weapon: entry.weapon, trades: entry.trades }) : null;
 }
@@ -192,6 +229,21 @@ export function startingSkills(playerId = DEFAULT_PLAYER) {
 /** What is in the satchel at the first step ashore. */
 export function startingInventory(playerId = DEFAULT_PLAYER) {
   return (playableCharacter(playerId)?.inventory ?? []).map(item => ({ ...item }));
+}
+
+/**
+ * What the boot satchel holds that this character does not carry, and so must not keep: the
+ * sword, for Rollo, who has the oak staff and nothing else (the user, 5 October 2026: "equipped
+ * just an oaken staff"). Everybody else carries the sword, so for them this is empty.
+ */
+export function startingWithout(playerId = DEFAULT_PLAYER) {
+  const carried = new Set(startingInventory(playerId).map(item => item.id));
+  return playableCharacter(playerId) ? BOOT_KIT.filter(id => !carried.has(id)) : [];
+}
+
+/** The spells a character already knows when he starts, by spell id (src/gameplay/magic/sorcery.js). Only Rollo has one. */
+export function startingSpells(playerId = DEFAULT_PLAYER) {
+  return [...(playableCharacter(playerId)?.spells ?? [])];
 }
 
 /**

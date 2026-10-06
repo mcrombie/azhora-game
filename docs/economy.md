@@ -13,3 +13,7 @@ Recorded 2026-09-16 from the user's design. Only the first line of it is built.
 - **Later**: prices that vary by region and by who controls it, wages from the Legion or the Coalition, exchange between coin and scrip at a loss, and what the Legion does to a hired sword found carrying rebel paper.
 
 The user asked that this not be developed further yet.
+
+## 5 October 2026: developed for the Farmlands of the Lizeem
+
+On 5 October 2026 the user approved the Farmlands of the Lizeem design and said "go ahead and implement", which lifts the ruling above for that work. Build 1 (6 October 2026) adds the purse helpers (`purse`, `pay`, `earn` and `till` in `src/gameplay/inventory/economy.js`), one price table with its grade, place and appetite multipliers (`src/gameplay/inventory/prices.js`) and the Lizeem market (`src/gameplay/inventory/merchants.js`): buyers with daily appetites in Minora and Caricas, the measurer's seal, two order boards, Cedric's commissary and the Guild's bounty for a first Prize. Copper stays the only coin. The design, prices and what stays out are in `docs/lizeem-farmlands-design.md`, section 7; silver, gold and scrip are still designed and not built.

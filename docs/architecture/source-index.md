@@ -1,6 +1,6 @@
 # Source file index
 
-Search for an original filename. Names were retained; links point to the reorganized source. The [guide](README.md) explains responsibilities; [source-moves.json](source-moves.json) provides exact old and new paths.
+Search for an original filename. Names were retained; links point to the current source. The [guide](README.md) explains responsibilities; [source-moves.json](source-moves.json) provides exact old and new paths. The index includes the original 710 moves and the 29 new modules integrated from Claude's Lizeem branch.
 
 Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js), [world.js](../../src/world.js).
 
@@ -175,6 +175,21 @@ Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js
 
 - [lighthouse-world.js](../../src/content/quests/lighthouse/lighthouse-world.js)
 - [lighthouse.js](../../src/content/quests/lighthouse/lighthouse.js)
+
+## src/content/quests/lizeem-farmlands
+
+- [dividing-scenery.js](../../src/content/quests/lizeem-farmlands/dividing-scenery.js)
+- [dividing.js](../../src/content/quests/lizeem-farmlands/dividing.js)
+- [lizeem-farmlands.js](../../src/content/quests/lizeem-farmlands/lizeem-farmlands.js)
+- [lizeem-minora-people.js](../../src/content/quests/lizeem-farmlands/lizeem-minora-people.js)
+- [lizeem-nesdor-people.js](../../src/content/quests/lizeem-farmlands/lizeem-nesdor-people.js)
+- [lizeem-nesdor.js](../../src/content/quests/lizeem-farmlands/lizeem-nesdor.js)
+- [lizeem-nethereum-people.js](../../src/content/quests/lizeem-farmlands/lizeem-nethereum-people.js)
+- [lizeem-nethereum.js](../../src/content/quests/lizeem-farmlands/lizeem-nethereum.js)
+- [lizeem-ovesos-people.js](../../src/content/quests/lizeem-farmlands/lizeem-ovesos-people.js)
+- [lizeem-ovesos.js](../../src/content/quests/lizeem-farmlands/lizeem-ovesos.js)
+- [lizeem-people.js](../../src/content/quests/lizeem-farmlands/lizeem-people.js)
+- [taleth.js](../../src/content/quests/lizeem-farmlands/taleth.js)
 
 ## src/content/quests/rena
 
@@ -451,6 +466,8 @@ Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js
 - [frontier-ridges.js](../../src/content/regions/minora-frontier/frontier-ridges.js)
 - [frontier-works.js](../../src/content/regions/minora-frontier/frontier-works.js)
 - [frontier.js](../../src/content/regions/minora-frontier/frontier.js)
+- [isareos-hamlet-scenery.js](../../src/content/regions/minora-frontier/isareos-hamlet-scenery.js)
+- [isareos-hamlet.js](../../src/content/regions/minora-frontier/isareos-hamlet.js)
 - [menora-city.js](../../src/content/regions/minora-frontier/menora-city.js)
 - [menora-scenery.js](../../src/content/regions/minora-frontier/menora-scenery.js)
 - [yunethre-scenery.js](../../src/content/regions/minora-frontier/yunethre-scenery.js)
@@ -471,11 +488,24 @@ Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js
 
 - [moros-works.js](../../src/content/regions/moros/moros-works.js)
 
+## src/content/regions/nesdor
+
+- [flats-ground.js](../../src/content/regions/nesdor/flats-ground.js)
+- [nesdor-farm-scenery.js](../../src/content/regions/nesdor/nesdor-farm-scenery.js)
+- [nesdor-farm.js](../../src/content/regions/nesdor/nesdor-farm.js)
+
 ## src/content/regions/nether-desert
 
 - [nether-desert-scenery.js](../../src/content/regions/nether-desert/nether-desert-scenery.js)
 - [nether-desert-wildlife.js](../../src/content/regions/nether-desert/nether-desert-wildlife.js)
 - [nether-desert-world.js](../../src/content/regions/nether-desert/nether-desert-world.js)
+
+## src/content/regions/nethereum
+
+- [meadow-water.js](../../src/content/regions/nethereum/meadow-water.js)
+- [nethereum-farm-scenery.js](../../src/content/regions/nethereum/nethereum-farm-scenery.js)
+- [nethereum-farm.js](../../src/content/regions/nethereum/nethereum-farm.js)
+- [nethereum-produce.js](../../src/content/regions/nethereum/nethereum-produce.js)
 
 ## src/content/regions/north-ibenal
 
@@ -506,9 +536,13 @@ Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js
 
 ## src/content/regions/oves
 
+- [canal-turns.js](../../src/content/regions/oves/canal-turns.js)
 - [oves-scenery.js](../../src/content/regions/oves/oves-scenery.js)
 - [oves-wildlife.js](../../src/content/regions/oves/oves-wildlife.js)
 - [oves-world.js](../../src/content/regions/oves/oves-world.js)
+- [ovesos-farm-scenery.js](../../src/content/regions/oves/ovesos-farm-scenery.js)
+- [ovesos-farm.js](../../src/content/regions/oves/ovesos-farm.js)
+- [ovesos-produce.js](../../src/content/regions/oves/ovesos-produce.js)
 
 ## src/content/regions/peblos
 
@@ -712,6 +746,8 @@ Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js
 - [jesse-carriage-smoke.js](../../src/dev/checks/jesse-carriage-smoke.js)
 - [kayla-smoke.js](../../src/dev/checks/kayla-smoke.js)
 - [living-story-desktop-checks.js](../../src/dev/checks/living-story-desktop-checks.js)
+- [lizeem-farmlands-checks.js](../../src/dev/checks/lizeem-farmlands-checks.js)
+- [lizeem-farms-smoke.js](../../src/dev/checks/lizeem-farms-smoke.js)
 - [local-map-smoke.js](../../src/dev/checks/local-map-smoke.js)
 - [local-streaming-checks.js](../../src/dev/checks/local-streaming-checks.js)
 - [luscia-republic-desktop-checks.js](../../src/dev/checks/luscia-republic-desktop-checks.js)
@@ -833,6 +869,8 @@ Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js
 - [economy.js](../../src/gameplay/inventory/economy.js)
 - [gear.js](../../src/gameplay/inventory/gear.js)
 - [inventory.js](../../src/gameplay/inventory/inventory.js)
+- [merchants.js](../../src/gameplay/inventory/merchants.js)
+- [prices.js](../../src/gameplay/inventory/prices.js)
 
 ## src/gameplay/law
 

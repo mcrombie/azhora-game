@@ -20,11 +20,13 @@ import {
   OVES_SORTEN, OVES_BASIN, OVES_RIM, OVES_STONE, OVES_CHANNELS, OVES_DAMP, OVES_LANDMARKS, OVETH_WALL,
   galaSeamDistance, ovesSorten, ovesBasin, ovesRim, ovesStone, ovesChannelCut, ovesGround, ovesLie,
   onSorten, onChannelFloor, channelPlace, dampReach, desertShare, ovesosShare,
+  OVESOS_BELT, OVESOS_BOX, OVES_GROUND, OVES_PLAINS_GROUND, OVESOS_GRASSLAND_GROUND, ovesosBelt, ovesTint,
 } from '../src/content/regions/oves/oves-world.js';
 import { OVES_WILDLIFE_ZONES } from '../src/content/regions/oves/oves-wildlife.js';
+import { OVESOS_BUILDINGS, OVESOS_CAMP, OVESOS_FARM_LANDMARKS, OVESOS_PEOPLE_IDS, ovesosFarmReserved } from '../src/content/regions/oves/ovesos-farm.js';
 import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
 import { SUBREGIONS } from '../src/ui/map/map-fog.js';
-import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { BUILD_STATES, regionBuildStatus } from '../src/dev/tools/build-status.js';
 import { regionLevel } from '../src/world/terrain/region-levels.js';
 import { REGION_LANGUAGE, DIALECTS } from '../src/gameplay/skills/languages.js';
 import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
@@ -38,6 +40,14 @@ import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
  * thirteen shared edges of which seven are the Oveth — and the two things this job had to get right
  * that nobody else could check: **one climate over both countries**, so the difference between them is
  * terrain and water and not weather, and **the Oveth's hand-over to the reach Gala already built**.
+ *
+ * **The user's ruling of 5 October 2026** (built 6 October 2026) supersedes the 21 September one that
+ * Ovesos was green only along the Oveth: it is fertile along the river and dries toward the desert in
+ * the south and west, the least productive of the four farm countries of the Lizeem but real farm
+ * country. The atlas is untouched — `BSh` on every hex — so the green is distance from the Lizeem and
+ * the Neth (`ovesosBelt`), and the Water Council's village of Velsorten stands on it with its canal
+ * (src/content/regions/oves/ovesos-farm.js, tests/ovesos-farm.test.js). The tests below that pinned the old look — no tree
+ * away from the Oveth, no stock, nobody living here — now state the new rule instead.
  */
 const { createWorld } = await sourceModule('../src/world.js');
 const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
@@ -171,6 +181,9 @@ test('the seam with Gala: five edges, nothing shaped within a hundred metres of 
     assert.ok(step < 2.6, `(${q},${r}) stands ${step.toFixed(1)} m off Gala's (${nq},${nr})`);
   }
   assert.ok(worst > 0, 'the five edges were not compared at all');
+  // Velsorten's pads (the ruling of 5 October 2026) keep 160 m from the seam, so nothing built there is Gala's business.
+  for (const b of OVESOS_BUILDINGS) for (const [sx, sz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]])
+    assert.ok(galaSeamDistance(b.x + sx * b.w / 2, b.z + sz * b.d / 2) >= 160, `${b.id} stands within 160 m of Gala`);
 });
 
 test('the upper Oveth is the atlas’s own line, waded above the Sorten and deep through it, and it hands Gala one river', () => {
@@ -430,9 +443,9 @@ test('the shared long-wave relief stays smooth across Ovesos, the Oves Desert an
   }
 });
 
-test('what grows is a steppe and a stone desert, and nothing in either country is anybody’s', () => {
+test('what grows is a steppe greening toward the Lizeem and a stone desert, and nothing wild grows on Velsorten', () => {
   const m = world.ovesMetrics;
-  for (const key of ['reeds', 'gravel', 'boulders', 'pavement', 'tufts', 'shrubs', 'scrub', 'stubble', 'trees', 'tamarisk', 'stones'])
+  for (const key of ['reeds', 'gravel', 'boulders', 'pavement', 'tufts', 'shrubs', 'scrub', 'stubble', 'trees', 'tamarisk', 'stones', 'beltTrees', 'beltTufts'])
     assert.ok(m[key] > 5, `no ${key}`);
   assert.equal(m.water, OVES_RIVERS.length, 'one unbroken ribbon on each of the two courses');
   assert.ok(m.blockers > 30, 'the Oveth through the Sorten is not walled');
@@ -442,17 +455,28 @@ test('what grows is a steppe and a stone desert, and nothing in either country i
     assert.ok(['Ovesos', 'Oves Desert'].includes(hexOwnerAt(c.x, c.z)), `something of theirs stands outside them at ${c.x.toFixed(0)}, ${c.z.toFixed(0)}`);
     assert.equal(westWaterSurface(c.x, c.z), null, 'something of theirs stands in the water');
     assert.ok(!inWestWater(c.x, c.z), 'something of theirs stands in a watercourse');
+    // Since the ruling of 5 October 2026 the Water Council's village stands here; nothing wild grows on its ground.
+    assert.ok(!ovesosFarmReserved(c.x, c.z, .5), `a ${c.kind} grows on Velsorten’s ground at ${c.x.toFixed(0)}, ${c.z.toFixed(0)}`);
   }
-  // **No tree away from the water.** Under `BSh` a tree is a thing that stands by a river, and the
-  // only exception in either country is the damp reach, which is the lore's own.
+  // **Trees by the water, and in Ovesos's river belt.** Under `BSh` a tree is a thing that stands by a
+  // river. Since the ruling of 5 October 2026 Ovesos is fertile along the Lizeem and the Neth, so a
+  // tree may stand anywhere in that belt; the desert's one exception is still the damp reach, and out on
+  // the dry south-west of Ovesos, away from every river, there is still no tree at all.
   for (const tree of planted.filter(c => c.kind === 'oves-tree')) {
     const nearWater = OVES_RIVERS.some(course => courseDistance(course, tree.x, tree.z, 60) < course.maxHalf + 16);
-    assert.ok(nearWater || dampReach(tree.x, tree.z) > .2, `a tree on the dry steppe at ${tree.x.toFixed(0)}, ${tree.z.toFixed(0)}`);
+    const belt = hexOwnerAt(tree.x, tree.z) === 'Ovesos' ? ovesosBelt(tree.x, tree.z) : 0;
+    assert.ok(nearWater || belt > .3 || dampReach(tree.x, tree.z) > .2, `a tree on the dry steppe at ${tree.x.toFixed(0)}, ${tree.z.toFixed(0)}`);
   }
-  // The gallery is on the Oveth, and most of it on the Ovesian bank, because that is where the soil is.
+  // The Oveth's gallery is as it was, most of it on the Ovesian bank, because that is where the soil is.
   const gallery = planted.filter(c => c.kind === 'oves-tree' && courseDistance(OVETH_UPPER, c.x, c.z, 60) < 30);
   assert.ok(gallery.length > 15, `${gallery.length} trees on the Oveth`);
   assert.ok(gallery.filter(c => hexOwnerAt(c.x, c.z) === 'Ovesos').length > gallery.length * .5, 'the gallery is not on the bottomland');
+  // And the Lizeem has one now: poplar, willow and tamarisk along its Ovesian bank, thickest on the northern
+  // reach where the belt is widest, with trees standing apart in the green behind it.
+  const lizeemBank = planted.filter(c => c.kind === 'oves-tree' && hexOwnerAt(c.x, c.z) === 'Ovesos' && courseDistance(LIZEEM, c.x, c.z, 60) < 40);
+  assert.ok(lizeemBank.length > 25, `${lizeemBank.length} trees on the Lizeem’s bank`);
+  assert.ok(lizeemBank.filter(c => c.z < 600).length > 10, 'the northern reach has no gallery');
+  assert.ok(planted.some(c => c.kind === 'oves-tree' && courseDistance(LIZEEM, c.x, c.z, 80) > 50 && ovesosBelt(c.x, c.z) > .45), 'no tree stands out in the belt');
   // Every hex of both countries is honest ground a traveler can stand on, and the two ground modules agree.
   for (const name of ['Ovesos', 'Oves Desert']) for (const cell of CELLS[name])
     for (const [dx, dz] of [[0, 0], [25, 10], [-25, -10], [10, -30], [-10, 30]]) {
@@ -463,11 +487,62 @@ test('what grows is a steppe and a stone desert, and nothing in either country i
     }
 });
 
-test('every animal here stands where its kind would, and none of them is anybody’s', () => {
+test('the river belt: Ovesos greens from the Lizeem and the Neth, dries toward the south-west, and its climate does not move', () => {
+  // The ruling of 5 October 2026 is distance from water and nothing else: the atlas's code is the same on every hex.
+  assert.deepEqual([...new Set(Object.values(OVESOS_CLIMATE))], [OVES_KOPPEN]);
+  const inward = (course, index, distance) => {
+    const s = WEST_PROFILES.get(course.id)[index];
+    for (const side of [1, -1]) if (hexOwnerAt(s.x + s.nx * (s.half + 10) * side, s.z + s.nz * (s.half + 10) * side) === 'Ovesos')
+      return { x: s.x + s.nx * distance * side, z: s.z + s.nz * distance * side };
+    return null;
+  };
+  // Full on the Lizeem's bank; narrower in the south, below the Carica's fall, than on the northern reach.
+  const north = WEST_PROFILES.get(LIZEEM.id).findIndex(s => s.z < 520 && hexOwnerAt(s.x, s.z + s.half + 10) === 'Ovesos' && s.x > -2000);
+  const south = WEST_PROFILES.get(LIZEEM.id).findIndex(s => s.z > 830 && s.z < 860);
+  assert.ok(north > 0 && south > 0);
+  for (const index of [north, south]) { const bank = inward(LIZEEM, index, 30); assert.equal(ovesosBelt(bank.x, bank.z), 1, 'the bank is not green'); }
+  const farNorth = inward(LIZEEM, north, 100), farSouth = inward(LIZEEM, south, 100);
+  assert.ok(ovesosBelt(farNorth.x, farNorth.z) > ovesosBelt(farSouth.x, farSouth.z) + .2, 'the belt does not narrow southward');
+  assert.ok(OVESOS_BELT.neth.dry < OVESOS_BELT.lizeem.drySouth, 'the Neth is the smaller water');
+  // Nothing in the dry south-west, farthest from both rivers, and nothing outside the country.
+  assert.equal(ovesosBelt(-2100, 720), 0);
+  assert.equal(ovesosBelt(OVESOS_BOX.maxX + 50, 600), 0);
+  // The least productive of the four, but farm country: about half of Ovesos is in the belt, and a third is the old steppe.
+  let n = 0, green = 0, dry = 0;
+  for (let x = -2350; x <= -1600; x += 10) for (let z = 450; z <= 1000; z += 10) {
+    if (hexOwnerAt(x, z) !== 'Ovesos' || westWaterSurface(x, z) !== null) continue;
+    n++; const belt = ovesosBelt(x, z);
+    if (belt > .3) green++; if (belt < .05) dry++;
+  }
+  assert.ok(n > 1000 && green > n * .35 && green < n * .7, `${green} of ${n} points are green`);
+  assert.ok(dry > n * .2, `only ${dry} of ${n} points are the dry steppe`);
+  // The colour reaches the ground on both of Ovesos's swatches, greener at the bank, and leaves the dry steppe its own.
+  // Compared as authored, in the swatches' own sRGB, which is how the rest of the ground's colours are written.
+  const colour = hex => { const n = typeof hex === 'number' ? hex : parseInt(hex.slice(1), 16); return { r: (n >> 16 & 255) / 255, g: (n >> 8 & 255) / 255, b: (n & 255) / 255 }; };
+  const greenness = c => c.g - (c.r + c.b) / 2;
+  const bank = inward(LIZEEM, north, 30);
+  for (const ground of [OVES_PLAINS_GROUND.Ovesos, OVESOS_GRASSLAND_GROUND]) {
+    const tinted = ovesTint(bank.x, bank.z, ground);
+    assert.ok(tinted !== null && greenness(colour(tinted)) > greenness(colour(ground)) + .02, `the belt does not green ${ground}`);
+    assert.equal(ovesTint(-2100, 720, ground), null, `the dry steppe is tinted on ${ground}`);
+  }
+  assert.ok(greenness(colour(OVES_GROUND.belt)) > greenness(colour(OVES_GROUND.sorten)), 'the river belt is the greenest of Ovesos’s grounds');
+  // And the scenery plants it: the belt's own trees and its own grass.
+  assert.ok(world.ovesMetrics.beltTrees > 20, `${world.ovesMetrics.beltTrees} trees in the belt`);
+  assert.ok(world.ovesMetrics.beltTufts > 200, `${world.ovesMetrics.beltTufts} tufts of the belt’s grass`);
+});
+
+test('every animal here stands where its kind would, and any stock grazes by its herders’ camp', () => {
   const species = new Set(OVES_WILDLIFE_ZONES.map(zone => zone.species));
   for (const kind of ['otter', 'duck', 'wading-bird', 'river-fox', 'upland-hare', 'harrier', 'bone-bird', 'plateau-hawk'])
     assert.ok(species.has(kind), `there is no ${kind}`);
-  for (const kind of ['longhorn', 'hill-sheep', 'nethrani-cattle']) assert.ok(!species.has(kind), `${kind} is somebody’s stock`);
+  // Domestic stock is somebody's (docs/oves-brief.md). Since the ruling of 5 October 2026 somebody is here: the upland
+  // herders keep their camp on the grass (src/content/regions/oves/ovesos-farm.js), so a flock may graze Ovesos near Lahar's camp, and nowhere
+  // else and never in the desert. None is drawn yet; the rule stands for when one is.
+  for (const zone of OVES_WILDLIFE_ZONES.filter(item => ['longhorn', 'hill-sheep', 'nethrani-cattle'].includes(item.species))) {
+    assert.equal(zone.region, 'Ovesos', `${zone.id} is stock in the desert`);
+    for (const [x, z] of zone.sites) assert.ok(Math.hypot(x - OVESOS_CAMP.x, z - OVESOS_CAMP.z) < 150, `${zone.id} grazes away from its herders`);
+  }
   const byRegion = {};
   for (const zone of OVES_WILDLIFE_ZONES) {
     assert.ok(WEST_LIFE_ZONES.includes(zone), `${zone.id} is not in the west's list`);
@@ -574,32 +649,39 @@ test('two skies for one climate, one tongue the lore names and none for the dese
   assert.deepEqual({ ...REGION_LANGUAGE['Oves Desert'] }, { language: 'mittoli', dialect: 'ovesos' });
 });
 
-test('both are charted, levelled and listed, and nobody lives in either', () => {
+test('both are charted, levelled and listed; Ovesos is lived in by Velsorten’s people and the desert by nobody', () => {
   for (const region of [ovesos, desert]) {
-    assert.deepEqual([...region.npcIds], [], 'terrain, climate, water, scenery and wildlife only');
+    // Since the ruling of 5 October 2026 Ovesos is farm country with the Water Council's village on it
+    // (src/content/regions/oves/ovesos-farm.js): whoever its record lists is one of Velsorten's eight. The desert is still nobody's.
+    if (region === desert) assert.deepEqual([...region.npcIds], [], 'terrain, climate, water, scenery and wildlife only');
+    else for (const id of region.npcIds) assert.ok(OVESOS_PEOPLE_IDS.includes(id), `${id} is not one of Velsorten’s people`);
     assert.equal(hexOwnerAt(region.spawn.x, region.spawn.z), region.name);
     assert.ok(canStand(region.spawn.x, region.spawn.z, world, .5), `the travel button puts the traveler in ${region.name}'s water`);
     for (const id of region.landmarks) {
-      const place = OVES_LANDMARKS.find(item => item.id === id);
+      const place = [...OVES_LANDMARKS, ...OVESOS_FARM_LANDMARKS].find(item => item.id === id);
       assert.ok(place, `${id} is not a place`);
       assert.ok(world.landmarks.some(landmark => landmark.id === id), `the chart knows ${id}`);
       assert.equal(regionAt(place.x, place.z)?.name, region.name, `${id} stands outside ${region.name}`);
       assert.ok(place.description.length > 60);
     }
     const areas = SUBREGIONS.filter(area => area.region === region.name);
-    assert.ok(areas.length >= 2 && areas.length <= 4, `${areas.length} named areas in ${region.name}`);
+    assert.ok(areas.length >= 2 && areas.length <= 5, `${areas.length} named areas in ${region.name}`);
     for (const area of areas) {
       assert.equal(regionAt(area.x, area.z).name, region.name, area.id);
       assert.ok(insideRegion(region.name, area.x, area.z));
       assert.ok(area.radius >= 18 && area.radius <= 130);
     }
     const status = regionBuildStatus(region.name);
-    assert.equal(status.state, 'early');
+    assert.ok(BUILD_STATES[status.state], `${region.name} has no build state`);
     assert.equal(status.playable, true);
-    assert.match(status.work, /Everybody|somebody/);
+    if (region === desert) { assert.equal(status.state, 'early'); assert.match(status.work, /Everybody|somebody/); }
+    else assert.ok(status.work.length > 40, 'what Ovesos still lacks is not said');
   }
-  for (const [id, stand] of Object.entries(world.npcPositions ?? {}))
-    assert.ok(!['Ovesos', 'Oves Desert'].includes(hexOwnerAt(stand.x, stand.z)), `${id} stands in the dry country`);
+  for (const [id, stand] of Object.entries(world.npcPositions ?? {})) {
+    const owner = hexOwnerAt(stand.x, stand.z);
+    assert.notEqual(owner, 'Oves Desert', `${id} stands in the desert`);
+    if (owner === 'Ovesos') assert.ok(OVESOS_PEOPLE_IDS.includes(id), `${id} stands in Ovesos and is not one of Velsorten’s people`);
+  }
   assert.equal(regionLevel('Ovesos'), 3, 'on the approved ladder');
   assert.equal(regionLevel('Oves Desert'), 4, 'on the approved ladder');
   for (const [name, id, target] of [['Ovesos', 25, 'ovesos'], ['Oves Desert', 26, 'oves-desert']]) {

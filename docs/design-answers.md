@@ -1708,3 +1708,16 @@ Access the map through the existing **M** key. Its default remains **Regions**, 
 The user's correction supersedes the implementation described above: the in-game geopolitical map must respect explored territory. Only developer reveal-all can expose the full atlas. Faction labels and inspectors must also avoid disclosing unexplored holdings. Stability follows the same knowledge limit.
 
 Chapter 1 must retain the post-battle conquest of Solis. Winning the field does not give Ambron West Suval; the player follows up with the army, assaults Solis, and actually takes it. The existing Solis and Coalition Moros-outpost aftermath encounters are reconnected between the commander report and final city report. Territorial control follows their cleared assault record. Old saves that reached the final report without this capture resume the unfinished conquest rather than grandfathering an unearned territorial gain.
+
+### 2026-10-06 The Farmlands of the Lizeem integration
+
+The user requested integration of Claude's latest work before committing. The delivered branch is `lizeem-farmlands` at `7ecba1a`; its [design record](lizeem-farmlands-design.md), section 0, records the user's October 5 decisions and the October 5 and 6 implementation go-aheads. These decisions are carried into this shared record:
+
+- Developer Start uses **Rollo**, a new grey-bearded wizard in a grey robe, long brown cloak and raised dark-brown hood, carrying only an oaken staff. His explicitly requested hood is an exception to the general hatless rule. He starts knowing Fireball and stands outside the Sorcerers' Tower in Minora.
+- **Taleth**, Master Sorcerer, stands outside the tower, has several conversation topics, and gives the initial farming charge. His Merlin-inspired appearance is provisional; he remains hatless under the standing default.
+- The farming countries are **Caricas, Nethereum, Nesdor and Ovesos**. Ovesos is not orc country. It is fertile by the river and increasingly dry inland toward the south and west.
+- Add people with mythological names, backgrounds and social roles across those four countries and Isareos/Minora. The extent to which those names were intended literally remains an open design question in the handoff.
+- Harvests participate in a coin economy with actual buyers and merchants. This work supersedes the older hold on developing that economic system for these features.
+- The Minoran League's recent independence, Cedric's seizure of its government, Wilhelm's reinforcement and the four countries' separate rebellions remain the political setting. The degree to which the farming quests should engage with the war remains open.
+
+The delivered defaults use staff-cast field sorcery and aim for roughly an hour per country arc; these are implementation defaults rather than new user rulings. The five builds and their unfinished details are described in [Claude's handoff](region-reviews/lizeem-farmlands-handoff.md).

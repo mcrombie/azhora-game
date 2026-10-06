@@ -9,16 +9,16 @@ import { createCooking, RECIPES } from '../src/gameplay/skills/crafting/cooking.
 import { createConsumables } from '../src/gameplay/inventory/consumables.js';
 import { farmingConversation, farmRowConversation } from '../src/gameplay/skills/farming/farming-conversation.js';
 import { APPLEGARTH_WORKS } from '../src/content/quests/rena/rena.js';
-import { regionAt } from '../src/world/terrain/region-world.js';
+import { REGION_IDS, regionAt } from '../src/world/terrain/region-world.js';
 import { canStand } from '../src/gameplay/movement/game-state.js';
-import { sourceModule } from './module-loader.js';
+import { scopedWorld } from './scoped-world.js';
 
+// The commons and Applegarth are both in Drent, so Drent's own scenery is the whole question.
 let world = null;
 const built = async () => {
   world ??= await (async () => {
     const THREE = await import('../vendor/three.module.js');
-    const { createWorld } = await sourceModule('../src/world.js');
-    return createWorld(new THREE.Scene());
+    return scopedWorld(new THREE.Scene(), [REGION_IDS.Drent]);
   })();
   return world;
 };
@@ -151,7 +151,8 @@ test('the save carries what was sown and when, and refuses a time that has not h
   assert.equal(bad({ trees: { 'applegarth-tree-900': 1 } }), false);
   assert.equal(bad({ met: 1 }), false);
   assert.equal(bad({ reaped: -1 }), false);
-  assert.equal(bad({ version: 2 }), false);
+  assert.equal(bad({ version: 3 }), false);
+  assert.equal(bad({ version: 1 }), true, 'a version-1 farm is read as it always was');
   for (const rubbish of [null, 'a farm', 7, [], true]) assert.equal(validateFarmingSnapshot(rubbish), false);
   // A refused save leaves the farm empty rather than half sown.
   const fresh = createFarming();

@@ -33,13 +33,13 @@ test('search intersects category and practiced filters without leaking teacher q
   assert.equal(practicedSkill({ learned: true, taught: false, xp: 0 }), false);
 });
 
-test('Sorcery lists the three released schools while keeping reserved save data intact', () => {
+test('Sorcery lists the four released schools while keeping reserved save data intact', () => {
   const skills = createSkills({ begins: SKILL_IDS });
   skills.gain('frost', 83);
   const saved = skills.snapshot();
   const rows = filterSkills(skills.view(), { scope: 'all', category: 'Sorcery' });
   assert.deepEqual(rows.map(skill => [skill.id, skill.name]), [
-    ['beast', 'Animal Sorcery'], ['fire', 'Fire Sorcery'], ['mind', 'Mind Sorcery'],
+    ['beast', 'Animal Sorcery'], ['field', 'Field Sorcery'], ['fire', 'Fire Sorcery'], ['mind', 'Mind Sorcery'],
   ]);
   assert.deepEqual(skills.snapshot(), saved, 'browsing never deletes an old school’s experience');
   assert.equal(saved.skills.frost.xp, 83);

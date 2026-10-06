@@ -2,10 +2,24 @@
 import { ATTIC_WINES, ATTIC_WINE_IDS } from '../../content/quests/wine/attic-wines.js';
 import { WOOD_SPECIES } from '../skills/woodcutting/wood-species.js';
 import { JESSE_ITEMS } from '../../content/quests/jesse/jesse-carriage-world.js';
+import { MERCHANT_ITEMS } from './merchants.js';
+// The goods of Nethereum and Nesdor, and the rebellion's paper (the Farmlands of the Lizeem, Builds 2 and 3; 6 October 2026).
+import { NETHEREUM_ITEMS } from '../../content/regions/nethereum/nethereum-produce.js';
+import { NESDOR_ITEMS } from '../../content/regions/nesdor/flats-ground.js';
+import { NESDOR_ARC_ITEMS } from '../../content/quests/lizeem-farmlands/lizeem-nesdor.js';
+// The goods of Ovesos and the fork stew (the Farmlands of the Lizeem, Builds 4 and 5; 6 October 2026).
+import { OVESOS_ITEMS } from '../../content/regions/oves/ovesos-produce.js';
+import { DIVIDING_ITEMS } from '../../content/quests/lizeem-farmlands/dividing.js';
 import { SLOT_NAMES, SLOTS, gearId } from './gear.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
   ...JESSE_ITEMS,
+  // Ilmarinen's farm tools and the Carican factor's charcoal (src/gameplay/inventory/merchants.js; the Farmlands of the Lizeem, 5 October 2026).
+  ...MERCHANT_ITEMS,
+  // Flood oats, hay, weir fish and Haethom's wares; floodwheat, white bread, nut cake, ale and hides; the rebellion's paper (6 October 2026).
+  ...NETHEREUM_ITEMS, ...NESDOR_ITEMS, ...NESDOR_ARC_ITEMS,
+  // Hard wheat, silver millet, madder, flour, flatbread, porridge, cloth and mutton; the fork stew (6 October 2026).
+  ...OVESOS_ITEMS, ...DIVIDING_ITEMS,
   // Authored entries below preserve old item IDs and descriptions; every other
   // timber species gets its own stack and can be sold or used as firewood.
   ...Object.fromEntries(Object.values(WOOD_SPECIES).filter(wood => wood.log).map(wood => [wood.log, Object.freeze({
@@ -474,6 +488,70 @@ export const INVENTORY_ITEMS = Object.freeze({
     brief: 'A sheaf off one of the commons rows at the Avrel mill. Enna’s mill turns it into flour and the flour into the village share.',
     description: 'Four minutes in the ground and a whole summer’s worth of meaning: the commons grows it, the mill grinds it, and the tally board beside the millstones is an argument about who gets it. Farming’s first crop.',
   }),
+  // The Caricas farms (docs/lizeem-farmlands-design.md §5.1), 6 October 2026: seed from the
+  // benches on its five farmsteads, the three crops they grow, and the three dishes made of them.
+  'bridge-rye-seed': Object.freeze({ name: 'Bridge rye seed', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'One packet sows one bed of bridge rye. It grows only on the Caricas farms.',
+    description: 'The seed benches on the five Caricas farmsteads keep it. Bridge rye ripens after four minutes of active play and does best on lean ground, where grain or fruit has been; on rich ground it falls over. Every harvest returns a packet.' }),
+  'field-beans-seed': Object.freeze({ name: 'Field bean seed', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'One packet sows one bed of field beans. It grows only on the Caricas farms.',
+    description: 'From the seed benches on the Caricas farmsteads. Beans ripen after 150 seconds of active play and put heart back into the ground they grow in, which is why a Carican sows them after grain. Every harvest returns a packet.' }),
+  'soft-fruit-seed': Object.freeze({ name: 'Soft fruit canes', type: 'Material', icon: 'seeds', stackable: true,
+    brief: 'A bundle of cane cuttings for one bed. Caricas farms only, from Farming level 3.',
+    description: 'Raspberry and currant cuttings from the Caricas seed benches, heeled in damp sacking. They fruit after five minutes of active play and want rich, rested ground: after beans, never after themselves. Every picking leaves a cutting for the next bed.' }),
+  'bridge-rye': Object.freeze({ name: 'Bridge rye', type: 'Material', icon: 'grain', stackable: true,
+    brief: 'A sheaf of Minoran bridge rye off a Caricas bed. Bread, not a meal as it stands.',
+    description: 'The grain of practical people, the Minorans say: it stands on poor ground and keeps in a damp barn. Two sheaves and a wedge of cheese make the Carican rye loaf, and one goes into the crust of a soft-fruit tart.' }),
+  'field-beans': Object.freeze({ name: 'Field beans', type: 'Material', icon: 'nut', stackable: true,
+    brief: 'Dried broad beans from a Caricas bed. Hard as gravel until they are cooked.',
+    description: 'Field beans, left to dry in the pod on the stalk and shelled. Nobody eats them raw. Two with a sheaf of barley make bean pottage, and the bed they came out of is the better for having grown them.' }),
+  'soft-fruit': Object.freeze({ name: 'Soft fruit', type: 'Food', icon: 'berries', stackable: true, eatName: 'handful of soft fruit',
+    brief: 'Raspberries and currants off the Caricas canes. Restores up to 15 health.',
+    description: 'Restores up to 15 health. Picked from canes on the Caricas terraces, where the valley grows its vegetables and soft fruit. Eat a handful as they come, or bake two into a tart with a little bridge rye.' }),
+  // The fine kind of each crop (design §4.4): what a Fine or Prize harvest comes in as. They
+  // sell for more, cook into better food and are what the Measure asks for.
+  'sunflower-fine': Object.freeze({ name: 'Fine sunflowers', type: 'Harvest', icon: 'flower', stackable: true,
+    brief: 'Sunflowers from a well-kept bed, the heads broad and the seed full.',
+    description: 'A Fine harvest: the right ground, water at the right time and a practised hand. They are sunflowers, and they sell as better ones.' }),
+  'carrot-fine': Object.freeze({ name: 'Fine carrots', type: 'Food', icon: 'carrot', stackable: true, eatName: 'fine carrot',
+    brief: 'Long, straight and sweet, from a well-kept bed. Restores up to 20 health.',
+    description: 'Restores up to 20 health. A Fine harvest of carrots, the kind a grower lays on top of the basket. Better raw than the ordinary kind, and better again in the pot.' }),
+  'beet-fine': Object.freeze({ name: 'Fine beets', type: 'Food', icon: 'beet', stackable: true, eatName: 'fine beet',
+    brief: 'Round, dark and sweet right through. Restores up to 25 health.',
+    description: 'Restores up to 25 health. A Fine harvest of beets, firm and unsplit, grown in ground that was ready for them and watered when it needed it.' }),
+  'barley-fine': Object.freeze({ name: 'Fine barley', type: 'Material', icon: 'grain', stackable: true,
+    brief: 'Heavy, bright barley from a well-kept bed. Cooks into the fine kind of a dish.',
+    description: 'A Fine harvest of barley: full ears, no lodging, nothing pinched. A measurer would seal it at sight, and a cook can tell the difference in the pot.' }),
+  'pipe-weed-fine': Object.freeze({ name: 'Fine pipe weed', type: 'Gathered material', icon: 'leaf', stackable: true,
+    brief: 'Broad Drent leaf, cured evenly. It sells better; Cabe’s pipe takes the ordinary kind.',
+    description: 'A Fine harvest of Drent leaf, big unbroken leaves cured the colour of a good saddle. It is worth more to a buyer than to a smoker: for the bowl, the ordinary leaf does as well.' }),
+  'bridge-rye-fine': Object.freeze({ name: 'Fine bridge rye', type: 'Material', icon: 'grain', stackable: true,
+    brief: 'Bridge rye that stood straight on lean ground. Cooks into the fine kind of a dish.',
+    description: 'A Fine harvest of bridge rye, grown where the ground was lean enough for it and the farmer knew why. This is what the Measure of the River asks of Caricas.' }),
+  'field-beans-fine': Object.freeze({ name: 'Fine field beans', type: 'Material', icon: 'nut', stackable: true,
+    brief: 'Plump, even beans from a well-kept bed. Cooks into the fine kind of a dish.',
+    description: 'A Fine harvest of field beans, every pod full. Still not food until it is cooked, but the pottage made from them is worth the walk.' }),
+  'soft-fruit-fine': Object.freeze({ name: 'Fine soft fruit', type: 'Food', icon: 'berries', stackable: true, eatName: 'handful of fine soft fruit',
+    brief: 'The best of the Caricas canes, picked on the day. Restores up to 20 health.',
+    description: 'Restores up to 20 health. A Fine picking from canes on rich, rested ground, so ripe they stain the basket. Bake them with fine rye for a tart the temple kitchen would pay for.' }),
+  'rye-cheese-loaf': Object.freeze({ name: 'Rye loaf with onion and river cheese', type: 'Food', icon: 'loaf', stackable: true, eatName: 'slice of rye loaf with cheese',
+    brief: 'Dark bridge-rye bread with onion, under melted cheese. Restores up to 25 health.',
+    description: 'Restores up to 25 health. Two sheaves of bridge rye baked dark with an onion through the dough and a wedge of ewe’s cheese melted over the top, which is as near to the river cheese of the Caricas valley as a traveller is going to get.' }),
+  'rye-cheese-loaf-fine': Object.freeze({ name: 'Fine rye loaf with onion and river cheese', type: 'Food', icon: 'loaf', stackable: true, eatName: 'slice of fine rye loaf with cheese',
+    brief: 'The Carican loaf, baked from Fine bridge rye. Restores up to 35 health.',
+    description: 'Restores up to 35 health. The same loaf from Fine rye: a closer crumb, a crust that rings when you knock it, and the cheese gone brown at the edges.' }),
+  'bean-pottage': Object.freeze({ name: 'Bean pottage', type: 'Food', icon: 'bowl', stackable: true, eatName: 'bowl of bean pottage',
+    brief: 'Field beans and barley stewed soft together. Restores up to 40 health.',
+    description: 'Restores up to 40 health. Two handfuls of field beans and a sheaf of barley, soaked and simmered at a lit fire until the beans give. The Caricas farm kitchens keep a pot of it going all week.' }),
+  'bean-pottage-fine': Object.freeze({ name: 'Fine bean pottage', type: 'Food', icon: 'bowl', stackable: true, eatName: 'bowl of fine bean pottage',
+    brief: 'Pottage from Fine beans and Fine barley. Restores up to 50 health.',
+    description: 'Restores up to 50 health. Bean pottage made from a Fine harvest of both, thick enough to stand a spoon in. It is the same dish, and nobody who has eaten both thinks so.' }),
+  'soft-fruit-tart': Object.freeze({ name: 'Soft-fruit tart', type: 'Food', icon: 'pie', stackable: true, eatName: 'slice of soft-fruit tart',
+    brief: 'Raspberries and currants in a rye crust. Restores up to 45 health.',
+    description: 'Restores up to 45 health. Two handfuls of soft fruit in a crust of bridge-rye meal, baked at a lit fire until the juice runs. The orchard-wife of the East Orchard bakes it for the Measure.' }),
+  'soft-fruit-tart-fine': Object.freeze({ name: 'Fine soft-fruit tart', type: 'Food', icon: 'pie', stackable: true, eatName: 'slice of fine soft-fruit tart',
+    brief: 'The tart from Fine fruit and Fine rye. Restores up to 50 health.',
+    description: 'Restores up to 50 health. A soft-fruit tart from a Fine picking and Fine rye, the kind a measurer seals for the Guild and the temple kitchen pays most for.' }),
   'avrel-apple': Object.freeze({
     name: 'Avrel apples', type: 'Food', icon: 'apple', stackable: true, eatName: 'apple',
     brief: 'A crisp orchard apple from the Avrel valley. Restores up to 20 health.',

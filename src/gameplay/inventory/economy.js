@@ -89,3 +89,36 @@ export function peddlerOffers({ purse, count, items, stock = PEDDLER_STOCK }) {
     return { id: entry.id, name: item?.name ?? entry.id, price: entry.price, enabled: result.ok, reason: result.reason, label: `${item?.name ?? entry.id} · ${entry.price} copper` };
   });
 }
+
+/**
+ * The purse. Copper is a satchel stack like any other, and about twenty-six places in main.js read
+ * it directly; these are what they can move to over time, and what the Lizeem's merchants use
+ * (src/gameplay/inventory/merchants.js). The user's go-ahead of 5 October 2026 for the Farmlands of the Lizeem lifts
+ * his earlier "do not develop the economy" for this work. `pay` takes the whole sum or none of it.
+ */
+const wholeSum = n => Number.isSafeInteger(n) && n >= 0;
+export const purse = inventory => inventory?.count?.(COPPER_ITEM) ?? 0;
+export function pay(inventory, n) {
+  if (!wholeSum(n)) return false;
+  return n === 0 || Boolean(inventory?.remove?.(COPPER_ITEM, n));
+}
+export function earn(inventory, n) {
+  if (!wholeSum(n)) return false;
+  return n === 0 || Boolean(inventory?.add?.(COPPER_ITEM, n));
+}
+
+/**
+ * A shop counter: take the money, hand over the goods, and if the satchel refuses them give back
+ * what was taken and nothing else. The refund hangs on whether the money was actually taken, never
+ * on the same condition that tried to take it (tests/tills.test.js tells the story of that bug).
+ */
+export function till(inventory, { price, itemId, quantity = 1, stackable = true }) {
+  const check = purchase({ price, purse: purse(inventory), owned: (inventory?.count?.(itemId) ?? 0) > 0, stackable });
+  if (!check.ok) return { ok: false, reason: check.reason };
+  const paid = pay(inventory, price);
+  if (!paid || !inventory.add(itemId, quantity)) {
+    if (paid) earn(inventory, price);
+    return { ok: false, reason: paid ? 'It will not go in your satchel.' : 'Your purse is lighter than it looks.' };
+  }
+  return { ok: true, reason: '', price, remaining: purse(inventory) };
+}

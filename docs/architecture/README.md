@@ -62,6 +62,8 @@ Kayla's behavior, character model, race and integration files now live together 
 
 Some existing modules mix authored content and general mechanics. This cleanup gives each a useful home. Separating those responsibilities is later architectural work.
 
+The integrated [Farmlands of the Lizeem](../region-reviews/lizeem-farmlands-handoff.md) is a larger example: its quest hub, country arcs, people and Taleth live in `content/quests/lizeem-farmlands/`; local farm construction and water systems live with Nethereum, Nesdor, Ovesos and Minora's regional content. General crop rules remain in `gameplay/skills/farming/`, and prices and merchants in `gameplay/inventory/`.
+
 ## Current architecture and future boundaries
 
 Existing dependencies still cross folders, and the large entry points still coordinate many features. No circular-dependency cleanup, state redesign, TypeScript conversion or save-schema change was included.
