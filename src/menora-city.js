@@ -79,6 +79,17 @@ export const MENORA_NPC_ANCHORS=freeze({
     const offset=['menora-south-gate','menora-river-gate'].includes(g.id)?3.5:5.4;
     return [-1,1].map(s=>freeze({x:g.x+dx*offset*s-dz*4,z:g.z+dz*offset*s+dx*4,yaw:Math.atan2(dz,-dx)}));})),
 });
+/** The factors' market corner on the plaza by the Temple Way (the Farmlands of the Lizeem, approved and
+ * ordered built on 5 October 2026). The east-bank factors keep the north side of the Temple Way and the
+ * west-bank factors face them from the plaza's south edge, as the Lizeem divides their countries. Each stand is where the
+ * factor waits, behind the counter and facing the street; the stalls are open, as the Caricas grain
+ * court's are. Stands keep more than 4 m from water and 1 m from any building (tests/menora-city.test.js). */
+const marketStand=(factor,name,country,x,z,yaw)=>freeze({id:`menora-stall-${factor}`,factor,name,country,
+  x,z:z+(Math.cos(yaw)<0?1.1:-1.1),yaw,stall:freeze({x,z,width:4.4,depth:2.6})});
+export const LIZEEM_MARKET_STANDS=freeze([
+  marketStand('portunus','Portunus','Caricas',-2362,140.1,0),marketStand('njord','Njord','Nesdor',-2368,140.1,0),
+  marketStand('manawydan','Manawydan','Nethereum',-2371.5,156,Math.PI),marketStand('adapa','Adapa','Ovesos',-2365.5,156,Math.PI),
+]);
 export const MENORA_GARDENS=freeze([
   freeze({x:-2350,z:78,width:22,depth:7}),freeze({x:-2414,z:139,width:23,depth:5}),
   freeze({x:-2292,z:47,width:8,depth:25}),freeze({x:-2355,z:154,width:14,depth:6}),

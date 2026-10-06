@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MENORA, MENORA_BUILDINGS, MENORA_GATES, MENORA_PATHS, MENORA_BRIDGES,
-  MENORA_NPC_ANCHORS, MENORA_CAMP, inMenora, menoraGround, menoraRiverClearance,
-  menoraReserved, menoraDeckHeight, menoraBridgeAt } from '../src/menora-city.js';
+  MENORA_NPC_ANCHORS, MENORA_CAMP, MENORA_GARDENS, LIZEEM_MARKET_STANDS, inMenora, menoraGround, menoraRiverClearance,
+  menoraReserved, menoraDeckHeight, menoraBridgeAt, menoraSegmentDistance } from '../src/menora-city.js';
 import { ISAREOS_RIVER, LIZEEM, ISAREOS_BECKS, courseDistance } from '../src/west-regions.js';
 import { regionAt } from '../src/region-world.js';
 import { sourceModule } from './module-loader.js';
@@ -87,14 +87,39 @@ test('Rendered gates, bridge approaches and character anchors have real collisio
   const parent=new THREE.Group(),colliders=[];
   const scene=createMenoraScenery({parent,colliders,heightAt:(x,z)=>menoraGround(x,z,21.3)});
   assert.equal(scene.metrics.buildings,MENORA_BUILDINGS.length);
-  assert.equal(scene.metrics.bridges,5);assert.equal(scene.metrics.tents,6);
+  assert.equal(scene.metrics.bridges,5);assert.equal(scene.metrics.tents,6);assert.equal(scene.metrics.stalls,LIZEEM_MARKET_STANDS.length);
   assert.ok(scene.metrics.batches<65);assert.ok(scene.metrics.vertices<250000);
   const blocked=(x,z)=>colliders.find(c=>c.minY<=22.9&&c.maxY>=21.3&&(c.r!==undefined
     ?Math.hypot(x-c.x,z-c.z)<c.r+.55:Math.abs(x-c.x)<c.hx+.55&&Math.abs(z-c.z)<c.hz+.55));
-  for(const point of [MENORA.arrival,...MENORA_GATES,MENORA_NPC_ANCHORS.cedric,MENORA_NPC_ANCHORS.wilhelm,...MENORA_NPC_ANCHORS.army,...MENORA_NPC_ANCHORS.guards])
+  for(const point of [MENORA.arrival,...MENORA_GATES,MENORA_NPC_ANCHORS.cedric,MENORA_NPC_ANCHORS.wilhelm,...MENORA_NPC_ANCHORS.army,...MENORA_NPC_ANCHORS.guards,...LIZEEM_MARKET_STANDS])
     assert.equal(blocked(point.x,point.z),undefined,`${point.id??'character anchor'} blocked`);
   for(const path of MENORA_PATHS)for(let i=1;i<path.points.length;i++) {
     const a=path.points[i-1],b=path.points[i],len=Math.hypot(b.x-a.x,b.z-a.z);
     for(let k=0;k<=len;k+=1.5){const x=a.x+(b.x-a.x)*k/len,z=a.z+(b.z-a.z)*k/len,c=blocked(x,z);assert.equal(c,undefined,`${path.id} at ${x},${z} blocked by ${c?.id??c?.kind}`);}
   }
+});
+
+test('The factors’ market corner stands by the plaza on dry open ground, off the lanes, each factor behind his counter',()=>{
+  assert.equal(LIZEEM_MARKET_STANDS.length,4);
+  assert.deepEqual(LIZEEM_MARKET_STANDS.map(s=>s.country).sort(),['Caricas','Nesdor','Nethereum','Ovesos']);
+  for(const s of LIZEEM_MARKET_STANDS) {
+    const {x,z,width,depth}=s.stall,corners=[[-1,-1],[-1,1],[1,-1],[1,1]].map(([a,b])=>({x:x+a*width/2,z:z+b*depth/2}));
+    assert.ok(inMenora(s.x,s.z),s.id);
+    assert.ok(Math.hypot(x+2370,z-152)<16,`${s.id} is at the plaza`);
+    for(const p of [s,...corners])assert.ok(menoraRiverClearance(p.x,p.z)>4,`${s.id} is too near water`);
+    for(const b of [...MENORA_BUILDINGS,...MENORA_CAMP.tents]) {
+      assert.ok(Math.abs(s.x-b.x)>b.width/2+1||Math.abs(s.z-b.z)>b.depth/2+1,`${s.id} stands within a metre of ${b.id}`);
+      assert.ok(Math.abs(x-b.x)>(b.width+width)/2+1||Math.abs(z-b.z)>(b.depth+depth)/2+1,`${s.id}'s stall is within a metre of ${b.id}`);
+    }
+    for(const g of MENORA_GARDENS)assert.ok(Math.abs(x-g.x)>(g.width+width)/2||Math.abs(z-g.z)>(g.depth+depth)/2,`${s.id}'s stall is in a garden`);
+    for(const path of MENORA_PATHS)for(let i=1;i<path.points.length;i++)for(const p of [s,...corners])
+      assert.ok(menoraSegmentDistance(p.x,p.z,path.points[i-1],path.points[i])>path.width/2,`${s.id} is in ${path.id}`);
+    // Behind the counter and facing the street: a step forward from the stand is a step toward the Temple Way.
+    const ahead={x:s.x+Math.sin(s.yaw),z:s.z+Math.cos(s.yaw)},way=MENORA_PATHS.find(p=>p.id==='menora-temple-way');
+    const toWay=p=>Math.min(...way.points.slice(1).map((b,i)=>menoraSegmentDistance(p.x,p.z,way.points[i],b)));
+    assert.ok(toWay(ahead)<toWay(s),`${s.id} faces away from the street`);
+    assert.ok(Math.abs(s.z-z)<depth/2,`${s.id} stands under his own awning`);
+  }
+  for(const [i,a] of LIZEEM_MARKET_STANDS.entries())for(const b of LIZEEM_MARKET_STANDS.slice(i+1))
+    assert.ok(Math.abs(a.stall.x-b.stall.x)>(a.stall.width+b.stall.width)/2||Math.abs(a.stall.z-b.stall.z)>(a.stall.depth+b.stall.depth)/2,`${a.id} overlaps ${b.id}`);
 });
