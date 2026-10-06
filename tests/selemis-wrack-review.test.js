@@ -4,17 +4,17 @@ import {createHash} from 'node:crypto';
 import {readFileSync,writeFileSync} from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import {sourceModule} from './module-loader.js';
-import {groundBeforeSelamus} from '../src/world-terrain.js';
-import {landDistance} from '../src/region-world.js';
-import {strandWeight} from '../src/selemis-world.js';
+import {groundBeforeSelamus} from '../src/world/terrain/world-terrain.js';
+import {landDistance} from '../src/world/terrain/region-world.js';
+import {strandWeight} from '../src/content/regions/selemis/selemis-world.js';
 import {telemoniaGeometryHash} from './telemonia-geometry-hash.js';
 
 // This captured material/scatter baseline predates Selemis. City clearing and
 // final waterfront support are checked by the composed city suite.
 const naturalGround=groundBeforeSelamus;
 const before=JSON.parse(readFileSync(new URL('./fixtures/selemis-wrack-before.json',import.meta.url)));
-const {createSelemisScenery}=await sourceModule('../src/selemis-scenery.js');
-const {getTreeRegistry}=await sourceModule('../src/tree-registry.js');
+const {createSelemisScenery}=await sourceModule('../src/content/regions/selemis/selemis-scenery.js');
+const {getTreeRegistry}=await sourceModule('../src/world/scenery/tree-registry.js');
 const root=new THREE.Group(),colliders=[],round=new THREE.IcosahedronGeometry(1,0);
 const result=createSelemisScenery({root,colliders,round,groundHeight:naturalGround,renderedGroundHeight:naturalGround,
   material:(color,extra={})=>new THREE.MeshStandardMaterial({color,...extra}),dummy:new THREE.Object3D(),color:new THREE.Color()});

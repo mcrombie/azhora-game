@@ -1112,7 +1112,7 @@
           -797
         ]
       ],
-      "note": "The **frostback buffalo**, and Celder is half of its name in the lore: \"a heavy wild bovid of the Mithsla and Celder plains\". Seven together on the low swells of the middle plain, because a frostback is a herd animal before it is anything else - \"their herds follow grass quality rather than political boundaries\" - and a herd of three reads as three cows. Heavy and unhurried: walked at, they put their heads up, turn and give ground at a shade over a walk, the cattle answer in `src/west-regions-life.js`, which the frostback was given when Mithala was built.",
+      "note": "The **frostback buffalo**, and Celder is half of its name in the lore: \"a heavy wild bovid of the Mithsla and Celder plains\". Seven together on the low swells of the middle plain, because a frostback is a herd animal before it is anything else - \"their herds follow grass quality rather than political boundaries\" - and a herd of three reads as three cows. Heavy and unhurried: walked at, they put their heads up, turn and give ground at a shade over a walk, the cattle answer in `src/content/regions/western-regions/west-regions-life.js`, which the frostback was given when Mithala was built.",
       "maxSlope": 0.5
     },
     {

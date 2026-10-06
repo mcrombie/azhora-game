@@ -10,14 +10,14 @@ import { scopedWorld } from './scoped-world.js';
  * in a country where steep rock is climbed. Pure functions first; one world scoped to the island at the end.
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_IDS, REGION_TERRAIN, REGION_CELLS, REGION_OUTLINES, hexOwnerAt, regionAt, landDistance, terrainMix } = await sourceModule('../src/region-world.js');
-const { groundWithRiver: ground, groundBeforeEastIzol: before, groundTint, SHORE_TINT_FAMILIES, GROUND_TINT_FAMILIES, shoreTintOf } = await sourceModule('../src/world-terrain.js');
-const { canWalkSlope, isClimbTerrain, CLIMBING } = await sourceModule('../src/climbing.js');
-const { canStand, moveCharacter, WATERLINE } = await sourceModule('../src/game-state.js');
-const { westWaterSurface } = await sourceModule('../src/west-ground.js');
-const { THREE_PRESENCES, IZOL_ROAD, SIGHTSTONE } = await sourceModule('../src/izol-world.js');
-const { regionBuildStatus } = await sourceModule('../src/build-status.js');
-const I = await sourceModule('../src/east-izol-world.js');
+const { REGION_IDS, REGION_TERRAIN, REGION_CELLS, REGION_OUTLINES, hexOwnerAt, regionAt, landDistance, terrainMix } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver: ground, groundBeforeEastIzol: before, groundTint, SHORE_TINT_FAMILIES, GROUND_TINT_FAMILIES, shoreTintOf } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canWalkSlope, isClimbTerrain, CLIMBING } = await sourceModule('../src/gameplay/movement/climbing.js');
+const { canStand, moveCharacter, WATERLINE } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { westWaterSurface } = await sourceModule('../src/content/regions/western-regions/west-ground.js');
+const { THREE_PRESENCES, IZOL_ROAD, SIGHTSTONE } = await sourceModule('../src/content/regions/izol/izol-world.js');
+const { regionBuildStatus } = await sourceModule('../src/dev/tools/build-status.js');
+const I = await sourceModule('../src/content/regions/east-izol/east-izol-world.js');
 const { EAST_IZOL, EAST_IZOL_CELLS, EAST_IZOL_CLIMATE, EAST_IZOL_LINE, EAST_IZOL_PRESENCES, EAST_IZOL_KEPT, EAST_IZOL_COVES, EAST_IZOL_BAYS,
   EAST_IZOL_GULLIES, EAST_IZOL_ARRIVAL, EAST_IZOL_LANDMARKS, EAST_IZOL_TRAILS, EAST_IZOL_VIEWS, EAST_IZOL_RESERVED, EAST_IZOL_BOX,
   eastIzolGround, eastIzolTint, eastIzolShoreTint, eastIzolOwns, eastIzolCover, cliffShare, gullyAt, keptAt, HEARTH_ROAD_END } = I;
@@ -124,7 +124,7 @@ test('the Three Presences are ground: at West Izol’s places and heights, isola
       if (EAST_IZOL_PRESENCES.some(q => q !== p && Math.hypot(x - q.x, z - q.z) < r)) continue;
       assert.ok(H(x, z) <= p.top + .01, `${p.id} is overtopped at ${x.toFixed(0)},${z.toFixed(0)}`);
     }
-    // The prop's skyline is retired by this (src/izol-scenery.js): the ground already stands at the peak's height.
+    // The prop's skyline is retired by this (src/content/regions/izol/izol-scenery.js): the ground already stands at the peak's height.
     assert.ok(H(prop.x + prop.lean, prop.z - 1.5) > prop.topY - 3);
     // Rock: most of the flank between a third and nine tenths of the way up is steeper than a walker can climb.
     let steep = 0, flank = 0;

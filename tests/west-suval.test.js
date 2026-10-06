@@ -1,19 +1,19 @@
 import test from 'node:test';
-import { nearestOnPath } from '../src/autopilot.js';
+import { nearestOnPath } from '../src/gameplay/autoplay/autopilot.js';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { REGION_IDS, REGION_OUTLINES, WORLD_BOUNDS, SOLIS, SOLIS_ROAD, solisPoint, hexOwnerAt, insideRegion, STORY_SITES, landDistance } from '../src/region-world.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { REGION_IDS, REGION_OUTLINES, WORLD_BOUNDS, SOLIS, SOLIS_ROAD, solisPoint, hexOwnerAt, insideRegion, STORY_SITES, landDistance } from '../src/world/terrain/region-world.js';
 import {
   FORT, SOLIS_CIRCUIT, SOLIS_GATES, SOLIS_FACES, SOLIS_TOWERS, SOLIS_STAIRS, SOLIS_BUILDINGS, SOLIS_STANDS, SOLIS_SQUARE, SOLIS_APPROACH,
   COALITION_CAMP, WEST_SUVAL_BORDER, WEST_SUVAL_PLACES, WEST_SUVAL_LANDMARKS, facePoint, wallRuns, gatePassage, solisHolder,
-} from '../src/west-suval.js';
-import { RIDE } from '../src/riding.js';
-import { SOLIS_HARBOR, SOLIS_HARBOR_PATHS, solisHarborDeckHeight } from '../src/solis-harbor.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+} from '../src/content/regions/solis/west-suval.js';
+import { RIDE } from '../src/gameplay/movement/riding.js';
+import { SOLIS_HARBOR, SOLIS_HARBOR_PATHS, solisHarborDeckHeight } from '../src/content/regions/solis/solis-harbor.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene();
@@ -281,8 +281,8 @@ test('the country between the border and Solis has places to find, and they stan
 });
 
 test('the autopilot finds its way into Solis by the Gate of Sun Horses, to the envoy and back out again', async () => {
-  const { nextWaypoint, freeDirection } = await import('../src/autopilot.js');
-  const { SOLIS_ENCLOSURE, SOLIS_ENCLOSURES } = await import('../src/west-suval.js');
+  const { nextWaypoint, freeDirection } = await import('../src/gameplay/autoplay/autopilot.js');
+  const { SOLIS_ENCLOSURE, SOLIS_ENCLOSURES } = await import('../src/content/regions/solis/west-suval.js');
   const ground = { ...nearSolis, paths: world.paths, enclosures: SOLIS_ENCLOSURES };
   const walk = (from, to) => {
     const position = { ...from };

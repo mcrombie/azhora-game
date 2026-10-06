@@ -20,9 +20,9 @@ simply the first case and the only one that is automatic.
 - `combat.state.allies` already exist, fight, can be wounded, and now take the country's scaled
   damage (combat phase 2).
 - Friendship already has a vocabulary in this game, and it is not a bar:
-  **a stranger → an acquaintance → glad to see you → fond of you** (`src/rena-letters.js`,
-  `src/acorn-quest.js`). Companions use the same four rungs.
-- `createFallen()` in `src/bystanders.js` is a set of ids that survives the save. The dead of the
+  **a stranger → an acquaintance → glad to see you → fond of you** (`src/content/quests/rena/rena-letters.js`,
+  `src/content/quests/forest/acorn-quest.js`). Companions use the same four rungs.
+- `createFallen()` in `src/gameplay/combat/bystanders.js` is a set of ids that survives the save. The dead of the
   company belong in it rather than in a new list of their own.
 
 ## Settled, and why
@@ -121,7 +121,7 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
 
 ## Build order
 
-1. `src/companions.js`, pure: who may be asked, where, on what condition; the four rungs and what
+1. `src/gameplay/company/companions.js`, pure: who may be asked, where, on what condition; the four rungs and what
    moves them; who walks with you; the dead; snapshot and validation.
 2. The company honours it: no dead man placed, the companion slot driven by it rather than by the
    long road's single argument.
@@ -137,7 +137,7 @@ All four were answered on 2026-09-21 (docs/design-answers.md):
    four soldiers keep their places and the company stands with them.
 
    **And the border battle grows with the company** (the user, 2026-09-21; `BORDER_LINE`,
-   `src/border-chapter.js`). Up to six companions it is the eight it always was — which is the
+   `src/content/chapters/chapter-one/border-chapter.js`). Up to six companions it is the eight it always was — which is the
    fight the army's fill is sized against — and above that one more soldier a companion, to the
    twelve `encounterConfig` will accept. Measured at level 2 over forty seeds: ten companions used
    to win 40 of 40 at 96 % health in 36 seconds with **one** man down, and now win 40 of 40 at
@@ -178,7 +178,7 @@ rather than a system, because a mount is not a thing a companion owns and can lo
 function of two things the save already holds — whether the traveler has a horse, and who is
 walking with him — so **there is no new save section**, nothing to validate and nothing that can
 go stale. The dead do not walk and neither do the sent-on, so neither has a horse, without a line
-of code saying so (`src/company-horses.js`).
+of code saying so (`src/gameplay/company/company-horses.js`).
 
 - **From the moment he owns one.** Bede Harrow hands over the army's bay, and the company is
   mounted from that hour; a man who joins later has one too. Before that, everybody walks.

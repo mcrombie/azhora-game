@@ -1,6 +1,6 @@
 # Game atlas corrections
 
-The World Builder repository remains read-only. `src/game-atlas-adjustments.js`
+The World Builder repository remains read-only. `src/world/terrain/game-atlas-adjustments.js`
 applies the explicitly requested game corrections to a copy of its imported map.
 The journal exporter, developer atlas exporter and river generator all use it;
 the playable region survey is regenerated from the resulting developer atlas.

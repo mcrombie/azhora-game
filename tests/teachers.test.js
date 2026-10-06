@@ -2,21 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createSkills } from '../src/skills.js';
-import { createCombat } from '../src/combat.js';
-import { ARMS, ARMS_IDS, createCombatSkills, marginsFor } from '../src/combat-skills.js';
-import { createCompanions, RUNGS, RUNG_AT, MERCENARY_ARMS, COMPANION_IDS } from '../src/companions.js';
-import { createFallen } from '../src/bystanders.js';
-import { mercenaryById } from '../src/mercenaries.js';
-import { WEAPON_TYPES, WEAPON_FEEL, feelOf, createWeapons } from '../src/weapons.js';
-import { familyOf } from '../src/combat-skills.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { ARMS, ARMS_IDS, createCombatSkills, marginsFor } from '../src/gameplay/combat/combat-skills.js';
+import { createCompanions, RUNGS, RUNG_AT, MERCENARY_ARMS, COMPANION_IDS } from '../src/gameplay/company/companions.js';
+import { createFallen } from '../src/gameplay/combat/bystanders.js';
+import { mercenaryById } from '../src/gameplay/company/mercenaries.js';
+import { WEAPON_TYPES, WEAPON_FEEL, feelOf, createWeapons } from '../src/gameplay/combat/weapons.js';
+import { familyOf } from '../src/gameplay/combat/combat-skills.js';
 import {
   TEACHERS, TEACHER_IDS, TEACHING, TEACHABLE, LESSON_RUNGS, LESSON_XP, LESSON_LEVEL,
   SPARRING_CEILINGS, teachesOf, teachersOf, sparringCeiling, lessonXp, handsFor,
   lendOf, lendFits, giftOf, sparsWith, markOf, createTeachers, validateTeachersSnapshot,
-} from '../src/teachers.js';
-import { BOW, JERRYS_BOW } from '../src/archery.js';
-import { smithOffers } from '../src/smith.js';
+} from '../src/gameplay/skills/teachers.js';
+import { BOW, JERRYS_BOW } from '../src/gameplay/combat/archery.js';
+import { smithOffers } from '../src/content/quests/roadside/smith.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -74,7 +74,7 @@ test('every lesson is written in the man’s own voice, and short', () => {
     assert.ok(TEACHERS[id].spar.offer && TEACHERS[id].spar.wrong && TEACHERS[id].spar.done, `${id} has a bout`);
     assert.ok(said.length, `${id} already had lines of his own to write from`);
   }
-  // The copy says true things about how the weapons now work (src/weapons.js, phase 5).
+  // The copy says true things about how the weapons now work (src/gameplay/combat/weapons.js, phase 5).
   const all = Object.values(TEACHING).flatMap(entry => entry.lessons.flatMap(lesson => lesson.lines)).join(' ');
   assert.match(all, /strikes twice as often/, 'the staff says what its tempo is');
   assert.equal(WEAPON_TYPES.quarterstaff.tempo, .5);
@@ -153,7 +153,7 @@ test('a lesson’s worth is the lesson’s, weighted by how good the man is', ()
 test('sparring pays to a ceiling, and the ceiling never passes the teacher’s own level', () => {
   // The rung's ceiling, cut down to what the man knows. Al the Tun is 20 and can never do better.
   assert.equal(SPARRING_CEILINGS[0], 0, 'a man who has shown you nothing cannot spar');
-  assert.equal(SPARRING_CEILINGS[1], ARMS.ceiling.sparring, 'the first is the one src/combat-skills.js already had');
+  assert.equal(SPARRING_CEILINGS[1], ARMS.ceiling.sparring, 'the first is the one src/gameplay/combat/combat-skills.js already had');
   for (let i = 1; i < SPARRING_CEILINGS.length; i++)
     assert.ok(SPARRING_CEILINGS[i] > SPARRING_CEILINGS[i - 1], 'each lesson raises it');
   for (const id of TEACHER_IDS) {
@@ -306,7 +306,7 @@ test('the mark is practice, it pays by the arrow, and walking away ends it', () 
  * of what `combat.js` gained: the swing has always worked at the post, and now the draw does too.
  */
 test('an arrow may be sent at a mark, and a mark cannot be hurt', () => {
-  const combatSource = source('combat.js');
+  const combatSource = source('gameplay/combat/combat.js');
   assert.match(combatSource, /const shootable = \(\) => state\.phase === 'active' \|\| state\.phase === 'practice';/);
   assert.match(combatSource, /flown: arrow\.flown/, 'and the landing says how far it went');
 
@@ -651,7 +651,7 @@ test('a guarded blow that beats him still ends the bout', () => {
 });
 
 test('a bout can kill nobody, and no victory is ever reported for one', () => {
-  const combat = source('combat.js');
+  const combat = source('gameplay/combat/combat.js');
   // One floor, for a bout and for practice both, so that an arrow at Jerry's mark and a sword in
   // a sparring bout cannot disagree about who may be killed (the user, 2026-09-21).
   assert.match(combat, /const killFloor = \(\) => \(lastEncounter\.bout \|\| state\.phase === 'practice' \? 1 : 0\);/,
@@ -685,8 +685,8 @@ test('the host asks for the bout’s ceiling and pays with it', () => {
 });
 
 test('a bout kills nobody, wins nothing, and is never a victory or a defeat', async () => {
-  const { createCombat } = await import('../src/combat.js');
-  const { maxHealth } = await import('../src/combat-skills.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
+  const { maxHealth } = await import('../src/gameplay/combat/combat-skills.js');
   const world = { bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 }, colliders: [], heightAt: () => 0, nearColliders: () => [] };
   // Both ways round: the traveler has the better of it, and the traveler stands there and takes it.
   for (const passenger of [false, true]) {

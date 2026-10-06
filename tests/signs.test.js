@@ -4,10 +4,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 const { createSigns, SIGN_LABELS, SIGN_COLOURS, labelPixels, labelMetres,
-  ENGLISH_SIGN_LABELS, FOREIGN_SIGN_LABELS, letteringAtlas, letteringLabels, setForeignLettering, setSignReader, signText } = await sourceModule('../src/signs.js');
+  ENGLISH_SIGN_LABELS, FOREIGN_SIGN_LABELS, letteringAtlas, letteringLabels, setForeignLettering, setSignReader, signText } = await sourceModule('../src/world/scenery/signs.js');
 
 /** The world's own toolkit, reduced to what signs use. */
 function kit() {
@@ -88,11 +88,11 @@ test('the atlas is cut for the words this game will actually show, and halves wh
 
 test('the host says which atlas to cut before the world is built, and says only yes or no', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-  const signs = readFileSync(fileURLToPath(new URL('../src/signs.js', import.meta.url)), 'utf8');
+  const signs = readFileSync(fileURLToPath(new URL('../src/world/scenery/signs.js', import.meta.url)), 'utf8');
   const told = main.indexOf("setForeignLettering(gameMode.has('linguist'));"), built = main.indexOf('world=createWorld(scene,');
   assert.ok(told > 0, 'the host answers');
   assert.ok(told < built, 'and answers before the atlas is cut');
-  // src/signs.js is handed a yes or a no and never learns why: the gate stays the only reader.
+  // src/world/scenery/signs.js is handed a yes or a no and never learns why: the gate stays the only reader.
   assert.doesNotMatch(signs, /game-mode|gameMode|'hard'|'normal'/, 'signs.js does not know what a mode is');
   assert.match(signs, /export const setForeignLettering = wanted => \{ foreignLettering = SIGN_TRANSLATION && !!wanted;/, 'a plain yes or no');
 });
@@ -127,7 +127,7 @@ test('every sign in the world carries a known label, stands on solid posts, and 
 });
 
 test('with nobody to ask, every sign letters in the traveler\u2019s own language', () => {
-  // Normal mode is the whole game we ship and it is all in English (src/game-mode.js). The host
+  // Normal mode is the whole game we ship and it is all in English (src/app/game-mode.js). The host
   // hands the world a reader only in hard mode, so this is what a normal-mode board says - and
   // it has to be the label itself, for every word the atlas carries and not just the first few.
   setSignReader(null);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { combatPresence } from '../src/combat-presence.js';
+import { combatPresence } from '../src/gameplay/combat/combat-presence.js';
 
 test('road companions yield to their battle models until the encounter releases them', () => {
   const ed = { id: 'merc-word', hp: 80, x: 5, z: 7 };

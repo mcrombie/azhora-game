@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
-import { FIGURE_LOD, alwaysInFull, figureDetail, standInLook, figureDrawCalls } from '../src/figure-lod.js';
+import { FIGURE_LOD, alwaysInFull, figureDetail, standInLook, figureDrawCalls } from '../src/world/actors/figure-lod.js';
 
 /**
  * Measured in the renderer (npm run review:draws): figures are the largest cost where people
@@ -74,7 +74,7 @@ test('what it saves, on the field at the Lauvel as it was measured', () => {
 });
 
 test('the stand-in is one mesh, in their colours, casting nothing, and two people dressed alike share it', async () => {
-  const { createStandIn } = await sourceModule('../src/figure-stand-in.js');
+  const { createStandIn } = await sourceModule('../src/world/actors/figure-stand-in.js');
   const eren = createStandIn({ tunic: 0x8f3b30, skin: 0xd7ad7e });
   let meshes = 0; eren.traverse(object => { if (object.isMesh) meshes++; });
   assert.equal(meshes, 1, 'one draw call');
@@ -97,14 +97,14 @@ test('the stand-in is one mesh, in their colours, casting nothing, and two peopl
  * coat at sixty-two metres, which is a worse thing than the draw calls it saves. Most people are
  * built with `tunic: npc.color` and match by construction; the ones who are not are built from
  * their role alone, and that default is now one exported answer both sides ask
- * (src/characters.js), so the two cannot drift.
+ * (src/content/characters/characters.js), so the two cannot drift.
  *
  * Reading the colour back off the built rig was tried and does not work: the parts are batched
  * per pivot, so the commonest colour on a villager's chest is 0xd6ac7d - the skin of the arms it
  * carries - and not his coat at all. That measurement is why `made` is on the exemption list.
  */
 test('a stand-in is dressed the way the figure was dressed, role and all', async () => {
-  const { tunicForRole, skinForRole, createCharacter } = await sourceModule('../src/characters.js');
+  const { tunicForRole, skinForRole, createCharacter } = await sourceModule('../src/content/characters/characters.js');
   // The role tables, which are what somebody wears when their entry names no colour.
   assert.equal(tunicForRole('legion-soldier'), 0x8f3b30, 'a soldier is red');
   assert.equal(tunicForRole('elodi-guard'), 0x2b2b2f, 'and Elod\u2019s guards are not');

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createBaldroInteriorWalk, buildBaldroInterior, BALDRO_INTERIOR_ROOMS, BALDRO_INTERIOR_STOPS } = await sourceModule('../src/baldro-interiors.js');
+const { createBaldroInteriorWalk, buildBaldroInterior, BALDRO_INTERIOR_ROOMS, BALDRO_INTERIOR_STOPS } = await sourceModule('../src/content/regions/baldro/baldro-interiors.js');
 const kingdoms = ['west', 'east'].map((side, i) => ({ id: `${side}-baldro`, name: `${side} hold`, gate: { x: 1500 + i * 700, y: 100, z: -2300 } }));
 
 function floorRoute(walk, destination) {

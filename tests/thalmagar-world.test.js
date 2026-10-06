@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from '../vendor/three.module.js';
 
-const source = (await readFile(new URL('../src/thalmagar-world.js', import.meta.url), 'utf8'))
+const source = (await readFile(new URL('../src/content/regions/thalmagar/thalmagar-world.js', import.meta.url), 'utf8'))
   .replace("'three'", `'${new URL('../vendor/three.module.js', import.meta.url).href}'`);
 const { createThalmagarWorld } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 

@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createVarnScenerySteps } = await sourceModule('../src/varn-scenery.js');
+const { createVarnScenerySteps } = await sourceModule('../src/content/regions/varn/varn-scenery.js');
 
 test('Varn bounds its ground construction slices without changing fortress geometry or admission colliders', t => {
   const root = new THREE.Group(), colliders = []; let reads = 0;

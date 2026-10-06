@@ -6,7 +6,7 @@ What is here is the mechanism plus a placeholder table, and the table is meant t
 
 ## What was built
 
-- **`src/player-characters.js`** — `PLAYABLE`, the eleven in the user's order, Cromb first. Each
+- **`src/content/characters/player-characters.js`** — `PLAYABLE`, the eleven in the user's order, Cromb first. Each
   entry has a name, a title, a blurb, the roster id it maps to, a starting weapon, a starting
   satchel and starting skill experience. Nothing else in the game reads into this table; it is
   meant to be rewritten wholesale.
@@ -14,19 +14,19 @@ What is here is the mechanism plus a placeholder table, and the table is meant t
   put into the place he left, keeping his own look, arrival and lines. Ten on the road, plus you,
   is eleven, however it is cast. The letter of introduction stays with the *slot*, not the man,
   because it came off the boat and not out of anybody's history.
-- **`CROMB` in `src/mercenaries.js`** — Cromb the Barbarian, of the cold country north of the
+- **`CROMB` in `src/gameplay/company/mercenaries.js`** — Cromb the Barbarian, of the cold country north of the
   Lotharn, in the traveler's own colours. He is deliberately not in `MERCENARY_ROSTER`: the world
   only ever places the ten you did not choose.
-- **`src/characters.js`** — `createCharacter({ role: 'traveler', look })` now builds the player as
+- **`src/content/characters/characters.js`** — `createCharacter({ role: 'traveler', look })` now builds the player as
   that hired sword. Four things follow the *player* rather than the *body*, because they always
   were the traveler's alone: the satchel, the full weapon swap, the fishing grip, and the sword
   already in his hand. Cromb passes no look and is built exactly as he always was.
-- **`src/character-select.js` and `#opening-characters`** — eleven tiles above "Step ashore",
+- **`src/app/startup/character-select.js` and `#opening-characters`** — eleven tiles above "Step ashore",
   arrow-key navigable, Cromb selected, portraits painted in each character's own three model
   colours. Choosing one changes the model in the boat immediately.
 - **The checkpoint** keeps `player`. A save written before anyone could choose has no field at
   all, and that game is restored as Cromb. He was spelled `crom` for one morning; `PLAYER_ALIASES`
-  in `src/player-characters.js` and `CROMB_OLD_ID` in `src/mercenaries.js` keep those saves loading.
+  in `src/content/characters/player-characters.js` and `CROMB_OLD_ID` in `src/gameplay/company/mercenaries.js` keep those saves loading.
 
 ## The starting table, as it stands
 
@@ -36,7 +36,7 @@ and before every skill moved to the ninety-nine table. They survived both, which
 | | Character | Starts with | Why |
 |---|---|---|---|
 | 1 | Cromb the Barbarian | nothing | A blank slate on purpose. Nothing is written about him and nothing is going to be. |
-| 2 | Chris Scotwood | `linguist` 200, `startingLanguages: { ambroni: 40, drentish: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/languages.js`, and `INTERPRETER.knows` is what he starts with. Drentish because the local tongue in Drent is Drentish and, playing as him, nobody glosses it for you. |
+| 2 | Chris Scotwood | `linguist` 200, `startingLanguages: { ambroni: 40, drentish: 40 }` | He interprets for the company; he is `INTERPRETER` in `src/gameplay/skills/languages.js`, and `INTERPRETER.knows` is what he starts with. Drentish because the local tongue in Drent is Drentish and, playing as him, nobody glosses it for you. |
 | 3 | Ed the Word | `swimming` 260 | He came ashore under his own power off a ship that never docked. |
 | 4 | Jerry | `fishing` 140 | A man who settles things at thirty paces has waited out a lot of floats. |
 | 5 | Kristen | `cooking` 90 | The one who puts something hot in front of everybody afterwards. |
@@ -47,16 +47,16 @@ and before every skill moved to the ninety-nine table. They survived both, which
 | 10 | Al the Tun | `mycology` 200 | You are looking at the robe. He will say what it is for when there is a reason to. |
 | 11 | Mus | `cartography` 200 | He does not use roads, so he is drawing his own. |
 
-`swimming`, `linguist` and `cartography` are all registered in `src/skills.js` now, so every
+`swimming`, `linguist` and `cartography` are all registered in `src/gameplay/skills/skills.js` now, so every
 number above is handed over whole. `tests/player-characters.test.js` still reports any id the
 table names that the skills module does not know, rather than asserting it away.
 
 Chris's `startingLanguages` is not a skill: it is proficiency in a named tongue, and
-`grantStartingKit()` in `src/main.js` hands it to `src/linguist.js` when he steps ashore.
+`grantStartingKit()` in `src/main.js` hands it to `src/gameplay/skills/language/linguist.js` when he steps ashore.
 
 ## Per character: the arc, the opening, and how the computer should play them
 
-Their existing `lines`, `styleLines` and `says` in `src/mercenaries.js` are the spec for the last
+Their existing `lines`, `styleLines` and `says` in `src/gameplay/company/mercenaries.js` are the spec for the last
 column. Where a character is not chosen they walk the road as an NPC exactly as today, which is
 already "behaving based on how their character acts"; what is listed under **diverge** is where
 that is not yet enough.
@@ -83,7 +83,7 @@ profiles should leave his blank.
   hours is not his. His arc should be the opposite problem: he is the one everybody asks, and the
   company leans on him. Consider a running cost — interpreting for ten people is a job.
 - **Diverge — settled.** When he is an NPC he interprets the *locals* for you (`INTERPRETER`,
-  `src/languages.js`). When he *is* you, `interpreterFor(playerId)` returns null: nobody
+  `src/gameplay/skills/languages.js`). When he *is* you, `interpreterFor(playerId)` returns null: nobody
   interprets and nobody needs to, because the tongues are yours from the first step. The bonus
   does not pass to anybody else — there is nobody else who has them.
 - **What "nobody needs to" costs, and how it is paid.** `interpreterFor` returning null is only
@@ -106,7 +106,7 @@ profiles should leave his blank.
   ship is Ed's, under the mutineers who put him over the side at Tidehaven. His arc and the Peblos
   faction quest are one story, and whichever side the traveler takes at Peblos is also a verdict
   on Ed: back the rebels and you are backing the men who threw him in the sea. Whoever builds
-  Peblos and whoever builds Ed have to build the same ship (`src/ferry.js` already crosses to the
+  Peblos and whoever builds Ed have to build the same ship (`src/world/travel/ferry.js` already crosses to the
   islands; the cave and the faction choice are not built).
 - **Diverge:** his `route` is `'shore'` and he `swims`. That is already modelled for the NPC.
 
@@ -153,7 +153,7 @@ profiles should leave his blank.
 ### 9. Matt, Prince of Zorkys — a hall, a valley and four hundred people
 - **Opening:** standard; he arrives with Al at 3780 s.
 - **Arc:** he is a prince with people expecting him back, in a war that is about whether princes
-  should exist. The campaign (`src/campaign.js`) has a renounced Ambroni prince in the Coalition;
+  should exist. The campaign (`src/content/chapters/civil-war/campaign.js`) has a renounced Ambroni prince in the Coalition;
   Matt should have to answer the same question, and his answer should be his.
 - **Owed:** the pike. Not a held weapon.
 
@@ -174,7 +174,7 @@ profiles should leave his blank.
   arrive; Mus is how the late story reaches back into chapter one. Nothing in his dialogue may
   give it away, and nothing in the first ten regions may confirm it — the reveal belongs to the
   sage. As the player, the watcher is the one being watched: his own arc is the question of what
-  he reports, and the map is his (cartography, and `src/map-fog.js` should behave differently
+  he reports, and the map is his (cartography, and `src/ui/map/map-fog.js` should behave differently
   for him).
 - **Diverge:** his `route` is `'wild'` and his arrival is `drawn`. When he is the player, the seed
   still has to draw something — for Cromb, standing in his slot, arrival 0 is used instead, which
@@ -183,7 +183,7 @@ profiles should leave his blank.
 ## The company's own tongue
 
 **Decided (`docs/design-answers.md`): all eleven share the language of the contract.** They were
-hired abroad together and came here together, so `speechFor` in `src/languages.js` gives every
+hired abroad together and came here together, so `speechFor` in `src/gameplay/skills/languages.js` gives every
 member of the company the traveler's own tongue — `speaksTheContract(npc)`, which asks
 `mercenaryById` and so covers the ten of the roster *and* Cromb in whichever slot he is standing.
 Whoever the player is, their own company is plain from the first minute; the locals are not.
@@ -210,16 +210,16 @@ one standing in the slot you vacated. Two consequences to design before anyone b
 ## Known holes
 
 1. **Weapons.** Six of the eleven fight with something the player's hands cannot hold: bow,
-   spear, two spears, pike, quarterstaff, sword-and-shield. `KIT_HELD` in `src/characters.js`
-   models them for NPCs only. Until those exist in `src/weapons.js` and the combat rhythm, those
+   spear, two spears, pike, quarterstaff, sword-and-shield. `KIT_HELD` in `src/content/characters/characters.js`
+   models them for NPCs only. Until those exist in `src/gameplay/combat/weapons.js` and the combat rhythm, those
    six play as swordsmen in somebody else's clothes.
 2. **Openings.** Ed's swim and Mus's beach are written down above and not built, on purpose. The
    standard landing is used for all eleven.
 3. **Lateness.** Five of them canonically arrive hours after the traveler. As the player they all
    land at zero.
-4. **Skills without their modules.** Starting experience is given straight to `src/skills.js`.
+4. **Skills without their modules.** Starting experience is given straight to `src/gameplay/skills/skills.js`.
    Birding, archaeology, wine, cooking, fishing, mycology and geology each have a *second* module
-   holding what was found (`src/birding.js` and the rest). Lakota begins at birding 40 with an
+   holding what was found (`src/gameplay/skills/birding/birding.js` and the rest). Lakota begins at birding 40 with an
    empty list of birds seen. Either the profiles should say which finds he already has, or the
    skill sheet should say "before the road" against the experience he brought with him.
 5. **Teachers.** Several of the eleven teach a skill the player learns. When the player is that

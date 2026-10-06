@@ -6,7 +6,7 @@ perspective, and it's you sailing in with Chris Scotwood from the sea. It should
 just click 'Skip Cutscene.' In that time, the text will announce the basics of the context and
 story. It is like your mercenary arriving from sea."*
 
-This is the design. The data that carries it is `src/opening-sequence.js` (pure: the beats, the
+This is the design. The data that carries it is `src/app/startup/opening-sequence.js` (pure: the beats, the
 boat's path, the captions, `stateAt(seconds)`, `SKIP`), tested by `tests/opening-sequence.test.js`.
 What the host has to do with that data is `docs/opening-sequence-build.md`. Nothing in this note is
 implemented in `src/main.js` yet.
@@ -104,7 +104,7 @@ The boat's bob and roll are the world's own (`world.update` gives the arrival bo
 - **The companion** (`merc-gotwood`, or whoever `companionFor(player)` names) is moved to the bow
   each frame, facing forward, then aft from 36 s; from 42 to 44 s he goes from the bow to the
   landing ring's first place, (23, 31.2) facing north — which is exactly where `placements()` in
-  `src/mercenaries.js` stands the first man of the roster while he waits at the landing, so the
+  `src/gameplay/company/mercenaries.js` stands the first man of the roster while he waits at the landing, so the
   host's `settleMercenaries()` agrees with the end of the sequence to the metre.
 - **The traveler** is hidden, and `player.group.position` follows the eye, so the sea is what the
   road audio hears, the sun and shadows follow the boat, and every villager is far enough away to
@@ -140,7 +140,7 @@ tell. `{companion}` is the slot for whoever came off the boat with the traveler.
 "Empire" is the word the traveler's employers use, which is the rule in
 `docs/the-war-and-the-house-of-ambron.md`: a royalist's word, and the traveler is a royalist's
 hire. "The quietest province the Empire has left" is the campaign's own line for Drent
-(`src/campaign.js`). "The warning bell carries across the water" is the opening card's line,
+(`src/content/chapters/civil-war/campaign.js`). "The warning bell carries across the water" is the opening card's line,
 now said where it happens. "The Stills" is the sea's name (`water.name` in world.js).
 
 **Where and how.** One block, centred horizontally, its bottom 18 vh above the bottom of the
@@ -236,7 +236,7 @@ and Jojo's errand are untouched.
    above the boat's origin; the companion in the starboard bow.
 6. **Nobody steers on camera.** No helmsman is named; the eye never looks astern.
 7. **The companion stands** for the whole ride (there is no seated pose for a person in
-   `src/characters.js` other than kneeling and sitting on the ground with the head bowed).
+   `src/content/characters/characters.js` other than kneeling and sitting on the ground with the head bowed).
 8. **The sail stays up**, because the arrival boat's sail is a fixed mesh; the world moors it with
    the sail up already.
 9. **Six captions, 42 to 95 characters, gold eyebrow and serif text**, centred low; no caption
@@ -255,12 +255,12 @@ and Jojo's errand are untouched.
 
 ## Not settled by the world as built
 
-- **No seated pose for a person.** `src/characters.js` offers `kneel` and `sit-ground` (knees up,
+- **No seated pose for a person.** `src/content/characters/characters.js` offers `kneel` and `sit-ground` (knees up,
   head bowed); neither is a man on a thwart watching the coast, so the companion stands.
 - **The arrival boat's sail cannot be lowered**: one fixed mesh in `boat()`.
 - **The arrival boat is not reachable from outside `world.js`**; the host needs
   `world.placeArrivalBoat(x, z, yaw)` and `world.restArrivalBoat()` (in the brief).
-- **`src/ferry.js` says Jess rowed the traveler ashore in the opening.** After this
+- **`src/world/travel/ferry.js` says Jess rowed the traveler ashore in the opening.** After this
   sequence the traveler sailed in; Jess's boat is on the north face and his is a rowing boat.
   The comment is a comment; his stand and lines do not depend on it. Left alone, noted.
 - **The companion's landed spot sits on the deck's very edge.** (23, 31.2) is local x −2.2 to

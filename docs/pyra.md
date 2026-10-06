@@ -12,10 +12,10 @@ The emperor is many centuries old. Worshippers claim he is a god-king; outsiders
 
 ## Implementation
 
-- `src/pyra-world.js`: placement, local frame, river-preserving terrace shaping, landmarks and review cameras.
-- `src/pyra-ground.js`: local fine terrain; physical footing samples the same triangles as the rendered surface.
-- `src/pyra-scenery.js`: golden fortifications, bridge, stair, palace, city quarters, markets and riverfront. Merged geometry and bounded vertical colliders.
-- `src/pyra-checks.js`: actual movement and support checks through both banks and up/down the palace stair.
+- `src/content/regions/pyra/pyra-world.js`: placement, local frame, river-preserving terrace shaping, landmarks and review cameras.
+- `src/content/regions/pyra/pyra-ground.js`: local fine terrain; physical footing samples the same triangles as the rendered surface.
+- `src/content/regions/pyra/pyra-scenery.js`: golden fortifications, bridge, stair, palace, city quarters, markets and riverfront. Merged geometry and bounded vertical colliders.
+- `src/dev/checks/pyra-checks.js`: actual movement and support checks through both banks and up/down the palace stair.
 - `tests/pyra.test.js`: production regional loading, regional ownership, river preservation, round-trip traversal, and rendered/support floor agreement.
 
 Pyra is shared by the two regional loading jobs in Fast and Full modes. F8 / Go anywhere and the journal use the registered Pyra landmarks. The map receives city building footprints. Ambient vegetation and East Pyrosi terrestrial wildlife spawn sites avoid the city footprint. The original Vaellir water blockers remain active at river height while permitting bridge travel above them.

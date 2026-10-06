@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionAt, hexOwnerAt, regions } from '../src/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, regionAt, hexOwnerAt, regions } from '../src/world/terrain/region-world.js';
 import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   WEST_POOLS, WEST_RIVERS, WEST_REGION_LANDMARKS, westBareGround, westRiverDistance, coursePosition,
-} from '../src/west-regions.js';
+} from '../src/content/regions/western-regions/west-regions.js';
 import {
   WEST_PROFILES, poolSurface, westGroundAt, westNaturalGround, westWaterSurface, sinterRise,
-} from '../src/west-ground.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
+} from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

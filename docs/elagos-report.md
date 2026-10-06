@@ -72,7 +72,7 @@ Ela's north shore.
   it, to the Moros by about 11 m across the southern border.
 - Region card (`REGION_TEXT`): "The Lake Lands and Ambron"; spawn on the haul road
   below the Plain Gate.
-- `scripts/build-region-survey.mjs` lists Elagos; `src/region-survey.js` is
+- `scripts/build-region-survey.mjs` lists Elagos; `src/dev/tools/region-survey.js` is
   regenerated. **The hex window did not need to grow** (Elagos is q −2…6, r 102…110).
 - `WORLD_BOUNDS.minX` moves **−1460 → −1610 (150 m west)**. The other three edges
   are unchanged.
@@ -81,7 +81,7 @@ Ela's north shore.
 
 ## The water
 
-`src/elagos-world.js`, pure. Water is described two ways:
+`src/content/regions/ambron/elagos-world.js`, pure. Water is described two ways:
 
 - A **basin** is a shore with one level: an ellipse about the atlas lake hex,
   turned and given a fixed wobble so no lake is a drawn oval. Ela 14.6 m, Brul
@@ -114,14 +114,14 @@ the Thelas chain as one, the Ela-south, the Link).
 
 ## Ambron
 
-`src/ambron.js` (pure: the plan) and `src/elagos-scenery.js` (the scenery).
+`src/content/regions/ambron/ambron.js` (pure: the plan) and `src/content/regions/ambron/elagos-scenery.js` (the scenery).
 The city is in its own frame, square to the world: `ambronPoint(a, b)` is `a`
 metres east and `b` metres south of the middle of the causeway, at world
 **(−1274, 286)**.
 
 ### Fortification
 
-Laid out by `fortCircuit` from `src/fortification.js` — the shared standard's
+Laid out by `fortCircuit` from `src/world/scenery/fortification.js` — the shared standard's
 own plan and colliders — at a capital's measures (`AMBRON_STANDARD`):
 
 | Measure | Ambron | Solis |
@@ -186,7 +186,7 @@ Stair. The Plain Gate's arch carries the rates board every load passes under.
 
 ## The people
 
-`src/ambron-people.js`. **32 people**: 30 in the city, two in the lake country.
+`src/content/regions/ambron/ambron-people.js`. **32 people**: 30 in the city, two in the lake country.
 Ambient lines only, in the shape `peblos-people.js` uses, with a leave choice.
 
 - *The toll*: Sabbis Orenn, Clerk of the Chain; Dreo the tally boy; Orrec Damm
@@ -242,7 +242,7 @@ goes through the host: birding through `birding.meet()` (the real module on this
 branch), the other four through `context.teachSkill(id)`, which `main.js` wires
 to `skills.learn(id)`.
 
-**On this branch only `birding` exists in `src/skills.js`.** `fishing`,
+**On this branch only `birding` exists in `src/gameplay/skills/skills.js`.** `fishing`,
 `mycology`, `botany` and `geology` are being built on `main`; until they are
 merged, `skills.learn('mycology')` returns `{ ok: false }`, so those four
 specialists give their lesson and teach nothing. When the lead's modules land,
@@ -259,7 +259,7 @@ been able to put on paper. You will know it when the tree does." Asked again, sh
 says something shorter.
 
 The flag is **`talking-tree-told`** (exported as `TALKING_TREE_QUEST` from
-`src/ambron-people.js`). The conversation calls `act('talking-tree-told')`;
+`src/content/regions/ambron/ambron-people.js`). The conversation calls `act('talking-tree-told')`;
 `main.js`'s new `elagosAct` keeps it in a small `elagosFlags` set, toasts once and
 saves. **That set is not in the save yet** — see the merge list.
 
@@ -331,29 +331,29 @@ Four places with discovery text, and more landmarks:
 
 ## Files
 
-New: `src/elagos-world.js`, `src/ambron.js`, `src/ambron-people.js`,
-`src/elagos-scenery.js`, `tests/elagos-world.test.js`, `tests/ambron.test.js`,
+New: `src/content/regions/ambron/elagos-world.js`, `src/content/regions/ambron/ambron.js`, `src/content/regions/ambron/ambron-people.js`,
+`src/content/regions/ambron/elagos-scenery.js`, `tests/elagos-world.test.js`, `tests/ambron.test.js`,
 this report.
 
 Changed (all small and local):
 
 | File | Change |
 | --- | --- |
-| `src/region-layout.js` | `'Elagos'` in `PLAYABLE_REGIONS`; its biome |
-| `scripts/build-region-survey.mjs`, `src/region-survey.js` | `'Elagos'` in `PLAYABLE`; regenerated |
-| `src/region-world.js` | `REGION_IDS` (8), `REGION_TERRAIN`, `REGION_TEXT`, `AMBRON`, `ambronPoint`, `AMBRON_TERRACE` in `TERRAIN_PADS` |
-| `src/world-terrain.js` | one import; `groundWithRiver` ends with `elagosGround` |
-| `src/world-regions.js` | `ELAGOS_CLEARINGS`; ground cover asks `kit.waterClear`; an optional `biome.blockHexes`; no pines on the lake shelf |
+| `src/world/terrain/region-layout.js` | `'Elagos'` in `PLAYABLE_REGIONS`; its biome |
+| `scripts/build-region-survey.mjs`, `src/dev/tools/region-survey.js` | `'Elagos'` in `PLAYABLE`; regenerated |
+| `src/world/terrain/region-world.js` | `REGION_IDS` (8), `REGION_TERRAIN`, `REGION_TEXT`, `AMBRON`, `ambronPoint`, `AMBRON_TERRACE` in `TERRAIN_PADS` |
+| `src/world/terrain/world-terrain.js` | one import; `groundWithRiver` ends with `elagosGround` |
+| `src/world/terrain/world-regions.js` | `ELAGOS_CLEARINGS`; ground cover asks `kit.waterClear`; an optional `biome.blockHexes`; no pines on the lake shelf |
 | `src/world.js` | imports; measure/draw four roads; one scenery call; the Link deck in `bridgeDecks`; the causeway in `heightAt`; `waterClear` in the scatter kit; landmarks, NPC positions, enclosure, chart waters, `elagosRoute`/`lakeRoute`/`elagosMetrics`; the water's clock |
 | `src/main.js` | import; register the people; the conversation hook; `elagosAct`; the testing button id |
 | `index.html` | one testing button |
-| `src/map-fog.js`, `src/build-status.js`, `src/signs.js` | entries |
-| `src/developer-atlas.js`, `src/developer-mode.js` | one travel entry each |
+| `src/ui/map/map-fog.js`, `src/dev/tools/build-status.js`, `src/world/scenery/signs.js` | entries |
+| `src/dev/tools/developer-atlas.js`, `src/dev/tools/developer-mode.js` | one travel entry each |
 | `package.json` | two test files |
 
 ## Tests and smokes
 
-- `npm test`: **526 of 526 pass** (checked by the lead after a stray apostrophe in `src/build-status.js` was fixed). New: `tests/elagos-world.test.js` (9) and
+- `npm test`: **526 of 526 pass** (checked by the lead after a stray apostrophe in `src/dev/tools/build-status.js` was fixed). New: `tests/elagos-world.test.js` (9) and
   `tests/ambron.test.js` (10): the region against the atlas; every atlas lake hex
   under water and every basin within a hex of its own; the ground cut to the water
   (no flooded bank anywhere within 14 m of a shore, no land standing out of drawn
@@ -434,7 +434,7 @@ scratch page and its server are deleted.
 - **Chapter 3.** No quest, no triggers; nobody here advances the campaign.
   The Legate-General, the council and the printer are placed and voiced for it.
 - **Four of the five specialists teach nothing yet** on this branch: their
-  skills are not in `src/skills.js` here (see above).
+  skills are not in `src/gameplay/skills/skills.js` here (see above).
 - **The talking-tree flag is not saved**: `elagosFlags` is a `Set` in `main.js`.
 - **No interiors**, no trade in the market, no lake fleet, no barges that move,
   no weather, no winter. The ice-roads are marked, not drawn on ice.
@@ -451,7 +451,7 @@ scratch page and its server are deleted.
 
 ## For the lead, on merge
 
-1. **Regenerate `src/region-survey.js`** after merging this and West Izol
+1. **Regenerate `src/dev/tools/region-survey.js`** after merging this and West Izol
    (`node scripts/build-region-survey.mjs`); both add a name to `PLAYABLE`.
 2. **Region ids.** This branch takes **8** for Elagos in `REGION_IDS`; if West Izol
    also took 8, one of them moves. `PLAYABLE_REGIONS`, `REGION_TERRAIN`,
@@ -464,11 +464,11 @@ scratch page and its server are deleted.
    `measurePath` line, the scenery call before `buildMorosWorks`, the `addPath`
    block after `PUETH_ROAD`, `heightAt` (the causeway), the landmarks/NPC
    positions/enclosures/`mapWaters` lists, and the water clock in `update`.
-5. **`src/world-regions.js`**: `cellBlocks(name, biome.blockHexes)`, the
+5. **`src/world/terrain/world-regions.js`**: `cellBlocks(name, biome.blockHexes)`, the
    `waterClear` guard on ground cover and the two-biome pine rule are general;
    keep them if another region wants them.
 6. **Skills.** When `fishing`, `mycology`, `botany` and `geology` land in
-   `src/skills.js`, Ambron's specialists start teaching with no change, as long as
+   `src/gameplay/skills/skills.js`, Ambron's specialists start teaching with no change, as long as
    those are the ids. If fishing stays in `campcraft.teachFishing()` rather than a
    skill, route `teachSkill('fishing')` there in the one `main.js` line.
 7. **The talking tree.** Read `'talking-tree-told'` (`TALKING_TREE_QUEST`); move

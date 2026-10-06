@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CIVIL_WAR_SERIES, CIVIL_WAR_REGIONS, civilWarRegion } from '../src/civil-war-quests.js';
-import { REGION_DESIGN } from '../src/campaign-world.js';
+import { CIVIL_WAR_SERIES, CIVIL_WAR_REGIONS, civilWarRegion } from '../src/content/chapters/civil-war/civil-war-quests.js';
+import { REGION_DESIGN } from '../src/content/chapters/civil-war/campaign-world.js';
 
 test('The Ambroni Civil War is a silver plot series with a distinct regional registry', () => {
   assert.deepEqual(CIVIL_WAR_SERIES, { id: 'ambroni-civil-war', title: 'Ambroni Civil War', grade: 'plot' });

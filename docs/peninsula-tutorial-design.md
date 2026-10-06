@@ -156,13 +156,13 @@ Keep a small versioned tutorial state separate from the old numeric main-quest s
 
 | Area | Existing integration points |
 | --- | --- |
-| Opening buttons, arrival pier/camera | `src/main.js`, `index.html`, `src/opening-sequence.js`, world arrival anchors; leave Full/Fast loading choice independent. |
-| Lesson objectives and markers | `src/game-state.js`, `src/instructor.js`, `src/chart-lesson.js`, `src/quest-tracker.js`, `src/quest-markers.js`, `src/story-chapters.js`. |
-| Teachers, catches and cooking | Existing Jojo/Jess/Ryan dialogue, `src/fishing-lessons.js`, `src/campcraft.js`, `src/barrett-geography.js`, `src/family-homes.js`. |
-| Movement and shared stamina | `src/skills.js`, movement host in `src/main.js`, `src/combat-skills.js`, `src/swimming.js`, climbing and mount exclusions. |
-| Independent example and ship | `src/landing-mate-quest.js`, `src/company-route-host.js`, `src/mercenaries.js`, `src/word-arrival.js`, `src/living-story.js`, `src/road-ambush.js`. |
+| Opening buttons, arrival pier/camera | `src/main.js`, `index.html`, `src/app/startup/opening-sequence.js`, world arrival anchors; leave Full/Fast loading choice independent. |
+| Lesson objectives and markers | `src/gameplay/movement/game-state.js`, `src/gameplay/skills/instructor.js`, `src/ui/map/chart-lesson.js`, `src/gameplay/quests/quest-tracker.js`, `src/gameplay/quests/quest-markers.js`, `src/content/chapters/journey/story-chapters.js`. |
+| Teachers, catches and cooking | Existing Jojo/Jess/Ryan dialogue, `src/gameplay/skills/fishing/fishing-lessons.js`, `src/gameplay/skills/crafting/campcraft.js`, `src/content/quests/skill-lessons/barrett-geography.js`, `src/content/quests/homes/family-homes.js`. |
+| Movement and shared stamina | `src/gameplay/skills/skills.js`, movement host in `src/main.js`, `src/gameplay/combat/combat-skills.js`, `src/gameplay/movement/swimming.js`, climbing and mount exclusions. |
+| Independent example and ship | `src/content/quests/roadside/landing-mate-quest.js`, `src/gameplay/company/company-route-host.js`, `src/gameplay/company/mercenaries.js`, `src/content/quests/roadside/word-arrival.js`, `src/gameplay/company/living-story.js`, `src/content/quests/road-ambush/road-ambush.js`. |
 | Boundary encounters and recovery | A dedicated tutorial-boundary model/host using existing combat, flight, camera and checkpoint interfaces. |
-| Saves and demonstrations | `src/road-checkpoint.js`, `src/autopilot.js`, `src/main-quest-playtests.js`, native smoke hooks. |
+| Saves and demonstrations | `src/app/saves/road-checkpoint.js`, `src/gameplay/autoplay/autopilot.js`, `src/dev/checks/main-quest-playtests.js`, native smoke hooks. |
 
 Old adventures keep their location, taught skills, inventory, family identities, Ed's actual arrival history and campaign progress. Do not move an existing save onto the peninsula, replay Ed, resurrect Chris, or force new lessons on a veteran. Missing Walking/Running data receives a safe starting baseline. Old unfinished openings need an explicit legacy-continuation path rather than silently dropping them inside the new locked tutorial.
 
@@ -196,10 +196,10 @@ Verify:
 
 ## Implementation and validation entry points
 
-The state is in `src/peninsula-tutorial.js`, with the game integration in
-`src/peninsula-tutorial-host.js` and `src/main.js`. Scenery, opening camera,
+The state is in `src/content/chapters/prologue/peninsula-tutorial.js`, with the game integration in
+`src/content/chapters/prologue/peninsula-tutorial-host.js` and `src/main.js`. Scenery, opening camera,
 movement progression, independent company timing and the autoplay controller
-have separate modules. `src/tutorial-boundary-visuals.js` owns the two temporary
+have separate modules. `src/world/environment/tutorial-boundary-visuals.js` owns the two temporary
 encounter models. Checkpoints store lesson facts and Chris's physical route
 progress without granting rewards on load.
 

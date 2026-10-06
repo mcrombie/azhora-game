@@ -1,389 +1,393 @@
-import {URUBOND} from './urubond-world.js';
-import {createUrubondHost} from './urubond-host.js';
-import { createLazyCharacter } from './lazy-character.js';
-import { createStartup, yieldStartup } from './startup.js';
-import { createIbenwoodDefenseHost, ELFLAND_ENCOUNTER } from './ibenwood-defense-host.js';
-import { IBENWOOD_BOUNDARY } from './ibenwood-boundary.js';
-import { createJourneyBrowser } from './journey-browser.js';
-import { renderFieldCard } from './field-card.js';
-import { buildJournalEntries } from './journal-entries.js';
-import { createSkillsBrowser } from './skills-browser.js';
+import {URUBOND} from './content/regions/urubond/urubond-world.js';
+import {createUrubondHost} from './content/regions/urubond/urubond-host.js';
+import { createLazyCharacter } from './world/loading/lazy-character.js';
+import { createStartup, yieldStartup } from './app/startup/startup.js';
+import { createIbenwoodDefenseHost, ELFLAND_ENCOUNTER } from './content/regions/ibenwood/ibenwood-defense-host.js';
+import { IBENWOOD_BOUNDARY } from './content/regions/ibenwood/ibenwood-boundary.js';
+import { createJourneyBrowser } from './ui/journal/journey-browser.js';
+import { renderFieldCard } from './gameplay/combat/field-card.js';
+import { buildJournalEntries } from './ui/journal/journal-entries.js';
+import { createSkillsBrowser } from './ui/skills/skills-browser.js';
 import * as THREE from 'three';
-import { createFrontierRaids } from './frontier-raids.js';
-import { createStrategicPrototype, createStrategicPrototypeStore } from './strategic-prototype.js';
-import { createStrategicPrototypeView } from './strategic-prototype-view.js';
-import { strategicBattleEncounter, strategicCombatOutcome } from './strategic-battle.js';
-import {createBaldroHost} from './baldro-host.js';
-import {BALDRO_KINGDOMS,baldroOwns} from './baldro-world.js';
-import { FRONTIER_NPCS, isFrontierNpc, frontierConversation } from './frontier-people.js';
-import { createFrontierFigure } from './frontier-figures.js';
+import { createFrontierRaids } from './content/regions/minora-frontier/frontier-raids.js';
+import { createStrategicPrototype, createStrategicPrototypeStore } from './experiments/frontier-command/strategic-prototype.js';
+import { createStrategicPrototypeView } from './experiments/frontier-command/strategic-prototype-view.js';
+import { strategicBattleEncounter, strategicCombatOutcome } from './experiments/frontier-command/strategic-battle.js';
+import {createBaldroHost} from './content/regions/baldro/baldro-host.js';
+import {BALDRO_KINGDOMS,baldroOwns} from './content/regions/baldro/baldro-world.js';
+import { FRONTIER_NPCS, isFrontierNpc, frontierConversation } from './content/regions/minora-frontier/frontier-people.js';
+import { createFrontierFigure } from './content/regions/minora-frontier/frontier-figures.js';
 import { createWorldAsync } from './world.js';
-import { SOUTH_OREMINDI_ARRIVAL, SOUTH_OREMINDI_PEAKS, SOUTH_OREMINDI_LAKES, southOremindiOwns } from './south-oremindi-world.js';
-import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole, BUCKLER_NAME } from './characters.js';
-import { markerFor, markerGrade, magicTeacherIds } from './quest-markers.js';
-import { createCombat, MAX_ALLIES } from './combat.js';
+import { SOUTH_OREMINDI_ARRIVAL, SOUTH_OREMINDI_PEAKS, SOUTH_OREMINDI_LAKES, southOremindiOwns } from './content/regions/south-oremindi/south-oremindi-world.js';
+import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole, BUCKLER_NAME } from './content/characters/characters.js';
+import { markerFor, markerGrade, magicTeacherIds } from './gameplay/quests/quest-markers.js';
+import { createCombat, MAX_ALLIES } from './gameplay/combat/combat.js';
 /** Held, not pressed: the one new verb melee gets (docs/combat-brief.md, phase 4). */
 const GUARD_KEY='KeyV';
-import { createCombatView } from './combat-view.js';
-import { createCrimeHost, LAW_ENCOUNTER_ID } from './crime-host.js';
-import { createCorpseHost } from './corpse-host.js';
-import { KAYLA, KAYLA_START, kaylaConversation } from './kayla.js';
-import { createCircusBear } from './kayla-character.js';
-import { createKaylaRace, KAYLA_RACE, KAYLA_RACE_START } from './kayla-race.js';
-import { createKaylaRaceHost } from './kayla-race-host.js';
-import { createKaylaRaceAutopilot } from './kayla-race-autopilot.js';
-import { CUB, CUB_STAND, CUB_HONEY_ITEM, CUB_HONEY_QUEST_ID } from './cub-honey-quest.js';
-import { createCubHoneyHost, HONEY_STORE, honeyLineOfSight } from './cub-honey-host.js';
-import { createCubAutopilot } from './cub-autopilot.js';
-import { createAddisonAutopilot } from './addison-autopilot.js';
-import { createTouchControls, wantsTouch } from './touch-controls.js';
-import { createBearFamily, BEAR_HOME_ROUTE } from './bear-family.js';
-import { CIRCUS_BEARS, CIRCUS_CAMP, CIRCUS_ACTS, CIRCUS_LOOKS, circusConversation } from './bear-circus.js';
-import { createApiaryBees } from './apiary-bees.js';
-import { createApiaryBeesView } from './apiary-bees-view.js';
-import { createKaylaHost, KAYLA_FIGHT } from './kayla-host.js';
-import {LUSCIA_CIVIL_QUEST_ID} from './luscia-civil-war.js';
-import {createDrentAutopilot,createLusciaCivilAutopilot} from './civil-war-autopilot.js';
-import {MAIN_QUEST_PLAYTESTS,mainQuestPlaytest,mainQuestPlaytestFinished} from './main-quest-playtests.js';
-import {createDrentHost, DRENT_FIGHT_ID} from './drent-host.js';
-import {DRENT_NPCS, DRENT_SITES} from './drent-sites.js';
-import {DRENT_QUEST_ID, DRENT_EVIDENCE_ID} from './drent-civil-war.js';
-import { createInventory, INVENTORY_ITEMS } from './inventory.js';
-import { createWeapons, WEAPON_TYPES, feelOf } from './weapons.js';
-import { createConsumables } from './consumables.js';
-import { createCampcraft } from './campcraft.js';
-import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, fireMakingStands, fireMakingConversation } from './fire-making.js';
-import { createWorldMap } from './world-map.js';
-import { MENORA } from './menora-city.js';
-import { CAMPAIGN_BUILD_REGIONS, worldScope, regionEnabled } from './world-scope.js';
-import { MINORA_START, MAIN_QUEST_RECRUITERS, FREE_ROAM_GUIDANCE, freshMinoraStart, mainQuestDormant, minoraOpeningView } from './minora-opening.js';
-import { NYLON, NYLON_BUILDINGS } from './nylon-city.js';
-import { AEVIS, AEVIS_BUILDINGS, AEVIS_GATES } from './aevis-city.js';
-import { EAST_PYROS_VIEWS, EAST_PYROS_ARRIVAL, EAST_PYROS_LANDMARKS, EAST_PYROS_ROUTES } from './east-pyros-world.js';
-import { NETHER_DESERT_VIEWS, NETHER_DESERT_ARRIVAL, NETHER_DESERT_LANDMARKS, NETHER_DESERT_TRAILS } from './nether-desert-world.js';
-import { LEGEMUM_VIEWS, LEGEMUM_ARRIVAL, LEGEMUM_LANDMARKS, LEGEMUM_TRAILS } from './legemum-world.js';
-import { BABON_VIEWS, BABON_ARRIVAL, BABON_LANDMARKS, BABON_TRAILS } from './babon-world.js';
-import { SOUTH_CELDER_VIEWS, SOUTH_CELDER_ARRIVAL, SOUTH_CELDER_LANDMARKS, SOUTH_CELDER_TRAILS } from './south-celder-world.js';
-import { NORTH_CELDER_VIEWS, NORTH_CELDER_ARRIVAL, NORTH_CELDER_LANDMARKS, NORTH_CELDER_TRAILS } from './north-celder-world.js';
-import { CANERD, CANERD_VIEWS } from './canerd-world.js';
-import { PYRA, PYRA_ARRIVAL, PYRA_VIEWS } from './pyra-world.js';
-import { SELAMUS, SELAMUS_ARRIVAL, SELAMUS_VIEWS } from './selamus-city.js';
-import { OUTER_NAMES, OUTER_IDS, OUTER_PATHS, outerProfile } from './outer-regions-world.js';
-import { THALMAGAR_FORTRESS } from './thalmagar-fortress-site.js';
-import { ACOR_NAMES, ACOR_IDS, ACOR_PATHS, ACOR_WATERS } from './acor-world.js';
-import { NORTHERN_NAMES, NORTHERN_IDS, NORTHERN_PATHS, NORTHERN_PEAKS, NORTHERN_LAKES } from './northern-oremindi-world.js';
-import { EAST_IZOL_VIEWS, EAST_IZOL_ARRIVAL, EAST_IZOL_LANDMARKS, EAST_IZOL_TRAILS } from './east-izol-world.js';
-import { EAST_WILDLIFE_REVIEW, eastWildlifeReview } from './east-izol-wildlife-review.js';
-import { ALEZHOR_VIEWS, ALEZHOR_ARRIVAL, ALEZHOR_LANDMARKS, ALEZHOR_TRAILS } from './alezhor-world.js';
-import { SOUTH_IBENAL_VIEWS, SOUTH_IBENAL_ARRIVAL, SOUTH_IBENAL_LANDMARKS, SOUTH_IBENAL_TRAILS } from './south-ibenal-world.js';
-import { NORTH_IBENAL_VIEWS, NORTH_IBENAL_ARRIVAL, NORTH_IBENAL_LANDMARKS, NORTH_IBENAL_TRAILS } from './north-ibenal-world.js';
-import { HENBORTH_VIEWS, HENBORTH_ARRIVAL, HENBORTH_LANDMARKS, HENBORTH_TRAILS } from './henborth-world.js';
-import { REGION_IDS as CELDER_REGION_IDS } from './region-world.js';
-import { AEVIS_SOLDIERS, createAevisSoldier } from './aevis-soldiers.js';
-import { atlasRevealedCityMarks } from './world-map-detail.js';
-import { createMapTutorial } from './map-tutorial.js';
-import { createChartLesson } from './chart-lesson.js';
-import { createQuestTracker, activeOptionalQuests } from './quest-tracker.js';
-import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad, arrivalTime } from './mercenaries.js';
-import { createLandingMateQuest } from './landing-mate-quest.js';
-import { createLocomotionSkills } from './locomotion-skills.js';
-import {peninsulaOpening} from './peninsula-opening.js';
-import {createPeninsulaLandingQuest,peninsulaCompanyStamp} from './peninsula-company.js';
-import {runSevronChecks} from './sevron-smoke.js';
-import {runPeninsulaTutorialChecks} from './peninsula-tutorial-smoke.js';
-import {PENINSULA_TUTORIAL_ANCHORS as TUTORIAL_A,PENINSULA_TEACHERS,PENINSULA_FERRY_LANDING,peninsulaWoodcuttingRoute,peninsulaFishingRoute,insidePeninsulaTutorial,createPeninsulaTutorial} from './peninsula-tutorial.js';
-import {createPeninsulaAutopilot} from './peninsula-autopilot.js';
-import {createSevronHost} from './sevron-host.js';
-import { createPeninsulaTutorialHost } from './peninsula-tutorial-host.js';
-import { ANCHORS as ROUTE_ANCHORS, MAIN_ROAD } from './regions.js';
-import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOPS } from './long-road.js';
-import { createGlunWoodcutting, GLUN_WOOD_LESSON, glunWoodcuttingChoice } from './glun-woodcutting.js';
-import { createAnimalHusbandry, HUSBANDRY_LESSON } from './animal-husbandry.js';
-import { createActing, ACTING_LESSON, AMANDA_TEACHES } from './acting.js';
-import { SYLVIA, SYLVIA_STUDIO, createVisualArts, sylviaConversation, artEaselConversation } from './visual-arts.js';
-import { createSylvia, attachArtTools } from './visual-arts-view.js';
-import { createSylviaIvy, sylviaIvyChoice } from './sylvia-ivy.js';
-import { IVY_PATCHES } from './ivy-sites.js';
-import { createIvyView } from './ivy-view.js';
-import { createRoadsideLessons, jojoCookingChoice, geologyFieldChoice } from './roadside-lessons.js';
-import { farmingConversation, farmRowConversation, farmWait } from './farming-conversation.js';
-import { createFarmingView } from './farming-view.js';
-import { FARMER, FARM_ROWS, ALL_FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './farming.js';
-import { METRES_PER_HEX, toWorld, toWorldXIn } from './world-scale.js';
-import { GREENWAY_RAID, AVREL_RAID } from './opening-fights.js';
-import { bystandersFor, createFallen } from './bystanders.js';
-import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './legion-posts.js';
-import { TOWN_LIFE_NPCS, TOWN_LIFE_IDS, townLifeLines, createWallWatch } from './town-life.js';
-import { createBorderWatch, closedRegionEntered, CLOSED_BORDER_TITLE } from './closed-border.js';
-import { COPPER_ITEM, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, peddlerLines, peddlerOffers } from './economy.js';
-import { VILLAGE_DOG, createVillageDog } from './village-dog.js';
-import { VILLAGE_CAT, createVillageCat } from './village-cat.js';
-import { createRedTailHawk } from './lakota-hawk.js';
-import { createHawkFlight } from './hawk-flight.js';
-import { createWoodlandLife } from './woodland-life.js';
-import { createForestEcology } from './forest-ecology.js';
-import { createForestStory, FOREST_STORY_NPC, FOREST_STORY_SITES, forestConversation, forestSiteConversation } from './forest-story.js';
-import { runForestSmoke, verifyForestReload } from './forest-smoke.js';
-import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON, hideoutConversation, hideoutTamsinChoices, garrisonConversation } from './forest-hideout.js';
-import { createForestHideoutWatch } from './forest-hideout-watch.js';
-import { runHideoutSmoke, verifyHideoutReload } from './forest-hideout-smoke.js';
-import { buildLocalMapModel } from './local-map-data.js';
-import { createTrailMap } from './trail-map.js';
-import { drawMinimap } from './minimap.js';
-import { runLocalMapSmoke } from './local-map-smoke.js';
-import { createRegionalLife, REGIONAL_LIFE_NPCS, REGIONAL_LIFE_SITES, regionalLifeConversation, regionalLifeSiteConversation, regionalLifeRelayChoices } from './regional-life.js';
-import { runRegionalLifeSmoke, verifyRegionalLifeReload } from './regional-life-smoke.js';
-import { createAcornQuest } from './acorn-quest.js';
-import { createJourney } from './journey.js';
-import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation } from './journey-content.js';
-import { createRoadCheckpoint } from './road-checkpoint.js';
-import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './luscia-chapter.js';
-import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './luscia-town.js';
-import { LUSCIA_PROPHET, lusciaProphetConversation } from './luscia-prophet.js';
-import { PORT_CALOS, portCalosDeckHeight } from './port-calos-world.js';
-import { SOLIS_HARBOR } from './solis-harbor.js';
-import {ARI,ARI_STAND,SUNFLOWER_ROWS} from './ari-garden.js';
-import { ARI_HOME } from './ari-home.js';
-import {RYAN,BARRETT,WILLOWMERE_FAMILY} from './willowmere-family.js';
-import {createBarrettGeography,barrettConversation} from './barrett-geography.js';
-import {FAMILY_HOMES,familyHomeForResident,familyHomeLines} from './family-homes.js';
-import {createSunflowerLesson,sunflowerConversation,SUNFLOWER_QUEST_ID} from './sunflower-lesson.js';
-import { PORT_CALOS_NPCS, portCalosConversation } from './port-calos-people.js';
-import { INQUEST, INQUEST_HOME, INQUEST_HOME_PATH, INQUEST_PLACEHOLDER } from './inquest-home.js';
-import { CALOSS_ROAD_FORK } from './region-world.js';
-import { CALOSS_PROPHET_STAND, CALOSS_ELAGOS_ROAD } from './elagos-world.js';
-import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './pueth-people.js';
-import { createRenaLetters, ARDRY_NAMES, ARDRY_PLACES } from './rena-letters.js';
-import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './rena-people.js';
-import { AMOD_NPCS, AMOD_NPC_IDS, amodConversation } from './amod-people.js';
-import { createOgreToll, OGRE_NPC, OGRE_ENCOUNTER, OGRE_TOLL, OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, OGRE_VICTORY, OGRE_RETURNED } from './amod-ogre.js';
-import { OGRE_STAND, OSTEL } from './amod-world.js';
-import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT, peblosConversation } from './peblos-people.js';
-import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './elod-people.js';
-import { createIzolHost } from './izol-host.js';
-import { izolDeckHeight } from './izol-world.js';
-import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './ambron-people.js';
-import { FERRY_HOSTS, FERRY_HOST_IDS, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './ferry.js';
-import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './moros-chapter.js';
-import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderMusterEncounter, borderLine, borderLineSaid, borderConversation } from './border-chapter.js';
-import { createWestSuvalHost } from './west-suval-host.js';
-import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFTS, giftOwed, GIFT_LINES, CAP_LINES } from './aftermath-chapter.js';
-import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './aftermath-sites.js';
-import { occupationControl, isOut, stakeOf } from './occupation.js';
-import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './riding.js';
-import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './company-horses.js';
-import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './ostler.js';
-import { SMITH_NPC, MOROS_ARMOURER_NPC, AMBRON_ARMOURER_NPC, smithConversation, buyFromSmith, smithOffers, pieceName, sellsHere } from './smith.js';
-import { AMBRON_FORGE } from './ambron.js';
-import { OUTPOST_LAYOUT } from './outpost.js';
-import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint, villageToWorld } from './region-world.js';
-import { BEGGAR_NPC, createBeggar, beggarConversation } from './beggar.js';
-import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine } from './skills.js';
-import { skillIconSVG } from './skill-icons.js';
-import { createSkillAnnouncement } from './skill-announcement.js';
-import { createQuestChoice } from './quest-choice.js';
-import { companyRoadStops, legacyCompanyProgress } from './company-route.js';
-// Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
-import { DEFAULT_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingGear, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
-import { createCharacterSelect } from './character-select.js';
-import { cityPoint as imlamdrisPoint } from './south-suval-world.js';
+import { createCombatView } from './gameplay/combat/combat-view.js';
+import { createCrimeHost, LAW_ENCOUNTER_ID } from './gameplay/law/crime-host.js';
+import { createCorpseHost } from './gameplay/combat/corpse-host.js';
+import { KAYLA, KAYLA_START, kaylaConversation } from './content/quests/kayla/kayla.js';
+import { createCircusBear } from './content/quests/kayla/kayla-character.js';
+import { createKaylaRace, KAYLA_RACE, KAYLA_RACE_START } from './content/quests/kayla/kayla-race.js';
+import { createKaylaRaceHost } from './content/quests/kayla/kayla-race-host.js';
+import { createKaylaRaceAutopilot } from './gameplay/autoplay/kayla-race-autopilot.js';
+import { CUB, CUB_STAND, CUB_HONEY_ITEM, CUB_HONEY_QUEST_ID } from './content/quests/bear-family/cub-honey-quest.js';
+import { createCubHoneyHost, HONEY_STORE, honeyLineOfSight } from './content/quests/bear-family/cub-honey-host.js';
+import { createCubAutopilot } from './gameplay/autoplay/cub-autopilot.js';
+import { createAddisonAutopilot } from './gameplay/autoplay/addison-autopilot.js';
+import { createTouchControls, wantsTouch } from './ui/input/touch-controls.js';
+import { createBearFamily, BEAR_HOME_ROUTE } from './content/quests/bear-family/bear-family.js';
+import { CIRCUS_BEARS, CIRCUS_CAMP, CIRCUS_ACTS, CIRCUS_LOOKS, circusConversation } from './content/quests/bear-family/bear-circus.js';
+import { createApiaryBees } from './content/quests/bear-family/apiary-bees.js';
+import { createApiaryBeesView } from './content/quests/bear-family/apiary-bees-view.js';
+import { createKaylaHost, KAYLA_FIGHT } from './content/quests/kayla/kayla-host.js';
+import {LUSCIA_CIVIL_QUEST_ID} from './content/chapters/civil-war/luscia-civil-war.js';
+import {createDrentAutopilot,createLusciaCivilAutopilot} from './content/chapters/civil-war/civil-war-autopilot.js';
+import {MAIN_QUEST_PLAYTESTS,mainQuestPlaytest,mainQuestPlaytestFinished} from './dev/checks/main-quest-playtests.js';
+import {createDrentHost, DRENT_FIGHT_ID} from './content/regions/drent/drent-host.js';
+import {DRENT_NPCS, DRENT_SITES} from './content/regions/drent/drent-sites.js';
+import {DRENT_QUEST_ID, DRENT_EVIDENCE_ID} from './content/chapters/civil-war/drent-civil-war.js';
+import { createInventory, INVENTORY_ITEMS } from './gameplay/inventory/inventory.js';
+import { createWeapons, WEAPON_TYPES, feelOf } from './gameplay/combat/weapons.js';
+import { createConsumables } from './gameplay/inventory/consumables.js';
+import { createCampcraft } from './gameplay/skills/crafting/campcraft.js';
+import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, fireMakingStands, fireMakingConversation } from './gameplay/skills/crafting/fire-making.js';
+import { createWorldMap } from './ui/map/world-map.js';
+import { MENORA } from './content/regions/minora-frontier/menora-city.js';
+import { PLAYABLE } from './content/characters/player-characters.js';
+import { freshChapterOne, chapterOneEncounter, chapterOneObjective, chapterOneConquest, chapterOneConquestReported, restoreChapterOne, CHAPTER_ONE_REPORTS, CHAPTER_ONE_ARENA } from './content/chapters/chapter-one/chapter-one.js';
+import { ARMY_BATTLE_ID } from './gameplay/combat/army-battle.js';
+import { createChapterOneColumn } from './content/chapters/chapter-one/chapter-one-column.js';
+import { CAMPAIGN_BUILD_REGIONS, worldScope, regionEnabled } from './world/terrain/world-scope.js';
+import { MINORA_START, MINORA_BACKDROP_BOUNDS, MAIN_QUEST_RECRUITERS, FREE_ROAM_GUIDANCE, freshMinoraStart, mainQuestDormant, minoraOpeningView } from './app/startup/minora-opening.js';
+import { NYLON, NYLON_BUILDINGS } from './content/regions/nylon/nylon-city.js';
+import { AEVIS, AEVIS_BUILDINGS, AEVIS_GATES } from './content/regions/aevis/aevis-city.js';
+import { EAST_PYROS_VIEWS, EAST_PYROS_ARRIVAL, EAST_PYROS_LANDMARKS, EAST_PYROS_ROUTES } from './content/regions/east-pyros/east-pyros-world.js';
+import { NETHER_DESERT_VIEWS, NETHER_DESERT_ARRIVAL, NETHER_DESERT_LANDMARKS, NETHER_DESERT_TRAILS } from './content/regions/nether-desert/nether-desert-world.js';
+import { LEGEMUM_VIEWS, LEGEMUM_ARRIVAL, LEGEMUM_LANDMARKS, LEGEMUM_TRAILS } from './content/regions/legemum/legemum-world.js';
+import { BABON_VIEWS, BABON_ARRIVAL, BABON_LANDMARKS, BABON_TRAILS } from './content/regions/babon/babon-world.js';
+import { SOUTH_CELDER_VIEWS, SOUTH_CELDER_ARRIVAL, SOUTH_CELDER_LANDMARKS, SOUTH_CELDER_TRAILS } from './content/regions/south-celder/south-celder-world.js';
+import { NORTH_CELDER_VIEWS, NORTH_CELDER_ARRIVAL, NORTH_CELDER_LANDMARKS, NORTH_CELDER_TRAILS } from './content/regions/canerd/north-celder-world.js';
+import { CANERD, CANERD_VIEWS } from './content/regions/canerd/canerd-world.js';
+import { PYRA, PYRA_ARRIVAL, PYRA_VIEWS } from './content/regions/pyra/pyra-world.js';
+import { SELAMUS, SELAMUS_ARRIVAL, SELAMUS_VIEWS } from './content/regions/selamus/selamus-city.js';
+import { OUTER_NAMES, OUTER_IDS, OUTER_PATHS, outerProfile } from './content/regions/outer-regions/outer-regions-world.js';
+import { THALMAGAR_FORTRESS } from './content/regions/thalmagar/thalmagar-fortress-site.js';
+import { ACOR_NAMES, ACOR_IDS, ACOR_PATHS, ACOR_WATERS } from './content/regions/acor/acor-world.js';
+import { NORTHERN_NAMES, NORTHERN_IDS, NORTHERN_PATHS, NORTHERN_PEAKS, NORTHERN_LAKES } from './content/regions/northern-oremindi/northern-oremindi-world.js';
+import { EAST_IZOL_VIEWS, EAST_IZOL_ARRIVAL, EAST_IZOL_LANDMARKS, EAST_IZOL_TRAILS } from './content/regions/east-izol/east-izol-world.js';
+import { EAST_WILDLIFE_REVIEW, eastWildlifeReview } from './dev/checks/east-izol-wildlife-review.js';
+import { ALEZHOR_VIEWS, ALEZHOR_ARRIVAL, ALEZHOR_LANDMARKS, ALEZHOR_TRAILS } from './content/regions/alezhor/alezhor-world.js';
+import { SOUTH_IBENAL_VIEWS, SOUTH_IBENAL_ARRIVAL, SOUTH_IBENAL_LANDMARKS, SOUTH_IBENAL_TRAILS } from './content/regions/south-ibenal/south-ibenal-world.js';
+import { NORTH_IBENAL_VIEWS, NORTH_IBENAL_ARRIVAL, NORTH_IBENAL_LANDMARKS, NORTH_IBENAL_TRAILS } from './content/regions/north-ibenal/north-ibenal-world.js';
+import { HENBORTH_VIEWS, HENBORTH_ARRIVAL, HENBORTH_LANDMARKS, HENBORTH_TRAILS } from './content/regions/henborth/henborth-world.js';
+import { REGION_IDS as CELDER_REGION_IDS } from './world/terrain/region-world.js';
+import { AEVIS_SOLDIERS, createAevisSoldier } from './content/regions/aevis/aevis-soldiers.js';
+import { atlasRevealedCityMarks } from './ui/map/world-map-detail.js';
+import { createMapTutorial } from './ui/map/map-tutorial.js';
+import { createChartLesson } from './ui/map/chart-lesson.js';
+import { createQuestTracker, activeOptionalQuests } from './gameplay/quests/quest-tracker.js';
+import { MERCENARY_ROSTER, CROMB, KIT_WEAPON_ITEM, ARRIVALS, mercenaryById, escortSpotFor, landingMateNote, mateIsEscorting, createMercenaryCompany, mercenaryLines, mercenaryStyleLines, mercenaryWeapon, tradeOffer, distanceAlongRoad, arrivalTime } from './gameplay/company/mercenaries.js';
+import { createLandingMateQuest } from './content/quests/roadside/landing-mate-quest.js';
+import { createLocomotionSkills } from './gameplay/movement/locomotion-skills.js';
+import {peninsulaOpening} from './content/chapters/prologue/peninsula-opening.js';
+import {createPeninsulaLandingQuest,peninsulaCompanyStamp} from './content/chapters/prologue/peninsula-company.js';
+import {runSevronChecks} from './dev/checks/sevron-smoke.js';
+import {runPeninsulaTutorialChecks} from './dev/checks/peninsula-tutorial-smoke.js';
+import {PENINSULA_TUTORIAL_ANCHORS as TUTORIAL_A,PENINSULA_TEACHERS,PENINSULA_FERRY_LANDING,peninsulaWoodcuttingRoute,peninsulaFishingRoute,insidePeninsulaTutorial,createPeninsulaTutorial} from './content/chapters/prologue/peninsula-tutorial.js';
+import {createPeninsulaAutopilot} from './content/chapters/prologue/peninsula-autopilot.js';
+import {createSevronHost} from './content/regions/sevron/sevron-host.js';
+import { createPeninsulaTutorialHost } from './content/chapters/prologue/peninsula-tutorial-host.js';
+import { ANCHORS as ROUTE_ANCHORS, MAIN_ROAD } from './world/terrain/regions.js';
+import { createLongRoad, forkNotice, drillScene, landingAt, companionPace, COMPANION_REACH, DRILL_COUNT, CORNERS_XP, PLAY_TROUPE_STOPS } from './content/chapters/journey/long-road.js';
+import { createGlunWoodcutting, GLUN_WOOD_LESSON, glunWoodcuttingChoice } from './content/quests/skill-lessons/glun-woodcutting.js';
+import { createAnimalHusbandry, HUSBANDRY_LESSON } from './gameplay/skills/nature/animal-husbandry.js';
+import { createActing, ACTING_LESSON, AMANDA_TEACHES } from './gameplay/skills/performance/acting.js';
+import { SYLVIA, SYLVIA_STUDIO, createVisualArts, sylviaConversation, artEaselConversation } from './gameplay/skills/performance/visual-arts.js';
+import { createSylvia, attachArtTools } from './gameplay/skills/performance/visual-arts-view.js';
+import { createSylviaIvy, sylviaIvyChoice } from './content/quests/sylvia/sylvia-ivy.js';
+import { IVY_PATCHES } from './content/quests/sylvia/ivy-sites.js';
+import { createIvyView } from './content/quests/sylvia/ivy-view.js';
+import { createRoadsideLessons, jojoCookingChoice, geologyFieldChoice } from './content/regions/drent/roadside-lessons.js';
+import { farmingConversation, farmRowConversation, farmWait } from './gameplay/skills/farming/farming-conversation.js';
+import { createFarmingView } from './gameplay/skills/farming/farming-view.js';
+import { FARMER, FARM_ROWS, ALL_FARM_ROWS, ORCHARD_TREES, CROPS, FARMING_SKILL, createFarming } from './gameplay/skills/farming/farming.js';
+import { METRES_PER_HEX, toWorld, toWorldXIn } from './world/terrain/world-scale.js';
+import { GREENWAY_RAID, AVREL_RAID } from './app/startup/opening-fights.js';
+import { bystandersFor, createFallen } from './gameplay/combat/bystanders.js';
+import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from './content/regions/drent/legion-posts.js';
+import { TOWN_LIFE_NPCS, TOWN_LIFE_IDS, townLifeLines, createWallWatch } from './world/life/town-life.js';
+import { createBorderWatch, closedRegionEntered, CLOSED_BORDER_TITLE } from './world/travel/closed-border.js';
+import { COPPER_ITEM, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, peddlerLines, peddlerOffers } from './gameplay/inventory/economy.js';
+import { VILLAGE_DOG, createVillageDog } from './content/characters/village-dog.js';
+import { VILLAGE_CAT, createVillageCat } from './content/characters/village-cat.js';
+import { createRedTailHawk } from './content/quests/lakota/lakota-hawk.js';
+import { createHawkFlight } from './gameplay/movement/hawk-flight.js';
+import { createWoodlandLife } from './world/life/woodland-life.js';
+import { createForestEcology } from './world/life/forest-ecology.js';
+import { createForestStory, FOREST_STORY_NPC, FOREST_STORY_SITES, forestConversation, forestSiteConversation } from './content/quests/forest/forest-story.js';
+import { runForestSmoke, verifyForestReload } from './dev/checks/forest-smoke.js';
+import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON, hideoutConversation, hideoutTamsinChoices, garrisonConversation } from './content/quests/forest/forest-hideout.js';
+import { createForestHideoutWatch } from './content/quests/forest/forest-hideout-watch.js';
+import { runHideoutSmoke, verifyHideoutReload } from './dev/checks/forest-hideout-smoke.js';
+import { buildLocalMapModel } from './ui/map/local-map-data.js';
+import { createTrailMap } from './ui/map/trail-map.js';
+import { drawMinimap } from './ui/map/minimap.js';
+import { runLocalMapSmoke } from './dev/checks/local-map-smoke.js';
+import { createRegionalLife, REGIONAL_LIFE_NPCS, REGIONAL_LIFE_SITES, regionalLifeConversation, regionalLifeSiteConversation, regionalLifeRelayChoices } from './world/life/regional-life.js';
+import { runRegionalLifeSmoke, verifyRegionalLifeReload } from './dev/checks/regional-life-smoke.js';
+import { createAcornQuest } from './content/quests/forest/acorn-quest.js';
+import { createJourney } from './content/chapters/journey/journey.js';
+import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation } from './content/chapters/journey/journey-content.js';
+import { createRoadCheckpoint } from './app/saves/road-checkpoint.js';
+import { createLusciaChapter, LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, lusciaConversation } from './content/chapters/civil-war/luscia-chapter.js';
+import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from './content/regions/luscia/luscia-town.js';
+import { LUSCIA_PROPHET, lusciaProphetConversation } from './content/regions/luscia/luscia-prophet.js';
+import { PORT_CALOS, portCalosDeckHeight } from './content/regions/port-calos/port-calos-world.js';
+import { SOLIS_HARBOR } from './content/regions/solis/solis-harbor.js';
+import {ARI,ARI_STAND,SUNFLOWER_ROWS} from './content/quests/ari/ari-garden.js';
+import { ARI_HOME } from './content/quests/ari/ari-home.js';
+import {RYAN,BARRETT,WILLOWMERE_FAMILY} from './content/quests/homes/willowmere-family.js';
+import {createBarrettGeography,barrettConversation} from './content/quests/skill-lessons/barrett-geography.js';
+import {FAMILY_HOMES,familyHomeForResident,familyHomeLines} from './content/quests/homes/family-homes.js';
+import {createSunflowerLesson,sunflowerConversation,SUNFLOWER_QUEST_ID} from './content/quests/skill-lessons/sunflower-lesson.js';
+import { PORT_CALOS_NPCS, portCalosConversation } from './content/regions/port-calos/port-calos-people.js';
+import { INQUEST, INQUEST_HOME, INQUEST_HOME_PATH, INQUEST_PLACEHOLDER } from './content/quests/homes/inquest-home.js';
+import { CALOSS_ROAD_FORK } from './world/terrain/region-world.js';
+import { CALOSS_PROPHET_STAND, CALOSS_ELAGOS_ROAD } from './content/regions/ambron/elagos-world.js';
+import { PUETH_NPCS, PUETH_NPC_IDS, puethConversation } from './content/regions/pueth/pueth-people.js';
+import { createRenaLetters, ARDRY_NAMES, ARDRY_PLACES } from './content/quests/rena/rena-letters.js';
+import { RENA_NPCS, RENA_NPC_IDS, renaConversation } from './content/quests/rena/rena-people.js';
+import { AMOD_NPCS, AMOD_NPC_IDS, amodConversation } from './content/regions/amod/amod-people.js';
+import { createOgreToll, OGRE_NPC, OGRE_ENCOUNTER, OGRE_TOLL, OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, OGRE_VICTORY, OGRE_RETURNED } from './content/regions/amod/amod-ogre.js';
+import { OGRE_STAND, OSTEL } from './content/regions/amod/amod-world.js';
+import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT, peblosConversation } from './content/regions/peblos/peblos-people.js';
+import { EAST_SUVAL_PEOPLE, EAST_SUVAL_NPC_IDS, elodConversation } from './content/characters/elod-people.js';
+import { createIzolHost } from './content/regions/izol/izol-host.js';
+import { izolDeckHeight } from './content/regions/izol/izol-world.js';
+import { ELAGOS_NPCS, isElagosNpc, elagosConversation, TALKING_TREE_QUEST } from './content/regions/ambron/ambron-people.js';
+import { FERRY_HOSTS, FERRY_HOST_IDS, FERRY_LANDINGS, createFerry, ferryConversation, quayHeight } from './world/travel/ferry.js';
+import { createMorosChapter, MOROS_SITES, MOROS_SITE_ACTIONS, MOROS_GATE_ID, MOROS_LEGATE_ID, MUSTER_EARLY, morosConversation } from './content/chapters/civil-war/moros-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, borderEncounter, borderMusterEncounter, borderLine, borderLineSaid, borderConversation } from './content/chapters/chapter-one/border-chapter.js';
+import { createWestSuvalHost } from './content/regions/solis/west-suval-host.js';
+import { createAftermathChapter, AFTERMATH_NPCS, AFTERMATH_VARIANTS, aftermathEncounter, aftermathConversation, SIDE_GIFTS, giftOwed, GIFT_LINES, CAP_LINES } from './content/chapters/chapter-one/aftermath-chapter.js';
+import { AFTERMATH_SITES, aftermathSite, aftermathArena, aftermathBuilt } from './content/chapters/chapter-one/aftermath-sites.js';
+import { occupationControl, isOut, stakeOf } from './gameplay/company/occupation.js';
+import { createRiding, RIDE, RIDING_KEYS, DEVELOPER_HORSE_SPEED, DEVELOPER_HORSE_NAME, steer, drive } from './gameplay/movement/riding.js';
+import { companyHorses, picketSpots, coatFor, ridePace, RIDE_FILE, staggerFor, fileSpotFor } from './gameplay/company/company-horses.js';
+import { OSTLER_NPC, OSTLER_OBJECTIVE, horseWaiting, redeemHorse, ostlerConversation } from './content/quests/roadside/ostler.js';
+import { SMITH_NPC, MOROS_ARMOURER_NPC, AMBRON_ARMOURER_NPC, smithConversation, buyFromSmith, smithOffers, pieceName, sellsHere } from './content/quests/roadside/smith.js';
+import { AMBRON_FORGE } from './content/regions/ambron/ambron.js';
+import { OUTPOST_LAYOUT } from './content/regions/drent/outpost.js';
+import { LUMBER_TOWN_STABLE, TIDEHAVEN_SMITHY, SOLIS, SEA_LEVEL, solisPoint, villageToWorld } from './world/terrain/region-world.js';
+import { BEGGAR_NPC, createBeggar, beggarConversation } from './content/quests/roadside/beggar.js';
+import { createSkills, skillLevel, SKILLS, SKILL_IDS, SKILLS_VERSION, skillGuide, levelUpLine } from './gameplay/skills/skills.js';
+import { skillIconSVG } from './ui/skills/skill-icons.js';
+import { createSkillAnnouncement } from './ui/skills/skill-announcement.js';
+import { createQuestChoice } from './ui/dialogue/quest-choice.js';
+import { companyRoadStops, legacyCompanyProgress } from './gameplay/company/company-route.js';
+// Who you are: any of the eleven of the company, chosen at the opening (src/content/characters/player-characters.js).
+import { DEFAULT_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingGear, startingInventory, startingLanguages, startingSkills } from './content/characters/player-characters.js';
+import { createCharacterSelect } from './app/startup/character-select.js';
+import { cityPoint as imlamdrisPoint } from './content/regions/south-suval/south-suval-world.js';
 // Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
-import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE } from './opening-sequence.js';
-import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, woodcuttingInteractionLabel, bowdenConversation, bowdenLines } from './woodcutting.js';
-import { createBowden } from './woodcutter-model.js';
-import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './lauvel-aftermath.js';
-import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, JOB_FIRST, JOB_AGAIN, THE_GREEN_COAT, THE_BURYING, SON } from './lauvel-burying.js';
-import { createGravedigger, createStretcher } from './lauvel-people-models.js';
-import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './construction.js';
-import { createCombatSkills, familyOf, maxHealth } from './combat-skills.js';
-import { createCompanions, armsOf, ASKS } from './companions.js';
-import { combatPresence } from './combat-presence.js';
-import { createTeachers, TEACHERS, markOf } from './teachers.js';
-import { BOW, JERRYS_BOW, flightOf, inTheLine, solidAt } from './archery.js';
-import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './file-fill.js';
-import { createFoundWeapons, fallenCompanions } from './found-weapons.js';
-import { createGear, TIERS, tierSoldAt, WEIGHTS, tierScale } from './gear.js';
-import { BIRD_WATCHER, GARDEN_KEEPER, JEAN_STAND, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './birding.js';
-import { createLakota, lakotaTravelChoice } from './lakota.js';
-import { MARK, MARK_SKILLS, markConversation } from './mark.js';
-import { createDrentBirds } from './drent-birds.js';
-import { createBirdPointer } from './bird-pointer.js';
-import { findBird } from './bird-finder.js';
-import { createFishing, FISHING_SKILL } from './fishing-skill.js';
-import { createFishingLessons, FISHING_TEACHERS, fishingLessonRoute, fishingLessonChoices, FISHING_DEMO_SECONDS } from './fishing-lessons.js';
-import { createFishingLessonVisual } from './fishing-lesson-view.js';
-import { MYCOLOGIST, MYCOLOGIST_STAND, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './mycology.js';
-import { createMushrooms } from './mushrooms.js';
-import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, createBotany, botanistConversation } from './botany.js';
-import { createDrentFlora } from './drent-flora.js';
-import { createDrentTrees } from './drent-trees.js';
-import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './geology.js';
-import { INSTRUCTOR, INSTRUCTOR_STAND, GUARD_SECONDS, lessonStage, instructorConversation } from './instructor.js';
-import { trimCast } from './cast.js';
-import { createVastosHost } from './vastos-host.js';
-import { createLinguist, MAX_PROFICIENCY } from './linguist.js';
-import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './languages.js';
-import { setSignReader, setForeignLettering } from './signs.js';
-import { createGameMode } from './game-mode.js';
-import { createDrentStones } from './drent-stones.js';
-import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './archaeology.js';
-import { WINE_SKILL, WINE_LESSON, TASTING_TERMS, createWine, vintnerConversation, cellarHandConversation, winemakerConversation } from './wine.js';
-import { LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, createCooking } from './cooking.js';
-import { WINE_ATTIC, ATTIC_PEOPLE, ATTIC_STANDS, ATTIC_HEAD, JUAN, NIKA, JUAN_LESSON, createWineAttic, juanConversation, juanShop, juanTasting, nikaConversation } from './wine-attic.js';
-import { ATTIC_WINES } from './attic-wines.js';
-import { PUCK, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, createPuck, puckConversation, secretaryConversation, puckThanks } from './wine-goblin.js';
-import { createPuckView } from './wine-goblin-view.js';
-import { ED, CHAMELEON_SPOTS, createChameleon, chameleonConversation, chameleonThanks, carryingForEd } from './chameleon.js';
-import { createEdView, createEdModel } from './chameleon-model.js';
-import { TALAELOS, TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './troupe.js';
-import { JOHN, SALT_PORTS, BEEF_PRICE, SALT_BEEF, sailTime, createSaltSultan, johnConversation, saltToast } from './salt-sultan.js';
-import { createJohn, createSultana, createRebelShip } from './salt-ship.js';
-import { HARBOUR_WATCH, createHarbourAlarm } from './harbour-alarm.js';
-import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, shipAt, swimmerAt, wordToastAt, harborNoticeNearby } from './word-arrival.js';
-import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './troupe-models.js';
-import { JESSE, JESSE_WORKSHOP, JESSE_GUILD, JESSE_CARRIAGE_RADIUS } from './jesse-carriage-world.js';
-import { AMBRON_LAYOUT_VERSION, AMBRON_CENTRE } from './ambron-city-layout.js';
-import { createJesseCarriage, JESSE_QUEST } from './jesse-carriage-quest.js';
-import { createJesseCarriageHost } from './jesse-carriage-host.js';
-import { createBrandyHomeHost } from './brandy-home-host.js';
-import { BRANDY_HOME } from './brandy-home-world.js';
-import { BRANDY, BRANDY_STAND, BRANDY_YARD, yardPoint, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './brandy.js';
-import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './winery.js';
-import { wineryLessonsStatus, robWineryConversation } from './winery-lessons.js';
-import { WINE_INTRO_TEACHERS, wineIntroChoice } from './wine.js';
-import { createRenaDigs } from './rena-digs.js';
-import { TALKING_TREE, createTalkingTree, treeLines } from './talking-tree.js';
-import { buildTalkingTree } from './talking-tree-view.js';
-import { PIPE_SMOKER, PIPE_ITEM, LEAF_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, pipeSmokerConversation } from './pipeweed.js';
-import { TOFT, TOFT_STAND, JIMSON_PODS_WANTED, createJimson, toftConversation } from './jimson-quest.js';
-import { KATY, KATY_STAND, KATY_SKETCH, createKaty, katyConversation } from './katy.js';
-import { IMANI, IMANI_STAND, createVineyard, imaniConversation } from './vineyard.js';
-import { BATMAN, BATMAN_PERCH, HANDOVER, EVIDENCE, BUST_SCENE, ENDINGS, VELAETH, createBatmanHunt, batmanConversation } from './batman.js';
-import { ADDISON, ADDISON_STAND, SUVAL_LIGHT, FROM_THE_GALLERY, createLightKeeper, addisonConversation } from './lighthouse.js';
-import { AMBRON } from './region-world.js';
-import { BOSCO, BOSCO_HAUNTS, BOSCO_TAKES, BOSCO_WALK_START, BOSCO_WALK_END, createBosco, boscoConversation } from './bosco.js';
+import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE } from './app/startup/opening-sequence.js';
+import { WOODCUTTING_SKILL, BOWDEN, BOWDEN_STAND, WOODLOT_TREES, TREE_KINDS, AXES, SWING, CHOP_REACH, createWoodcutting, woodcuttingInteractionLabel, bowdenConversation, bowdenLines } from './gameplay/skills/woodcutting/woodcutting.js';
+import { createBowden } from './world/actors/woodcutter-model.js';
+import { LAUVEL_PEOPLE, LAUVEL_LINES, bearersAt, bearersStandingBack, fieldPoint } from './content/regions/luscia/lauvel-aftermath.js';
+import { createBurying, selaConversation, workerChoice, HAIL, HAIL_FROM, JOBS, JOB_FIRST, JOB_AGAIN, THE_GREEN_COAT, THE_BURYING, SON } from './content/regions/luscia/lauvel-burying.js';
+import { createGravedigger, createStretcher } from './content/regions/luscia/lauvel-people-models.js';
+import { CONSTRUCTION_SKILL, PLANKS, PLANK_IDS, WORKBENCH, HOUSE_STAGES, HOUSE_PLOT, PLOT_STAND, WORKBENCH_SPOT, BIRDHOUSE_POSTS, BIRDHOUSE_KINDS, BUILD_LINES, createConstruction, sawOffer } from './gameplay/skills/woodcutting/construction.js';
+import { createCombatSkills, familyOf, maxHealth } from './gameplay/combat/combat-skills.js';
+import { createCompanions, armsOf, ASKS } from './gameplay/company/companions.js';
+import { combatPresence } from './gameplay/combat/combat-presence.js';
+import { createTeachers, TEACHERS, markOf } from './gameplay/skills/teachers.js';
+import { BOW, JERRYS_BOW, flightOf, inTheLine, solidAt } from './gameplay/combat/archery.js';
+import { FILE_FLOOR, isArmyBattle, fillFor, fillCount, fillLines } from './gameplay/combat/file-fill.js';
+import { createFoundWeapons, fallenCompanions } from './gameplay/combat/found-weapons.js';
+import { createGear, TIERS, tierSoldAt, WEIGHTS, tierScale } from './gameplay/inventory/gear.js';
+import { BIRD_WATCHER, GARDEN_KEEPER, JEAN_STAND, BIRD_SPECIES, BIRDING_KEY, BIRDING_LESSON, SKILLS_KEY, FILLED_FEEDER_ITEM, createBirding, birdWatcherConversation, gardenKeeperConversation, lysaFeederChoice, observeRange } from './gameplay/skills/birding/birding.js';
+import { createLakota, lakotaTravelChoice } from './content/quests/lakota/lakota.js';
+import { MARK, MARK_SKILLS, markConversation } from './content/quests/roadside/mark.js';
+import { createDrentBirds } from './content/regions/drent/drent-birds.js';
+import { createBirdPointer } from './gameplay/skills/birding/bird-pointer.js';
+import { findBird } from './gameplay/skills/birding/bird-finder.js';
+import { createFishing, FISHING_SKILL } from './gameplay/skills/fishing/fishing-skill.js';
+import { createFishingLessons, FISHING_TEACHERS, fishingLessonRoute, fishingLessonChoices, FISHING_DEMO_SECONDS } from './gameplay/skills/fishing/fishing-lessons.js';
+import { createFishingLessonVisual } from './gameplay/skills/fishing/fishing-lesson-view.js';
+import { MYCOLOGIST, MYCOLOGIST_STAND, MYCOLOGY_SKILL, MYCOLOGY_LESSON, createMycology, mycologistConversation } from './gameplay/skills/nature/mycology.js';
+import { createMushrooms } from './gameplay/skills/nature/mushrooms.js';
+import { BOTANIST, BOTANIST_STAND, BOTANY_SKILL, BOTANY_LESSON, JIMSON_ITEM, createBotany, botanistConversation } from './gameplay/skills/nature/botany.js';
+import { createDrentFlora } from './content/regions/drent/drent-flora.js';
+import { createDrentTrees } from './content/regions/drent/drent-trees.js';
+import { GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_SKILL, GEOLOGY_LESSON, createGeology, geologistConversation } from './gameplay/skills/nature/geology.js';
+import { INSTRUCTOR, INSTRUCTOR_STAND, GUARD_SECONDS, lessonStage, instructorConversation } from './gameplay/skills/instructor.js';
+import { trimCast } from './content/characters/cast.js';
+import { createVastosHost } from './content/chapters/civil-war/vastos-host.js';
+import { createLinguist, MAX_PROFICIENCY } from './gameplay/skills/language/linguist.js';
+import { LANGUAGES, DIALECTS, INTERPRETER, interpreterFor, LINGUIST_KEY, PHRASEBOOK_ITEM } from './gameplay/skills/languages.js';
+import { setSignReader, setForeignLettering } from './world/scenery/signs.js';
+import { createGameMode } from './app/game-mode.js';
+import { createDrentStones } from './content/regions/drent/drent-stones.js';
+import { ARCHAEOLOGY_SKILL, ARCHAEOLOGY_LESSON, RENA_NEEDED, createArchaeology } from './gameplay/skills/nature/archaeology.js';
+import { WINE_SKILL, WINE_LESSON, TASTING_TERMS, createWine, vintnerConversation, cellarHandConversation, winemakerConversation } from './content/quests/wine/wine.js';
+import { LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, createCooking } from './gameplay/skills/crafting/cooking.js';
+import { WINE_ATTIC, ATTIC_PEOPLE, ATTIC_STANDS, ATTIC_HEAD, JUAN, NIKA, JUAN_LESSON, createWineAttic, juanConversation, juanShop, juanTasting, nikaConversation } from './content/quests/wine/wine-attic.js';
+import { ATTIC_WINES } from './content/quests/wine/attic-wines.js';
+import { PUCK, SECRETARY, SECRETARY_STAND, SEA_WALL_NICHE, PRIME_MINISTER, createPuck, puckConversation, secretaryConversation, puckThanks } from './content/quests/wine/wine-goblin.js';
+import { createPuckView } from './content/quests/wine/wine-goblin-view.js';
+import { ED, CHAMELEON_SPOTS, createChameleon, chameleonConversation, chameleonThanks, carryingForEd } from './content/quests/chameleon/chameleon.js';
+import { createEdView, createEdModel } from './content/quests/chameleon/chameleon-model.js';
+import { TALAELOS, TROUPE_PEOPLE, TROUPE_IDS, PLAYBILL_ITEM, createTroupe, troupeConversation, troupeThanks } from './content/quests/troupe/troupe.js';
+import { JOHN, SALT_PORTS, BEEF_PRICE, SALT_BEEF, sailTime, createSaltSultan, johnConversation, saltToast } from './content/quests/salt/salt-sultan.js';
+import { createJohn, createSultana, createRebelShip } from './content/quests/salt/salt-ship.js';
+import { HARBOUR_WATCH, createHarbourAlarm } from './content/quests/roadside/harbour-alarm.js';
+import { WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_ASHORE, shipAt, swimmerAt, wordToastAt, harborNoticeNearby } from './content/quests/roadside/word-arrival.js';
+import { createPlayer, createUnderstudy, createCritic, createPageantWagon } from './content/quests/troupe/troupe-models.js';
+import { JESSE, JESSE_WORKSHOP, JESSE_GUILD, JESSE_CARRIAGE_RADIUS } from './content/quests/jesse/jesse-carriage-world.js';
+import { AMBRON_LAYOUT_VERSION, AMBRON_CENTRE } from './content/regions/ambron/ambron-city-layout.js';
+import { createJesseCarriage, JESSE_QUEST } from './content/quests/jesse/jesse-carriage-quest.js';
+import { createJesseCarriageHost } from './content/quests/jesse/jesse-carriage-host.js';
+import { createBrandyHomeHost } from './content/quests/brandy/brandy-home-host.js';
+import { BRANDY_HOME } from './content/quests/brandy/brandy-home-world.js';
+import { BRANDY, BRANDY_STAND, BRANDY_YARD, yardPoint, RIBBON_ITEM, createBrandy, brandyConversation, brandyRibbonLines } from './content/quests/brandy/brandy.js';
+import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY, WINERY_LAYOUT, WINERY_STANDS, VARIETIES } from './content/regions/winery/winery.js';
+import { wineryLessonsStatus, robWineryConversation } from './content/regions/winery/winery-lessons.js';
+import { WINE_INTRO_TEACHERS, wineIntroChoice } from './content/quests/wine/wine.js';
+import { createRenaDigs } from './content/quests/rena/rena-digs.js';
+import { TALKING_TREE, createTalkingTree, treeLines } from './content/quests/forest/talking-tree.js';
+import { buildTalkingTree } from './content/quests/forest/talking-tree-view.js';
+import { PIPE_SMOKER, PIPE_ITEM, LEAF_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, pipeSmokerConversation } from './content/quests/roadside/pipeweed.js';
+import { TOFT, TOFT_STAND, JIMSON_PODS_WANTED, createJimson, toftConversation } from './content/quests/roadside/jimson-quest.js';
+import { KATY, KATY_STAND, KATY_SKETCH, createKaty, katyConversation } from './content/quests/roadside/katy.js';
+import { IMANI, IMANI_STAND, createVineyard, imaniConversation } from './content/quests/wine/vineyard.js';
+import { BATMAN, BATMAN_PERCH, HANDOVER, EVIDENCE, BUST_SCENE, ENDINGS, VELAETH, createBatmanHunt, batmanConversation } from './content/quests/batman/batman.js';
+import { ADDISON, ADDISON_STAND, SUVAL_LIGHT, FROM_THE_GALLERY, createLightKeeper, addisonConversation } from './content/quests/lighthouse/lighthouse.js';
+import { AMBRON } from './world/terrain/region-world.js';
+import { BOSCO, BOSCO_HAUNTS, BOSCO_TAKES, BOSCO_WALK_START, BOSCO_WALK_END, createBosco, boscoConversation } from './content/quests/bosco/bosco.js';
 import { SUBTRACTIDAUGHTER, SUBTRACTIDAUGHTER_STAND, ELOD_LIGHT, LIGHT_GUARDS, SMUGGLERS_DOOR, BLOCKHOUSE_DOOR, rivalPoint, watchFight, SISTER_TOLD, SISTER_WHY,
-  CROSSING_PLAN, ADDISON_AFTER, HEIST_ENDINGS, HEIST_ENDING_IDS, createHeist, rivalConversation } from './rival-light.js';
-import { createRivalLightHost, SOVIK_SPOTS } from './rival-light-host.js';
-import { createSovik } from './sovik-model.js';
-import { createBosco as createBoscoModel } from './bosco-model.js';
-import { createBatman } from './batman-model.js';
-import { BATMAN_COMBAT, BATSMASHER, BATMAN_QUEST } from './batman-quest.js';
-import { BAT_CAVE } from './suval-highlands.js';
-import { createBatmanQuestHost, BATSMASHER_STAND, BATMAN_FIGHT } from './batman-quest-host.js';
-import { createDeveloperBat, DEVELOPER_BAT } from './developer-bat.js';
-import { createDeveloperDragon } from './developer-dragon-model.js';
-import { createDragonFire } from './dragon-fire.js';
-import { createDragonFireView } from './dragon-fire-view.js';
-import { createDeveloperDestruction } from './developer-destruction.js';
-import { forestSegmentHit } from './forest-sightline.js';
-import { createClimbing, canWalkSlope, CLIMBING } from './climbing.js';
-import { canPushThrough } from './undergrowth.js';
-import { createTerrainFall, shouldStartTerrainFall } from './terrain-fall.js';
-import { WALK_STEP, colliderOverlapsHeight, restoreWalkPosition } from './walk-surfaces.js';
-import { createLotharnCaveWalk } from './east-lotharn-cave-walk.js';
-import { nearestPlain as caveNearest } from './east-lotharn-caves.js';
-import { inLotharnBox } from './east-lotharn-world.js';
-import { LOTHARN_FORTS } from './lotharn-forts.js';
-import { VARN, VARN_CIRCUIT, VARN_KEEP, VARN_SLABS, VARN_WATCHES, LANDING, slabFoot, varnWicket } from './varn-world.js';
-import { PEAKS as WEST_LOTHARN_PEAKS, RAMPS as WEST_LOTHARN_RAMPS, LONG_VALLEY as WEST_LONG_VALLEY, NORTH_VALLEY as WEST_NORTH_VALLEY, NOTCH as WEST_LOTHARN_NOTCH, COL as WEST_LOTHARN_COL, pointOn as westLotharnPointOn } from './west-lotharn-world.js';
-import { MITHALA_SUMMER_CHANNELS as MITHALA_SUMMER, MITHALA_LANDMARKS as MITHALA_MARKS } from './mithala-world.js';
-import { MITHALA_CITY, MITHALA_FORD, MITHALA_APPROACHES, MITHALA_TOWER_STAIR, MITHALA_QUAY } from './mithala-city.js';
-import { MITHALA_MAIN as MITHALA_MAIN_CHANNEL, MITHALA_NORTH_BRAID as MITHALA_BRAID, MITHALA_WEST_ARM as MITHALA_ARM } from './west-regions.js';
+  CROSSING_PLAN, ADDISON_AFTER, HEIST_ENDINGS, HEIST_ENDING_IDS, createHeist, rivalConversation } from './content/quests/rival-light/rival-light.js';
+import { createRivalLightHost, SOVIK_SPOTS } from './content/quests/rival-light/rival-light-host.js';
+import { createSovik } from './world/actors/sovik-model.js';
+import { createBosco as createBoscoModel } from './content/quests/bosco/bosco-model.js';
+import { createBatman } from './content/quests/batman/batman-model.js';
+import { BATMAN_COMBAT, BATSMASHER, BATMAN_QUEST } from './content/quests/batman/batman-quest.js';
+import { BAT_CAVE } from './content/regions/suval-highlands/suval-highlands.js';
+import { createBatmanQuestHost, BATSMASHER_STAND, BATMAN_FIGHT } from './content/quests/batman/batman-quest-host.js';
+import { createDeveloperBat, DEVELOPER_BAT } from './dev/tools/developer-bat.js';
+import { createDeveloperDragon } from './dev/tools/developer-dragon-model.js';
+import { createDragonFire } from './gameplay/magic/dragon-fire.js';
+import { createDragonFireView } from './gameplay/magic/dragon-fire-view.js';
+import { createDeveloperDestruction } from './dev/tools/developer-destruction.js';
+import { forestSegmentHit } from './gameplay/combat/forest-sightline.js';
+import { createClimbing, canWalkSlope, CLIMBING } from './gameplay/movement/climbing.js';
+import { canPushThrough } from './world/scenery/undergrowth.js';
+import { TERRAIN_FALL, createTerrainFall, shouldStartTerrainFall } from './gameplay/movement/terrain-fall.js';
+import { WALK_STEP, colliderOverlapsHeight, restoreWalkPosition } from './world/collision/walk-surfaces.js';
+import { createLotharnCaveWalk } from './content/regions/east-lotharn/east-lotharn-cave-walk.js';
+import { nearestPlain as caveNearest } from './content/regions/east-lotharn/east-lotharn-caves.js';
+import { inLotharnBox } from './content/regions/east-lotharn/east-lotharn-world.js';
+import { LOTHARN_FORTS } from './content/regions/west-lotharn/lotharn-forts.js';
+import { VARN, VARN_CIRCUIT, VARN_KEEP, VARN_SLABS, VARN_WATCHES, LANDING, slabFoot, varnWicket } from './content/regions/varn/varn-world.js';
+import { PEAKS as WEST_LOTHARN_PEAKS, RAMPS as WEST_LOTHARN_RAMPS, LONG_VALLEY as WEST_LONG_VALLEY, NORTH_VALLEY as WEST_NORTH_VALLEY, NOTCH as WEST_LOTHARN_NOTCH, COL as WEST_LOTHARN_COL, pointOn as westLotharnPointOn } from './content/regions/west-lotharn/west-lotharn-world.js';
+import { MITHALA_SUMMER_CHANNELS as MITHALA_SUMMER, MITHALA_LANDMARKS as MITHALA_MARKS } from './content/regions/mithala/mithala-world.js';
+import { MITHALA_CITY, MITHALA_FORD, MITHALA_APPROACHES, MITHALA_TOWER_STAIR, MITHALA_QUAY } from './content/regions/mithala/mithala-city.js';
+import { MITHALA_MAIN as MITHALA_MAIN_CHANNEL, MITHALA_NORTH_BRAID as MITHALA_BRAID, MITHALA_WEST_ARM as MITHALA_ARM } from './content/regions/western-regions/west-regions.js';
 import { SOUTHWEST_LANDMARKS as SOUTHWEST_MARKS, GANESH_WASHES as SOUTHWEST_WASHES, GANESH_DEPRESSIONS as SOUTHWEST_PANS, NAVARTH_CRESTS as SOUTHWEST_CRESTS,
   MEROSHE_BENCHES as SOUTHWEST_BENCHES, MEROSHE_SALT as SOUTHWEST_SALT, MEROSHE_DUNES as SOUTHWEST_DUNES, MEROSHE_FANS as SOUTHWEST_FANS,
   HETH_SPINE as SOUTHWEST_SPINE, HETH_HOLLOWS as SOUTHWEST_HOLLOWS, DINELV_MESAS as SOUTHWEST_TABLES, DINELV_GAPS as SOUTHWEST_GAPS,
   DINELV_ASCENT as SOUTHWEST_ASCENT, HAMA_BEDS as SOUTHWEST_HAMA_BEDS,
   MAROSH_RIDGE as SOUTHWEST_MAROSH_RIDGE, MAROSH_GAP as SOUTHWEST_WATER_GAP, TROGO_CREST as SOUTHWEST_TROGO_CREST,
-  TROGO_GULLIES as SOUTHWEST_GULLIES, TROGO_CLEARINGS as SOUTHWEST_CLEARINGS } from './southwest-world.js';
-import { VAELLIR as SOUTHWEST_VAELLIR } from './west-regions.js';
+  TROGO_GULLIES as SOUTHWEST_GULLIES, TROGO_CLEARINGS as SOUTHWEST_CLEARINGS } from './content/regions/southwest/southwest-world.js';
+import { VAELLIR as SOUTHWEST_VAELLIR } from './content/regions/western-regions/west-regions.js';
 import { HARBOUR as SELEMIS_HARBOUR, HEADS as SELEMIS_HEADS, HILLS as SELEMIS_HILLS, WINTER_BEDS as SELEMIS_BEDS,
-  CHANNEL_VIEW as SELEMIS_CHANNEL_VIEW, SOUTH_CLIFFS as SELEMIS_SOUTH_CLIFFS } from './selemis-world.js';
+  CHANNEL_VIEW as SELEMIS_CHANNEL_VIEW, SOUTH_CLIFFS as SELEMIS_SOUTH_CLIFFS } from './content/regions/selemis/selemis-world.js';
 import { KETHORN as TELEMONIA_KETHORN, KETHORN_WALL as TELEMONIA_WALL, ROTHKAR as TELEMONIA_ROTHKAR, PASSES as TELEMONIA_PASSES,
   passCol as telemoniaPassCol, TERRACE_VIEW as TELEMONIA_TERRACES, BELKETH as TELEMONIA_BELKETH, PLAIN_MIDDLE as TELEMONIA_PLAIN,
-  kethornPoint as telemoniaRockPoint, ROTHKAR_WAY as TELEMONIA_WAY } from './telemonia-world.js';
+  kethornPoint as telemoniaRockPoint, ROTHKAR_WAY as TELEMONIA_WAY } from './content/regions/telemonia/telemonia-world.js';
 // Telemonia, stage 2: the town and the farms, the people, and how they meet an outsider (docs/telemonia-stage2-brief.md).
-import * as TelemoniaTown from './telemonia-town.js';
-import { TELEMON_HORSES } from './telemonia-ways.js';
-import { TELEMONIA_PEOPLE, TELEMONIA_PEOPLE_IDS } from './telemonia-people.js';
-import { createTelemoniaHost } from './telemonia-host.js';
-import { inFeradomBox } from './feradom-world.js';
-import { createClimbingUI } from './climbing-ui.js';
-import { HONEYCOMB, createBeekeeper } from './beekeeper.js';
-import { LIZ, LIZ_STAND, CAT, createCatQuest, createMopWalk, lizConversation, PURSE as CAT_PURSE } from './cat-quest.js';
+import * as TelemoniaTown from './content/regions/telemonia/telemonia-town.js';
+import { TELEMON_HORSES } from './content/regions/telemonia/telemonia-ways.js';
+import { TELEMONIA_PEOPLE, TELEMONIA_PEOPLE_IDS } from './content/regions/telemonia/telemonia-people.js';
+import { createTelemoniaHost } from './content/regions/telemonia/telemonia-host.js';
+import { inFeradomBox } from './content/regions/feradom/feradom-world.js';
+import { createClimbingUI } from './gameplay/movement/climbing-ui.js';
+import { HONEYCOMB, createBeekeeper } from './content/quests/bear-family/beekeeper.js';
+import { LIZ, LIZ_STAND, CAT, createCatQuest, createMopWalk, lizConversation, PURSE as CAT_PURSE } from './content/quests/roadside/cat-quest.js';
 import { TROY, createMurderQuest, troyConversation, cobbleConversation, TESTIMONY, MURDERER, CLEARED, UNPROVEN,
-  PURSE as MURDER_PURSE } from './murder-quest.js';
-import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation, refugeeReturnRoute } from './refugees.js';
-import { createMapFog, subregionsAt } from './map-fog.js';
-import { isOpenCountry } from './regions.js';
-import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './cartography.js';
-import { regionLevel, levelWords } from './region-levels.js';
-import { DEFAULT_SKY, createSkyBlend } from './region-sky.js';
-import { buildStatusList } from './build-status.js';
-import { newestStart, storyStart, startingSpot } from './story-starts.js';
-import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount, atSideSeat, sideSeat } from './story-chapters.js';
-import { createCampaign } from './campaign.js';
-import { createLivingStory } from './living-story.js';
-import { createCompanyRouteDriver } from './company-route-host.js';
-import { createLivingStoryHost } from './living-story-host.js';
-import { createLusciaCivilWarHost, LUSCIA_RECRUIT_NPCS, LUSCIA_DISPATCH_SITE } from './luscia-civil-war-host.js';
-import { runLivingDesktopChecks } from './living-story-desktop-checks.js';
-import { runRepublicDesktopChecks } from './luscia-republic-desktop-checks.js';
-import { createCompanyTransport } from './company-transport.js';
-import { clearLine, createAutopilot, planGoal } from './autopilot.js';
-import { createBenAutopilot } from './ben-autopilot.js';
-import { CAGNEY, CAGNEY_START, CAGNEY_HOME, CAGNEY_QUEST, CAGNEY_WAVES, ALL_CAGNAPPERS, cagneyWave, createCagneyQuest } from './cagney-quest.js';
-import { createCagneyHost } from './cagney-host.js';
-import { ALEX, ALEX_DOOR, ALEX_FACING, ALEX_BOUT_ID, ALEX_STEP } from './alex.js';
-import { createAlexHost } from './alex-host.js';
-import { createHomeResidentHost } from './home-resident-host.js';
-import { createHomeReturnWalker } from './home-return-routes.js';
-import { createHomeFerryView } from './home-ferry-view.js';
-import { QUEST_HOMES } from './quest-homes.js';
-import { createCagneyAutopilot } from './cagney-autopilot.js';
-import { createJesseAutopilot } from './jesse-autopilot.js';
-import { createAriAutopilot } from './ari-autopilot.js';
-import { createDwarfAutopilot } from './dwarf-autopilot.js';
-import { createCatieAutopilot } from './catie-autopilot.js';
-import { createLizAutopilot } from './liz-autopilot.js';
-import { createTroyAutopilot } from './troy-autopilot.js';
-import { HEX_WORLD_TRANSFORM, compassHeading } from './region-layout.js';
-import { insideRegion } from './regions.js';
-import { runAutoplaySmoke } from './autoplay-smoke.js';
-import { describeRegion, computeAdjacency, FACTIONS } from './campaign-world.js';
-import { runRoadSmoke, runRoadTestingSmoke } from './road-smoke.js';
-import { runRoadTraversal } from './road-traversal.js';
-import { runRoadCheckSmoke, verifyRoadReload } from './road-check-smoke.js';
-import { createRoadLife } from './road-life.js';
-import { createWestLife } from './west-regions-life.js';
+  PURSE as MURDER_PURSE } from './content/quests/roadside/murder-quest.js';
+import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_STANDS, REFUGEE_START, createRefugees, refugeeConversation, refugeeReturnRoute } from './content/quests/roadside/refugees.js';
+import { createMapFog, subregionsAt } from './ui/map/map-fog.js';
+import { isOpenCountry } from './world/terrain/regions.js';
+import { CARTOGRAPHY_SKILL, CARTOGRAPHY_DIRECTIONS, createCartography, chartShapes } from './ui/map/cartography.js';
+import { regionLevel, levelWords } from './world/terrain/region-levels.js';
+import { DEFAULT_SKY, createSkyBlend } from './world/environment/region-sky.js';
+import { buildStatusList } from './dev/tools/build-status.js';
+import { newestStart, storyStart, startingSpot } from './app/startup/story-starts.js';
+import { chapterProgress, chapterLabel, chapterTitle, chapterGoal, chapterCount, atSideSeat, sideSeat } from './content/chapters/journey/story-chapters.js';
+import { createCampaign } from './content/chapters/civil-war/campaign.js';
+import { createLivingStory } from './gameplay/company/living-story.js';
+import { createCompanyRouteDriver } from './gameplay/company/company-route-host.js';
+import { createLivingStoryHost } from './gameplay/company/living-story-host.js';
+import { createLusciaCivilWarHost, LUSCIA_RECRUIT_NPCS, LUSCIA_DISPATCH_SITE } from './content/chapters/civil-war/luscia-civil-war-host.js';
+import { runLivingDesktopChecks } from './dev/checks/living-story-desktop-checks.js';
+import { runRepublicDesktopChecks } from './dev/checks/luscia-republic-desktop-checks.js';
+import { createCompanyTransport } from './gameplay/company/company-transport.js';
+import { clearLine, createAutopilot, planGoal } from './gameplay/autoplay/autopilot.js';
+import { createBenAutopilot } from './gameplay/autoplay/ben-autopilot.js';
+import { CAGNEY, CAGNEY_START, CAGNEY_HOME, CAGNEY_QUEST, CAGNEY_WAVES, ALL_CAGNAPPERS, cagneyWave, createCagneyQuest } from './content/quests/cagney/cagney-quest.js';
+import { createCagneyHost } from './content/quests/cagney/cagney-host.js';
+import { ALEX, ALEX_DOOR, ALEX_FACING, ALEX_BOUT_ID, ALEX_STEP } from './content/quests/roadside/alex.js';
+import { createAlexHost } from './content/quests/roadside/alex-host.js';
+import { createHomeResidentHost } from './content/quests/homes/home-resident-host.js';
+import { createHomeReturnWalker } from './content/quests/homes/home-return-routes.js';
+import { createHomeFerryView } from './content/quests/homes/home-ferry-view.js';
+import { QUEST_HOMES } from './content/quests/homes/quest-homes.js';
+import { createCagneyAutopilot } from './gameplay/autoplay/cagney-autopilot.js';
+import { createJesseAutopilot } from './gameplay/autoplay/jesse-autopilot.js';
+import { createAriAutopilot } from './gameplay/autoplay/ari-autopilot.js';
+import { createDwarfAutopilot } from './gameplay/autoplay/dwarf-autopilot.js';
+import { createCatieAutopilot } from './gameplay/autoplay/catie-autopilot.js';
+import { createLizAutopilot } from './gameplay/autoplay/liz-autopilot.js';
+import { createTroyAutopilot } from './gameplay/autoplay/troy-autopilot.js';
+import { HEX_WORLD_TRANSFORM, compassHeading } from './world/terrain/region-layout.js';
+import { insideRegion } from './world/terrain/regions.js';
+import { runAutoplaySmoke } from './dev/checks/autoplay-smoke.js';
+import { describeRegion, computeAdjacency, FACTIONS } from './content/chapters/civil-war/campaign-world.js';
+import { runRoadSmoke, runRoadTestingSmoke } from './dev/checks/road-smoke.js';
+import { runRoadTraversal } from './world/travel/road-traversal.js';
+import { runRoadCheckSmoke, verifyRoadReload } from './dev/checks/road-check-smoke.js';
+import { createRoadLife } from './content/regions/drent/road-life.js';
+import { createWestLife } from './content/regions/western-regions/west-regions-life.js';
 import { VASTOS_RIVER, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
   MENETH_RIDGES, MENETH_BECKS, menethTroughZ, LIZEEM, CARICA, ELA_SOUTH_REACH,
   LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS, ISAREOS_RIVER,
-  NETH, NETHEREUM_HOLLOW, NETHEREUM_STREAMS } from './west-regions.js';
-import { createRoadVerges } from './road-verges.js';
-import { createRoadAudio as createAudio } from './road-audio.js';
-import { createDeveloperMode } from './developer-mode.js';
-import { runDeveloperSmoke } from './developer-smoke.js';
-import { moveCharacter, canStand, canSwim, waterAt, WATERLINE, advanceQuest, questSteps, QUEST_DONE, SUBQUESTS, getMovementInput } from './game-state.js';
-import { questLive } from './quest-slate.js';
-import { BEN, SPIDER, SPIDER_DEN, SPIDER_QUEST, createSpiderQuest } from './spider-quest.js';
-import { benGuideTarget, restoreBenGuide, BEN_GUIDE_START, BEN_ROUTE } from './ben-guide.js';
-import { SPELLS, SPELL_IDS } from './sorcery.js';
-import { createMagic } from './magic.js';
-import { createMagicView } from './magic-view.js';
-import { createMagicUI } from './magic-ui.js';
-import { createRoadAmbush, AMBUSH, AMBUSH_REBELS, PARTIES, ambushPartiesForRoster, bodyPlace } from './road-ambush.js';
-import { createRoadAmbushHost } from './road-ambush-host.js';
-import { createRoadAmbushWatch, createAmbushCamouflage } from './road-ambush-watch.js';
-import { meleeContacts as ambushMeleeContacts } from './melee-contact.js';
-import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './swimming.js';
-import { BODY, bodyWorld, stepAround, stepToward, lendFacing } from './bodies.js';
-import { IBENWOOD, GROVE_SPAWN, GROVE_ROUTE, GROVE_LOOP, GROVE_PROTECTION, grovePoint } from './ibenwood-pilot.js';
-import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint } from './testing-travel.js';
-import { talkTarget, placeKeepsPrompt, fireKeepsPrompt } from './prompt-priority.js';
-import { createFrameErrors } from './frame-errors.js';
-import { figureDetail } from './figure-lod.js';
-import { createStandIn } from './figure-stand-in.js';
+  NETH, NETHEREUM_HOLLOW, NETHEREUM_STREAMS } from './content/regions/western-regions/west-regions.js';
+import { createRoadVerges } from './content/regions/drent/road-verges.js';
+import { createRoadAudio as createAudio } from './world/environment/road-audio.js';
+import { createDeveloperMode } from './dev/tools/developer-mode.js';
+import { runDeveloperSmoke } from './dev/checks/developer-smoke.js';
+import { moveCharacter, canStand, canSwim, waterAt, WATERLINE, advanceQuest, questSteps, QUEST_DONE, SUBQUESTS, getMovementInput } from './gameplay/movement/game-state.js';
+import { questLive } from './gameplay/quests/quest-slate.js';
+import { BEN, SPIDER, SPIDER_DEN, SPIDER_QUEST, createSpiderQuest } from './content/quests/spider/spider-quest.js';
+import { benGuideTarget, restoreBenGuide, BEN_GUIDE_START, BEN_ROUTE } from './content/quests/roadside/ben-guide.js';
+import { SPELLS, SPELL_IDS } from './gameplay/magic/sorcery.js';
+import { createMagic } from './gameplay/magic/magic.js';
+import { createMagicView } from './gameplay/magic/magic-view.js';
+import { createMagicUI } from './gameplay/magic/magic-ui.js';
+import { createRoadAmbush, AMBUSH, AMBUSH_REBELS, PARTIES, ambushPartiesForRoster, bodyPlace } from './content/quests/road-ambush/road-ambush.js';
+import { createRoadAmbushHost } from './content/quests/road-ambush/road-ambush-host.js';
+import { createRoadAmbushWatch, createAmbushCamouflage } from './content/quests/road-ambush/road-ambush-watch.js';
+import { meleeContacts as ambushMeleeContacts } from './gameplay/combat/melee-contact.js';
+import { SWIMMING_SKILL, SWIM, SWIMMING_LESSON, createSwimming, swimStep, swimSpeed } from './gameplay/movement/swimming.js';
+import { BODY, bodyWorld, stepAround, stepToward, lendFacing } from './gameplay/combat/bodies.js';
+import { IBENWOOD, GROVE_SPAWN, GROVE_ROUTE, GROVE_LOOP, GROVE_PROTECTION, grovePoint } from './content/regions/ibenwood/ibenwood-pilot.js';
+import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint } from './dev/tools/testing-travel.js';
+import { talkTarget, placeKeepsPrompt, fireKeepsPrompt } from './ui/dialogue/prompt-priority.js';
+import { createFrameErrors } from './dev/tools/frame-errors.js';
+import { figureDetail } from './world/actors/figure-lod.js';
+import { createStandIn } from './world/actors/figure-stand-in.js';
 
 const $ = id => document.getElementById(id);
 const show = (id, visible) => $(id).classList.toggle('hidden', !visible);
@@ -394,7 +398,7 @@ const startup=createStartup({onProgress:name=>{const label=$('loading-status');i
 globalThis.__AZHORA_STARTUP__=startup.record;
 init().catch(fail);
 /**
- * What the frame's one catch caught (src/frame-errors.js). `fail` below is unchanged and still
+ * What the frame's one catch caught (src/dev/tools/frame-errors.js). `fail` below is unchanged and still
  * does everything it did; this only writes the throw down where a harness can ask about it,
  * because for most of a day nothing did.
  */
@@ -419,7 +423,7 @@ async function init() {
   startup.stage('Preparing the scene');await yieldStartup();
   const campaign=createCampaign();
   let peninsulaHost=null,sevronHost=null,urubondHost=null;
-  let ferry=null, freeStart=null;
+  let ferry=null, freeStart=null, chapterOne=null, chapterColumn=null;
   const mainDormant=()=>mainQuestDormant(freeStart);
   let openingViewEpoch=performance.now(), returnedToMenu=false;
   const hasRoadProgress=()=>!!freeStart||!!peninsulaHost?.chosen||questStage>=1||campaign.view().imperialRecall||(ferry?.state.crossings??0)>0;
@@ -429,7 +433,7 @@ async function init() {
   renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.22;
   // The sky starts as it always was, and stays that way until a region asks for its own
-  // (src/region-sky.js). DEFAULT_SKY is these three numbers and no region declares another.
+  // (src/world/environment/region-sky.js). DEFAULT_SKY is these three numbers and no region declares another.
   scene=new THREE.Scene(); scene.background=new THREE.Color(DEFAULT_SKY.background); scene.fog=new THREE.FogExp2(DEFAULT_SKY.fog,DEFAULT_SKY.density);
   const sky=createSkyBlend();
   camera=new THREE.PerspectiveCamera(54,innerWidth/innerHeight,.1,650);
@@ -441,20 +445,20 @@ async function init() {
   sun.shadow.normalBias=.045;sun.shadow.bias=-.00025;sun.shadow.camera.updateProjectionMatrix();scene.add(sun,sun.target);
   const clouds=createSky(scene);
   const testingQuery=new URLSearchParams(location.search);
-  // Normal or hard (src/game-mode.js, docs/hard-mode.md). Normal is the game we develop and the
+  // Normal or hard (src/app/game-mode.js, docs/hard-mode.md). Normal is the game we develop and the
   // only one we test, and it is all in English; hard is where the linguist and its tongues are
   // reserved. There is no selector, because hard mode is not yet worth choosing: ?mode=hard beside
   // ?test=1 is the only way in, and it keeps the reserved code reachable with no interface work.
   // Nothing else in this file asks which mode it is - it asks the gate for a feature by name.
   const gameMode=createGameMode({mode:testingQuery.get('mode')});
-  // The skills no sheet shows in this mode. The registry in src/skills.js keeps every one of them,
+  // The skills no sheet shows in this mode. The registry in src/gameplay/skills/skills.js keeps every one of them,
   // so a save holding linguist experience still validates and keeps every point of it.
   const hiddenSkills=new Set(gameMode.hiddenSkills);
   // The lettering atlas is cut once, when the world is built, so the answer has to be in before
   // the next line. In normal mode no sign will ever letter in a tongue, so the foreign words are
-  // left out of it and the texture is halved (src/signs.js knows only yes or no, never the mode).
+  // left out of it and the texture is halved (src/world/scenery/signs.js knows only yes or no, never the mode).
   setForeignLettering(gameMode.has('linguist'));
-  world=await createWorldAsync(scene,{startup,initialRegion:MENORA.region,loadingMode:globalThis.__AZHORA_LOADING_MODE__??testingQuery.get('load')??'full',enabledRegions:worldScope(location.search)==='campaign'?CAMPAIGN_BUILD_REGIONS:null,cache:window.azhoraTerrainCache,spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});
+  world=await createWorldAsync(scene,{startup,initialRegion:MENORA.region,backdropBounds:MINORA_BACKDROP_BOUNDS,loadingMode:globalThis.__AZHORA_LOADING_MODE__??testingQuery.get('load')??'full',enabledRegions:worldScope(location.search)==='campaign'?CAMPAIGN_BUILD_REGIONS:null,cache:window.azhoraTerrainCache,spatialBatches:!(testingQuery.has('test')&&testingQuery.get('spatial')==='0')});
   if(world.loading){startup.stage('Preparing Minora');await world.loading.ensureRegion(MENORA.region);
     if(world.enabledRegions&&world.loadingMode==='full')for(const id of world.enabledRegions){startup.stage('Preparing campaign country');await world.loading.ensureRegion(id);}}
   let regionLoadingPromise=null, regionLoadDepth=0, lastReadyPosition=null, regionLoadFailure=null;
@@ -484,10 +488,16 @@ async function init() {
     regionLoadingPromise=task;return task;
   }
   function deferUntilLoaded(points,action){const pending=pendingRegions(points);if(!pending.length)return false;waitForRegions(pending,action);return true;}
-  function regionTraversalReady(x,z){const pending=pendingRegions([{x,z}]);if(!pending.length)return true;if(!regionLoadDepth)waitForRegions(pending);return false;}
+  let scopeNoticeAt=0;
+  function campaignGroundAllowed(x,z){
+    if(!world.enabledRegions||world.isRegionEnabled(x,z))return true;
+    if(performance.now()-scopeNoticeAt>4000){scopeNoticeAt=performance.now();toast('This adventure follows the war route. Choose Developer Start or Load full developer world in F8 to explore beyond it.','CAMPAIGN BOUNDARY');}return false;
+  }
+  function regionTraversalReady(x,z){if(!campaignGroundAllowed(x,z))return false;const pending=pendingRegions([{x,z}]);if(!pending.length)return true;if(!regionLoadDepth)waitForRegions(pending);return false;}
   function guardRegionBoundary(){
     if(!world.loading)return false;
     const at=player.group.position,pending=pendingRegions([at]);
+    if(!campaignGroundAllowed(at.x,at.z)&&lastReadyPosition){at.set(lastReadyPosition.x,lastReadyPosition.y,lastReadyPosition.z);return false;}
     if(!pending.length){lastReadyPosition={x:at.x,y:at.y,z:at.z};return false;}
     if(regionLoadDepth)return true;
     const destination={x:at.x,y:at.y,z:at.z},safe=lastReadyPosition??{...world.spawn,y:world.heightAt(world.spawn.x,world.spawn.z)};
@@ -534,13 +544,13 @@ async function init() {
   world.npcPositions[LUSCIA_PROPHET.id]={x:CALOSS_PROPHET_STAND.x,z:CALOSS_PROPHET_STAND.z};
   npcData.push({...LUSCIA_PROPHET,yaw:CALOSS_PROPHET_STAND.yaw});
   world.npcPositions[CAGNEY.id]={...CAGNEY_START};npcData.push({...CAGNEY,yaw:Math.PI/2});
-  // Alex, who lives with Cagney (src/alex.js): indoors until Cagney is home and somebody knocks.
+  // Alex, who lives with Cagney (src/content/quests/roadside/alex.js): indoors until Cagney is home and somebody knocks.
   world.npcPositions[ALEX.id]={...ALEX_DOOR};npcData.push({...ALEX,yaw:ALEX_FACING,hidden:true});
   npcData.push(...PORT_CALOS_NPCS.map(npc=>({...npc})));
   world.npcPositions[ARI.id]={...ARI_STAND};npcData.push({...ARI});
   for(const npc of WILLOWMERE_FAMILY){world.npcPositions[npc.id]={x:npc.x,z:npc.z};npcData.push({...npc});}
   world.npcPositions[JESSE.id]={...JESSE_WORKSHOP.stand};npcData.push({...JESSE});
-  // Ben, of the sorcerer's guild, on Nothom's square with a spider to kill (src/spider-quest.js).
+  // Ben, of the sorcerer's guild, on Nothom's square with a spider to kill (src/content/quests/spider/spider-quest.js).
   npcData.push({...BEN});
   const journeyNpcIds=new Set(JOURNEY_NPCS.map(npc=>npc.id));
   // Rimeholt's people, in Pueth.
@@ -552,7 +562,7 @@ async function init() {
   npcData.push(...PEBLOS_NPCS.map(npc=>({...npc})));
   // Elod's people, the frontier guard behind its shut gate, and the keepers of the outlying places, in East Suval.
   npcData.push(...EAST_SUVAL_PEOPLE.map(npc=>({...npc})));
-  // Ambron's people and the lake country's, in Elagos (src/ambron-people.js).
+  // Ambron's people and the lake country's, in Elagos (src/content/regions/ambron/ambron-people.js).
   npcData.push(...ELAGOS_NPCS.map(npc=>({...npc})));
   // Each port keeps its own requested host; a crossing never moves Jess out of Tidehaven.
   for(const [side,host] of Object.entries(FERRY_HOSTS)){const stand=FERRY_LANDINGS[side].stand;
@@ -564,22 +574,22 @@ async function init() {
   // The envoy's party waits at Solis, and the line commanders and marching columns come out, only while the story needs them.
   for(const person of BORDER_NPCS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person,hidden:true});}
   const borderNpcIds=new Set(BORDER_NPCS.map(person=>person.id));
-  // West Suval: Solis's people, both garrisons and the camp's captains; the march to the border (src/west-suval-host.js).
+  // West Suval: Solis's people, both garrisons and the camp's captains; the march to the border (src/content/regions/solis/west-suval-host.js).
   const westSuval=createWestSuvalHost({world,npcData});
-  // Izolveth, its harbour people, the three generals' men and the camp above the town (src/izol-host.js).
+  // Izolveth, its harbour people, the three generals' men and the camp above the town (src/content/regions/izol/izol-host.js).
   const izol=createIzolHost({world,npcData});
   // The day after the battle: a commander, and whoever sends the traveler on, appear where that day's work is.
   for(const person of AFTERMATH_NPCS){world.npcPositions[person.id]={x:AFTERMATH_SITES['camp-gate'].x,z:AFTERMATH_SITES['camp-gate'].z};npcData.push({...person,hidden:true,site:null});}
   const aftermathNpcIds=new Set(AFTERMATH_NPCS.map(person=>person.id));
   // The ostler of Nothom hands over the army's horse and teaches riding.
   world.npcPositions[OSTLER_NPC.id]={x:LUMBER_TOWN_STABLE.stand.x,z:LUMBER_TOWN_STABLE.stand.z};npcData.push({...OSTLER_NPC,yaw:LUMBER_TOWN_STABLE.stand.yaw});
-  // The smith of Tidehaven, at his own forge on the south street (src/smith.js).
+  // The smith of Tidehaven, at his own forge on the south street (src/content/quests/roadside/smith.js).
   world.npcPositions[SMITH_NPC.id]={x:TIDEHAVEN_SMITHY.stand.x,z:TIDEHAVEN_SMITHY.stand.z};npcData.push({...SMITH_NPC,yaw:TIDEHAVEN_SMITHY.stand.yaw});
   const leeFire=world.firePits.find(fire=>fire.id===FIRE_LESSON_FIRE);
   const leeStands=fireMakingStands(leeFire),leeStand=leeStands.teacher;
   world.npcPositions[LEE_ANNE.id]={x:leeStand.x,z:leeStand.z};npcData.push({...LEE_ANNE,yaw:leeStand.yaw});
   // The army's armourer, beside the Moros camp's smithy tent. Amod's forge needed nobody: it
-  // already had Goibniu, and a man who is evidently the smith is the smith (src/smith.js).
+  // already had Goibniu, and a man who is evidently the smith is the smith (src/content/quests/roadside/smith.js).
   world.npcPositions[MOROS_ARMOURER_NPC.id]={x:OUTPOST_LAYOUT.armourer.x,z:OUTPOST_LAYOUT.armourer.z};
   npcData.push({...MOROS_ARMOURER_NPC,yaw:OUTPOST_LAYOUT.armourer.yaw});
   // The capital's armourer, at the door of the Strand Forge on Ambron's working bank. He sells
@@ -609,9 +619,9 @@ async function init() {
   world.npcPositions[VILLAGE_DOG.id]={x:VILLAGE_DOG.haunts[0].x,z:VILLAGE_DOG.haunts[0].z};
   npcData.push({id:VILLAGE_DOG.id,name:VILLAGE_DOG.name,role:VILLAGE_DOG.role,dog:true});
   // The harbour cat naps in the sun, prowls its places, and comes to the traveler only on its own terms.
-  // Who has died in a raid, and who has already been caught in one (src/bystanders.js).
+  // Who has died in a raid, and who has already been caught in one (src/gameplay/combat/bystanders.js).
   const fallen=createFallen(),raidSeen=new Set(),raid={ids:[],fell:false,outcome:[]};
-  // Who walks with you, how well they know you, and who is gone (src/companions.js). It shares
+  // Who walks with you, how well they know you, and who is gone (src/gameplay/company/companions.js). It shares
   // `fallen` with the world's other dead on purpose: permanent death is one idea, not two.
   const companions=createCompanions({fallen,onEvent:event=>{
     if(event.type==='joined'||event.type==='sent-on'||event.type==='died'){rebuildCompany();placeMercenaries();}
@@ -628,7 +638,7 @@ async function init() {
   // Wendel the peddler sells staples for copper on Tidehaven's green and explains the coin.
   world.npcPositions[PEDDLER.id]={x:PEDDLER.stand.x,z:PEDDLER.stand.z};
   npcData.push({id:PEDDLER.id,name:PEDDLER.name,role:PEDDLER.role,modelRole:PEDDLER.modelRole,color:PEDDLER.color,yaw:PEDDLER.yaw});
-  // Perrin keeps the bird garden on the eastern side of Tidehaven and teaches the traveler to look (src/birding.js).
+  // Perrin keeps the bird garden on the eastern side of Tidehaven and teaches the traveler to look (src/gameplay/skills/birding/birding.js).
   // Jojo the harbourmaster meets the traveler off the boat and hands over the letter.
   // Lakota is at home in his bird garden from the first minute, and stays there.
   const lakotaGarden={x:world.birdGarden.stand.x,z:world.birdGarden.stand.z,yaw:world.birdGarden.stand.yaw},pierHead={x:world.pierHead.x,z:world.pierHead.z,yaw:-Math.PI/2};
@@ -643,17 +653,17 @@ async function init() {
   world.npcPositions[KATY.id]={x:KATY_STAND.x,z:KATY_STAND.z};npcData.push({...KATY,yaw:KATY_STAND.yaw});
   world.npcPositions[BATSMASHER.id]={...BATSMASHER_STAND};npcData.push({...BATSMASHER,yaw:BATSMASHER_STAND.yaw,look:{hairStyle:'short',noHat:true}});
   // The winery's former vine keeper is retired; saved knowledge remains readable.
-  // Addison at the Suval Light on the West Suval head south of the winery lane (src/lighthouse.js).
+  // Addison at the Suval Light on the West Suval head south of the winery lane (src/content/quests/lighthouse/lighthouse.js).
   world.npcPositions[ADDISON.id]={x:ADDISON_STAND.x,z:ADDISON_STAND.z};npcData.push({...ADDISON,yaw:ADDISON_STAND.yaw});
-  // Her twin at the door of the Elod Light, across the water in a country that is shut (src/rival-light.js).
+  // Her twin at the door of the Elod Light, across the water in a country that is shut (src/content/quests/rival-light/rival-light.js).
   world.npcPositions[SUBTRACTIDAUGHTER.id]={x:SUBTRACTIDAUGHTER_STAND.x,z:SUBTRACTIDAUGHTER_STAND.z};
   npcData.push({...SUBTRACTIDAUGHTER,yaw:SUBTRACTIDAUGHTER_STAND.yaw});
   // The two Elodi guards who keep her yard at night: one at the gap by the winch, one on the land side.
   for(const guard of LIGHT_GUARDS){world.npcPositions[guard.id]={x:guard.x,z:guard.z};
     npcData.push({id:guard.id,name:guard.name,role:guard.role,modelRole:'elodi-guard',color:0x2b2b2f,yaw:guard.yaw});}
-  // Troy at the Bee Fold in Drent's wood, with the skeps behind him (src/beekeeper.js).
-  // Troy is in Cobble now, and his stand is Cobble's (src/peblos-world.js). Liz has the skeps
-  // and the honeycomb, in the woods of Pueth (src/cat-quest.js).
+  // Troy at the Bee Fold in Drent's wood, with the skeps behind him (src/content/quests/bear-family/beekeeper.js).
+  // Troy is in Cobble now, and his stand is Cobble's (src/content/regions/peblos/peblos-world.js). Liz has the skeps
+  // and the honeycomb, in the woods of Pueth (src/content/quests/roadside/cat-quest.js).
   npcData.push({...TROY});
   world.npcPositions[LIZ.id]={x:LIZ_STAND.x,z:LIZ_STAND.z};npcData.push({...LIZ,yaw:LIZ_STAND.yaw});
   world.npcPositions[KAYLA.id]={...KAYLA_RACE_START};npcData.push({...KAYLA,bear:true,kind:'bear',make:()=>createCircusBear(CIRCUS_LOOKS[KAYLA.id]),yaw:KAYLA_RACE_START.yaw});
@@ -664,40 +674,40 @@ async function init() {
   // Olive, on the midden at the edge of the goblin camp, until somebody stands still near him.
   world.npcPositions[CAT.id]={x:CAT.at.x,z:CAT.at.z};
   npcData.push({id:CAT.id,name:CAT.name,role:'Liz’s cat, where he should not be',cat:true,stride:true});
-  // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/wine-attic.js).
+  // Tharganhom, the Wine Attic in Solis: Juan at the stair head, Nika with her book (src/content/quests/wine/wine-attic.js).
   for(const person of ATTIC_PEOPLE){const stand=ATTIC_STANDS[person.id];world.npcPositions[person.id]={x:stand.x,z:stand.z};npcData.push({...person,yaw:stand.yaw});}
-  // Tancredi Vel, at the door of the Prime Minister's offices in Solis (src/wine-goblin.js).
+  // Tancredi Vel, at the door of the Prime Minister's offices in Solis (src/content/quests/wine/wine-goblin.js).
   world.npcPositions[SECRETARY.id]={x:SECRETARY_STAND.x,z:SECRETARY_STAND.z};npcData.push({...SECRETARY,yaw:SECRETARY_STAND.yaw});
-  // The valley burying its dead on the field at the Lauvel (src/lauvel-aftermath.js): two bearers, a gravedigger, and the mourners.
+  // The valley burying its dead on the field at the Lauvel (src/content/regions/luscia/lauvel-aftermath.js): two bearers, a gravedigger, and the mourners.
   for(const p of LAUVEL_PEOPLE){world.npcPositions[p.id]={x:p.x,z:p.z};npcData.push({id:p.id,name:p.name,role:p.role,modelRole:p.modelRole,color:p.color,yaw:p.yaw,posture:p.posture,bearer:p.bearer,
     make:p.digs?()=>createGravedigger({tunic:p.color}):undefined});}
-  // Bowden Koop, King of the Koopwood, who teaches woodcutting in his lot north-west of the village (src/woodcutting.js).
+  // Bowden Koop, King of the Koopwood, who teaches woodcutting in his lot north-west of the village (src/gameplay/skills/woodcutting/woodcutting.js).
   world.npcPositions[BOWDEN.id]={x:BOWDEN_STAND.x,z:BOWDEN_STAND.z};npcData.push({...BOWDEN,yaw:BOWDEN_STAND.yaw,make:createBowden});
-  // Brandy Frank, Tidehaven's dyer, in her yard on the lane up to Saltwind Lookout (src/brandy.js).
+  // Brandy Frank, Tidehaven's dyer, in her yard on the lane up to Saltwind Lookout (src/content/quests/brandy/brandy.js).
   world.npcPositions[BRANDY.id]={x:BRANDY_STAND.x,z:BRANDY_STAND.z};npcData.push({...BRANDY,yaw:BRANDY_STAND.yaw});
-  // Talaelos, the players of Nylon (src/troupe.js): they camp in one region after another, and their homes move with the wagon.
-  // John, the Sultan of the Salt Trade (src/salt-sultan.js): ashore on the quay of whichever port the Sultana lies in, and nowhere while she is at sea.
+  // Talaelos, the players of Nylon (src/content/quests/troupe/troupe.js): they camp in one region after another, and their homes move with the wagon.
+  // John, the Sultan of the Salt Trade (src/content/quests/salt/salt-sultan.js): ashore on the quay of whichever port the Sultana lies in, and nowhere while she is at sea.
   const salt=createSaltSultan();
   {const s=salt.port.stand;world.npcPositions[JOHN.id]={x:s.x,z:s.z};npcData.push({...JOHN,yaw:s.yaw,hidden:!salt.ashore,make:createJohn});}
   const troupe=createTroupe();
   {const homes=troupe.homes();for(const p of TROUPE_PEOPLE){const h=homes[p.id];world.npcPositions[p.id]={x:h.x,z:h.z};
     npcData.push({id:p.id,name:p.name,role:p.role,yaw:h.yaw,troupe:true,dog:p.model==='understudy',horse:p.model==='critic',greet:p.model==='critic'?'Greet the mare':undefined,
       make:()=>p.model==='understudy'?createUnderstudy():p.model==='critic'?createCritic():createPlayer(p.model)});}}
-  // Odger Pell dries mushrooms at Fernway Rest, where the woodland paths meet (src/mycology.js).
+  // Odger Pell dries mushrooms at Fernway Rest, where the woodland paths meet (src/gameplay/skills/nature/mycology.js).
   world.npcPositions[MYCOLOGIST.id]={x:MYCOLOGIST_STAND.x,z:MYCOLOGIST_STAND.z};npcData.push({...MYCOLOGIST,yaw:MYCOLOGIST_STAND.yaw});
-  // Nell Harrow's drying frames on the Sunken Lane's hedge bank (src/botany.js), Toft on his
-  // barrel in the village, and Cabe out on the Weatherhead south of the landing (src/pipeweed.js).
+  // Nell Harrow's drying frames on the Sunken Lane's hedge bank (src/gameplay/skills/nature/botany.js), Toft on his
+  // barrel in the village, and Cabe out on the Weatherhead south of the landing (src/content/quests/roadside/pipeweed.js).
   world.npcPositions[BOTANIST.id]={x:BOTANIST_STAND.x,z:BOTANIST_STAND.z};npcData.push({...BOTANIST,yaw:BOTANIST_STAND.yaw});
   world.npcPositions[TOFT.id]={x:TOFT_STAND.x,z:TOFT_STAND.z};npcData.push({...TOFT,yaw:TOFT_STAND.yaw});
   world.npcPositions[PIPE_SMOKER.id]={x:WEATHERHEAD.stand.x,z:WEATHERHEAD.stand.z};npcData.push({...PIPE_SMOKER,yaw:Math.PI*.55});
   world.npcPositions[GEOLOGIST.id]={x:GEOLOGIST_STAND.x,z:GEOLOGIST_STAND.z};npcData.push({...GEOLOGIST,yaw:GEOLOGIST_STAND.yaw});
   // Officer Glun at the straw post: he teaches the sword and then hands over the chart
-  // (src/instructor.js). The opening used to point a card at an unattended post.
+  // (src/gameplay/skills/instructor.js). The opening used to point a card at an unattended post.
   world.npcPositions[INSTRUCTOR.id]={x:INSTRUCTOR_STAND.x,z:INSTRUCTOR_STAND.z};npcData.push({...INSTRUCTOR,yaw:INSTRUCTOR_STAND.yaw});
   // The Greenway Watch, in world metres: the ground that ends the fifth step now that the man who
-  // stood on it is out of the cast (src/cast.js).
+  // stood on it is out of the cast (src/content/characters/cast.js).
   const WATCH_POINT=villageToWorld(0,-66);
-  // The three off the Lauvel road (src/refugees.js): they start where the battle
+  // The three off the Lauvel road (src/content/quests/roadside/refugees.js): they start where the battle
   // was and walk the main road east while the game is played, so where they are
   // when the traveler meets them depends entirely on what the traveler did first.
   const refugeeRoute=refugeeReturnRoute(world.paths[0],MAIN_ROAD[REFUGEE_START]);
@@ -708,7 +718,7 @@ async function init() {
   for(const entry of LEGION_POSTS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({id:entry.id,name:entry.name,role:entry.role,modelRole:entry.modelRole,color:entry.rank==='officer'?0x832d2b:0x8f3b30,yaw:entry.yaw});}
   // The people of the built-up places (town-life.js): townsfolk, the outpost's garrisons, Elod's frontier guard.
   for(const entry of TOWN_LIFE_NPCS){world.npcPositions[entry.id]={x:entry.x,z:entry.z};npcData.push({...entry});}
-  npcData.push(...RENA_NPCS.map(npc=>({...npc})));   // Lorn, Hesta, Applegarth's people and three more in Drent (src/rena-people.js)
+  npcData.push(...RENA_NPCS.map(npc=>({...npc})));   // Lorn, Hesta, Applegarth's people and three more in Drent (src/content/quests/rena/rena-people.js)
   let playSeconds=0;
   let living=null,livingRoutes=null,livingHost=null,republic=null,companyTransport=null;
   const companyPlacements=()=> (reviewFrozen||reviewTarget)?company.placements(playSeconds):(livingRoutes?.placements()??company.placements(playSeconds));
@@ -717,12 +727,12 @@ async function init() {
   // Lakota is drawn as himself, hawk and all; the other nine wear the company's kit.
   const mercNpc=(merc,placement)=>({id:merc.id,name:merc.name,role:`Hired sword from ${merc.origin}`,modelRole:merc.modelRole??'mercenary',color:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:merc.trades},hidden:placement.phase==='coming',placement});
   // By name rather than by row: `placements()` leaves the dead out altogether, so its order is
-  // the roster's order with holes in it and never a row number (src/mercenaries.js). Nobody is
+  // the roster's order with holes in it and never a row number (src/gameplay/company/mercenaries.js). Nobody is
   // dead at the first frame - a save is loaded later - but the figures are made here once, and
   // giving a man another man's place at build time is not a thing worth being able to do.
   for(const placement of company.placements(0)){const merc=roster.find(man=>man.id===placement.id);
     if(!merc)continue;world.npcPositions[merc.id]={x:placement.x,z:placement.z};npcData.push(mercNpc(merc,placement));}
-  // **The cast, trimmed** (src/cast.js): while the main quest is built out, only the people it
+  // **The cast, trimmed** (src/content/characters/cast.js): while the main quest is built out, only the people it
   // sends you to, the soldiers, the hired company and the user's own characters stand up. Nobody
   // is deleted - every one of them is still written and still placed by their own module - and
   // the ones left out have their stands taken off the world so nothing walks into a ghost.
@@ -735,8 +745,8 @@ async function init() {
   for(const person of FRONTIER_NPCS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person,...(person.centaur||person.prince?{make:()=>createFrontierFigure(person)}:{})});}
   for(const person of AEVIS_SOLDIERS){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person,make:()=>createAevisSoldier({variant:person.variant,look:person.look})});}
   world.npcPositions[INQUEST.id]={x:INQUEST.x,z:INQUEST.z};npcData.push({...INQUEST});
-  // The Telemon and the field people (src/telemonia-people.js), stood up after the cast is trimmed (src/cast.js): every
-  // Telemon is a watcher in the rule of the country (src/telemon-watch.js), so none of them is a town's atmosphere,
+  // The Telemon and the field people (src/content/regions/telemonia/telemonia-people.js), stood up after the cast is trimmed (src/content/characters/cast.js): every
+  // Telemon is a watcher in the rule of the country (src/content/regions/telemonia/telemon-watch.js), so none of them is a town's atmosphere,
   // and the field hands are who a traveler who gets in unseen can speak to.
   for(const person of TELEMONIA_PEOPLE){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
   for(const npc of npcData) {
@@ -749,7 +759,7 @@ async function init() {
   const npcById=new Map(npcData.map(npc=>[npc.id,npc]));
   const harbourAlarm=createHarbourAlarm({people:npcData,homes:world.npcPositions,standable:(x,z)=>canStand(x,z,world,BODY.person)});
   /**
-   * How much of somebody is drawn (src/figure-lod.js). The stand-in is a child of the figure's
+   * How much of somebody is drawn (src/world/actors/figure-lod.js). The stand-in is a child of the figure's
    * own group, and that group stays visible: other code reads `npc.actor.group.visible` as "this
    * person is here" - the bodies list that makes people solid to one another, the draws() hook -
    * so hiding it would make everybody in the distance walk-through and uncounted. As a child it
@@ -771,11 +781,11 @@ async function init() {
       else child.visible=child.userData.shownInFull??true;}
     npc.detail=detail;npc.detailDirty=false;
   }
-  // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/hawk-flight.js).
+  // Lakota's red-tailed hawk rides his glove and now and then goes up to circle the green (src/gameplay/movement/hawk-flight.js).
   const redTail=createRedTailHawk(),redTailFlight=createHawkFlight(),gloveAt=new THREE.Vector3();scene.add(redTail.group);
   // Everyone placed by now stands on open ground, and so does every place the traveler is sent.
   world.keepPropsClear([...Object.values(world.npcPositions),lakotaGarden,pierHead,...SALT_PORTS.map(p=>p.stand),...FOREST_STORY_SITES,...REGIONAL_LIFE_SITES,...Object.values(LUSCIA_SITES),...Object.values(MOROS_SITES)]);
-  // The wall figures are made lazily, a rig when first seen and two a frame at most (src/town-life.js), so the
+  // The wall figures are made lazily, a rig when first seen and two a frame at most (src/world/life/town-life.js), so the
   // Empire's garrison on the Lotharn costs nothing at start-up and a few frames when the traveler reaches it.
   const wallWatch=createWallWatch({scene,createCharacter:options=>createLazyCharacter(options),heightAt:world.heightAt}),borderWatch=createBorderWatch();
   const garrisonHome=Object.fromEntries(HIDEOUT_GARRISON.map(g=>[g.id,{...world.npcPositions[g.id]}]));
@@ -796,7 +806,7 @@ async function init() {
     // **A man killed on the Drent road lies on it.** Everybody else who falls is put out of the
     // world by the loop above, which is right for a man who fell where the traveler was standing
     // and watched him fall. These did not: the whole point of the event is that you come up the
-    // road afterwards and find him (src/road-ambush.js).
+    // road afterwards and find him (src/content/quests/road-ambush/road-ambush.js).
     for(const id of ambush.state.fallen){const npc=npcById.get(id);if(!npc)continue;
       const spot=bodyPlace(id,ambushGround());if(!spot)continue;
       npc.fallen=true;npc.hidden=false;npc.lying=true;npc.lift=0;npc.walkingWith=false;npc.escorting=false;npc.mounted=false;
@@ -892,7 +902,7 @@ async function init() {
   let fileTaken=[];
   /**
    * Where the n-th man of the file wants to be. The arithmetic is `fileSpotFor`
-   * (src/company-horses.js), so the ground at a real place can be asked the same question a
+   * (src/gameplay/company/company-horses.js), so the ground at a real place can be asked the same question a
    * test asks it. A file of horses is the same file with a horse's room in it: further back,
    * wider apart, and tested against the mount's own footprint rather than a man's.
    */
@@ -915,7 +925,7 @@ async function init() {
     const fight=combat.state.phase==='active'&&TEACHING_FIGHTS.has(combat.state.encounterId)?combat.state.center:null;
     if(here==='Pueth'||here==='Peblos'||fight){
       if(!companionHold.has(npc.id))companionHold.set(npc.id,{x:pos.x,z:pos.z});
-      // The widest fight box reaches 24.2 m from its centre (fightBox, src/combat.js), so a man
+      // The widest fight box reaches 24.2 m from its centre (fightBox, src/gameplay/combat/combat.js), so a man
       // kept COMPANION_KEEP_OUT metres off it is outside every one of them, whichever way it is laid.
       const held=fight?outsideTheFight(fight,companionHold.get(npc.id)):companionHold.get(npc.id);
       companionHold.set(npc.id,held);
@@ -1047,13 +1057,13 @@ async function init() {
     const file=fileOrder.filter(id=>!present.has(id)&&(!isArmyBattle(config.id)||living.actor(id)?.allegiance===armySide())).slice(0,room).map((id,index)=>{
       const merc=mercenaryById(id),arms=armsOf(id);
       if(!merc||!arms||fallen.has(id)||crime?.isDown(id)||crime?.owns(id))return null;
-      // Jerry does not close: an ally whose craft is the bow stands off and looses (src/archery.js).
+      // Jerry does not close: an ally whose craft is the bow stands off and looses (src/gameplay/combat/archery.js).
       return {id,name:merc.name,kind:arms.weapon==='bows'?'archer':'legionary',level:arms.level,toughness:arms.toughness,
         ...place(index),
         model:{role:'mercenary',tunic:merc.look.tunic,skin:merc.look.skin,look:{...merc.look,weapon:merc.weapon,trades:false}}};
     }).filter(Boolean);
     /**
-     * **The army fills your file** (src/file-fill.js, the user's ruling of 2026-09-21). Only at
+     * **The army fills your file** (src/gameplay/combat/file-fill.js, the user's ruling of 2026-09-21). Only at
      * the army's own battles, only when he is short, and only ever up to the room the fight has
      * left - so company plus the side's own men plus the fill can never pass `MAX_ALLIES`, and a
      * traveler with six friends is handed nobody and fights today's battle to the digit.
@@ -1065,7 +1075,7 @@ async function init() {
     if(!isArmyBattle(config.id))return file;
     const fill=fillFor({side:armySide(),walking:file.length,room:room-file.length});
     return [...file,...fill.map((man,index)=>({...man,...place(file.length+index)}))];}
-  /** Whichever army he signed with: the one that would be assigning him men (src/border-chapter.js). */
+  /** Whichever army he signed with: the one that would be assigning him men (src/content/chapters/chapter-one/border-chapter.js). */
   const armySide=()=>border.view().side??campaign.view().side??'empire';
   /**
    * What his commander says about the men he is being assigned, in that man's own voice, and
@@ -1081,7 +1091,7 @@ async function init() {
   const companyWalking=()=>fileOrder.filter(id=>!fallen.has(id)).length;
   /**
    * What his captain says when the other side has counted that company and answered it
-   * (`borderLineSaid`, src/border-chapter.js), and nothing at all while the line is the eight it
+   * (`borderLineSaid`, src/content/chapters/chapter-one/border-chapter.js), and nothing at all while the line is the eight it
    * has always been. The number he says is the number `borderEncounter` will lay.
    */
   const lineSaid=()=>borderLineSaid(armySide(),Math.max(borderLine(Math.max(companyWalking(),borderMercenaries(armySide()).length)),borderMercenaries(armySide()==='empire'?'coalition':'empire').length));
@@ -1100,11 +1110,11 @@ async function init() {
     if(encounterId===hideoutEncounter.id)return 'The scouts at the Bramble camp';
     return 'Goblins';}
   /**
-   * Weapons lying in the world to be found (src/found-weapons.js). It owns nothing: a dead man's
-   * weapon is already kept in src/companions.js, with where he fell and whether it has been
+   * Weapons lying in the world to be found (src/gameplay/combat/found-weapons.js). It owns nothing: a dead man's
+   * weapon is already kept in src/gameplay/company/companions.js, with where he fell and whether it has been
    * taken, so this asks rather than copies. A barrow or a gift can be another source later.
    */
-  // What the traveler is wearing (src/gear.js): three pieces, three weights, and a material.
+  // What the traveler is wearing (src/gameplay/inventory/gear.js): three pieces, three weights, and a material.
   // Nothing on is today's game exactly.
   const gear=createGear({onEvent:()=>saveRoad(false)});
   const foundWeapons=createFoundWeapons({sources:[fallenCompanions(companions)]});
@@ -1155,7 +1165,7 @@ async function init() {
       if(merc.id===before[i].id)continue;
       const npc=npcById.get(before[i].id);if(!npc)continue;
       scene.remove(npc.actor.group);npcById.delete(npc.id);mercenaryWeapons.delete(npc.id);
-      // **By name, not by row.** A dead man has no placement at all (src/mercenaries.js), so the
+      // **By name, not by row.** A dead man has no placement at all (src/gameplay/company/mercenaries.js), so the
       // list is no longer one entry per roster row and an index into it would hand this man the
       // next man's place. Nobody can be dead this early, but the invariant is cheaper to keep
       // than to remember.
@@ -1171,12 +1181,12 @@ async function init() {
   }
   /**
    * What you step ashore with: the weapon your fighting style uses, and whatever the life you
-   * had before this road already taught you (src/player-characters.js). Cromb has neither, so a
+   * had before this road already taught you (src/content/characters/player-characters.js). Cromb has neither, so a
    * default game begins with the sword and an empty skills sheet, exactly as it always has.
    */
   function grantStartingKit(){
     // **The shield he landed with**, for whoever is being played: only Cromb has one
-    // (src/player-characters.js). It lives here and not beside the sword at the top of `init`,
+    // (src/content/characters/player-characters.js). It lives here and not beside the sword at the top of `init`,
     // because wearing a piece fires gear's own event, which is `saveRoad`, which reads a `let`
     // seventeen hundred lines below the sword - and the whole game failed to start, with nothing
     // on the screen and `Cannot access 'testingEnabled' before initialization` in a console
@@ -1192,7 +1202,7 @@ async function init() {
     // Restored rather than learned: a life lived before the game began does not put level-up
     // banners on the screen. An id this build's skills module does not know is simply not known.
     // A skill this mode does not show is not handed out either: nothing pays what is not on the
-    // sheet. The table in src/player-characters.js keeps it, for the mode that does (game-mode.js).
+    // sheet. The table in src/content/characters/player-characters.js keeps it, for the mode that does (game-mode.js).
     const known=Object.fromEntries(Object.entries(startingSkills(playerId)).filter(([id])=>SKILL_IDS.includes(id)&&!hiddenSkills.has(id)).map(([id,xp])=>[id,{xp}]));
     if(Object.keys(known).length)skills.restore({version:SKILLS_VERSION,skills:known});
     // And the tongues he already had. Chris Scotwood interprets for the company, so when he is the
@@ -1212,7 +1222,7 @@ async function init() {
   // below, once `skills` exists; until then the margins are the ones combat has always used.
   let arms=null;
   /**
-   * The company is the faculty (src/teachers.js): who teaches what, the lessons each man owes at
+   * The company is the faculty (src/gameplay/skills/teachers.js): who teaches what, the lessons each man owes at
    * each rung, and how high a bout with him pays. Filled in below beside `arms`, and `sparring`
    * is the bout that is on right now - who, in which family, and up to what.
    */
@@ -1229,7 +1239,7 @@ async function init() {
    * anything like it: `{weapon}` or `{shield:true}`. It is not in the satchel, it is not in
    * `weapons`, it is not in `gear` and it is in no snapshot - the only thing that knows about it
    * is this variable and the three readers below. The traveler's own weapon is back in his hand
-   * at `spar-over`, however the bout ended (src/teachers.js).
+   * at `spar-over`, however the bout ended (src/gameplay/skills/teachers.js).
    */
   let lent=null;
   /**
@@ -1257,11 +1267,11 @@ async function init() {
     // Toughness buys the health, the wind and the length of a dodge; the weapon's own family
     // buys what a swing costs. All four are today's numbers while every skill is level 1.
     // A fight is as hard as the country it happens in (docs/difficulty-ladder.md, and
-    // src/region-levels.js is that table). Off the atlas, or in open country, it is 0.
+    // src/world/terrain/region-levels.js is that table). Off the atlas, or in open country, it is 0.
     getLevel:centre=>regionLevel(world.regionAt(centre?.x??0,centre?.z??0)?.name)??0,
     getAllies:config=>companionAllies(config),
     // How many arrows there are to shoot. The fight never touches the satchel; it only ever asks,
-    // exactly as it asks who walks with the traveler and how hard the country is (src/archery.js).
+    // exactly as it asks who walks with the traveler and how hard the country is (src/gameplay/combat/archery.js).
     getArrows:()=>inventory.count(BOW.arrow),
     // The shared live body list supplies contacts and movement alike: ordinary
     // walking, sword lunges, dodges and knockback all stop at the same people.
@@ -1270,7 +1280,7 @@ async function init() {
       // Armour turns a share of a blow and shortens the step aside; it never turns all of one.
       armourTurns:gear.turns,dodgeScale:gear.dodgeScale,
       // The shield: what a caught blow leaves him and what catching it costs in wind. `hasShield`
-      // is the hand slot, because the hand slot IS the shield (src/gear.js) - or a shield lent
+      // is the hand slot, because the hand slot IS the shield (src/gameplay/inventory/gear.js) - or a shield lent
       // for a bout, which is on his arm without ever being his.
       guardShare:m.guardShare,guardCost:m.guardCost,hasShield:hasCarriedShield()};}});
   const combatView=createCombatView(scene,world,camera,{getActor:id=>npcById.get(id)?.centaur?npcById.get(id).actor:id===BATMAN.id?batman:id===KAYLA.id?npcById.get(id)?.actor:ambushWatch?.actor(id)??cagneyHost?.actor(id),onCorpse:(...args)=>{
@@ -1315,7 +1325,7 @@ async function init() {
     },
     onConsume:id=>id===LEAF_ITEM?smokePipe():consumables.consume(id),
     // Reading the letter used to be two steps of the tutorial of its own. Chapter 1 is three
-    // subquests now and none of them is a button press in a menu (src/game-state.js).
+    // subquests now and none of them is a button press in a menu (src/gameplay/movement/game-state.js).
     onInspect(id){if(id==='jojo-sandwich')peninsulaHost?.inspectInventory();},
     onClose(){
       if(mode!=='inventory')return;
@@ -1325,7 +1335,7 @@ async function init() {
   inventory.grant('simple-sword');
   inventory.add(COPPER_ITEM,STARTING_PURSE);
   // How hard he hits with a given weapon: his level in that weapon's family, which is 1 - and
-  // so a multiplier of exactly 1 - until somebody shows him how (src/combat-skills.js).
+  // so a multiplier of exactly 1 - until somebody shows him how (src/gameplay/combat/combat-skills.js).
   weapons=createWeapons({inventory,damageScale:id=>arms?.margins().damageFor(id)??1,onEvent(event){
     if(event.type==='weapon-worn')toast(`${event.name} is wearing thin. Repair it at the nearest repair bench.`,`${event.durability} HITS LEFT · I TO CHECK EQUIPMENT`);
     if(event.type==='weapon-broken')toast(event.id==='simple-sword'?'Your sword broke. Find a repair bench, or equip a stick.':event.remaining?'Your stick snapped. Another carried stick is ready.':'Your last stick snapped. Equip your sword or gather another.', 'WEAPON BROKEN');
@@ -1339,14 +1349,14 @@ async function init() {
   const campEvents=[];
   const campcraft=createCampcraft({inventory,weapons,fireIds:world.firePits.map(f=>f.id),onEvent:event=>campEvents.push(event),canLightFire:id=>fireMaking.mayLight(id),canCook:()=>cooking.met&&(fireMaking.ready||skills.taught('cooking'))});
   const worldMap=createWorldMap();
-  // The chart is fogged: its hexes are charted as the traveler walks, and named ground is recorded (src/map-fog.js).
+  // The chart is fogged: its hexes are charted as the traveler walks, and named ground is recorded (src/ui/map/map-fog.js).
   const mapFog=createMapFog({onEvent:event=>{if(event.type!=='subregion-found')return;toast(event.name,`CHARTED · ${event.region.toUpperCase()}`);refreshChart();if(hasRoadProgress())saveRoad(false);}});
   let chartRevealed=false,fogClock=0;
   const woodlandLife=createWoodlandLife(scene,world);
   const woodlandSites=woodlandLife.state();
   const forestEcology=createForestEcology(scene,world,{exclusionSites:[...woodlandSites.acorns,...woodlandSites.sticks,...woodlandSites.fruits,...woodlandSites.fruitPatches,]});
   // Skills grow with practice; birding is the first. Drent's birds are drawn and moved by src/drent-birds.js.
-  // Every skill the mode shows begins at level 1 and pays from the first step (src/skills.js);
+  // Every skill the mode shows begins at level 1 and pays from the first step (src/gameplay/skills/skills.js);
   // the linguist, which normal mode does not show, is not among them and never pays.
   const skillAnnouncements=createSkillAnnouncement({mount:$('skill-intro'),onOpen:openSkillGuide,onShow:()=>audio?.effect('success')});
   const skills=createSkills({onEvent:skillEvent,begins:SKILL_IDS.filter(id=>!hiddenSkills.has(id))});
@@ -1361,16 +1371,16 @@ async function init() {
     [BIRD_WATCHER.id,['archaeology','cooking','wine']],...WINE_INTRO_TEACHERS.map(id=>[id,['wine']]),
   ]);
   const availableSkillTeachers=()=>[...skillIntroducers].filter(([teacher,ids])=>ids.some(id=>!skills.taught(id))||([INSTRUCTOR.id,MARK.id].includes(teacher)&&['search','report'].includes(roadLessons.geologyState(teacher)))||(teacher===INSTRUCTOR.id&&glunWood.view().away)||(fishingLessons.view().teacher===teacher&&fishingLessons.view().stage!=='returning')).map(([id])=>id);
-  // The seven fighting skills and the margins they buy (src/combat-skills.js). At level 1 in
+  // The seven fighting skills and the margins they buy (src/gameplay/combat/combat-skills.js). At level 1 in
   // everything those margins are today's game to the digit, which is the law phase 1 rests on.
   arms=createCombatSkills({skills,onEvent:()=>refreshSkillsSheet()});
-  // **The company is the faculty** (src/teachers.js, docs/combat-brief.md phase 7). A lesson at
+  // **The company is the faculty** (src/gameplay/skills/teachers.js, docs/combat-brief.md phase 7). A lesson at
   // each rung, in the man's own voice, and a bout that pays up to what he himself knows. It owns
   // nothing but which lessons have been given: the standing is the companions', the experience
   // the skills'. The dead teach nothing and a man sent on ahead teaches nothing until he is back.
   teachers=createTeachers({companions,arms,onEvent:()=>refreshSkillsSheet()});
   // Linguist: in hard mode nobody in Azhora speaks the traveler's language, so what people say to
-  // him arrives in theirs (src/languages.js, src/linguist.js). Chris Scotwood came off
+  // him arrives in theirs (src/gameplay/skills/languages.js, src/gameplay/skills/language/linguist.js). Chris Scotwood came off
   // the same boat with enough of the local speech to get two men up a road; while he is
   // beside you his interpretation runs under the line and every exposure counts double.
   // In normal mode everybody is understood: nothing here is fed, nothing here is paid, and the
@@ -1385,13 +1395,13 @@ async function init() {
   // nothing when a review wants to look at the panel as a new player sees it.
   if(testingQuery.has('test'))linguist.fluent();
   // The road letters its signs in the country they stand in until the traveler can read it. With
-  // nobody to ask, src/signs.js letters every board in English, which is normal mode exactly.
+  // nobody to ask, src/world/scenery/signs.js letters every board in English, which is normal mode exactly.
   if(gameMode.has('linguist'))setSignReader(id => linguist.canRead(id));
   // The long road through Drent: the optional walk that is exactly as long as the company takes
-  // to come in (src/long-road.js, docs/drent-long-road.md). It reads every other module's view
+  // to come in (src/content/chapters/journey/long-road.js, docs/drent-long-road.md). It reads every other module's view
   // and writes to none of them; what it keeps is the handful of things nobody else can answer.
   // Farming, the fourteenth skill: four rows at the Mill Commons and Applegarth's kept orchard
-  // (src/farming.js). The only skill with a clock of its own, which is the long road's own point.
+  // (src/gameplay/skills/farming/farming.js). The only skill with a clock of its own, which is the long road's own point.
   let sunflowerLesson=null;
   const farming=createFarming({skills,inventory,onEvent:event=>{
     sunflowerLesson?.farmEvent(event);
@@ -1408,7 +1418,7 @@ async function init() {
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
     // Where the players are camped: the leg-3 stop is their play, so its gold follows the wagon
-    // while it is open, and a wagon out of Drent does not hold the road up (src/long-road.js).
+    // while it is open, and a wagon out of Drent does not hold the road up (src/content/chapters/journey/long-road.js).
     troupe:{stop:troupe.stop.id,x:troupe.stop.x,z:troupe.stop.z},
     companion:companionOffTheClock&&!longRoad.released?{with:true}:false});
   /**
@@ -1446,7 +1456,7 @@ async function init() {
         model:{role:'mercenary',tunic:m.look.tunic,skin:m.look.skin,look:{...m.look,weapon:m.weapon,trades:false}}};
     });
   }
-  function walkTheAmbush(){
+  function walkTheAmbush(){if(chapterOne)return;
     if(reviewFrozen||reviewTarget||mode!=='playing'||combat.state.phase==='active')return;
     const open=roadParties().filter(party=>!ambush.state.settled.includes(party.id));
     if(!open.length)return;
@@ -1483,9 +1493,9 @@ async function init() {
   }
   /** The stop the open gold is on, with somewhere to put it: a person, or a place on the ground. */
   function longWayNext(){
-    // **The long way round is off the slate** with the teachers it visits (src/quest-slate.js):
+    // **The long way round is off the slate** with the teachers it visits (src/gameplay/quests/quest-slate.js):
     // every one of its stops is somebody who was taken out of the cast, so the open gold has
-    // nobody to stand over and the journal's block is not printed either (src/story-chapters.js).
+    // nobody to stand over and the journal's block is not printed either (src/content/chapters/journey/story-chapters.js).
     if(!questLive('teachers')||!longRoad.told||questStage<QUEST_DONE)return null;
     const next=longRoad.view(longRoadWorld()).next;
     if(!next)return null;
@@ -1507,7 +1517,7 @@ async function init() {
   let companionOffTheClock=false;
   const companionPlan=()=>{
     // The long road's own man, on his own terms - he is the one who can be released and taken
-    // back - and then everybody else who said yes (src/companions.js). As many as will come.
+    // back - and then everybody else who said yes (src/gameplay/company/companions.js). As many as will come.
     const release=longRoad.released;
     const mate=!companionOffTheClock?null
       :release?{id:landingMateId(),releasedAt:release.releasedAt,releasedDistance:release.releasedDistance}
@@ -1566,7 +1576,7 @@ async function init() {
     return spokenNames;
   }
   // The chart of countries: what is dark, what is a shape against the sea, what has been walked
-  // (src/cartography.js, docs/cartography.md). The fog is the hexes; this is the countries over them.
+  // (src/ui/map/cartography.js, docs/cartography.md). The fog is the hexes; this is the countries over them.
   const cartography=createCartography({skills,onEvent:event=>{
     if(event.type!=='chart-changed'||!event.xp)return;
     const words=event.state==='explored'?`${event.region} is yours now, end to end.`
@@ -1577,7 +1587,7 @@ async function init() {
   }});
   const building=createConstruction({skills});
   // Swimming: walking on water at a fraction of walking speed while the wind runs down, and
-  // drowning when it is gone (src/swimming.js, docs/swimming.md).
+  // drowning when it is gone (src/gameplay/movement/swimming.js, docs/swimming.md).
   const swimming=createSwimming({skills,onEvent:event=>{
     if(event.type==='water-crossed')toast(`Swimming +${event.xp}${event.levelled?` · level ${event.level}`:''}. Across, and out the other side.`,'A CROSSING OF YOUR OWN');
     if(event.type==='peblos-swum')toast(`Swimming +${event.xp}${event.levelled?` · level ${event.level}`:''}. You swam to the Pebbles. Most people take a boat.`,'THE PEBBLES, THE HARD WAY');
@@ -1589,14 +1599,14 @@ async function init() {
   // him. Drowning puts him back here, whole, rather than into some fight's checkpoint.
   let lastDry=null,drownedDefeat=false;
   // Ed the Word's ship, built the first time anybody is near enough to see her, and the last
-  // thing the village said about her (src/word-arrival.js).
+  // thing the village said about her (src/content/quests/roadside/word-arrival.js).
   let rebelShip=null,wordSaid=null;
   const birding=createBirding({skills});
-  // Whether the traveler has got far enough with Lakota for any of his own things to be offered (src/lakota.js).
+  // Whether the traveler has got far enough with Lakota for any of his own things to be offered (src/content/quests/lakota/lakota.js).
   const lakota=createLakota();
-  // Fishing: campcraft works the rod, this is what comes up on the line (src/fishing-skill.js).
+  // Fishing: campcraft works the rod, this is what comes up on the line (src/gameplay/skills/fishing/fishing-skill.js).
   const fishing=createFishing({skills});
-  // Mycology: Pell's three questions, and the mushrooms standing in Drent's woods (src/mushrooms.js).
+  // Mycology: Pell's three questions, and the mushrooms standing in Drent's woods (src/gameplay/skills/nature/mushrooms.js).
   const mycology=createMycology({skills});
   // The Old Tree and the specimen trees go in first: their trunks are colliders, and
   // the mushrooms, plants and stones scattered after them must not grow inside one.
@@ -1605,7 +1615,7 @@ async function init() {
   const specimenTrees=createDrentTrees(scene,world,{avoid:Object.values(world.npcPositions)});world.colliders.push(...specimenTrees.colliders);
   const wood=createWoodcutting({skills,trees:world.timberTrees});
   // By the tree and not by a count: a place built on ground the forest was already laid on lifts the trees in
-  // its way off the register (src/scenery-clearing.js), which moves every tree after them down the list.
+  // its way off the register (src/world/scenery/scenery-clearing.js), which moves every tree after them down the list.
   const streamedTrees=new WeakSet(world.timberTrees);
   world.onRegionReady?.(()=>{for(const tree of world.timberTrees)if(!streamedTrees.has(tree)){streamedTrees.add(tree);if(!wood.standing(tree.id))world.treeRegistry.set(tree.id,false);}});
   let currentTree=null,nearOldTree=false;
@@ -1619,12 +1629,12 @@ async function init() {
   const troy=createBeekeeper();let troyVisits=0,lizVisits=0;
   const vineyard=createVineyard({skills});let imaniVisits=0;let katVisits=0;
   // Batman on the limestone outcrop above the winery spring, thirty strides behind Katy, who has
-  // spent a year watching the wrong half of the sky (src/batman.js). He is there once the traveler
+  // spent a year watching the wrong half of the sky (src/content/quests/batman/batman.js). He is there once the traveler
   // is carrying the blue; before that there is nothing on the rock but rock.
   const hunt=createBatmanHunt();let batmanVisits=0,batmanFlare=0;
   const light=createLightKeeper();let addisonVisits=0;
   const heist=createHeist();let rivalVisits=0;
-  // Bosco in Brandy's dye yard: plump, loud, and never entirely his own colour (src/bosco.js).
+  // Bosco in Brandy's dye yard: plump, loud, and never entirely his own colour (src/content/quests/bosco/bosco.js).
   const bosco=createBosco();let boscoVisits=0;
   const boscoModel=createBoscoModel({dye:bosco.dye.colour});scene.add(boscoModel.group);boscoModel.group.visible=false;
   const boscoNpc={id:BOSCO.id,name:BOSCO.name,role:BOSCO.role,kind:'bosco',dog:true,actor:{group:boscoModel.group}};
@@ -1715,11 +1725,11 @@ async function init() {
   // read it, so the end of the tutorial pointed nowhere (found by the story smoke, 2026-09-22).
   const flora=createDrentFlora(scene,world,{avoid:[...Object.values(world.npcPositions),...IVY_PATCHES.flatMap(p=>[p,p.stand]),{x:world.border.x,z:world.border.z}]});
   let currentPlant=null,jimsonClock=0;
-  // Geology: Silas Garrow's lesson, and the stones of Drent's coast (src/drent-stones.js).
+  // Geology: Silas Garrow's lesson, and the stones of Drent's coast (src/content/regions/drent/drent-stones.js).
   const geology=createGeology({skills});
   const stones=createDrentStones(scene,world,{avoid:Object.values(world.npcPositions)});
   let currentStone=null;
-  // Archaeology and wine, both taught by Lakota (src/archaeology.js, src/wine.js): his pegs at Rena, and Paradise Springs.
+  // Archaeology and wine, both taught by Lakota (src/gameplay/skills/nature/archaeology.js, src/content/quests/wine/wine.js): his pegs at Rena, and Paradise Springs.
   const archaeology=createArchaeology({skills}),wine=createWine({skills}),cooking=createCooking({skills,canUseFire:()=>fireMaking.ready||skills.taught('cooking')}),wineAttic=createWineAttic(),puck=createPuck(),digs=createRenaDigs(scene,world);let currentDig=null,currentVine=null;
   const roadLessons=createRoadsideLessons({inventory,cooking,geology,skills});
   const husbandry=createAnimalHusbandry({skills});let currentLivestock=null;
@@ -1789,12 +1799,12 @@ async function init() {
       openDialogue(secretary,['He sits down, very slowly, behind his desk.','Then go and tell them. They will be delighted. They always are, at first.'],null,'Leave the counting house');
       toast(`By evening all Solis knows that ${PRIME_MINISTER} has been keeping Puck in wine at the city\u2019s expense. He resigns before supper, and the deliveries stop.`,'THE GOBLIN SCANDAL');saveRoad(false);return;}
   }
-  // Ed the Chameleon, who is not Puck and is tired of being asked (src/chameleon.js). He hops the
+  // Ed the Chameleon, who is not Puck and is tired of being asked (src/content/quests/chameleon/chameleon.js). He hops the
   // whole built world on a schedule drawn from the game's seed, poofs when an empty-handed traveler
   // comes at him, and stays for anybody carrying something worth having.
   const chameleonSeed=Math.floor(Math.random()*1e6);
   /**
-   * **The rebels on the Drent road** (src/road-ambush.js): an event, not a quest. It runs on the
+   * **The rebels on the Drent road** (src/content/quests/road-ambush/road-ambush.js): an event, not a quest. It runs on the
    * company's own clock whether or not the traveler is anywhere near it, and by default it kills
    * Chris Scotwood, who walks that road first and alone. The seed is the playthrough's: the same
    * game always loses the same man, and a reload never rolls again.
@@ -1802,7 +1812,7 @@ async function init() {
   const ambushSeed=Math.floor(Math.random()*1e6);
   const ambush=createRoadAmbush({seed:ambushSeed});
   /**
-   * **Ben and the spider in the thorns** (src/spider-quest.js): a side quest in Luscia, and the
+   * **Ben and the spider in the thorns** (src/content/quests/spider/spider-quest.js): a side quest in Luscia, and the
    * only place in Azhora anybody teaches fire. He walks out to the den with the traveler, stands
    * in the fight, and can die in it - which is the whole weight of the thing.
    */
@@ -1812,7 +1822,7 @@ async function init() {
     if(event.type==='spider-killed')toast('It folds up the way a chair folds up. Ben sits down in the thorns and laughs at nothing for a while.','THE SPIDER IN THE THORNS');
   }});
   /**
-   * **Troy's case in Cobble** (src/murder-quest.js): a side quest in Peblos, and the only place
+   * **Troy's case in Cobble** (src/content/quests/roadside/murder-quest.js): a side quest in Peblos, and the only place
    * anybody teaches the reading. The deduction is the player's; Troy will not act on a guess.
    */
   const murder=createMurderQuest({onEvent:event=>{
@@ -1820,7 +1830,7 @@ async function init() {
     if(event.type==='murder-solved')toast('Three true things that belong to nobody in this village but the man holding the beam.','THE TALLY-KEEPER OF COBBLE');
   }});
   /**
-   * **Liz's cat** (src/cat-quest.js): a side quest in Pueth, and the only place anybody teaches
+   * **Liz's cat** (src/content/quests/roadside/cat-quest.js): a side quest in Pueth, and the only place anybody teaches
    * the bees. The cat is the quest - the goblins are only what is standing round it.
    */
   const catQuest=createCatQuest({onEvent:event=>{
@@ -1895,7 +1905,7 @@ async function init() {
     if(action==='bowden-kings-axe'){if(!wood.giveKingsAxe().ok)return;inventory.add('kings-axe',1);inventory.refresh();audio?.effect('success');
       openDialogue(npc,[...bowdenLines.kingsAxe],null,'Back to the road');toast('The King\u2019s axe is in your satchel: the fastest axe in Drent.','ADDED TO SATCHEL');saveRoad(false);}
   }
-  // Construction: Bowden's workbench, the traveler's plot, and the birdhouse posts in the Greenway (src/construction.js).
+  // Construction: Bowden's workbench, the traveler's plot, and the birdhouse posts in the Greenway (src/gameplay/skills/woodcutting/construction.js).
   let currentBench=null,currentPlot=null,currentPost=null;
   const satchelCount=id=>inventory.count(id);
   const planksText=planks=>Object.entries(planks).map(([id,n])=>`${n} ${PLANKS[id].name.toLowerCase()}${n>1?'s':''}`).join(', ');
@@ -2164,7 +2174,7 @@ async function init() {
       toast(result.first?`Wine +${result.xp}${result.levelled?` \u00b7 level ${result.level}`:''}. ${result.entry.name}, tasted properly.`:`${result.entry.name}, again. It is still good.`,result.first?'FIRST TASTING':'ANOTHER GLASS');saveRoad(false);return result;}
     return{ok:false,reason:''};
   }
-  // The letters the two Ardrys carry between Tidehaven and Applegarth (src/rena-letters.js): the only reward is that both end fond of you.
+  // The letters the two Ardrys carry between Tidehaven and Applegarth (src/content/quests/rena/rena-letters.js): the only reward is that both end fond of you.
   const renaLetters=createRenaLetters({onEvent:event=>{if(event.type==='ardrys-caught-up')toast('Lorn and Hesta Ardry have caught up after eighty years. Both of them are fond of you.','THE ARDRYS’ LETTERS · FINISHED');}});
   const drentBirds=createDrentBirds(scene,world,{garden:world.birdGarden,avoid:Object.values(world.npcPositions)});
   let currentBird=null,birdCardTimer=null,birdClock=0,birdWatch=null,watchedBirdId=null,watchedBirdUntil=0;
@@ -2180,7 +2190,7 @@ async function init() {
   const hideoutEncounter=FOREST_HIDEOUT_QUEST.encounter;
   const hideoutWatch=createForestHideoutWatch(scene,world,hideoutEncounter);
   const roadLife=createRoadLife(scene,world);
-  // The animals of the four western regions (src/west-regions-life.js): longhorns and
+  // The animals of the four western regions (src/content/regions/western-regions/west-regions-life.js): longhorns and
   // hares on the Vastos plain, a hawk over it, and the river fox in the Carica corridor.
   const westLife=createWestLife(scene,world);
   /**
@@ -2222,7 +2232,7 @@ async function init() {
       yaw:-2.701750070774057,pitch:.8858457014452472,d:148.492424049175,
     };
     if(view==='lotharn-western-shoulder')return shot({x:-1300,z:-1010},{x:-1392,z:-951},.14,14);
-    // Varn (src/varn-world.js), worked out from the city's own plan: from the pass, from Amod, a wall end
+    // Varn (src/content/regions/varn/varn-world.js), worked out from the city's own plan: from the pass, from Amod, a wall end
     // where it meets the rock, up the street from the lower court to the keep, the citadel's yard, and the
     // whole of it from over the Amod road.
     if(view.startsWith('varn-')){const gate=id=>VARN_CIRCUIT.gates.find(one=>one.id===id).centre,pass=gate('varn-pass-gate'),amod=gate('varn-amod-gate'),nw=VARN_CIRCUIT.corners[0];
@@ -2248,7 +2258,7 @@ async function init() {
       if(view==='varn-garrison')return shot({x:pass.x+4,z:pass.z+22},{x:pass.x,z:pass.z},.12,11);
       if(view==='varn-wicket'){const w=varnWicket();return shot({x:w.x+3,z:w.z+14},{x:w.x,z:w.z},.02,2.6);}
       return null;}
-    // The three forts on the other passes (src/lotharn-forts.js): each from the mountains' side of its gate,
+    // The three forts on the other passes (src/content/regions/west-lotharn/lotharn-forts.js): each from the mountains' side of its gate,
     // `-back` from the Empire's side, `-keep` at its keep and barrack, and `-end` where its wall's far end meets the rock.
     if(view.startsWith('fort-')){const back=view.endsWith('-back'),fort=LOTHARN_FORTS.find(one=>one.id===(back?view.slice(0,-5):view));
       // Looks nine metres up and more, for the same reason as Varn's: a wall on the camera's line draws it in.
@@ -2659,7 +2669,7 @@ async function init() {
       // plain would show haze and not a country.
       return shot({x:-1170,z:1080},{x:-1030,z:1200},.02,9);
     }
-    // South Suval (src/south-suval-world.js): Imlamdris from the water it faces, the water from
+    // South Suval (src/content/regions/south-suval/south-suval-world.js): Imlamdris from the water it faces, the water from
     // the top of the city - "the lake is visible from most of the upper city" - the temple's open
     // face, and the southern cliffs from the sea. Placed in the city's own frame, so they follow it.
     if(view==='south-suval-city')return shot(imlamdrisPoint(-6,-64),imlamdrisPoint(0,40),.08,7);
@@ -2924,7 +2934,7 @@ async function init() {
       const r=living.deliverSatchel('player',{side:living.player().allegiance});
       if(r.ok){inventory.remove('courier-satchel',1);inventory.add('copper-piece',20);}return r;}
   }});
-  // The burying at the Lauvel (src/lauvel-burying.js): Sela calls to whoever comes up the road,
+  // The burying at the Lauvel (src/content/regions/luscia/lauvel-burying.js): Sela calls to whoever comes up the road,
   // and the valley is short-handed at every part of putting its dead in the ground.
   const burying=createBurying();let selaVisits=0;
   const riding=createRiding();
@@ -2997,10 +3007,10 @@ async function init() {
   const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned,onFoot:()=>!!living&&!living.horseFor('player')});
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
-  // The toll at the Amod pass stones (src/amod-ogre.js). The purse is the host's;
+  // The toll at the Amod pass stones (src/content/regions/amod/amod-ogre.js). The purse is the host's;
   // the module never has to know what a copper piece is.
   const ogreToll=createOgreToll({spendToll:n=>{const paid=inventory.remove(COPPER_ITEM,n);if(paid)inventory.refresh();return paid;}});
-  // Resident hosts connect Tidehaven, Cobble and Port Calos (src/ferry.js).
+  // Resident hosts connect Tidehaven, Cobble and Port Calos (src/world/travel/ferry.js).
   ferry=createFerry({
     getLanding:id=>peninsulaHost?.chosen&&id==='drent'?PENINSULA_FERRY_LANDING:FERRY_LANDINGS[id],
     purse:()=>inventory.count(COPPER_ITEM),
@@ -3025,7 +3035,7 @@ async function init() {
   const horseLine=[0,1,2,3].map(i=>{const hitch=world.storySites.horseHitch,x=hitch.x+1.8+i*3.6,z=hitch.z-1.6,actor=createHorse({variant:i,saddled:false});actor.group.position.set(x,world.heightAt(x,z),z);actor.group.rotation.y=Math.PI+.2*(i%2?1:-1);scene.add(actor.group);return {actor,x,z,grazing:i%2===1};});
   const horseLinePeople=horseLine.map((horse,index)=>({id:`line-horse-${index}`,name:'Army stable horse',role:'A horse on the army line',
     kind:'horse',horse:true,model:{variant:index,saddled:false},actor:horse.actor}));
-  // The kingdom's horses on the Galmeth by the head of the east pass (src/telemonia-town.js): the compact Telemon breed,
+  // The kingdom's horses on the Galmeth by the head of the east pass (src/content/regions/telemonia/telemonia-town.js): the compact Telemon breed,
   // loose and unsaddled, drawn as the army's line is and as nobody's to take.
   const telemonHorses=TELEMON_HORSES.map(h=>{const actor=createHorse({variant:h.variant,saddled:false});actor.group.scale.setScalar(.9);actor.group.position.set(h.x,world.heightAt(h.x,h.z),h.z);actor.group.rotation.y=h.yaw;actor.group.visible=false;scene.add(actor.group);return {...h,actor};});
   const ownHorse=createHorse({variant:0,saddled:true});ownHorse.group.position.copy(horseLine[0].actor.group.position);ownHorse.group.rotation.y=horseLine[0].actor.group.rotation.y;ownHorse.group.visible=false;scene.add(ownHorse.group);
@@ -3034,7 +3044,7 @@ async function init() {
   /**
    * The company's remounts: one per companion, made the first time he needs one, so a game that
    * never reaches Bede Harrow's yard never pays for a single mesh of them. The coat is fixed by
-   * the man's id (src/company-horses.js), so it is the same horse every load and nothing about
+   * the man's id (src/gameplay/company/company-horses.js), so it is the same horse every load and nothing about
    * it is saved.
    *
    * Like the traveler's own horse these are plain actors, not people: they have no stand-in and
@@ -3151,7 +3161,7 @@ async function init() {
       const npc=npcById.get(p.id);if(!npc||npc.hidden||npc.fallen)continue;const horse=companyHorseFor(p.id),at=npc.actor.group.position,turn=npc.actor.group.rotation.y;
       horse.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);horse.group.rotation.y=turn;horse.group.visible=npc.actor.group.visible;horse.ridden=true;horse.animate(elapsed,p.walking?p.pace:0,true,{grazing:false});here.add(p.id);}
     for(const [id,actor] of companyHorseActors)if(!here.has(id)){actor.group.visible=false;actor.ridden=false;}}
-  // People are solid (src/bodies.js): the traveler and every villager see the frame's bodies as colliders.
+  // People are solid (src/gameplay/combat/bodies.js): the traveler and every villager see the frame's bodies as colliders.
   const playerWorld=bodyWorld(world).moving(player.group.position,BODY.traveler,'traveler'),npcWorld=bodyWorld(world),catWorld=bodyWorld(world,{ignore:['prop']});
   const climbWorld={bounds:world.bounds,colliders:world.colliders,heightAt:world.heightAt,waterAt:world.waterAt,
     regionAt:world.regionAt,nearColliders:(x,z,r)=>playerWorld.nearColliders(x,z,r),unclimbableAt:world.unclimbableAt,
@@ -3162,8 +3172,8 @@ async function init() {
   // entrance, so loading in either range recovers outdoors with underground support cleared.
   lotharnCave=createLotharnCaveWalk({caves:[...world.lotharnCaves,...world.westLotharnCaves],ground:world.groundHeight});
   // Two movement rules now, and one hook. `canWalkSlope` refuses an ascent too steep to walk in the
-  // climbing countries (src/climbing.js); `canPushThrough` refuses a step off a way into a deep
-  // forest's thicket in the undergrowth countries (src/undergrowth.js). Neither owns input,
+  // climbing countries (src/gameplay/movement/climbing.js); `canPushThrough` refuses a step off a way into a deep
+  // forest's thicket in the undergrowth countries (src/world/scenery/undergrowth.js). Neither owns input,
   // rendering or saved state, both are region-gated, and both go through `moveCharacter`'s own
   // `canTraverse` - so a country with neither is exactly as walkable as it was.
   const walkingSlope=(x,z,nextX,nextZ)=>regionTraversalReady(nextX,nextZ)&&canWalkSlope(x,z,nextX,nextZ,climbWorld)&&canPushThrough(x,z,nextX,nextZ,climbWorld);
@@ -3434,7 +3444,7 @@ async function init() {
     return{ok:false,reason:''};
   }
   /**
-   * The burying at the Lauvel (src/lauvel-burying.js). Three jobs, none of which is an errand:
+   * The burying at the Lauvel (src/content/regions/luscia/lauvel-burying.js). Three jobs, none of which is an errand:
    * the work is the whole quest, and the fourth man carried in off the field is her son.
    */
   function buryingAct(action){
@@ -3513,7 +3523,7 @@ async function init() {
     saveRoad(false);return{ok:true,reason:''};
   }
   /**
-   * The business with the other light (src/rival-light.js): what Addison finally says out loud,
+   * The business with the other light (src/content/quests/rival-light/rival-light.js): what Addison finally says out loud,
    * the crossing into a country that is shut, the glass off its cradle, and what becomes of it.
    */
   function heistAct(action){
@@ -3522,7 +3532,7 @@ async function init() {
     if(action==='sister-tell'){if(!heist.tell().ok)return{ok:false,reason:''};refreshQuest();
       openDialogue(addison,[...SISTER_TOLD],null,'Back to the yard',{onComplete:backToAddison});
       toast('There is another light on this coast, and her sister keeps it.','THE ELOD LIGHT');saveRoad(false);return{ok:true,reason:''};}
-    // She gives the traveler her father's key to the smugglers' door (src/rival-light.js).
+    // She gives the traveler her father's key to the smugglers' door (src/content/quests/rival-light/rival-light.js).
     if(action==='sister-ask'){if(!heist.accept(inventory).ok)return{ok:false,reason:''};inventory.refresh();refreshQuest();
       openDialogue(addison,[...SISTER_WHY,...CROSSING_PLAN],null,'Back to the yard',{onComplete:backToAddison});
       toast('Her father’s key to the smugglers’ door, in the ridge east of her light. Bring her the fire.','THE FIRE IN THE ELOD LIGHT');saveRoad(false);return{ok:true,reason:''};}
@@ -3688,7 +3698,7 @@ async function init() {
     showSkillCard({kicker:`FIRST SIGHTING · BIRDING +${result.xp}${result.levelled?` · LEVEL ${result.level}`:''}`,name:result.species.name,note:result.species.note,skill:'birding'});
   }
   /**
-   * The bird the pointer is on, and the box beside it. src/bird-finder.js chooses; this only
+   * The bird the pointer is on, and the box beside it. src/gameplay/skills/birding/bird-finder.js chooses; this only
    * puts the answer into words. The box never names a kind of bird the traveler has not
    * identified yet - the first-sighting card is what naming one looks like, and it takes the
    * screen back the moment he earns it. Nothing here gates the birding that was already here:
@@ -3744,7 +3754,7 @@ async function init() {
       const view=module.view(),list=el('ul','bird-list');
       for(const entry of view.entries){const done=entry.found??entry.tasted??entry.known;const li=el('li',done?'seen':'unseen',entry.made?`${entry.name} \u00b7 made ${entry.made}`:entry.name);li.append(el('small','',entry.detail));list.append(li);}
       card.append(el('h3','',`${label} \u00b7 ${view.foundCount??view.tastedCount??view.knownCount} / ${view.total}`),list);
-      // The words for what is in the glass arrive as the wine skill levels (src/wine.js).
+      // The words for what is in the glass arrive as the wine skill levels (src/content/quests/wine/wine.js).
       if(id==='wine'&&view.terms?.length){
         const words=el('ul','bird-list');
         for(const term of view.terms){const li=el('li','seen',term.name);li.append(el('small','',term.what));words.append(li);}
@@ -3784,9 +3794,9 @@ async function init() {
     }
   }
   /**
-   * The skills this game shows. The registry in src/skills.js holds every skill in the build, so a
+   * The skills this game shows. The registry in src/gameplay/skills/skills.js holds every skill in the build, so a
    * save that carries linguist experience still validates and keeps it; what comes out here is
-   * whatever belongs to a mode this game is not being played in (src/game-mode.js).
+   * whatever belongs to a mode this game is not being played in (src/app/game-mode.js).
    */
   function shownSkills(){return skills.view().filter(entry=>!hiddenSkills.has(entry.id)&&!SKILLS[entry.id]?.reserved);}
   /** RuneScape's total level, over the skills this mode shows. */
@@ -3810,7 +3820,7 @@ async function init() {
     const [,seller,slot,weight,tier]=action.split(':');
     const level=regionLevel(world.regionAt(player.group.position.x,player.group.position.z)?.name)??0;
     // The board is **the seller's**, not the street's: a capital's armourer sells above his
-    // country and every other smith sells what his country allows (SELLER_TIERS, src/smith.js).
+    // country and every other smith sells what his country allows (SELLER_TIERS, src/content/quests/roadside/smith.js).
     // The host rebuilds it from the man and the ground rather than trusting the action string.
     const board=smithOffers(level,{id:seller});
     // **Arrows, at every forge** (the user, 2026-09-21: the smiths sell them and there is no
@@ -3943,7 +3953,7 @@ async function init() {
   /** Put the traveler somewhere without walking there (the smugglers' door is a passage), facing on, the camera behind. */
   function placeTraveler(x,z,facing){if(deferUntilLoaded([{x,z}],()=>placeTraveler(x,z,facing)))return;cancelClimbing();stopInput();player.group.position.set(x,world.heightAt(x,z),z);grounded=true;verticalSpeed=0;inWater=false;
     if(Number.isFinite(facing)){player.group.rotation.y=facing;yaw=facing+Math.PI;}settleCamera();}
-  // Addison's errand in the world (src/rival-light-host.js): the smugglers' door, the Elodi watch, the
+  // Addison's errand in the world (src/content/quests/rival-light/rival-light-host.js): the smugglers' door, the Elodi watch, the
   // stair, and Sovik, who is drawn in the Elod Light's lantern, in the traveler's arms, or in Addison's.
   sovikViews={lantern:createSovik({scale:1.6}),carried:createSovik({scale:.45}),addison:createSovik({scale:1.3})};
   for(const [where,view] of Object.entries(sovikViews)){view.group.visible=false;scene.add(view.group);
@@ -3951,7 +3961,7 @@ async function init() {
     // from in front of the brass reflector rather than inside its bowl.
     const turn=where==='addison'?Math.PI:.8,spot=SOVIK_SPOTS[where];view.group.rotation.y=turn;
     if(spot)view.group.position.set(spot.x+Math.sin(turn)*.95,world.heightAt(spot.x,spot.z)+spot.y,spot.z+Math.cos(turn)*.95);}
-  // The Telemon and an outsider (src/telemonia-host.js): seen, walked out, or fought.
+  // The Telemon and an outsider (src/content/regions/telemonia/telemonia-host.js): seen, walked out, or fought.
   // "A weapon in hand" on the walk out is a blow being swung or a bow being drawn: the sword is always at the hip.
   telemonia=createTelemoniaHost({world,npcData,combat,position:()=>player.group.position,level:regionLevel('Telemonia')??3,
     sneaking:()=>!!drent?.sneaking&&skills.taught('stealth'),armed:()=>combat.state.player.action==='attack'||combat.drawn>0,
@@ -4267,7 +4277,7 @@ async function init() {
    * It says who holds the place and nothing about how hard it is: the difficulty is the region
    * card's, in the ladder's words, once, on entering, and the number belongs to the cartography
    * journal alone and only once the country is charted (docs/design-answers.md, and the note at
-   * the head of src/region-levels.js). It used to read LEVEL 0 · AMBRONI EMPIRE.
+   * the head of src/world/terrain/region-levels.js). It used to read LEVEL 0 · AMBRONI EMPIRE.
    */
   function regionKicker(region){
     if(isOpenCountry(region))return 'AZHORA · NO COUNTRY CLAIMS THIS';
@@ -4302,10 +4312,11 @@ async function init() {
     $('toast').append(small,document.createTextNode(title));$('toast').classList.add('visible');
     clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('visible'),4200);
   }
-  // The main quest as the player reads it: numbered chapters (src/story-chapters.js).
+  // The main quest as the player reads it: numbered chapters (src/content/chapters/journey/story-chapters.js).
   const storyState=()=>({onwardEntry:!!campaign.snapshot().entryOrigin,questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side,home:atSideSeat(campaign.view().side,player.group.position,aftermath.view().complete?aftermath.view().variant:null)});
   let chapterShown=0;
   function refreshChapter(){
+    if(chapterOne){const q=chapterOneObjective(chapterOne,border.view(),aftermath.view());$('chapter-heading').textContent=chapterOne.complete?'Chapter 2 - Awaiting orders':'Chapter 1 - The Border War';$('chapter-goal').textContent=q.detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);return;}
     if(mainDormant()){$('quest-chapter').textContent='Your adventure';$('chapter-heading').textContent='The main quest awaits';$('chapter-goal').textContent=FREE_ROAM_GUIDANCE.detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);chapterShown=0;return;}
     const state=storyState(),progress=chapterProgress(state),current=progress.current;
     $('quest-chapter').textContent=current?`Chapter ${current.number} of ${chapterCount} · ${chapterTitle(current,state)}`:'The war moves on';
@@ -4339,8 +4350,9 @@ async function init() {
     chapterShown=reached;
   }
   function refreshMainQuest() {
+    if(chapterOne){const q=chapterOneObjective(chapterOne,border.view(),aftermath.view());$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent=chapterOne.complete?'CHAPTER 2 - AWAITING ORDERS':'CHAPTER 1 - THE BORDER WAR';$('quest-chapter').textContent=chapterOne.complete?'Chapter 2':'Chapter 1 - The Border War';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.detail;return;}
     if(mainDormant()){$('quest-title').textContent=FREE_ROAM_GUIDANCE.title;$('quest-detail').textContent=FREE_ROAM_GUIDANCE.detail;$('quest-step').textContent='EXPLORATION';$('quest-chapter').textContent='Your adventure';return;}
-    if(peninsulaHost?.objective()){const q=peninsulaHost.objective();$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent='PENINSULA TRAINING';$('quest-chapter').textContent='A first shore';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.hint??q.detail;return;}
+    if(peninsulaHost?.objective()){const q=peninsulaHost.objective();$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent='PENINSULA TRAINING';$('quest-chapter').textContent='Prologue ? A first shore';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.hint??q.detail;return;}
     if(living?.recall().status==='passenger'){$('quest-title').textContent='Ride to the Moros muster';$('quest-detail').textContent=`${npcById.get(living.recall().courier)?.name??'The courier'} is taking you to the army. You can look around and open your journal during the ride.`;$('quest-step').textContent='RIDING WITH THE COURIER';return;}
     if(living?.player().allegiance==='coalition'&&border.state.started&&!border.state.complete){const v=border.view();$('quest-title').textContent=v.title;$('quest-detail').textContent=v.detail;$('quest-step').textContent=v.kicker;return;}
     if(living?.player().imperialRefused&&living.player().allegiance!=='coalition'){$('quest-title').textContent='Your own road';$('quest-detail').textContent='You refused the Imperial campaign. Other quests remain open. Republican recruitment is possible through the living, free Nothom operative.';$('quest-step').textContent='IMPERIAL CAMPAIGN REFUSED';return;}
@@ -4406,10 +4418,16 @@ async function init() {
   }
   function trackerStamp(){
     const {stage,benDown,spiderDown}=spiderQuest.state;
-    return JSON.stringify([freeStart,peninsulaHost?.chosen?[peninsulaHost.view().lessons,peninsulaHost.view().signedOffAt,peninsulaHost.view().enlisted,peninsulaHost.objective()?.detail]:null,questStage,chartLesson.stage,journey.state.bridge,inventory.count('forest-stick'),
+    return JSON.stringify([chapterOne,chapterOne?aftermath.snapshot():null,freeStart,peninsulaHost?.chosen?[peninsulaHost.view().lessons,peninsulaHost.view().signedOffAt,peninsulaHost.view().enlisted,peninsulaHost.objective()?.detail]:null,questStage,chartLesson.stage,journey.state.bridge,inventory.count('forest-stick'),
       sunflowerLesson.view(playSeconds).stage,baldroHost&&[baldroHost.snapshot(),baldroHost.current],sylviaIvy.snapshot(),drent.state(),republic?.state(),living?.satchel().status,living?.player(),living?.recall().status,Math.floor((living?.clock()??0)/10),vastos.quest.view().stage,{stage,benDown,spiderDown},murder.state.stage,murder.state.heard,catQuest.state.stage,cagneyQuest.state.stage,jesseHost&&[jesseQuest.view().stage,jesseQuest.view().collected.length,jesseQuest.view().assembly],race.state().stage,cubHost.state().stage,burying.snapshot()]);
   }
   function refreshQuest(){
+    if(chapterOne?.reported&&chapterOne.winner===border.view().side){
+      if(!border.state.complete)border.recordArmyVictory(chapterOne.winner);
+      if(campaign.view().chapterId==='border-battle')campaign.completeChapter('border-battle','victory');
+      if(!aftermath.state.variant)aftermath.start(chapterOneConquest(chapterOne.winner));
+    }
+    syncAftermathCast();
     refreshMainQuest();
     if(!peninsulaHost?.chosen&&questStage===2&&!campaign.snapshot().entryOrigin&&living?.recall().status!=='passenger'){
       const pending=chartLesson.stage,finished=practiceHits>=2&&practiceGuards>=1&&practiceDodges>=1;
@@ -4441,13 +4459,13 @@ async function init() {
     refreshQuest();
     if(questStage===2)toast('the letter of introduction','ADDED TO SATCHEL · I TO OPEN');
     // The fork is told the moment the road is his, because there is no watch post left on the way
-    // to tell him at: the tutorial now ends at the practice post (src/long-road.js).
+    // to tell him at: the tutorial now ends at the practice post (src/content/chapters/journey/long-road.js).
     else if(questStage===QUEST_DONE){longRoad.act('told');toast(questSteps[questStage].title,'YOUR ORDERS · WEST TO NOTHOM');}
     else toast(questSteps[questStage].title,'JOURNAL UPDATED');
     if(hasRoadProgress()&&!testingEnabled)saveRoad(false);
   }
   // The opening screen's other way in: stand where the newest built chapter begins, with the road behind you.
-  // Nothing is saved from this start, so a saved adventure is never overwritten (src/story-starts.js).
+  // Nothing is saved from this start, so a saved adventure is never overwritten (src/app/startup/story-starts.js).
   function beginNewestChapter(){return beginStoryStart(newestStart());}
   function beginStoryStart(entry){
     if(deferUntilLoaded([world.npcPositions[entry?.beside]],()=>beginStoryStart(entry)))return true;
@@ -4483,11 +4501,13 @@ async function init() {
   // fresh renderer so no quest, inventory or testing state leaks into it.
   function chooseOpening(path){
     if(mode!=='opening')return;
-    if(returnedToMenu){
+    if(returnedToMenu||path==='start'&&world.enabledRegions){
       const url=new URL(location.href);url.searchParams.set('launch',path);
+      url.searchParams.set('world',path==='start'?'developer':'campaign');
       url.searchParams.set('load',world.loadingMode??'full');location.replace(url.href);return;
     }
-    if(path==='tutorial')begin('tutorial');else beginFreeRoam();
+    if(path==='chapter'){show('opening-main-actions',false);show('opening-characters',true);$('chapter-one-back').focus();return;}
+    if(path==='tutorial'){setPlayerCharacter(DEFAULT_PLAYER);begin('tutorial');}else beginFreeRoam();
   }
   function enterMainMenu(){
     if(deferUntilLoaded([MINORA_START],enterMainMenu))return;
@@ -4499,7 +4519,7 @@ async function init() {
     player.group.position.set(MINORA_START.x,world.heightAt(MINORA_START.x,MINORA_START.z),MINORA_START.z);
     player.group.visible=false;document.body.classList.remove('playing','cutscene');
     for(const id of ['modal-backdrop','pause','journal','testing','defeat','dialogue','interaction','testing-badge','exit-menu-confirm'])show(id,false);
-    show('opening',true);$('opening').style.opacity='1';$('opening').style.transform='none';
+    show('opening-main-actions',true);show('opening-characters',false);chapterColumn?.clear();show('opening',true);$('opening').style.opacity='1';$('opening').style.transform='none';
     const saved=checkpoint.read();$('continue-road').disabled=!(saved.ok&&saved.data);
     (saved.ok&&saved.data?$('continue-road'):$('begin-skip-tutorial')).focus();
   }
@@ -4509,11 +4529,64 @@ async function init() {
     $('exit-menu-message').textContent='Your current progress could not be saved. You can stay and save on dry ground outside combat, or exit and keep only your last saved adventure.';
     show('exit-menu-confirm',true);$('exit-menu-stay').focus();
   }
+  function beginChapterOne({testing=false,direct=false,autoplay=false}={}){
+    if(deferUntilLoaded([world.npcPositions[MOROS_LEGATE_ID],BORDER_ARENA.center],()=>beginChapterOne({testing,direct,autoplay})))return true;
+    freeStart=null;peninsulaHost.restore();chapterOne=freshChapterOne(playerId,Math.floor(Math.random()*0x100000000));
+    aftermath.restore(createAftermathChapter().snapshot());heldControl=null;
+    stopAutopilot();fallen.restore(createFallen().snapshot());grantStartingKit();border.restore(createBorderChapter().snapshot());
+    for(const id of ['walking','running','arms'])if(SKILL_IDS.includes(id))skills.learn(id);
+    questTracker.select('main');
+    if(!beginStoryStart(storyStart('solis-parley')))return false;
+    testingEnabled=testing;show('testing-badge',testing);show('opening-characters',false);
+    chapterColumn.stage(playerId);player.group.visible=true;skillAnnouncements.clear();
+    if(direct)for(const action of ['take-legate-terms','enter-solis','side-empire'])borderAct(action);
+    refreshQuest();saveRoad(false);if(autoplay)startAutopilot();toast('Speak with Marshal Venmor. Your fellow mercenaries are assembled on the parade ground.','CHAPTER 1 · THE BORDER WAR');return true;
+  }
+  function chapterOnePassage(){
+    const at=world.npcPositions['izol-quartermaster'];
+    if(deferUntilLoaded([at],chapterOnePassage))return;
+    const spot=startingSpot(at,(x,z)=>canStand(x,z,world,.45));if(!spot)return;
+    player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);grounded=true;verticalSpeed=0;
+    playSeconds+=60;mapFog.reveal(spot.x,spot.z);settleCamera();refreshQuest();saveRoad(false);toast('The dispatch boat sets you ashore at Izolveth.','WEST IZOL');
+  }
+  function chapterOneConversation(npc){
+    if(!npc||mode!=='playing'||combat.state.phase==='active')return false;
+    const side=border.view().side,commander=side==='coalition'?'solis-captain':MOROS_LEGATE_ID;
+    const conquered=chapterOneConquestReported(chapterOne,aftermath.state);
+    if(chapterOne.reported&&aftermathNpcIds.has(npc.id)&&aftermathConversation(npc,{aftermath,openDialogue,closeDialogue,act:aftermathAct,fill:fillSaid(),gift:giveSideGift(npc)}))return true;
+    if(chapterOne.reported&&!conquered&&(npc.id===commander||npc.id===CHAPTER_ONE_REPORTS[side])){
+      openDialogue(npc,[chapterOneObjective(chapterOne,border.view(),aftermath.view()).detail],null,'Return to the campaign');return true;
+    }
+    if(conquered&&side==='coalition'&&npc.id===commander){
+      openDialogue(npc,['A dispatch boat will take you to Izolveth. Tulle Barr is waiting on the strand.'],null,'Leave',{choices:[
+        {id:'chapter-passage',label:'Take passage to West Izol',action:()=>{closeDialogue();chapterOnePassage();}},
+        {id:'chapter-later',label:'Not yet',action:closeDialogue}]});return true;
+    }
+    if(chapterOne.winner&&!chapterOne.reported&&npc.id===commander){
+      const won=chapterOne.winner===side;
+      openDialogue(npc,[won?'The field is ours, but the campaign is not finished. '+(side==='coalition'?'Join Captain Voss on the road to the army’s outpost. Take it before Venmor can regroup.':'Captain Brulan is on the road north of Solis. Join his company and take the Gate of Sun Horses.'):'We have lost the line. We can regroup and attempt it again.'],null,'Leave',{choices:[
+        {id:won?'chapter-report':'chapter-retry',label:won?'Accept the report':'Regroup for battle',action:()=>{closeDialogue();if(won){chapterOne.reported=true;}else{chapterOne.winner=null;chapterOne.seed=(chapterOne.seed+1)>>>0;combat.revive();border.endEncounter(BORDER_ENCOUNTER_ID);borderAct('sound-advance');}refreshQuest();saveRoad(false);}},
+        {id:'chapter-later',label:'Not yet',action:closeDialogue}]});return true;
+    }
+    if(conquered&&npc.id===CHAPTER_ONE_REPORTS[side]){
+      openDialogue(npc,[chapterOne.complete?'Your report is on record. Your next assignment is not ready yet.':'Your account agrees with the dispatches. Your service in this campaign is recorded. Chapter 1 is complete; your next orders will begin Chapter 2.'],null,'Leave',{onComplete:()=>{chapterOne.complete=true;refreshQuest();saveRoad(false);}});return true;
+    }
+    if(!chapterOne.winner&&border.view().stage==='join-line'&&['battle-tribune','coalition-captain'].includes(npc.id)){
+      openDialogue(npc,['Twenty soldiers hold each line. Join the advance and help us take the field.'],null,'Leave',{choices:[
+        {id:'sound-advance',label:'Sound the advance',action:()=>{closeDialogue();borderAct('sound-advance');}},
+        {id:'chapter-later',label:'Not yet',action:closeDialogue}]});return true;
+    }
+    if(!chapterOne.winner&&[MOROS_LEGATE_ID,'coalition-envoy','solis-captain','solis-gate-captain','battle-tribune','coalition-captain'].includes(npc.id)){
+      if(borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:11}))return true;
+    }
+    return false;
+  }
   function beginFreeRoam(){
     if(mode!=='opening')return false;
     if(deferUntilLoaded([MINORA_START],beginFreeRoam))return true;
     setPlayerCharacter(DEFAULT_PLAYER);resetDragonDestruction();grantStartingKit();
-    freeStart=freshMinoraStart();peninsulaHost.restore();campaign.restore(createCampaign().snapshot());
+    chapterOne=null;chapterColumn?.clear();for(const id of SKILL_IDS)skills.learn(id,{announce:false});cartography.learn();swimming.learn();
+    skillAnnouncements.clear();freeStart=freshMinoraStart();peninsulaHost.restore();campaign.restore(createCampaign().snapshot());
     questStage=0;practiceHits=practiceGuards=practiceDodges=0;lessonSet=false;
     journey.restore(createJourney().snapshot());longRoad.restore(createLongRoad().snapshot());
     playSeconds=0;refugeeHold=0;companionOffTheClock=false;resetLivingStory();rebuildCompany();settleMercenaries();
@@ -4534,6 +4607,7 @@ async function init() {
     refreshQuest();inventory.refresh();selectQuest('main');saveRoad(false);return true;
   }
   function begin(path='tutorial') {
+    chapterOne=null;chapterColumn?.clear();
     if(mode!=='opening')return;
     if(deferUntilLoaded([TUTORIAL_A.arrival],()=>begin(path)))return;
     freeStart=null;
@@ -4556,10 +4630,10 @@ async function init() {
   }
   /**
    * Whoever is in the bow: the first man of the company, which is Chris Scotwood unless you are
-   * Chris, when it is Cromb standing in the slot you left (companyFor, src/player-characters.js).
+   * Chris, when it is Cromb standing in the slot you left (companyFor, src/content/characters/player-characters.js).
    */
   const companionNpcId=()=>landingMateId();
-  /** The end of the opening, reached or skipped: the landing, exactly as src/opening-sequence.js says it. */
+  /** The end of the opening, reached or skipped: the landing, exactly as src/app/startup/opening-sequence.js says it. */
   function landOpening(){
     if(mode!=='arriving'||!opening)return;
     for(const e of eventsBetween(openingFired,Infinity,opening.id))if(e.type==='bell'){openingBells++;world.ringBell?.(elapsed);audio?.effect('bell');}
@@ -4578,7 +4652,7 @@ async function init() {
   /**
    * The man off your boat walks you up the pier until the letter is in your satchel, because he
    * is the only person in Azhora who can tell you what the harbourmaster is saying (INTERPRETER,
-   * src/languages.js). He is placed at your shoulder every frame the way the hideout garrison is
+   * src/gameplay/skills/languages.js). He is placed at your shoulder every frame the way the hideout garrison is
    * placed while escorting; the pier is three metres wide, so escortSpotFor tries each side and
    * then directly behind, and leaves him where he is rather than put him in the water.
    */
@@ -4823,7 +4897,7 @@ async function init() {
    * nothing about the dead, and a man struck off the walking list went back onto the road
    * schedule and mustered on it - so the Marshal said one more stood in front of him than did,
    * for every man who had died, while living men were still on the road. The company is told who
-   * is gone now (`dead`, src/mercenaries.js), a dead man has no placement at all, and the host
+   * is gone now (`dead`, src/gameplay/company/mercenaries.js), a dead man has no placement at all, and the host
    * asks rather than subtracts.
    */
   function musteredInCamp(){return living?living.muster('empire').arrivals.filter(id=>living.actor(id)?.alive&&living.actor(id)?.allegiance==='empire').length:company.summary(playSeconds).mustered;}
@@ -4862,6 +4936,7 @@ async function init() {
       ...found.map(place=>({id:place.id,name:place.name,kind:'place',...atlas(place.x,place.z)}))];
   }
   function refreshChart(){
+    worldMap.setChapter(chapterOne,aftermath.state);
     // Names can be learned from directions. Terrain and boundaries emerge from visited hexes.
     const drawn=chartShapes(cartography.view().entries,atlasRegions);
     worldMap.setLocalMap(localMapModel(undefined,true));
@@ -4972,7 +5047,7 @@ async function init() {
   }
 
   /**
-   * **The fine steel your side owes you for the border** (`SIDE_GIFTS`, src/aftermath-chapter.js;
+   * **The fine steel your side owes you for the border** (`SIDE_GIFTS`, src/content/chapters/chapter-one/aftermath-chapter.js;
    * the gear table's tier 4 is "officers, and gifts from a side you have served").
    *
    * **Two pieces, at the two moments the side has you in front of it.** The coat comes at the
@@ -5006,6 +5081,10 @@ async function init() {
     return [...lines];
   }
   // The day after the battle: one more fight beside the same allies, then the pay and the road onward.
+  function syncAftermathCast(){
+    const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));
+    for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;if(!npc)continue;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}
+  }
   function aftermathAct(action){
     const result=aftermath.act(action);if(!result.ok){toast(result.reason,'AFTER THE BATTLE');return result;}
     const spec=aftermath.spec,banner=spec.title.toUpperCase();
@@ -5025,8 +5104,10 @@ async function init() {
     return result;
   }
   function borderAct(action){
+    if(chapterOne&&action==='reach-line'&&!chapterColumn.arrived)return {ok:false,reason:'The column has not arrived yet.'};
     if(action==='march-out'&&living.player().allegiance==='coalition')living.arrivePlayerMuster('coalition');
     const result=border.act(action);if(!result.ok){toast(result.reason,'THE BORDER');return result;}
+    if(action==='march-out'&&chapterOne){chapterColumn.stage(playerId,border.view().side,border.view().side==='coalition'?world.npcPositions['solis-captain']:null);chapterColumn.start();}
     if(action==='march-out'){const side=border.view().side;living.departMuster(side);living.departMuster(side==='empire'?'coalition':'empire');}
     if(result.side&&!result.startEncounter){living.setPlayerSide(result.side,'solis-choice');const chosen=campaign.chooseSide(result.side);if(!chosen.ok)toast(chosen.reason,'THE BORDER');}
     if(result.reward){inventory.add(result.reward.id,result.reward.quantity);inventory.refresh();}
@@ -5034,10 +5115,10 @@ async function init() {
       saveRoad(false);
       const side=border.view().side;
       // **The line is laid for the company that is actually there**, counted now and kept nowhere
-      // (`borderLine`, src/border-chapter.js). Sounding the advance again counts again.
-      if(!combat.startEncounter(livingBorderEncounter(side))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
+      // (`borderLine`, src/content/chapters/chapter-one/border-chapter.js). Sounding the advance again counts again.
+      if(!combat.startEncounter(chapterOne?chapterOneEncounter(playerId,side,chapterOne.seed):livingBorderEncounter(side))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
       living.departMuster(side);living.departMuster(side==='empire'?'coalition':'empire');
-      stopInput();toast(side==='empire'?'The Coalition comes on in three waves. Hold your corner of the field.':'The army comes on in three waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
+      refreshQuest();stopInput();toast(chapterOne?'Twenty soldiers on each side. Your intervention can decide the battle.':side==='empire'?'The Coalition comes on in three waves. Hold your corner of the field.':'The army comes on in three waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
       return result;
     }
     refreshQuest();audio?.effect('success');
@@ -5089,7 +5170,7 @@ async function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(mode==='opening'||restoringRoad||regionLoadDepth||strategicReturn)return false;
@@ -5107,12 +5188,12 @@ async function init() {
   function continueRoad(fromRecovery=false){
     const restoringSession=fromRecovery===true;
     const result=(restoringSession?sessionCheckpoint:checkpoint).read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
-    const saved=result.data;if(deferUntilLoaded([saved.position],()=>continueRoad(fromRecovery)))return true;resetDragonDestruction();cancelClimbing();developerBat.cancel();for(const mount of Object.values(developerMounts))mount.group.visible=false;developerBank=0;flightNarration(null);restoringRoad=true;try{
+    const saved=result.data;if(world.enabledRegions&&(saved.worldScope==='developer'||!regionEnabled(world.regionAt(saved.position.x,saved.position.z)?.name))){const url=new URL(location.href);url.searchParams.set('world','developer');url.searchParams.set('launch','continue');location.replace(url.href);return true;}if(deferUntilLoaded([saved.position],()=>continueRoad(fromRecovery)))return true;resetDragonDestruction();cancelClimbing();developerBat.cancel();for(const mount of Object.values(developerMounts))mount.group.visible=false;developerBank=0;flightNarration(null);restoringRoad=true;try{
     // **Nothing borrowed survives a reload.** A bout cannot be saved in the first place -
     // `saveRoad` refuses while a fight is on - so no checkpoint carries a loan; this is here so
     // that loading one *during* a bout cannot leave a man holding somebody else's pike.
     sparring=null;endMark(null);returnLoan();clearArrows();
-    // `saved.mode` is not restored on purpose. The mode is a launch choice (src/game-mode.js): the
+    // `saved.mode` is not restored on purpose. The mode is a launch choice (src/app/game-mode.js): the
     // sheet, the sign lettering and the starting kit were settled when the page opened, and
     // switching them under a running game would leave half of it in the other mode. The field says
     // which game the save was written in; a save with no field at all is a normal-mode adventure.
@@ -5121,6 +5202,7 @@ async function init() {
     trackedPlaceId=null;trailMarker.visible=false;
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
     for(const item of saved.inventory)inventory.add(item.id,item.quantity);
+    chapterOne=saved.chapterOne?{...saved.chapterOne}:null;chapterColumn?.clear();
     freeStart=saved.freeStart?{...saved.freeStart}:null;
     urubondHost?.leave({relocate:false});peninsulaHost.restore(saved.peninsulaTutorial);sevronHost.restore(saved.sevron);
     weapons.restore(saved.weapons);journey.restore(saved.journey);questStage=saved.questStage;practiceHits=saved.woodland?.practiceHits??2;practiceDodges=saved.woodland?.practiceDodges??1;
@@ -5139,6 +5221,7 @@ async function init() {
     mercenaryWeapons.clear();for(const [id,held] of Object.entries(saved.mercenaryWeapons??{})){mercenaryWeapons.set(id,{...held});npcById.get(id)?.actor.setWeapon(held.id);}
     luscia.restore(saved.luscia??createLusciaChapter().snapshot());beggar.reset();
     moros.restore(saved.moros??createMorosChapter().snapshot());border.restore(saved.border??createBorderChapter().snapshot());aftermath.restore(saved.aftermath??createAftermathChapter().snapshot());riding.restore(saved.riding??createRiding().snapshot());placeOwnHorse();
+    chapterOne=restoreChapterOne(chapterOne,aftermath.state);
     skills.restore(saved.skills??skills.snapshot());birding.restore(saved.birding??createBirding().snapshot());lakota.restore(saved.lakota??createLakota().snapshot());swimming.restore(saved.swimming??createSwimming().snapshot());
     // **The dead come back off the road before the company does.** `companions.restore` asks
     // `fallen` who is dead, to keep a dead man out of the walking list it is handed - so a stale
@@ -5210,6 +5293,7 @@ async function init() {
     batmanHost.restore(saved);
     if(tutorialResume.boundary.encounter){mode='tutorial-boundary';stopAutopilot();stopInput();
       if(tutorialResume.boundary.encounter.elapsed>=3.15){combat.state.player.hp=0;player.animate(walkTime,0,true,{action:'dead',progress:1});}}
+    if(chapterOne&&!chapterOne.winner){const atLine=border.view().stage==='join-line';chapterColumn.stage(playerId,border.view().side??'empire',atLine?CHAPTER_ONE_ARENA.checkpoint:border.view().side==='coalition'?world.npcPositions['solis-captain']:null);if(border.view().stage==='march')chapterColumn.start();}
     syncJourney();refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();inventory.refresh();stopInput();settleCamera();canvas.focus();skillAnnouncements.clear();toast('The road is where you left it.','CONTINUING YOUR JOURNEY');return true;
     }finally{restoringRoad=false;}
   }
@@ -5435,7 +5519,7 @@ async function init() {
     if(holds){companions.letGo(npc.id);saveRoad(false);
       openDialogue(npc,[holds.line],null,'Back to the road',{onComplete:()=>mercenaryConversation(npc)});return;}
     const choices=[...mercenaryChoices(npc)];
-    // **The company is the faculty** (src/teachers.js). A man who has reached a new standing with
+    // **The company is the faculty** (src/gameplay/skills/teachers.js). A man who has reached a new standing with
     // you has something of his own craft to show, once each, and will stand up with you for a
     // bout once he has shown you anything at all. Both are offered only where he is - which is
     // beside you, because a man up the road teaches nothing until he is back.
@@ -5447,7 +5531,7 @@ async function init() {
       else{closeDialogue();startSpar(npc,spar);}}});
     else if(spar.reason==='hands')choices.unshift({id:'teacher-spar-no',label:'Stand up and go a few with me.',
       action:()=>openDialogue(npc,[spar.line],null,'Back to our conversation',{onComplete:()=>mercenaryConversation(npc)})});
-    // **And the one man who will not stand up with you sets you a mark instead** (src/teachers.js).
+    // **And the one man who will not stand up with you sets you a mark instead** (src/gameplay/skills/teachers.js).
     // Same gate as a bout and the same ceiling; what differs is that there is nobody in front of
     // the arrow. Taking it down is the same line offered back, so nothing is stranded.
     const aim=teachers.atTheMark(npc.id,travelerHands());
@@ -5467,7 +5551,7 @@ async function init() {
     // The one man off your own boat: send him on, or ask him back, and neither is ever forced.
     if(companionOffTheClock&&npc.id===landingMateId()){
       // His five sittings exist to teach a tongue, so they are hard mode's and are not offered in
-      // normal mode, where the army is understood already (src/game-mode.js, docs/hard-mode.md).
+      // normal mode, where the army is understood already (src/app/game-mode.js, docs/hard-mode.md).
       const drill=gameMode.has('linguist')?longRoad.view(longRoadWorld()).drill:null;
       if(drill)choices.unshift({id:'companion-drill',label:`Teach me some of the army\u2019s speech. (${drill.title})`,action:()=>giveDrill(npc,drill)});
       if(!longRoad.released)choices.unshift({id:'companion-go-on',label:'Go on to the muster without me.',action:()=>{
@@ -5498,7 +5582,7 @@ async function init() {
   /**
    * What the traveler has on him, in the teachers module's own words: the weapon actually in his
    * hand, and whether there is anything on the shield arm. **The hand slot IS the shield**
-   * (src/gear.js), so a man who owns one is a man carrying one.
+   * (src/gameplay/inventory/gear.js), so a man who owns one is a man carrying one.
    */
   const travelerHands=()=>({weapon:weapons?.profile()?.usable?weapons.profile().id:null,shield:!!gear.wearing('hand')});
   /** His own invitation, and what standing up with him is worth today. */
@@ -5536,7 +5620,7 @@ async function init() {
    * The ground a bout is fought on: the open metre or two between the two of them, with the
    * teacher three paces off along the line the traveler is already looking down. `bout: true` is
    * the whole of what makes it a lesson rather than a fight - **it can kill nobody**, on either
-   * side (src/combat.js) - and `level: 0` because a friend is not a danger of the country.
+   * side (src/gameplay/combat/combat.js) - and `level: 0` because a friend is not a danger of the country.
    */
   function sparEncounter(npc){
     const me=player.group.position,merc=mercenaryById(npc.id),his=armsOf(npc.id);
@@ -5641,7 +5725,7 @@ async function init() {
   function peddlerConversation(npc,opening=true){
     const purse=inventory.count(COPPER_ITEM);
     // A phrasebook is a lump of a tongue, so it is hard mode's: where it is not sold it is not on
-    // the pack and Wendel does not offer it (src/game-mode.js, docs/hard-mode.md).
+    // the pack and Wendel does not offer it (src/app/game-mode.js, docs/hard-mode.md).
     const sellsPhrasebook=gameMode.has('linguist');
     const offers=peddlerOffers({purse,count:id=>inventory.count(id),items:INVENTORY_ITEMS,
       stock:sellsPhrasebook?PEDDLER_STOCK:PEDDLER_STOCK.filter(entry=>entry.id!==PHRASEBOOK_ITEM)});
@@ -5673,12 +5757,13 @@ async function init() {
     weapons.setCondition(held.id,takeDurability);weapons.equip(held.id);inventory.refresh();
     mercenaryWeapons.set(npc.id,{id:giveId,durability:gone});npc.actor.setWeapon(giveId);
     // He is carrying something of yours now, which is one of the things that moves a rung
-    // (REGARD.traded, src/companions.js) and therefore one of the ways a lesson is earned.
+    // (REGARD.traded, src/gameplay/company/companions.js) and therefore one of the ways a lesson is earned.
     companions.traded(npc.id);
     toast(`${npc.name} takes your ${given.name.toLowerCase()} and hands over his ${INVENTORY_ITEMS[held.id].name.toLowerCase()}.`,'WEAPONS TRADED');saveRoad(false);
     openDialogue(npc,['Done. Mind it; it has seen more than you have.'],null,'Back to the road');
   }
   function conversation(npc) {
+    if(chapterOne&&chapterOneConversation(npc))return;
     if(mainDormant()&&MAIN_QUEST_RECRUITERS.includes(npc.id)&&!crime?.isDown(npc.id)){
       openDialogue(npc,['The army is taking recruits. If you want a place on the main road, I can put your name forward. The choice is yours.'],null,'Leave',{choices:[
         {id:'minora-join-main',label:'Join the main quest',action:()=>joinMainQuest(npc.id)},
@@ -5702,7 +5787,7 @@ async function init() {
     if(npc.id===FOREST_STORY_NPC.id){forestConversation(npc,forestContext);return;}
     if(npc.dog){dogConversation(npc);return;}
     // Olive is not the harbour cat and has nothing to say about fish: what he has is an opinion
-    // about whether you are worth walking behind (src/cat-quest.js).
+    // about whether you are worth walking behind (src/content/quests/roadside/cat-quest.js).
     if(npc.id===CAT.id){const stage=catQuest.state.stage;
       openDialogue(npc,[stage==='following'?'He is sitting behind you with his feet tucked under him, waiting for you to get on with it.'
         :stage==='home'||stage==='paid'||stage==='taught'?'He is in the doorway of the only house he has ever lived in, and has never been anywhere else.'
@@ -5716,7 +5801,7 @@ async function init() {
     if(PUETH_NPC_IDS.includes(npc.id)&&puethConversation(npc,{openDialogue,closeDialogue}))return;
     if(RENA_NPC_IDS.includes(npc.id)&&renaConversation(npc,{letters:renaLetters,inventory,openDialogue,closeDialogue,act:renaAct}))return;
     // While Troy's case is open, Cobble's four have one more thing to say - and one more thing
-    // again to a traveler who has been taught the reading (src/murder-quest.js).
+    // again to a traveler who has been taught the reading (src/content/quests/roadside/murder-quest.js).
     if(PEBLOS_NPC_IDS.includes(npc.id)&&cobbleConversation(npc,{murder,ambient:PEBLOS_AMBIENT[npc.id]??[],openDialogue,closeDialogue,
       act:murderAct,reads:magic.known('mindread'),readMind:npc=>{const result=magic.cast('mindread',{target:npc});if(!result.ok)toast(result.reason,'MIND READ');return result;}}))return;
     if(PEBLOS_NPC_IDS.includes(npc.id)&&peblosConversation(npc,{openDialogue,closeDialogue}))return;
@@ -5799,7 +5884,7 @@ async function init() {
     if((npc.id===MOROS_GATE_ID||npc.id===MOROS_LEGATE_ID)&&morosConversation(npc,{moros,openDialogue,closeDialogue,act:morosAct,
       musterCount:musteredInCamp()+1,seenAt:longRoad.view(longRoadWorld()).seenAt,roster:roster.map(man=>man.id),
       // The men standing in front of him and the ones who are never coming: the count is
-      // mustered plus those who walked in with you, and the dead are neither (src/companions.js).
+      // mustered plus those who walked in with you, and the dead are neither (src/gameplay/company/companions.js).
       withYou:companions.walking,dead:fallen.ids.filter(id=>roster.some(man=>man.id===id)),
       // Asked, not handed: the conversation re-enters itself after each answer, and who is still
       // owed has changed by then.
@@ -5825,7 +5910,7 @@ async function init() {
     // **What anybody in Tidehaven says, by where the traveler is in Chapter 1.** This used to be
     // an eight-branch ladder written for eleven tutorial steps, and five of its branches - Eren's
     // token, the satchel lesson, the cairns to Fernway Rest - were for steps that no longer
-    // exist, spoken by people who are no longer in the cast (src/cast.js, src/game-state.js).
+    // exist, spoken by people who are no longer in the cast (src/content/characters/cast.js, src/gameplay/movement/game-state.js).
     if(questStage<2)lines=['Speak to Jojo at the head of the pier before you go anywhere. She has the paperwork, and she has been up there since the bell started.',
       'Every river of Drent keeps its own small shrine. We leave a little water at the shore and ask for a safe return. Today, I am asking for yours.'];
     else if(questStage===2)lines=['Officer Glun has the straw post at the crossroads. Two clean hits, take one on the shield and step out of the way of one, and he will let you up that road.',
@@ -5862,7 +5947,7 @@ async function init() {
    * **Ben.** He asks, and what he asks for is company rather than a hero: he has done the
    * arithmetic on one sorcerer against one spider and does not care for the answer. Saying yes
    * puts him at the traveler's shoulder until the den; the fork at the end is the whole ending,
-   * and there is no way to have both halves of it (src/spider-quest.js).
+   * and there is no way to have both halves of it (src/content/quests/spider/spider-quest.js).
    */
   function benConversation(npc){
     const stage=spiderQuest.state.stage;
@@ -6138,7 +6223,7 @@ async function init() {
     leaveRaceForTesting();
     if(!testingEnabled)prepareTesting();
     // Whatever of the road is on the slate is walked forward; what is off simply is not there,
-    // and `journey.act` refuses it rather than the panel pretending it happened (src/quest-slate.js).
+    // and `journey.act` refuses it rather than the panel pretending it happened (src/gameplay/quests/quest-slate.js).
     if(Number(destination)>=3){
       journey.start();
       if(questLive('courier')){journey.act('meet-courier');for(const id of [1,2,3])journey.act(`collect-cart-parcel-${id}`);journey.act('return-courier');meadowCleared=true;}
@@ -6210,7 +6295,7 @@ async function init() {
   function updateSpeech() {
     const last=activeDialogue.index===activeDialogue.lines.length-1,choices=last?activeDialogue.choices:null;
     $('speech').textContent=heardSpeech();$('dialogue-next').textContent=last?activeDialogue.action:'Continue  ↵';
-    // A phone has neither key; it taps the buttons (src/touch-controls.js).
+    // A phone has neither key; it taps the buttons (src/ui/input/touch-controls.js).
     const keys=hint=>document.body.classList.contains('touch')?'':hint;
     $('speech-page').textContent=(choices?'Choose a response'+keys(' · Tab / Enter'):`${activeDialogue.index+1} / ${activeDialogue.lines.length}`+keys(' · F or Enter'))+speechTongue();
     $('dialogue-choices').replaceChildren();show('dialogue-choices',!!choices);show('dialogue-next',!choices);
@@ -6225,13 +6310,13 @@ async function init() {
    */
   /**
    * Whoever interprets for you, if anybody does. When you are Chris Scotwood there is nobody, and
-   * nobody is needed: the Ambroni is yours already (src/languages.js `interpreterFor`).
+   * nobody is needed: the Ambroni is yours already (src/gameplay/skills/languages.js `interpreterFor`).
    */
   function interpreterNpc(){const id=interpreterFor(playerId);return id?npcById.get(id)??null:null;}
   function heardSpeech(){
     const {npc,speech,heard,index,lines}=activeDialogue,line=lines[index],tongue=speech.language;
     // Normal mode: everybody is understood. The line is shown as it was authored, nothing is
-    // heard into a tongue, and there is no aside under it (src/game-mode.js, docs/hard-mode.md).
+    // heard into a tongue, and there is no aside under it (src/app/game-mode.js, docs/hard-mode.md).
     if(!gameMode.has('linguist')){const plain=$('speech-aside');if(plain){plain.textContent='';show('speech-aside',false);}return line;}
     const helping=linguist.interpreterNearby(npc,{interpreter:interpreterNpc(),languageId:tongue,at:player.group.position});
     if(!heard.has(index)){heard.add(index);linguist.hear(npc,line,{language:tongue,dialect:speech.dialect,times:helping?INTERPRETER.bonus:1});}
@@ -6311,7 +6396,7 @@ async function init() {
     // swim to Peblos a decision rather than a walk (docs/combat-brief.md).
     const step=swimStep({dt:dt*gear.windScale,level:skills.level(SWIMMING_SKILL)||1,wind:combat.state.player.stamina,health:combat.state.player.hp});
     combat.exhaust(step.spent,step.damage);
-    // 'player-hit' and not 'hurt': the table has no sound of that name (src/road-audio.js), and a
+    // 'player-hit' and not 'hurt': the table has no sound of that name (src/world/environment/road-audio.js), and a
     // name it does not have is silence, which is what the moment your wind goes had been. This is
     // the sound the game already makes when the traveler takes damage, and drowning is damage.
     if(step.drowning&&!drowning){drowning=true;audio?.effect('player-hit');toast('Your wind is gone. You are not swimming any more.','DROWNING');}
@@ -6319,7 +6404,7 @@ async function init() {
   }
   /**
    * **Spent arrows, lying where they stopped.** About two in three survive the landing
-   * (src/archery.js decides which, by the arrow's own number rather than a roll), and the ones
+   * (src/gameplay/combat/archery.js decides which, by the arrow's own number rather than a roll), and the ones
    * that do are small things stuck in the ground that the traveler gathers by walking over them.
    * No prompt and no key: stooping for a shaft is not a decision.
    *
@@ -6392,7 +6477,7 @@ async function init() {
    * What a blow in this fight counts as. A bout is practice: it pays the same skills a fight
    * does, and **nothing it pays goes past the ceiling this teacher can take you to** - the rung
    * he has reached with you, cut down to his own level in `MERCENARY_ARMS`, because nobody can
-   * teach past what he knows (src/teachers.js). A real fight has no ceiling at all.
+   * teach past what he knows (src/gameplay/skills/teachers.js). A real fight has no ceiling at all.
    */
   const sparringPay=()=>(sparring&&combat.state.encounterId===SPARRING_ID?{source:'sparring',ceiling:sparring.ceiling}:{});
   /**
@@ -6404,7 +6489,7 @@ async function init() {
    * exactly as in a fight.
    *
    * **A hit pays Bows to the ceiling a bout with him would pay** - the lessons he has given, cut
-   * down to his own level (`sparringCeiling`, src/teachers.js) - and never past it. Only arrows
+   * down to his own level (`sparringCeiling`, src/gameplay/skills/teachers.js) - and never past it. Only arrows
    * pay: a sword at a target set up for archery is not what he set it up for.
    */
   const MARK_BLOW=12, MARK_NEAR=6;
@@ -6675,7 +6760,7 @@ async function init() {
     }
     if(mode==='playing'&&!suspended()&&grounded&&living.recall().status!=='passenger'){
     // **A bow is not swung at anything.** The same button draws it, and the draw is held rather
-    // than pressed, so the press does nothing and the frame loop does the work (src/archery.js).
+    // than pressed, so the press does nothing and the frame loop does the work (src/gameplay/combat/archery.js).
     if(ranged())return;
     // A swimmer is a person with both hands busy (docs/swimming.md).
     if(inWater){toast('Both your hands are busy keeping your head where the air is.','IN THE WATER');return;}
@@ -6693,12 +6778,20 @@ async function init() {
   // The character line above Step ashore: eleven tiles in the user's order, Cromb chosen, so
   // that clicking straight through plays the game that was there before anybody could choose.
   const crombOpeningLine=$('opening-who').textContent;
-  const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,hidden:hiddenSkills,
-    onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
+  const characterSelect=createCharacterSelect({root:$('character-line'),entries:PLAYABLE,detail:$('character-detail'),lookFor:playerLook,selected:null,hidden:hiddenSkills,
+    onChange:id=>{$('chapter-one-enter').disabled=false;setPlayerCharacter(id);const chosen=playableCharacter(id);
       $('opening-who').textContent=id===DEFAULT_PLAYER?crombOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
-  // Only Cromb can be chosen for now (src/player-characters.js), so the row of tiles has
+  // Only Cromb can be chosen for now (src/content/characters/player-characters.js), so the row of tiles has
   // nothing to choose between and the opening does not ask.
   show('opening-characters',false);
+  chapterColumn=createChapterOneColumn(scene,world);
+  $('begin-chapter-one').onclick=()=>chooseOpening('chapter');
+  $('chapter-one-back').onclick=()=>{show('opening-characters',false);show('opening-main-actions',true);$('begin-chapter-one').focus();};
+  $('chapter-one-enter').onclick=()=>beginChapterOne();
+  $('test-climate-annex').onclick=()=>{const url=new URL(location.href);url.searchParams.set('scene','climate-annex');url.searchParams.delete('launch');location.assign(url.href);};
+  $('test-chapter-one-battle').onclick=()=>beginChapterOne({testing:true,direct:true,autoplay:true});
+  $('test-chapter-one-parley').onclick=()=>beginChapterOne({testing:true,autoplay:true});
+  $('test-full-world').onclick=()=>{const url=new URL(location.href);url.searchParams.set('world','developer');url.searchParams.set('launch','start');location.replace(url.href);};
   $('skip-cutscene').onclick=skipOpening;
   $('begin').onclick=()=>chooseOpening('tutorial');$('begin-skip-tutorial').onclick=()=>chooseOpening('start');$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=returnToSafety;
   $('defeat-restore').onclick=retry;$('defeat-saved').onclick=()=>{stopAutopilot();continueRoad();};
@@ -6744,7 +6837,7 @@ async function init() {
   $('test-dev-dragon').onclick=()=>startDeveloperFlight('dragon');
   /**
    * **Go anywhere the world is built.** Travel lists every country and named ground, taken
-   * from the world itself (src/testing-travel.js), so the next one built is here the day it is
+   * from the world itself (src/dev/tools/testing-travel.js), so the next one built is here the day it is
    * built. The point box takes a coordinate in any of the shapes this project writes them in -
    * a report's (-1050, 982), a log line's [-1050, 982], or the review runner's own
    * stand-at:-806.1,-521,-1.57, whose third number is the facing.
@@ -7163,21 +7256,21 @@ async function init() {
     npcNames:Object.fromEntries([...npcData,...JOURNEY_NPCS].map(npc=>[npc.id,npc.name])),journeySites:world.journeySites,lusciaSites:LUSCIA_SITES,morosSites:MOROS_SITES,
     get stickSites(){return Object.values(world.journeySites||{}).filter(site=>site.type==='sticks').map(site=>({...site,collected:journeyGathered.has(site.id)}));},
     repairBenches:[world.repairBench,...(world.repairBenches||[])].filter(Boolean),watch:WATCH_POINT,training:world.training,encounter:world.encounter,northTrail:world.northTrail,border:world.border,
-    // Walled places have gates, and the autopilot only knows that if it is told (src/autopilot.js).
+    // Walled places have gates, and the autopilot only knows that if it is told (src/gameplay/autoplay/autopilot.js).
     enclosures:world.enclosures,
     sideSeat:(side,conquest)=>sideSeat(side,conquest)};
   const autopilotMovementSpeeds=()=>{const pace=locomotion.stats(),p=combat.state.player,run=locomotion.pace({run:true,stamina:p.stamina,maxStamina:p.maxStamina,inCombat:combat.state.phase==='active'}),scale=combat.movementScale();return {walking:pace.walkSpeed*scale,running:run.speed*scale,swimming:swimSpeed(skills.level(SWIMMING_SKILL)||1)*scale};};
-  const autopilotRead=()=>({mode,movementSpeeds:autopilotMovementSpeeds(),tutorial:peninsulaHost.view(),tutorialEnlistment:!peninsulaHost.active?peninsulaHost.objective()?.at:null,tutorialTeachers:Object.fromEntries(Object.keys(world.npcPositions).filter(id=>['harbormaster','instructor','willowmere-barrett','willowmere-ryan','boatman'].includes(id)).map(id=>[id,{...world.npcPositions[id],available:true}])),campcraft:{phase:campcraft.state.phase},inWater,selectedItem:inventory.selectedId(),questStage,practiceHits,practiceGuards,practiceDodges,lessonSet,chartLesson:chartLesson.stage,position:{x:player.group.position.x,z:player.group.position.z},
+  const autopilotRead=()=>({mode,chapterOne:chapterOne?{...chapterOne,objective:chapterOneObjective(chapterOne,border.view(),aftermath.view())}:null,movementSpeeds:autopilotMovementSpeeds(),tutorial:peninsulaHost.view(),tutorialEnlistment:!peninsulaHost.active?peninsulaHost.objective()?.at:null,tutorialTeachers:Object.fromEntries(Object.keys(world.npcPositions).filter(id=>['harbormaster','instructor','willowmere-barrett','willowmere-ryan','boatman'].includes(id)).map(id=>[id,{...world.npcPositions[id],available:true}])),campcraft:{phase:campcraft.state.phase},inWater,selectedItem:inventory.selectedId(),questStage,practiceHits,practiceGuards,practiceDodges,lessonSet,chartLesson:chartLesson.stage,position:{x:player.group.position.x,z:player.group.position.z},
     combat:{encounterId:combat.state.encounterId,phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,hasShield:hasCarriedShield(),guardCost:arms.margins().guardCost,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,yaw:e.yaw,action:e.action,progress:e.progress,active:e.active,hp:e.hp,guarded:!!e.guarded}))},
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{npcId:activeDialogue?.npc?.id,choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
     // `bridge` is the side errand's own state, and the planner needs it because the Caloss span
-    // is down and it cannot swim (src/autopilot.js).
+    // is down and it cannot swim (src/gameplay/autoplay/autopilot.js).
     journey:{started:journey.state.started,stage:journey.view().stage,bridge:journey.state.bridge,complete:journey.view().complete,destinationIds:journey.view().destinationIds,actions:journey.availableActions()},
     mapTutorial:mapTutorial.step,campaign:campaign.view(),
     luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions(),soldierDead:republic.state().soldier==='dead'},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
-    border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
+    border:{side:border.view().side,stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
     riding:{owned:riding.owned,mounted:riding.mounted,horse:riding.horse,waiting:horseWaiting({inventory,riding})},
     aftermath:{stage:aftermath.view().stage,variant:aftermath.view().variant,complete:aftermath.view().complete,built:aftermathBuilt(aftermath.spec),destinationIds:aftermath.view().destinationIds,actions:aftermath.availableActions()},
     interaction:{fireId:peninsulaHost.nearby()?.fireId??null,nearFishing:peninsulaHost.nearby()?.kind==='fishing',npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??currentMorosSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
@@ -7220,7 +7313,7 @@ async function init() {
   const racePilotWorld=bodyWorld(world);
   const raceAutopilot=createKaylaRaceAutopilot({world:racePilotWorld,act:autopilotActs,read:()=>{racePilotWorld.setBodies(gatherBodies().filter(b=>!race.mounted||b.id!=='traveler')).moving(race.mounted?race.position:player.group.position,race.mounted?KAYLA_RACE.radius:BODY.traveler,race.mounted?KAYLA.id:'traveler');return {...autopilotRead(),quest:race.state()};}});
   const cubAutopilot=createCubAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>{const s=autopilotRead();return {...s,quest:cubHost.state(),cameraYaw:yaw,cub:questPilotPerson(CUB.id),liz:questPilotPerson(LIZ.id),sneaking:drent.sneaking,interaction:{...s.interaction,id:cubHost.nearby?.id}};}});
-  // Addison's errand, the quiet way (src/addison-autopilot.js): it reads the host's prompts and which side of the ridge it is on.
+  // Addison's errand, the quiet way (src/gameplay/autoplay/addison-autopilot.js): it reads the host's prompts and which side of the ridge it is on.
   const addisonAutopilot=createAddisonAutopilot({world:autopilotWorld,act:autopilotActs,read:()=>{const s=autopilotRead(),p=player.group.position;
     return {...s,quest:{stage:heist.stage,alarm:heist.alarm,way:heist.way},addison:questPilotPerson(ADDISON.id),sneaking:drent.sneaking,
       inEast:insideRegion('East Suval',p.x,p.z),interaction:{...s.interaction,id:rivalLight.nearby?.id??null}};}});
@@ -7269,7 +7362,7 @@ async function init() {
   }
   function stopAutopilot(reason='Autoplay stopped.'){if(autopilot.active)autopilot.stop(reason);}
   $('autoplay-button').onclick=()=>autopilot.active?stopAutopilot():startAutopilot();$('opening-autoplay').onclick=()=>startAutopilot();
-  // **Touch controls** for a phone, where there is no F8, no WASD and no right button (src/touch-controls.js):
+  // **Touch controls** for a phone, where there is no F8, no WASD and no right button (src/ui/input/touch-controls.js):
   // a stick, a drag on the view to look round, the keys as buttons, and the testing tools and autoplay.
   const touch=wantsTouch({search:location.search,coarse:!!globalThis.matchMedia?.('(pointer: coarse)').matches})
     ?createTouchControls({document,root:document.body,
@@ -7315,7 +7408,7 @@ async function init() {
     if(e.code==='KeyL'){e.preventDefault();if(mode==='journal'&&$('tab-map').classList.contains('active'))closeModal();else openLocalMap();return;}
     if(e.code===SKILLS_KEY){if(mode==='journal'&&$('tab-skills').classList.contains('active'))closeModal();else if(['playing','journal','pause'].includes(mode)){modal('journal');journalTab('skills');}return;}
     // T shows a line the way it was actually said, which is hard mode's: in normal mode it was
-    // said in English and the key does nothing at all (src/game-mode.js).
+    // said in English and the key does nothing at all (src/app/game-mode.js).
     if(e.code===LINGUIST_KEY&&mode==='dialogue'&&gameMode.has('linguist')){e.preventDefault();linguist.toggle();updateSpeech();return;}
     if(mode==='playing'&&living.recall().status==='passenger'){e.preventDefault();return;}
     if(e.code==='KeyF'){interact();return;}
@@ -7335,7 +7428,7 @@ async function init() {
       keys.add(e.code);
       if(e.code==='Space'&&climbing?.active){climbBurst=true;return;}
       if(e.code==='Space'&&tryClimbing())return;
-      if(e.code==='Space'&&!urubondHost?.active&&!sevronHost?.active&&!baldroHost?.active&&!lotharnCave.active&&!suspended()&&grounded&&!raceHost?.mounted&&!riding.mounted&&living.recall().status!=='passenger'&&combat.state.player.action==='idle'){rememberFoothold();beginTerrainFall(6.3);}
+      if(e.code==='Space'&&!urubondHost?.active&&!sevronHost?.active&&!baldroHost?.active&&!lotharnCave.active&&!suspended()&&grounded&&!raceHost?.mounted&&!riding.mounted&&living.recall().status!=='passenger'&&combat.state.player.action==='idle'){rememberFoothold();beginTerrainFall(TERRAIN_FALL.jumpVelocity);}
     }
   });
   document.addEventListener('keyup',e=>keys.delete(e.code));
@@ -7354,7 +7447,7 @@ async function init() {
   });
   canvas.addEventListener('pointermove',e=>{if(drag){yaw-=(e.clientX-pointerX)*.006;pitch=THREE.MathUtils.clamp(pitch+(e.clientY-pointerY)*.004,.16,1.04);pointerX=e.clientX;pointerY=e.clientY;}});
   // The swing button is also the draw button, so whether it is *down* has to be known and not
-  // only when it went down. Every road out of holding it lets the bow go (src/archery.js).
+  // only when it went down. Every road out of holding it lets the bow go (src/gameplay/combat/archery.js).
   canvas.addEventListener('pointerup',()=>{drag=false;swingHeld=false;});
   canvas.addEventListener('pointercancel',()=>swingHeld=false);
   canvas.addEventListener('pointerleave',()=>swingHeld=false);
@@ -7392,6 +7485,7 @@ async function init() {
     if(living?.recall().status==='passenger')return {...world.npcPositions[MOROS_LEGATE_ID],name:'The Moros muster'};
     if(mainDormant()||living?.player().imperialRefused&&living.player().allegiance!=='coalition')return null;
 
+    if(chapterOne){const id=chapterOneObjective(chapterOne,border.view(),aftermath.view()).destinationIds[0];return id?resolveQuestPoint(id):null;}
     if(border.state.started&&!border.state.complete){const id=border.view().objectiveId;return id?resolveQuestPoint(id):null;}
     if(campaign.snapshot().entryOrigin){const ids=aftermath.state.variant?aftermath.view().destinationIds:border.state.started?border.view().destinationIds:moros.view().destinationIds;return ids.map(resolveQuestPoint).find(Boolean)??null;}
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
@@ -7432,6 +7526,7 @@ async function init() {
   const allyBlows=[];
   function handleCombatEvents() {
     const events=combatEvents.splice(0);
+    for(const e of events)if(e.type==='army-result'&&chapterOne){chapterOne.winner=e.winner==='allies'?border.view().side:border.view().side==='empire'?'coalition':'empire';chapterColumn.clear();refreshQuest();toast(chapterOneObjective(chapterOne,border.view(),aftermath.view()).detail,'THE FIELD IS DECIDED');saveRoad(false);}
     for(const e of events)if(e.type==='ally-hit'||e.type==='ally-down'){allyBlows.push({t:+playSeconds.toFixed(2),type:e.type,id:e.id,by:e.by??null,source:e.source??null,damage:e.damage??null});if(allyBlows.length>40)allyBlows.shift();}
     // Record every physical impact before death rendering and terminal encounter callbacks.
     for(const event of events){if(strategicBattle)continue;const elfHits=ibenwoodDefense?.impact(event)??0;if(elfHits&&event.type==='melee-impact'){weapons.contact(event.weaponId);inventory.refresh();}
@@ -7470,7 +7565,7 @@ async function init() {
       if(e.type==='defeat'&&living.satchel().carrier==='player'){living.dropSatchel('player',{position:{x:player.group.position.x,z:player.group.position.z}});inventory.remove('courier-satchel',1);}
       // **The den, settled.** The spider dying is not a victory if the man who came for it did
       // not get up: `benAlive` is the only thing that decides which ending this is, and it is
-      // read off the ally the fight actually had (src/spider-quest.js).
+      // read off the ally the fight actually had (src/content/quests/spider/spider-quest.js).
       if(['retreat','defeat'].includes(e.type)&&combat.state.encounterId===SPIDER_DEN.id){
         const spider=(e.enemies??combat.state.enemies).find(one=>one.id===SPIDER_DEN.enemies[0].id);
         const ben=(e.allies??combat.state.allies).find(one=>one.id===BEN.id);
@@ -7536,7 +7631,7 @@ async function init() {
       if(e.type==='dodge'&&questStage===2&&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9)practiceDodges++;
       if(e.type==='victory'){
         // **A fight come through together** is what moves a man's regard fastest, and a little
-        // more if he was hurt in it and lived (REGARD.fought, src/companions.js). It is counted
+        // more if he was hurt in it and lived (REGARD.fought, src/gameplay/company/companions.js). It is counted
         // here rather than where he is placed because this is the one moment that says the fight
         // was survived; a bout never reaches it, so sparring can never be farmed for standing.
         for(const ally of combat.state.allies)
@@ -7600,7 +7695,7 @@ async function init() {
           weapon:held?.id??null,weaponName:held?.id?(INVENTORY_ITEMS[held.id]?.name??'weapon').toLowerCase():null});
         // **And everyone who saw it drops a rung**, which is the cost of a lie at the muster paid
         // the moment it happens instead: the same mechanism, because it is the same idea - the
-        // men who were walking with you know what you did (src/companions.js).
+        // men who were walking with you know what you did (src/gameplay/company/companions.js).
         const saw=mine?companions.costWitnesses(e.id):[];
         showSkillCard({kicker:`${name.toUpperCase()} IS DEAD`,name:`${name} fell in ${where}`,
           note:mine?`Your ${e.spell?'spell':e.arrow?'arrow':'blow'} killed him. It is written down as that, and it is what the Marshal will be told.${saw.length?' Every man who was with you saw it.':''}`
@@ -7680,7 +7775,7 @@ async function init() {
     $('practice-guard').textContent=practiceGuards?'✓ Shield held':'0 / 1 guard';
     $('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
     // Ordinary encounters use the same world HUD. Only an army battle needs a shared objective banner.
-    show('encounter-status',active&&mode==='playing'&&(combat.state.encounterId===BORDER_ENCOUNTER_ID||inAftermathFight()));
+    show('encounter-status',active&&mode==='playing'&&([BORDER_ENCOUNTER_ID,ARMY_BATTLE_ID].includes(combat.state.encounterId)||inAftermathFight()));
     $('raiders-left').textContent=lawEncounter?'':combat.state.enemies.filter(e=>e.kind!=='dummy'&&e.hp>0).length;
     const goal=destination();
     const pin=trackedPlace(),pinDistance=pin?Math.hypot(pin.x-player.group.position.x,pin.z-player.group.position.z):Infinity;
@@ -7698,13 +7793,13 @@ async function init() {
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;enterRegion(region);}
     }
     $('encounter-enemies').textContent=lawEncounter?'':combat.state.encounterId===ambushEncounter.id?'rebel ambushers remaining':'enemies remaining';
-    $('encounter-title').textContent=lawEncounter?'':combat.state.encounterId===DRENT_FIGHT_ID?'CIVIL WAR IN DRENT \u00b7 KILLIAN':combat.state.encounterId===ambushEncounter.id?'REBEL AMBUSH - THE DRENT ROAD':combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():combat.state.encounterId===greenwayEncounter.id?'DEFEND THE GREENWAY':'';
+    $('encounter-title').textContent=lawEncounter?'':combat.state.encounterId===DRENT_FIGHT_ID?'CIVIL WAR IN DRENT \u00b7 KILLIAN':combat.state.encounterId===ambushEncounter.id?'REBEL AMBUSH - THE DRENT ROAD':combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':[BORDER_ENCOUNTER_ID,ARMY_BATTLE_ID].includes(combat.state.encounterId)?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():combat.state.encounterId===greenwayEncounter.id?'DEFEND THE GREENWAY':'';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
     $('area-name').textContent=region?.name.endsWith('Ibenwood')?(subregionsAt(player.group.position.x,player.group.position.z).find(p=>p.region===region.name)?.name??region.subtitle):nearestPlace.name;
     $('objective-distance').textContent=goal?`${goal.name} · ${Math.round(Math.hypot(goal.x-player.group.position.x,goal.z-player.group.position.z))} m`:'';
     // Every step of Chapter 1 has somewhere to be, so the gold on the ground is up for all of
     // them - except where the person it would stand over is already wearing it over their head
-    // (`markerFor`, src/quest-markers.js): Jojo on the pier, and Glun until he has set the
+    // (`markerFor`, src/gameplay/quests/quest-markers.js): Jojo on the pier, and Glun until he has set the
     // lesson and sent the traveler to the straw. Two golds for one errand reads as two errands.
     //
     // **Stage 0 is Jojo's as well** (the user, 23 September 2026, with a screenshot of the
@@ -7849,7 +7944,7 @@ async function init() {
         // threw every frame and stopped the render loop, which looks exactly like a lesson that
         // will not complete. The straw post does not hit back, so the drill is the same shape as
         // the step: near the post, lesson set, and the boards actually up - `player.guarding` is
-        // what the rules decided this frame and not what the key is doing (src/combat.js).
+        // what the rules decided this frame and not what the key is doing (src/gameplay/combat/combat.js).
         if(questStage===2&&lessonSet&&!practiceGuards&&combat.state.player.guarding
           &&Math.hypot(player.group.position.x-world.training.x,player.group.position.z-world.training.z)<9){
           guardHeld+=dt;
@@ -7889,7 +7984,7 @@ async function init() {
           else if(Math.hypot(player.group.position.x-mark.at.x,player.group.position.z-mark.at.z)>MARK_WALK)endMark('walked-away');
         }
         // Walk over a spent shaft and it is yours again. No prompt and no key: stooping for an
-        // arrow is not a decision (src/archery.js - about two in three survive the landing).
+        // arrow is not a decision (src/gameplay/combat/archery.js - about two in three survive the landing).
         if(!suspended())gatherArrows();
         if(p.action==='attack'||p.action==='dodge'){const angle=p.yaw;player.group.rotation.y+=Math.atan2(Math.sin(angle-player.group.rotation.y),Math.cos(angle-player.group.rotation.y))*(1-Math.exp(-24*dt));}
         if(!suspended()&&mode==='playing'){
@@ -7912,7 +8007,7 @@ async function init() {
           rememberFoothold();
         }
         movement=Math.hypot(player.group.position.x-before.x,player.group.position.z-before.z)/dt;
-        // **The road actually walked together** (REGARD.perMinute, src/companions.js): the slow
+        // **The road actually walked together** (REGARD.perMinute, src/gameplay/company/companions.js): the slow
         // honest thing that moves a rung, paid by the metre rather than by the minute so that
         // standing in a village all afternoon is not friendship. It is the only reason anybody
         // in the company ever gets past `unfamiliar`, and therefore the only reason a lesson is
@@ -7950,7 +8045,7 @@ async function init() {
 
         // **And the body, found.** This is the whole point of an event that happens whether you
         // are there or not: you come up the road a quarter of an hour later and he is lying on it.
-        // Once each, and saved, so a reload does not tell you again (src/road-ambush.js).
+        // Once each, and saved, so a reload does not tell you again (src/content/quests/road-ambush/road-ambush.js).
         for(const id of ambush.state.fallen){if(bodiesFound.has(id))continue;
           const npc=npcById.get(id);if(!npc?.lying)continue;
           const at=npc.actor.group.position;
@@ -7959,7 +8054,7 @@ async function init() {
           toast(`${mercenaryById(id)?.name??npc.name} is lying in the road. Nobody has been along since; nothing has been taken off him but his sword.`,'ON THE DRENT ROAD');
           audio?.effect('bell');saveRoad(false);}
         // **They come off both verges at him.** No mark over anybody's head and nothing in the
-        // journal: he walks into it or he never knows it was there (src/road-ambush.js).
+        // journal: he walks into it or he never knows it was there (src/content/quests/road-ambush/road-ambush.js).
         {const near=Math.hypot(player.group.position.x-AMBUSH.point.x,player.group.position.z-AMBUSH.point.z)<AMBUSH.reach;
           if(!near)ambushHeldOff=false;
           else if(ambush.ready&&combat.state.phase!=='active'&&mode==='playing'){
@@ -7974,7 +8069,7 @@ async function init() {
               toast('Something moves in the hedge, and thinks better of it. Come back down this stretch of road when your hands are free.','THE DRENT ROAD');}
           }
         }
-        // **The goblins at the woodland bell are off the slate** (`greenway`, src/quest-slate.js).
+        // **The goblins at the woodland bell are off the slate** (`greenway`, src/gameplay/quests/quest-slate.js).
         // The fight is still built, still tested and still here; nothing walks into it.
         if(questLive('greenway')&&questStage===3&&player.group.position.x< -46&&player.group.position.x> -68&&Math.abs(player.group.position.z-29)<8)startAmbush();
         if(questStage===QUEST_DONE&&!meadowCleared&&journey.state.courierAccepted&&combat.state.phase!=='active'&&Math.hypot(player.group.position.x-meadowEncounter.center.x,player.group.position.z-meadowEncounter.center.z)<14){
@@ -7987,6 +8082,7 @@ async function init() {
           saveRoad(false);
         }
       }
+      if(chapterOne&&chapterColumn?.active){const arrived=chapterColumn.frame(dt,{playing:mode==='playing'&&!reviewFrozen,visible:!chapterOne.winner&&combat.state.encounterId!==ARMY_BATTLE_ID});if(arrived&&border.view().stage==='march')borderAct('reach-line');}
       if(mode==='defeated'){combat.update(dt);combatClock+=dt;walkTime+=dt;}
       else if(['playing','fishing','opening','arriving'].includes(mode)&&!reviewFrozen)walkTime+=dt;
       republic?.frame(dt,{playing:mode==='playing'&&!reviewFrozen});
@@ -8025,7 +8121,7 @@ async function init() {
         guarding:!!combat.state.player.guarding,
         // And so is the bow. `combat.drawn` is how far it is *actually* drawn, which needs an
         // arrow, the wind and an idle body - never the button. The shaft goes on the string with
-        // it (src/characters.js), so a man standing about with a bow is not nocked.
+        // it (src/content/characters/characters.js), so a man standing about with a bow is not nocked.
         draw:combat.drawn});
       magicView.update(reviewFrozen?0:dt);
       if(riding.owned){
@@ -8052,7 +8148,7 @@ async function init() {
       // regionAt and not hexOwnerAt, and open country keeps the default. It comes round over
       // a second or two when they walk over a border and snaps when they are put down
       // somewhere - a review view, a travel button - which is what the position is for
-      // (src/region-sky.js). No region declares a sky yet, so today this changes nothing.
+      // (src/world/environment/region-sky.js). No region declares a sky yet, so today this changes nothing.
       {const skyRegion=world.regionAt(player.group.position.x,player.group.position.z),s=sky.step(skyRegion,dt,player.group.position);
         const viewFar=skyRegion.id===117?1800:NORTHERN_IDS.includes(skyRegion.id)?1800:skyRegion.id===37||skyRegion.id===56?1600:650;if(camera.far!==viewFar){camera.far=viewFar;camera.updateProjectionMatrix();}
         scene.background.setHex(s.background);scene.fog.color.setHex(s.fog);scene.fog.density=reviewVista&&reviewTarget&&(distance>100||developerBat.active&&developerMountKind==='dragon')?.0012:s.density;}
@@ -8065,7 +8161,7 @@ async function init() {
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
       if(['playing','fishing'].includes(mode)&&!reviewFrozen){living.tick(dt);playSeconds=living.clock();}
       updateLivingRoutes(dt);
-      livingHost?.frame();
+      if(!chapterOne)livingHost?.frame();
       peninsulaHost.frame(reviewFrozen?0:dt);
       urubondHost.frame();
       sevronHost.frame(reviewFrozen?0:dt);
@@ -8117,7 +8213,7 @@ async function init() {
         }
       }
       escortLandingMate();
-      {const cast=new Set(border.cast({solisHolder:heldControl?.['West Suval']??'coalition'}));for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
+      {const cast=new Set(border.cast({solisHolder:heldControl?.['West Suval']??'coalition'}));for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=chapterOne?(person.marches||(!cast.has(person.id)&&!(chapterOne.winner&&person.id==='solis-captain'))):!cast.has(person.id);}}
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing'&&!strategicBattle){
         const p=player.group.position,widened=mapFog.reveal(p.x,p.z);
         // A hex the fog has just given up is a hex of some country, and the chart of countries counts it.
@@ -8131,10 +8227,10 @@ async function init() {
       peninsulaHost.sync();
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       for(const prop of world.stakedProps||[])prop.object.visible=isOut(prop,heldControl);wallWatch.update(player.group.position,heldControl,walkTime);
-      westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?borderMercenaries(border.state.side??'empire').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
+      if(!chapterOne||chapterOne.reported)westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?borderMercenaries(border.state.side??'empire').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
       izol.frame({npcById,control:heldControl});
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
-      {const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}}
+      syncAftermathCast();
       // The garrison marches at the traveler's shoulder while escorting; in an allied fight the combat view draws them instead.
       {const escorting=forestHideout.state.escort,fighting=['active','defeated'].includes(combat.state.phase)&&combat.state.encounterId===hideoutEncounter.id&&combat.state.allies.length>0;
         for(const [i,g] of HIDEOUT_GARRISON.entries()){const npc=npcById.get(g.id),ally=fighting?combat.state.allies.find(a=>a.id===g.id):null;
@@ -8147,7 +8243,7 @@ async function init() {
       if(mode==='playing'&&reviewCat){const catNpc=npcById.get(VILLAGE_CAT.id);world.npcPositions[VILLAGE_CAT.id]=reviewCat.at;catNpc.pace=0;catNpc.sitting=true;catNpc.posture=reviewCat.posture;catNpc.face=null;}
       else if(mode==='playing'){const catNpc=npcById.get(VILLAGE_CAT.id),dogAt=npcById.get(VILLAGE_DOG.id).actor.group.position;villageCat.place(catNpc.actor.group.position.x,catNpc.actor.group.position.z);const want=villageCat.update(dt,{player:{x:player.group.position.x,z:player.group.position.z},speed:movement,dog:{x:dogAt.x,z:dogAt.z},fight:combat.state.phase==='active'});world.npcPositions[VILLAGE_CAT.id]={x:want.x,z:want.z};catNpc.pace=want.pace;catNpc.sitting=want.sitting;catNpc.posture=want.posture;catNpc.face=want.face;}
       // **Olive**, at the edge of the goblins' midden until somebody stands still near him, and
-      // then behind them all the way to Liz's clearing (src/cat-quest.js). A fight near enough to
+      // then behind them all the way to Liz's clearing (src/content/quests/roadside/cat-quest.js). A fight near enough to
       // hear and he is gone under the nearest thing, and the errand goes back a step.
       if(mode==='playing'&&!catQuest.state.over&&!crime.isDown(CAT.id)&&!corpseHost.ownsNpc(CAT.id)){
         const mopNpc=npcById.get(CAT.id),at=mopNpc.actor.group.position;mop.place(at.x,at.z);
@@ -8168,7 +8264,7 @@ async function init() {
       updateGlunWood(dt);
       updateFishingLessons(dt);
       {const ryan=npcById.get(RYAN.id);if(!ryan.fishingLessonActive){ryan.actor.setFishing(true);ryan.face=world.fishingSpots.find(s=>s.id==='willowmere').castPoint;}}
-      const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
+      const lusciaDestinations=chapterOne?chapterOneObjective(chapterOne,border.view(),aftermath.view()).destinationIds:(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const wineryLesson=wineryLessonsStatus({farmingLevel:skills.level('farming')});
       const markerView={mainDormant:mainDormant(),peninsulaEnlistment:peninsulaHost.chosen&&!peninsulaHost.active&&!peninsulaHost.enlisted,lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:[...(cagneyQuest.state.over?[]:[CAGNEY.id]),...(!race.state().complete?[KAYLA.id]:[])],skillTeachers:[...sunflowerLesson.view(playSeconds).teacherIds,...(!cubHost.quest.completed?[CUB.id]:[]),...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],deedDestinations:sylviaIvy.view().complete?[]:[SYLVIA.id],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
@@ -8202,6 +8298,7 @@ async function init() {
       const fightAt=combat.state.phase==='active'?combat.state.center:null;
       const fightingPeople=combatPresence(combat.state);
       for(const npc of npcData) {
+        if(chapterOne&&mercenaryIds.has(npc.id)||world.enabledRegions&&!world.isRegionEnabled(world.npcPositions[npc.id]?.x,world.npcPositions[npc.id]?.z)){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         if(npc.role==='aevis-soldier'&&world.loading&&!world.loading.isReady(AEVIS.region)){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         if(crime.isDown(npc.id)||corpseHost.ownsNpc(npc.id)){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         const fighter=fightingPeople.get(npc.id);
@@ -8239,7 +8336,7 @@ async function init() {
         // Nobody strolls about beside a fight: a villager near one backs off and watches from a distance.
         const fleeing=!npc.bear&&npc.residentMotion===undefined&&!!fightAt&&civilian(npc)&&Math.hypot(home.x-fightAt.x,home.z-fightAt.z)<26;
         // Past sixty-two metres somebody is thirty pixels tall and seventeen to twenty-four draw
-        // calls; there he is one mesh instead (src/figure-lod.js). `npc.marker.visible` is last
+        // calls; there he is one mesh instead (src/world/actors/figure-lod.js). `npc.marker.visible` is last
         // frame's, which is soon enough for a mark that is about to be looked at.
         {const detail=figureDetail(npc.detail,Math.hypot(pos.x-player.group.position.x,pos.z-player.group.position.z),
             {kind:npc.dog?'dog':npc.cat?'cat':npc.horse?'horse':npc.ogre?'ogre':'person',talking:activeDialogue?.npc===npc,
@@ -8282,7 +8379,7 @@ async function init() {
         npc.marker.visible=!!grade&&!(npc.id===KAYLA.id&&raceHost.mounted);
         npc.marker.position.set(pos.x,pos.y+3.15+Math.sin(elapsed*2.5)*.12,pos.z);
         if(npc.marker.userData.billboard)npc.marker.quaternion.copy(camera.quaternion);else npc.marker.rotation.y=elapsed*.7;
-        // Facing the traveler is a loan, given back when the talking is done (src/bodies.js).
+        // Facing the traveler is a loan, given back when the talking is done (src/gameplay/combat/bodies.js).
         // Somebody posed against their work - Old Hewe at the grave he is digging, Sela at the
         // board - faces it because that is where the work is, and nothing else ever turns them.
         {if(pace>.1||face)npc.lent=undefined;   // these have somewhere of their own to look
@@ -8293,14 +8390,14 @@ async function init() {
       keepLandingMateOnFooting();
       watchCompanion();
       // Who answers F: the traveler's own business first, then whoever belongs there, and a hired sword of the
-      // company last, because he is only passing and stops exactly where the traveler has business (src/prompt-priority.js).
+      // company last, because he is only passing and stops exactly where the traveler has business (src/ui/dialogue/prompt-priority.js).
       {const answers=talkTarget(talkers.map(t=>({...t,marked:t.npc.marker.visible,passing:mercenaryIds.has(t.npc.id)})));if(answers){currentNPC=answers.npc;nearest=answers.d;}}
       {// Puck: he goes in a puff if the traveler runs at him or swings at him, and wanders his haunts in Solis.
         const pp=player.group.position,speed=Math.hypot(pp.x-puckLast.x,pp.z-puckLast.z)/Math.max(dt,1e-3);puckLast.x=pp.x;puckLast.z=pp.z;
         const home=puck.haunt,alive=!crime.isDown(puckNpc.id),near=alive&&Math.hypot(home.x-pp.x,home.z-pp.z)<180;
         if(alive&&mode==='playing')for(const event of puck.update(dt,{x:pp.x,z:pp.z,hurrying:speed>5.6&&speed<40,swinging:combat.state.player.action!=='idle'}))puckEvent(event);
         puckView.group.visible=near;puckView.update(elapsed,dt,{sober:puck.sober()});
-        // He turns to whoever he is talking to and turns back afterwards (src/bodies.js), which he
+        // He turns to whoever he is talking to and turns back afterwards (src/gameplay/combat/bodies.js), which he
         // used not to: he kept the traveler's bearing until the next time he moved.
         {const turned=lendFacing({facing:puckFacing,lent:puckLent,dt,talking:near&&mode==='dialogue'&&activeDialogue?.npc===puckNpc,
           want:Math.atan2(pp.x-puckView.group.position.x,pp.z-puckView.group.position.z)});
@@ -8341,7 +8438,7 @@ async function init() {
       {// The Lauvel: the bearers go on with their round, and the hurdle goes between them.
         const pp=player.group.position,field=fieldPoint(0,10),near=Math.hypot(field.x-pp.x,field.z-pp.z)<200;
         // She has called out to everybody who has come up that road for ten days, and does not
-        // wait to be spoken to (src/lauvel-burying.js). Not in the middle of the wolves.
+        // wait to be spoken to (src/content/regions/luscia/lauvel-burying.js). Not in the middle of the wolves.
         // A review view is not somebody coming up the road: `reviewTarget` marks a shot being
         // composed, the way the troupe's scene above uses it, and three of the Lauvel views stand
         // the camera inside her earshot with the quest still at 'unknown'.
@@ -8376,7 +8473,7 @@ async function init() {
         if(rebelShip&&seen!==(rebelShip.group.parent===scene)){if(seen)scene.add(rebelShip.group);else scene.remove(rebelShip.group);}
         // **Her own clock, not the session's.** Everything else about this arrival is a function
         // of `playSeconds` - where she is, which way she heads, how far the two at the rail lean -
-        // and src/rebel-crew.js says in as many words that a game reloaded mid-arrival shows the
+        // and src/content/quests/roadside/rebel-crew.js says in as many words that a game reloaded mid-arrival shows the
         // right pose without anything being saved. Handing her `elapsed` broke exactly that half
         // of it: the helmsman's tiller, everybody's sway and the man at the sail were on a clock
         // that starts at nought every time the game is opened, so the same second looked different
@@ -8582,14 +8679,14 @@ async function init() {
   if(world.loading){updateRegionLoadingStatus();regionStatusTimer=setInterval(updateRegionLoadingStatus,500);}
   openingViewEpoch=performance.now();
   requestAnimationFrame(render);
-  if(['start','tutorial'].includes(testingQuery.get('launch'))){
+  if(['start','tutorial','chapter','continue'].includes(testingQuery.get('launch'))){
     const path=testingQuery.get('launch'),url=new URL(location.href);url.searchParams.delete('launch');history.replaceState(null,'',url.href);
-    requestAnimationFrame(()=>chooseOpening(path));
+    requestAnimationFrame(()=>path==='continue'?continueRoad():chooseOpening(path));
   }
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({freeStart:freeStart?{...freeStart}:null,arrivalClock:arrivalClock(),peninsulaTutorial:peninsulaHost.view(),sevron:sevronHost.snapshot(),loading:world.loading?.state()??null,sceneryResidency:world.sceneryResidency?.state()??null,loadingMode:world.loadingMode??'full',waitingForRegion:regionLoadDepth>0,frontierRaids:frontierRaids?.state(),ibenwoodDefense:ibenwoodDefense?.state(),lotharnCave:lotharnCave.snapshot(),...batmanHost.snapshot(),flight:batmanHost.flight.state(),developerBat:developerBat.view(),developerMount:{kind:developerMountKind,visible:developerBatView.group.visible},dragonFire:dragonFire.view(),dragonDestruction:dragonDestruction.state(),climbing:climbing.view(),terrainFall:terrainFall.view(),grounded,inWater,lastFoothold:lastFoothold?{...lastFoothold}:null,kaylaRace:race.state(),cubHoney:cubHost.state(),bearFamily:bearFamily.snapshot(),apiaryBees:apiaryBees.state(),kayla:kaylaHost.state(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({chapterOne:chapterOne?{...chapterOne}:null,chapterColumn:chapterColumn?.positions(),freeStart:freeStart?{...freeStart}:null,arrivalClock:arrivalClock(),peninsulaTutorial:peninsulaHost.view(),sevron:sevronHost.snapshot(),loading:world.loading?.state()??null,sceneryResidency:world.sceneryResidency?.state()??null,loadingMode:world.loadingMode??'full',waitingForRegion:regionLoadDepth>0,frontierRaids:frontierRaids?.state(),ibenwoodDefense:ibenwoodDefense?.state(),lotharnCave:lotharnCave.snapshot(),...batmanHost.snapshot(),flight:batmanHost.flight.state(),developerBat:developerBat.view(),developerMount:{kind:developerMountKind,visible:developerBatView.group.visible},dragonFire:dragonFire.view(),dragonDestruction:dragonDestruction.state(),climbing:climbing.view(),terrainFall:terrainFall.view(),grounded,inWater,lastFoothold:lastFoothold?{...lastFoothold}:null,kaylaRace:race.state(),cubHoney:cubHost.state(),bearFamily:bearFamily.snapshot(),apiaryBees:apiaryBees.state(),kayla:kaylaHost.state(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       // The opening sequence, for a harness that would rather not sit through forty-four seconds.
@@ -8647,10 +8744,11 @@ async function init() {
       };
     }
     window.__AZHORA__={state,
+      openingView(seconds=0){openingViewEpoch=performance.now()-seconds*1000;return {scope:world.enabledRegions?'campaign':'developer',backdropTiles:world.terrainBackdrop(),startupMs:startup.record.totalMs};},
       loading:{state:()=>world.loading?.state()??null,ensure:region=>world.loading?.ensureRegion(region)??Promise.resolve(),stop:()=>world.loading?.stop(),start:()=>world.loading?.start(),waiting:()=>regionLoadingPromise},
       reviewR1JourneyView:view=>{lotharnCave.leave();caveDark=0;return window.__AZHORA__.review(view);},
       async runR4R7JourneyChecks(options={}){
-        const {runR4R7JourneyChecks}=await import('./r4-r7-journey-checks.js');
+        const {runR4R7JourneyChecks}=await import('./dev/checks/r4-r7-journey-checks.js');
         return runR4R7JourneyChecks({world,scene,camera,player,wind:()=>combat.state.player.stamina,wildlife:()=>westLife.snapshot(),
           read:()=>({mode,waitingForRegion:regionLoadDepth>0,terrainFall:terrainFall.view(),inWater,hp:combat.state.player.hp,playSeconds,loadingMode:world.loadingMode??'full',frameErrors:frameErrors.view()}),ready:()=>regionLoadingPromise,
           evidence:()=>({viewport:{width:innerWidth,height:innerHeight,pixelRatio:renderer.getPixelRatio()},frameMs:frameDeltas.map(dt=>dt*1000),render:{...renderer.info.render},memory:{...renderer.info.memory},heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize}:null,wildlife:westLife.visualStats(),figures:{total:npcData.length,built:npcData.filter(n=>n.actor.materialized!==false).length}}),
@@ -8660,7 +8758,7 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}},options);
       },
       async runR1JourneyChecks(expected=null){
-        const {runR1JourneyChecks}=await import('./r1-journey-checks.js');
+        const {runR1JourneyChecks}=await import('./dev/checks/r1-journey-checks.js');
         return runR1JourneyChecks({world,player,wood,read:state,ready:()=>regionLoadingPromise,snapshot:roadSnapshot,persist:saved=>checkpoint.save(saved),resume:()=>continueRoad(),
           evidence:()=>({viewport:{width:innerWidth,height:innerHeight,pixelRatio:renderer.getPixelRatio()},frameMs:frameDeltas.map(dt=>dt*1000),render:{...renderer.info.render},memory:{...renderer.info.memory},heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize}:null,wildlife:westLife.visualStats(),figures:{total:npcData.length,built:npcData.filter(n=>n.actor.materialized!==false).length}}),
           travel:point=>testGoTo(point,'REGIONAL JOURNEY REVIEW','Checking destination readiness.'),face:value=>{yaw=value;settleCamera();},
@@ -8669,7 +8767,7 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}},expected);
       },
       async runAlezhorChecks(expected=null){
-        const {runAlezhorChecks}=await import('./alezhor-checks.js');
+        const {runAlezhorChecks}=await import('./dev/checks/alezhor-checks.js');
         return runAlezhorChecks({world,scene,player,wood,inventory,skills,wind:()=>combat.state.player.stamina,wildlife:()=>westLife.snapshot(),read:state,ready:()=>regionLoadingPromise,snapshot:roadSnapshot,persist:saved=>checkpoint.save(saved),resume:()=>continueRoad(),
           evidence:()=>({viewport:{width:innerWidth,height:innerHeight,pixelRatio:renderer.getPixelRatio()},frameMs:frameDeltas.map(dt=>dt*1000),render:{...renderer.info.render},memory:{...renderer.info.memory},heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize}:null,wildlife:westLife.visualStats(),figures:{total:npcData.length,built:npcData.filter(n=>n.actor.materialized!==false).length}}),
           travel:point=>testGoTo(point,'ALEZHOR REVIEW','Checking destination readiness.'),face:value=>{yaw=value;settleCamera();},
@@ -8678,7 +8776,7 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}},expected);
       },
       async runEastIzolChecks(expected=null){
-        const {runEastIzolChecks}=await import('./east-izol-checks.js');
+        const {runEastIzolChecks}=await import('./dev/checks/east-izol-checks.js');
         return runEastIzolChecks({world,scene,player,wood,inventory,skills,wind:()=>combat.state.player.stamina,wildlife:()=>westLife.snapshot(),read:state,ready:()=>regionLoadingPromise,snapshot:roadSnapshot,persist:saved=>checkpoint.save(saved),resume:()=>continueRoad(),
           evidence:()=>({viewport:{width:innerWidth,height:innerHeight,pixelRatio:renderer.getPixelRatio()},frameMs:frameDeltas.map(dt=>dt*1000),render:{...renderer.info.render},memory:{...renderer.info.memory},heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize}:null,wildlife:westLife.visualStats(),figures:{total:npcData.length,built:npcData.filter(n=>n.actor.materialized!==false).length}}),
           travel:point=>testGoTo(point,'EAST IZOL REVIEW','Checking destination readiness.'),face:value=>{yaw=value;settleCamera();},
@@ -8687,7 +8785,7 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}},expected);
       },
       async runRegionalGroundChecks(expected=null){
-        const {runRegionalGroundChecks}=await import('./regional-ground-checks.js');
+        const {runRegionalGroundChecks}=await import('./dev/checks/regional-ground-checks.js');
         return runRegionalGroundChecks({world,scene,player,wood,inventory,skills,wind:()=>combat.state.player.stamina,wildlife:()=>westLife.snapshot(),read:state,ready:()=>regionLoadingPromise,snapshot:roadSnapshot,persist:saved=>checkpoint.save(saved),resume:()=>continueRoad(),
           evidence:()=>({viewport:{width:innerWidth,height:innerHeight,pixelRatio:renderer.getPixelRatio()},frameMs:frameDeltas.map(dt=>dt*1000),render:{...renderer.info.render},memory:{...renderer.info.memory},heap:performance.memory?{used:performance.memory.usedJSHeapSize,total:performance.memory.totalJSHeapSize}:null,wildlife:westLife.visualStats(),figures:{total:npcData.length,built:npcData.filter(n=>n.actor.materialized!==false).length}}),
           travel:point=>testGoTo(point,'REGIONAL JOURNEY REVIEW','Checking destination readiness.'),face:value=>{yaw=value;settleCamera();},
@@ -8696,14 +8794,14 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}},expected);
       },
       async runFastLoadingChecks(){
-        const {runFastLoadingChecks}=await import('./fast-loading-checks.js');
+        const {runFastLoadingChecks}=await import('./dev/checks/fast-loading-checks.js');
         return runFastLoadingChecks({world,player,read:state,ready:()=>regionLoadingPromise,dwarfAutoplay:()=>window.__AZHORA__.runDwarfAutoplayChecks(),travel:point=>testGoTo(point,'FAST LOADING TEST','Testing the destination loading gate.'),
           press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true})),release:code=>document.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true})),
           play:()=>{window.__AZHORA__.review('walk');reviewFrozen=false;reviewTarget=null;mode='playing';skillAnnouncements.clear();mapTutorial.restore(2);renderMapTutorial();},
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}});
       },
       async runClimbingChecks(){
-        const {runClimbingChecks}=await import('./climbing-checks.js');
+        const {runClimbingChecks}=await import('./dev/checks/climbing-checks.js');
         const frames=async(n=2)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         return runClimbingChecks({climbing,combat,skills,player,world,frames,
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();reviewFrozen=true;reviewTarget=null;player.group.visible=true;crime.restore();corpseHost.restore();combat.revive();combat.finishPractice();combatEvents.length=0;mode='playing';show('dialogue',false);show('modal-backdrop',false);},
@@ -8720,7 +8818,7 @@ async function init() {
         });
       },
       async runBatmanChecks(){
-        const {runBatmanChecks}=await import('./batman-smoke.js');
+        const {runBatmanChecks}=await import('./dev/checks/batman-smoke.js');
         const frames=async(n=2)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         const warp=(x,z)=>{player.group.position.set(x,world.heightAt(x,z),z);grounded=true;verticalSpeed=0;inWater=false;settleCamera();};
         return runBatmanChecks({host:batmanHost,player,npcById,world,skills,crime,combat,inventory,frames,devBat:developerBat,
@@ -8740,7 +8838,7 @@ async function init() {
         });
       },
       runSylviaIvyChecks:async()=>{
-        const {runSylviaIvyChecks}=await import('./sylvia-ivy-checks.js');const hooks=roadSkillsHooks();
+        const {runSylviaIvyChecks}=await import('./dev/checks/sylvia-ivy-checks.js');const hooks=roadSkillsHooks();
         return runSylviaIvyChecks({...hooks,ivy:sylviaIvy,refresh:()=>{ivyView.update();refreshRoadSkills();},saved:()=>JSON.stringify(checkpoint.read()),
           visible:id=>{const patch=IVY_PATCHES.find(p=>p.id===id);return !!ivyView.group.getObjectByName(`${patch.name} living runners`)?.visible;},
           restore:saved=>{recoveryInfo={testing:true,encounterId:null};hooks.restore(saved);testingEnabled=true;},
@@ -8750,7 +8848,7 @@ async function init() {
             console.log('IVY_CAPTURE '+name);await hooks.frames(8);reviewFrozen=false;reviewVista=false;reviewTarget=null;}});
       },
       runSunflowerChecks:async()=>{
-        const {runSunflowerChecks}=await import('./sunflower-checks.js');
+        const {runSunflowerChecks}=await import('./dev/checks/sunflower-checks.js');
         const hooks=roadSkillsHooks();
         return runSunflowerChecks({...hooks,lesson:sunflowerLesson,saved:()=>JSON.stringify(checkpoint.read()),
           restore:saved=>{recoveryInfo={testing:true,encounterId:null};hooks.restore(saved);testingEnabled=true;},
@@ -8760,14 +8858,14 @@ async function init() {
             clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();await hooks.frames(4);}});
       },
       runSilverAutoplayChecks:async()=>{
-        const {runSilverAutoplayChecks}=await import('./silver-autoplay-checks.js');
+        const {runSilverAutoplayChecks}=await import('./dev/checks/silver-autoplay-checks.js');
         return runSilverAutoplayChecks({autoplay:autopilot,frames:()=>new Promise(requestAnimationFrame),
           prepare:()=>{forestHooks().prepareVillage();stopAutopilot();closeDialogue();reviewFrozen=false;reviewTarget=null;if(!saveRoad(false))throw new Error('Could not prepare a normal checkpoint');},
           open:()=>{if(mode!=='testing')testingMenu();},stop:()=>stopAutopilot(),saved:()=>JSON.stringify(checkpoint.read().data),
           summary:()=>({mode,position:player.group.position.toArray(),intent:autopilot.intent,reason:autopilot.reason,move:autopilot.move,interaction:autopilotRead().interaction,nearby:playerWorld.nearColliders(player.group.position.x,player.group.position.z,3).map(c=>({id:c.id,kind:c.kind,x:c.x,z:c.z,r:c.r,hx:c.hx,hz:c.hz})),drent:drent.state(),luscia:republic.state(),dialogue:activeDialogue?.npc?.id,choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>b.dataset.choice),combat:{phase:combat.state.phase,hp:combat.state.player.hp},npc:{glun:questPilotPerson('instructor'),killian:questPilotPerson('killian'),hara:questPilotPerson('timber-stall')}})});
       },
       runTestingToolsChecks:async()=>{
-        const {runTestingToolsChecks}=await import('./testing-tools-checks.js');
+        const {runTestingToolsChecks}=await import('./dev/checks/testing-tools-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         return runTestingToolsChecks({frames,state,autoplay:autopilot,story:autopilotRead,civil:()=>({drent:drent.state(),luscia:republic.state()}),resume:startAutopilot,restoreAdventure:()=>continueRoad(false),playtest:()=>mainPlaytest?.id??null,
           offerRoadFork:()=>drent.defeatedAmbush(),questChoiceOpen:questChoice.isOpen,dialogueNpc:()=>activeDialogue?.npc?.id,horse:()=>({owned:riding.owned,developerMount:riding.developerMount}),recall:()=>living.recall(),
@@ -8781,7 +8879,7 @@ async function init() {
         });
       },
       runWineryChecks:async()=>{
-        const {runWineryChecks}=await import('./winery-checks.js');
+        const {runWineryChecks}=await import('./dev/checks/winery-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         const close=()=>{closeDialogue();mode='playing';};
         return runWineryChecks({wine,skills,npcById,frames,state,
@@ -8801,7 +8899,7 @@ async function init() {
         });
       },
       runPortCalosChecks:async()=>{
-        const {runPortCalosChecks}=await import('./port-calos-checks.js');
+        const {runPortCalosChecks}=await import('./dev/checks/port-calos-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         let watchCrossing=true;
         return runPortCalosChecks({world,ferry,npcById,state,frames,snapshot:roadSnapshot,conversation,nextSpeech,closeDialogue,
@@ -8827,8 +8925,8 @@ async function init() {
           },
         });
       },
-      runVisualArtsChecks:async()=>{const {runVisualArtsChecks}=await import('./visual-arts-checks.js');return runVisualArtsChecks(roadSkillsHooks());},
-      runRoadAmbushChecks:async()=>{const {runRoadAmbushChecks}=await import('./road-ambush-checks.js');
+      runVisualArtsChecks:async()=>{const {runVisualArtsChecks}=await import('./dev/checks/visual-arts-checks.js');return runVisualArtsChecks(roadSkillsHooks());},
+      runRoadAmbushChecks:async()=>{const {runRoadAmbushChecks}=await import('./dev/checks/road-ambush-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         return runRoadAmbushChecks({ambush,host:ambushHost,watch:ambushWatch,combat,corpses:corpseHost,state,frames,
           combatActor:id=>combatView.actor(id),events:handleCombatEvents,snapshot:roadSnapshot,
@@ -8840,9 +8938,9 @@ async function init() {
             combat.revive();combatEvents.length=0;ambush.restore(createRoadAmbush().snapshot());ambushHost.reset();ambushPlayerHelped=false;drent.restore();
             playSeconds=0;resetLivingStory();questStage=QUEST_DONE;inventory.grant('harbor-letter');inventory.grant('road-token');
             testingEnabled=true;reviewFrozen=false;reviewTarget=null;mode='playing';player.group.visible=true;show('modal-backdrop',false);show('dialogue',false);refreshQuest();}});},
-      runFireMakingChecks:async()=>{const {runFireMakingChecks}=await import('./road-skills-checks.js');return runFireMakingChecks(roadSkillsHooks());},
+      runFireMakingChecks:async()=>{const {runFireMakingChecks}=await import('./dev/checks/road-skills-checks.js');return runFireMakingChecks(roadSkillsHooks());},
       runWillowmereFamilyChecks:async()=>{
-        const {runWillowmereFamilyChecks}=await import('./willowmere-family-checks.js');const h=roadSkillsHooks();
+        const {runWillowmereFamilyChecks}=await import('./dev/checks/willowmere-family-checks.js');const h=roadSkillsHooks();
         return runWillowmereFamilyChecks({...h,barrettGeography,cartography,
           prepare:()=>{testingEnabled=true;h.prepare();},
           restore:saved=>{testingEnabled=true;recoveryInfo={testing:true,encounterId:null};h.restore(saved);},
@@ -8850,8 +8948,8 @@ async function init() {
           dialogueChoices:()=>[...document.querySelectorAll('#dialogue-choices [data-choice]')].map(b=>({id:b.dataset.choice,label:b.textContent})),
         });
       },
-      runFishingLessonsChecks:async()=>{const {runFishingLessonsChecks}=await import('./fishing-lessons-checks.js');return runFishingLessonsChecks(roadSkillsHooks());},
-      runRoadSkillsChecks:async(onlyGlun=false)=>{const {runRoadSkillsChecks}=await import('./road-skills-checks.js');return runRoadSkillsChecks({...roadSkillsHooks(),onlyGlun});},
+      runFishingLessonsChecks:async()=>{const {runFishingLessonsChecks}=await import('./dev/checks/fishing-lessons-checks.js');return runFishingLessonsChecks(roadSkillsHooks());},
+      runRoadSkillsChecks:async(onlyGlun=false)=>{const {runRoadSkillsChecks}=await import('./dev/checks/road-skills-checks.js');return runRoadSkillsChecks({...roadSkillsHooks(),onlyGlun});},
       runLivingChecks:()=>runLivingDesktopChecks({getStory:()=>living,getHost:()=>livingHost,
         prepare:prepareLivingScenario,
         frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},setMode:v=>{mode=v;},getMode:()=>mode,
@@ -8930,7 +9028,7 @@ async function init() {
         return {ok:true,checks,corpseBounds:{x:size.x,y:size.y,z:size.z},frameErrors:frameErrors.view()};
       },
       async runBearQuestChecks(){
-        const {runBearQuestChecks}=await import('./bear-quests-smoke.js');
+        const {runBearQuestChecks}=await import('./dev/checks/bear-quests-smoke.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         const warp=at=>{player.group.position.set(at.x,world.heightAt(at.x,at.z),at.z);grounded=true;verticalSpeed=0;inWater=false;};
         return runBearQuestChecks({frames,
@@ -8957,7 +9055,7 @@ async function init() {
       },
       async runKaylaChecks(){
         const frames=async(n=2)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
-        const {runKaylaChecks}=await import('./kayla-smoke.js');
+        const {runKaylaChecks}=await import('./dev/checks/kayla-smoke.js');
         return runKaylaChecks({host:kaylaHost,race,crime,combat,npc:npcById.get(KAYLA.id),world,player,
           conversation,closeDialogue,nextSpeech,inventory,corpses:corpseHost,frames,
           prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();
@@ -8974,7 +9072,7 @@ async function init() {
       },
       async runJesseCarriageChecks(){
         const frames=(n=2)=>new Promise(resolve=>{const step=()=>--n<=0?resolve():requestAnimationFrame(step);requestAnimationFrame(step);});
-        const {runJesseCarriageChecks}=await import('./jesse-carriage-smoke.js');
+        const {runJesseCarriageChecks}=await import('./dev/checks/jesse-carriage-smoke.js');
         return runJesseCarriageChecks({host:jesseHost,npc:npcById.get(JESSE.id),frames,interact,conversation,nextSpeech,closeDialogue,
           prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();crime.restore();corpseHost.restore();combat.revive();combat.finishPractice();mode='playing';reviewFrozen=true;reviewTarget=null;testingEnabled=true;jesseHost.restore();await frames(2);},
           warp:p=>{player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);grounded=true;verticalSpeed=0;settleCamera();},
@@ -8984,7 +9082,7 @@ async function init() {
       },
       async runBrandyHomeChecks(){
         const frames=(n=2)=>new Promise(resolve=>{const step=()=>--n<=0?resolve():requestAnimationFrame(step);requestAnimationFrame(step);});
-        const {runBrandyHomeChecks}=await import('./brandy-home-smoke.js');
+        const {runBrandyHomeChecks}=await import('./dev/checks/brandy-home-smoke.js');
         return runBrandyHomeChecks({homes:brandyHome,salt,npcById,frames,interact,nextSpeech,
           prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();crime.restore();corpseHost.restore();combat.revive();combat.finishPractice();mode='playing';reviewFrozen=true;reviewTarget=null;testingEnabled=true;await frames(2);},
           clock:n=>{playSeconds=n;},
@@ -8994,7 +9092,7 @@ async function init() {
       },
       async runHomeResidentsChecks(){
         const frames=(n=2)=>new Promise(resolve=>{const step=()=>--n<=0?resolve():requestAnimationFrame(step);requestAnimationFrame(step);});
-        const {runHomeResidentsChecks}=await import('./home-residents-smoke.js');
+        const {runHomeResidentsChecks}=await import('./dev/checks/home-residents-smoke.js');
         return runHomeResidentsChecks({homes:homeResidents,npcById,frames,conversation,nextSpeech,closeDialogue,interact,
           prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();
             crime.restore();corpseHost.restore();combat.revive();combat.finishPractice();mode='playing';reviewFrozen=true;reviewTarget=null;testingEnabled=true;
@@ -9011,7 +9109,7 @@ async function init() {
           prompt:()=>$('interaction-label').textContent});
       },
       async runAddisonAutoplayChecks(){
-        const {runAddisonAutoplayChecks}=await import('./addison-autoplay-checks.js');
+        const {runAddisonAutoplayChecks}=await import('./dev/checks/addison-autoplay-checks.js');
         return runAddisonAutoplayChecks({
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
             if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
@@ -9025,7 +9123,7 @@ async function init() {
         });
       },
       async runCatieAutoplayChecks(){
-        const {runCatieAutoplayChecks}=await import('./catie-autoplay-checks.js');
+        const {runCatieAutoplayChecks}=await import('./dev/checks/catie-autoplay-checks.js');
         return runCatieAutoplayChecks({
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
             if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
@@ -9040,7 +9138,7 @@ async function init() {
         });
       },
       async runDeveloperDragonChecks(){
-        const {runDeveloperDragonChecks}=await import('./developer-dragon-checks.js');
+        const {runDeveloperDragonChecks}=await import('./dev/checks/developer-dragon-checks.js');
         return runDeveloperDragonChecks({state,world,player,developerBat,developerMounts,
           fire:dragonFire,fireView:dragonFireView,destruction:dragonDestruction,combat,crime,wildlife:[woodlandLife,roadLife,westLife],
           fireFixture:kind=>{
@@ -9096,9 +9194,9 @@ async function init() {
         });
       },
       async runCountrysideChecks(){
-        const {runCountrysideChecks}=await import('./countryside-checks.js');
+        const {runCountrysideChecks}=await import('./dev/checks/countryside-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
-        const {checkCountrysideFarming}=await import('./countryside-farming-checks.js');
+        const {checkCountrysideFarming}=await import('./dev/checks/countryside-farming-checks.js');
         const hooks={world,climbing,combat,cave:lotharnCave,frames,state,terrainFall,developerBat,farming,skills,inventory,
           pause:value=>{stopInput();mode=value?'pause':'playing';},recover:()=>retry(),
           stepDev:(seconds,input)=>{for(let t=0;t<seconds;t+=.05)tickDeveloperBat(Math.min(.05,seconds-t),{playing:true,...input});},
@@ -9123,7 +9221,7 @@ async function init() {
         return runCountrysideChecks(hooks);
       },
       async runFrontierChecks(){
-        const {runFrontierChecks}=await import('./frontier-smoke.js');
+        const {runFrontierChecks}=await import('./dev/checks/frontier-smoke.js');
         return runFrontierChecks({world,life:westLife,player,npcById,combat,crime,frontierRaids,state,
           open:()=>modal('testing'),saved:()=>JSON.stringify(checkpoint.read().data),snapshot:roadSnapshot,
           travel:at=>{testGoTo(at,'FRONTIER','Frontier test');reviewFrozen=true;reviewTarget=null;combat.finishPractice();},
@@ -9132,8 +9230,26 @@ async function init() {
           reload:()=>continueRoad(true),
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}});
       },
+      async chapterOneChecks(){
+        const {runChapterOneChecks}=await import('./dev/checks/chapter-one-smoke.js');
+        return runChapterOneChecks({world,combat,border,aftermath,column:chapterColumn,state,map:worldMap,
+          revealMap:value=>{chartRevealed=value;refreshChart();},
+          inspectChapterObjective:()=>chapterOneObjective(chapterOne,border.view(),aftermath.view()),
+          pressMap:()=>{document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyM',bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyM',bubbles:true}));},
+          ready:async()=>{for(const id of world.enabledRegions??[])await world.loading?.ensureRegion(id);},
+          frames:async()=>{await new Promise(requestAnimationFrame);},freeze:v=>{reviewFrozen=v;},
+          select:id=>{document.querySelector('[data-character="'+id+'"]').click();},begin:()=>beginChapterOne({testing:true}),
+          reset:side=>{mode='playing';beginChapterOne({testing:true});for(const a of ['take-legate-terms','enter-solis','side-'+side])borderAct(a);},
+          act:borderAct,events:handleCombatEvents,
+          place:p=>{player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);mapFog.reveal(p.x,p.z);},
+          win:side=>{chapterOne.winner=side;chapterColumn.clear();mode='playing';},
+          talk:id=>{mode='playing';chapterOneConversation(npcById.get(id));},
+          reply:id=>{while(activeDialogue&&activeDialogue.index<activeDialogue.lines.length-1)nextSpeech();const button=document.querySelector('#dialogue-choices [data-choice="'+id+'"]');if(!button)throw new Error('Missing reply '+id);button.click();},
+          finishDialogue:()=>{for(let i=0;i<20&&activeDialogue;i++)nextSpeech();},
+          save:()=>{recoveryInfo={testing:true,encounterId:null};return writeRoadCheckpoint(sessionCheckpoint,false);},reload:()=>continueRoad(true)});
+      },
       async minoraOpeningChecks(expected=null){
-        const {runMinoraOpeningChecks}=await import('./minora-opening-smoke.js');
+        const {runMinoraOpeningChecks}=await import('./dev/checks/minora-opening-smoke.js');
         return runMinoraOpeningChecks({state,
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},
           camera:()=>camera.position.toArray(),orbit:seconds=>{openingViewEpoch=performance.now()-seconds*1000;},
@@ -9162,7 +9278,7 @@ async function init() {
           restore:saved=>{stopAutopilot();const wrote=sessionCheckpoint.save(saved);if(!wrote.ok)return false;const restored=continueRoad(true);reviewFrozen=false;return restored;}});
       },
       async strategicChecks(){
-        const {runStrategicPrototypeChecks}=await import('./strategic-prototype-smoke.js');
+        const {runStrategicPrototypeChecks}=await import('./dev/checks/strategic-prototype-smoke.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         return runStrategicPrototypeChecks({model:strategicModel,ui:strategicUI,frames,combat,store:strategicStore,
           prepare:async()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();combat.revive();combatEvents.length=0;reviewFrozen=true;reviewTarget=null;mode='playing';testingEnabled=false;saveRoad(false);await frames(2);},
@@ -9172,16 +9288,16 @@ async function init() {
       },
       async sevronChecks(){
         window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();skillAnnouncements.clear();reviewFrozen=false;reviewTarget=null;
-        const {WEST_OREMINDI_ARRIVAL}=await import('./west-oremindi-world.js');
+        const {WEST_OREMINDI_ARRIVAL}=await import('./content/regions/west-oremindi/west-oremindi-world.js');
         if(deferUntilLoaded([WEST_OREMINDI_ARRIVAL],()=>{}))await regionLoadingPromise;
         return runSevronChecks({world,host:sevronHost,player,state,saved:()=>JSON.stringify(checkpoint.read().data),
           open:()=>{testingEnabled=true;mode='playing';},
           travel:at=>{testGoTo(at,'WEST OREMINDI','Expedition test');reviewFrozen=true;reviewTarget=null;combat.finishPractice();},
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}});
       },
-      // The Telemon's challenge, played in the running game (src/telemonia-smoke.js): --telemonia-checks.
+      // The Telemon's challenge, played in the running game (src/dev/checks/telemonia-smoke.js): --telemonia-checks.
       async runTelemoniaChecks(){
-        const {runTelemoniaChecks}=await import('./telemonia-smoke.js');
+        const {runTelemoniaChecks}=await import('./dev/checks/telemonia-smoke.js');
         window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();skillAnnouncements.clear();reviewFrozen=false;reviewTarget=null;mode='playing';
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         const live=()=>{reviewFrozen=false;reviewTarget=null;mode='playing';};
@@ -9196,7 +9312,7 @@ async function init() {
           saveAndReload:async()=>{if(!writeRoadCheckpoint(sessionCheckpoint))return false;continueRoad(true);await frames(3);live();await frames(2);live();return true;}});
       },
       async runBaldroChecks(){
-        const {runBaldroChecks}=await import('./baldro-smoke.js');
+        const {runBaldroChecks}=await import('./dev/checks/baldro-smoke.js');
         window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();skillAnnouncements.clear();reviewFrozen=false;reviewTarget=null;
         return runBaldroChecks({world,bodyWorld:playerWorld,life:westLife,host:baldroHost,player,interact,
           choose:id=>{while(activeDialogue&&activeDialogue.index<activeDialogue.lines.length-1)nextSpeech();const button=document.querySelector(`#dialogue-choices button[data-choice="${id}"]`);if(!button)throw new Error('Missing gate choice '+id);button.click();},
@@ -9205,7 +9321,7 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}});
       },
       async runSouthOremindiChecks(){
-        const {runSouthOremindiChecks}=await import('./south-oremindi-smoke.js');
+        const {runSouthOremindiChecks}=await import('./dev/checks/south-oremindi-smoke.js');
         return runSouthOremindiChecks({world,life:westLife,player,state,flight:developerBat,
           open:()=>modal('testing'),saved:()=>JSON.stringify(checkpoint.read().data),
           travel:at=>{testGoTo(at,'SOUTH OREMINDI','Mountain environment test');reviewFrozen=false;reviewTarget=null;combat.finishPractice();},
@@ -9213,7 +9329,7 @@ async function init() {
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}});
       },
       async runIbenwoodDefenseChecks(){
-        const {runIbenwoodDefenseChecks}=await import('./ibenwood-defense-smoke.js');
+        const {runIbenwoodDefenseChecks}=await import('./dev/checks/ibenwood-defense-smoke.js');
         return runIbenwoodDefenseChecks({host:ibenwoodDefense,world,player,combat,skills,state,
           enter:()=>{$('test-elfland').click();reviewFrozen=false;reviewTarget=null;combat.finishPractice();},
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},
@@ -9223,7 +9339,7 @@ async function init() {
           reload:()=>{const ok=continueRoad(true);reviewFrozen=false;reviewTarget=null;return ok;}});
       },
       async runIbenwoodChecks(){
-        const {runIbenwoodChecks}=await import('./ibenwood-smoke.js');
+        const {runIbenwoodChecks}=await import('./dev/checks/ibenwood-smoke.js');
         ibenwoodDefense.setTestingDisabled(true);
         try{return await runIbenwoodChecks({world,player,wood,inventory,woodlandLife,westLife,state,
           prepare:()=>{window.__AZHORA__.review('walk');testingEnabled=false;saveRoad(false);},
@@ -9238,7 +9354,7 @@ async function init() {
           reload:()=>{const ok=continueRoad(true);reviewFrozen=false;reviewTarget=null;return ok;}});}finally{ibenwoodDefense.setTestingDisabled(false);}
       },
       async runNorthernRegionsChecks(){
-        const {runNorthernRegionsChecks}=await import('./northern-regions-checks.js');
+        const {runNorthernRegionsChecks}=await import('./dev/checks/northern-regions-checks.js');
         const frames=async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);};
         return runNorthernRegionsChecks({world,climbing,combat,cave:lotharnCave,frames,state,
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
@@ -9258,7 +9374,7 @@ async function init() {
         });
       },
       async runAriAutoplayChecks(){
-        const {runAriAutoplayChecks}=await import('./ari-autoplay-checks.js');
+        const {runAriAutoplayChecks}=await import('./dev/checks/ari-autoplay-checks.js');
         return runAriAutoplayChecks({
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
             if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
@@ -9272,7 +9388,7 @@ async function init() {
         });
       },
       async runDwarfAutoplayChecks(){
-        const {runDwarfAutoplayChecks}=await import('./dwarf-autoplay-checks.js');
+        const {runDwarfAutoplayChecks}=await import('./dev/checks/dwarf-autoplay-checks.js');
         return runDwarfAutoplayChecks({
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
             if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
@@ -9286,7 +9402,7 @@ async function init() {
         });
       },
       async runJesseAutoplayChecks(){
-        const {runJesseAutoplayChecks}=await import('./jesse-autoplay-checks.js');
+        const {runJesseAutoplayChecks}=await import('./dev/checks/jesse-autoplay-checks.js');
         return runJesseAutoplayChecks({
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
             if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
@@ -9300,7 +9416,7 @@ async function init() {
         });
       },
       async runCagneyAutoplayChecks(){
-        const {runCagneyAutoplayChecks}=await import('./cagney-autoplay-checks.js');
+        const {runCagneyAutoplayChecks}=await import('./dev/checks/cagney-autoplay-checks.js');
         return runCagneyAutoplayChecks({
           prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();closeDialogue();mode='playing';reviewFrozen=false;reviewTarget=null;testingEnabled=false;
             if(!saveRoad(false))throw new Error($('road-checkpoint-status').textContent);},
@@ -9707,7 +9823,7 @@ async function init() {
         chapterOne.ambush={bypass:true,enemies:rebelStart,won:true,optionalSilver:true,hp:combat.state.player.hp};
         // Cross a measured, unbridged Caloss reach using held forward input. No swim
         // skill is granted: the river must admit an ordinary newly trained traveler.
-        const {CALOSS}=await import('./regions.js');const a=CALOSS.points[6],b=CALOSS.points[7],length=Math.hypot(b.x-a.x,b.z-a.z);
+        const {CALOSS}=await import('./world/terrain/regions.js');const a=CALOSS.points[6],b=CALOSS.points[7],length=Math.hypot(b.x-a.x,b.z-a.z);
         const normal={x:-(b.z-a.z)/length,z:(b.x-a.x)/length},center={x:(a.x+b.x)/2,z:(a.z+b.z)/2};
         warp(center.x-normal.x*15,center.z-normal.z*15);yaw=Math.atan2(-normal.x,-normal.z);await frames(3);
         assert(canStand(player.group.position.x,player.group.position.z,world),'Caloss swim starts in water');
@@ -9777,7 +9893,7 @@ async function init() {
               off:+Math.min(...combat.state.enemies.filter(one=>one.active).map(one=>Math.hypot(one.x-jerry.x,one.z-jerry.z))).toFixed(1)}:null};})(),
         /**
          * The file, if a fight is on: who is actually standing with him, told apart into the
-         * friends who came and the soldiers the army assigned (src/file-fill.js). Numbers rather
+         * friends who came and the soldiers the army assigned (src/gameplay/combat/file-fill.js). Numbers rather
          * than intentions - "six were assigned" beside four men on the field is the bug the
          * hunter warned about, and this is what would say so.
          */
@@ -9878,7 +9994,7 @@ async function init() {
         settleCamera();return trailMap.state();
       },
       forestHideout:()=>({quest:forestHideout.state,world:world.forestHideoutState(),watch:hideoutWatch.state()}),
-      runHideoutHostilityChecks:async()=>{const {runHideoutHostilityChecks}=await import('./hideout-hostility-checks.js');return runHideoutHostilityChecks(hideoutHooks());},
+      runHideoutHostilityChecks:async()=>{const {runHideoutHostilityChecks}=await import('./dev/checks/hideout-hostility-checks.js');return runHideoutHostilityChecks(hideoutHooks());},
       runHideoutChecks:()=>runHideoutSmoke(hideoutHooks()),verifyHideoutReload:expected=>verifyHideoutReload(hideoutHooks(),expected),
       async reviewHideout(view){
         hideoutHooks().prepareHideout();reviewFrozen=true;show('dialogue',false);show('modal-backdrop',false);player.group.visible=true;
@@ -10011,7 +10127,7 @@ async function init() {
         // **Nobody walks with you up the pier.** (The user, 22 September 2026: they should never
         // follow without being asked first.) He used to escort the traveler to the letter because
         // in hard mode he is the only one who can say what Jojo is saying; normal mode is all
-        // English and the escort is switched off (LANDING_ESCORT, src/mercenaries.js), so he
+        // English and the escort is switched off (LANDING_ESCORT, src/gameplay/company/mercenaries.js), so he
         // lands, walks his own road to the muster, and is asked with "Walk Drent with me."
         {const mate=npcById.get(landingMateId());
           assert(!mate.escorting,'The man off the boat is walking with you unasked');
@@ -10046,7 +10162,7 @@ async function init() {
         const beforeInventory=player.group.position.clone();press('KeyW');await frames(3);release('KeyW');assert(player.group.position.distanceTo(beforeInventory)<.001,'Inventory allowed movement behind it');
         $('inventory-close').click();assert(mode==='playing'&&questStage===2,'Closing the early satchel skipped a lesson');
         // Officer Glun sets the lesson, and the straw counts for nothing until he has
-        // (src/instructor.js): the post used to be an unattended card in the quest panel.
+        // (src/gameplay/skills/instructor.js): the post used to be an unattended card in the quest panel.
         {const glun=npcById.get(INSTRUCTOR.id);
           warp(glun.actor.group.position.x,glun.actor.group.position.z+1.6);await frames();
           tap('KeyF');assert(mode==='dialogue','Officer Glun would not set the lesson');finishDialogue();
@@ -10056,7 +10172,7 @@ async function init() {
         canvas.dispatchEvent(new PointerEvent('pointerdown',{button:0}));await until(()=>practiceHits>=2,'Left-click practice swing did not connect');await until(()=>combat.state.player.action==='idle','Practice recovery failed');
         // **The shield, held.** Glun asks for three things now and this is the middle one: V is
         // held, not tapped, and it counts only while the boards are actually up - which needs
-        // something in the shield hand, and Cromb lands with one (src/player-characters.js).
+        // something in the shield hand, and Cromb lands with one (src/content/characters/player-characters.js).
         assert(!!gear.wearing('hand'),'the traveler came ashore with nothing in his shield hand');
         press('KeyV');await until(()=>combat.state.player.guarding,'The shield would not come up');
         await until(()=>practiceGuards>=1,'Guard lesson failed');release('KeyV');await frames(2);
@@ -10073,11 +10189,11 @@ async function init() {
         for(const dark of ['Luscia','Pueth','Feradom','East Suval','West Suval'])
           assert(cartography.state(dark)==='unknown',`${dark} was on the chart before anybody went there`);
         // **The chart is the end of Chapter 1's second subquest and the whole of the tutorial.**
-        // Three steps, not eleven: Jojo, Glun, and the road west (src/game-state.js).
+        // Three steps, not eleven: Jojo, Glun, and the road west (src/gameplay/movement/game-state.js).
         assert(questStage===QUEST_DONE,'The chart did not finish the tutorial');
         assert(inventory.has('road-token'),'Officer Glun did not hand over the road token');
         assert($('quest-title').textContent.includes('Nothom'),'The card does not say where the orders send him');
-        // The fight the Greenway used to force on him is off the slate (src/quest-slate.js) and
+        // The fight the Greenway used to force on him is off the slate (src/gameplay/quests/quest-slate.js) and
         // nothing walks into it any more - but it is still built, and the rendered battle, the
         // defeat screen and the checkpoint retry are worth as much coverage as they ever were.
         warp(-47,29);await frames(2);
@@ -10162,7 +10278,7 @@ async function init() {
         // The two the run's summary counts, declared out here so the block above may be skipped.
         let stickSites=woodlandLife.state().sticks,fruitSites=woodlandLife.state().fruits;
         // **The village life of Drent is out of the cast** while the main quest is built out
-        // (src/cast.js): Lysa's acorns, the doomsayer's cape and Bran's rod belong to people who
+        // (src/content/characters/cast.js): Lysa's acorns, the doomsayer's cape and Bran's rod belong to people who
         // are not standing in the world. Every line of it is still written and still tested the
         // day they come back; it is skipped here rather than failed.
         if(inCast('acorn-cook')&&inCast('doomsayer')&&inCast('pond-fisher')){
@@ -10237,7 +10353,7 @@ async function init() {
         tap('KeyI');assert(mode==='playing'&&questStage===QUEST_DONE,'Eating changed the main tutorial or blocked dismissal');
         // The new optional loop uses real NPC choices, casts, catches, firewood,
         // cooking controls, and the food button without using testing supplies.
-        // While the cast is trimmed (src/cast.js) these people are not standing in the world, so
+        // While the cast is trimmed (src/content/characters/cast.js) these people are not standing in the world, so
         // the sections that visit them are skipped rather than failed: they are still written.
         const visit=async id=>{const npc=npcData.find(n=>n.id===id),home=world.npcPositions[id];warp(home.x+.8,home.z+.8);await frames(2);tap('KeyF');assert(activeDialogue?.npc===npc,'Could not talk to '+id);};
         await visit('doomsayer');choose('doom-warning');assert($('speech').textContent.includes('Cape Thalmagar'),'Doomsayer failed to introduce the far cape');nextSpeech();assert($('speech').textContent.includes('Oremindi'),'Doomsayer omitted the mountain barrier');finishTangent();
@@ -10532,7 +10648,7 @@ async function init() {
           const showEnvironment=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();testGoTo(cfg.arrival,cfg.name,'');
             reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runWesternEnvironmentChecks}=await import('./western-environments-smoke.js');
+            const {runWesternEnvironmentChecks}=await import('./dev/checks/western-environments-smoke.js');
             const checks=runWesternEnvironmentChecks(world,westLife,cfg);(window.__westernEnvironmentChecks??={})[cfg.name]=checks;
             let shot=cfg.views[view];
             if(view.endsWith('-wildlife')){
@@ -10553,7 +10669,7 @@ async function init() {
         if(view==='fast-local'){
           const run=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();
-            const {runLocalStreamingChecks}=await import('./local-streaming-checks.js');
+            const {runLocalStreamingChecks}=await import('./dev/checks/local-streaming-checks.js');
             window.__localStreamingChecks=await runLocalStreamingChecks({world,player,
               destination:ACOR_PATHS[2].points[0],destinationRegion:ACOR_IDS[2],
               goTo:async p=>{await testGoTo(p,'Streaming review','');reviewFrozen=false;},
@@ -10565,7 +10681,7 @@ async function init() {
         if(view==='acor-flight'){
           const run=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();
-            const {runAcorFlightChecks}=await import('./acor-flight-smoke.js');
+            const {runAcorFlightChecks}=await import('./dev/checks/acor-flight-smoke.js');
             return runAcorFlightChecks({world,names:ACOR_NAMES,paths:ACOR_PATHS,
               goTo:async p=>{await testGoTo(p,'Acor flight regression','');reviewFrozen=false;},
               startFlight:()=>startDeveloperFlight('dragon'),flight:()=>developerBat.view(),
@@ -10581,7 +10697,7 @@ async function init() {
           const name=OUTER_NAMES[index],profile=outerProfile(name),arrival=profile.points[0];
           const showOuter=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();await testGoTo(arrival,name,'');reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runOuterChecks}=await import('./outer-regions-checks.js');
+            const {runOuterChecks}=await import('./dev/checks/outer-regions-checks.js');
             (window.__outerChecks??={})[name]=runOuterChecks(world,[name]);
             let focus=profile.kind==='alpine'?[...profile.cells].sort((a,b)=>world.heightAt(b.x,b.z)-world.heightAt(a.x,a.z))[0]:profile.anchor,y=world.heightAt(focus.x,focus.z);
             const close=profile.kind==='dark'||profile.kind==='boreal'||profile.kind==='jungle';
@@ -10631,7 +10747,7 @@ async function init() {
           const showAcor=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();await testGoTo(arrival,name,'');
             reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runAcorChecks}=await import('./acor-checks.js');const checks=runAcorChecks(world,[name]);(window.__acorChecks??={})[name]=checks;
+            const {runAcorChecks}=await import('./dev/checks/acor-checks.js');const checks=runAcorChecks(world,[name]);(window.__acorChecks??={})[name]=checks;
             let focus=index===1?ACOR_WATERS[0].centre:ACOR_PATHS[index].points[1];
             let ty=world.heightAt(focus.x,focus.z)+3,e={x:focus.x+100,z:focus.z+120,y:ty+105};
             if(view.includes('-animal')){const requested=view.split('-animal-')[1];const a=westLife.snapshot().creatures.find(a=>a.region===name&&(requested?a.species==='thalmagar-'+requested:a.species.startsWith('thalmagar')));if(!a)throw new Error('Cape animal missing');focus=a;ty=world.heightAt(a.x,a.z)+1.5;e={x:a.x+8,z:a.z+9,y:ty+3};}
@@ -10648,7 +10764,7 @@ async function init() {
           const showNorthern=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();await testGoTo(arrival,name,'');
             reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runNorthernChecks}=await import('./northern-oremindi-checks.js');
+            const {runNorthernChecks}=await import('./dev/checks/northern-oremindi-checks.js');
             const checks=runNorthernChecks(world,[name]);(window.__northernChecks??={})[name]=checks;
             const focus=index===4?NORTHERN_LAKES[0].centre:NORTHERN_PEAKS[[0,2,4,6][index]];
             const ty=index===4?85:world.heightAt(focus.x,focus.z)*.6;
@@ -10663,7 +10779,7 @@ async function init() {
           const showSelamus=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();await testGoTo(SELAMUS_ARRIVAL,'Selemis','');
             reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runSelamusChecks}=await import('./selamus-checks.js');window.__selamusChecks=runSelamusChecks(world);
+            const {runSelamusChecks}=await import('./dev/checks/selamus-checks.js');window.__selamusChecks=runSelamusChecks(world);
             const shot=SELAMUS_VIEWS[view];if(!shot)throw new Error(`Unknown Selemis review: ${view}`);
             const t=shot.target,e=shot.eye;reviewTarget=new THREE.Vector3(t.x,t.y,t.z);
             const dx=e.x-t.x,dz=e.z-t.z,dy=e.y-t.y;distance=targetDistance=Math.hypot(dx,dz,dy);yaw=Math.atan2(dx,dz);pitch=Math.atan2(dy,Math.hypot(dx,dz));
@@ -10675,7 +10791,7 @@ async function init() {
           const showPyra=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();await testGoTo(PYRA_ARRIVAL,'Pyra','');
             reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runPyraChecks}=await import('./pyra-checks.js');window.__pyraChecks=runPyraChecks(world);
+            const {runPyraChecks}=await import('./dev/checks/pyra-checks.js');window.__pyraChecks=runPyraChecks(world);
             const shot=PYRA_VIEWS[view];if(!shot)throw new Error(`Unknown Pyra review: ${view}`);
             const t=shot.target,e=shot.eye,ty=t.y??world.heightAt(t.x,t.z)+1,ey=e.y??world.heightAt(e.x,e.z)+1.8;
             reviewTarget=new THREE.Vector3(t.x,ty,t.z);
@@ -10688,7 +10804,7 @@ async function init() {
           const showCanerd=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();questStage=QUEST_DONE;combat.finishPractice();await testGoTo(CANERD.arrival,'Canerd','');
             reviewFrozen=true;reviewVista=true;player.group.visible=false;
-            const {runCanerdChecks}=await import('./canerd-checks.js');window.__canerdChecks=runCanerdChecks(world);
+            const {runCanerdChecks}=await import('./dev/checks/canerd-checks.js');window.__canerdChecks=runCanerdChecks(world);
             const shot=CANERD_VIEWS[view];if(!shot)throw new Error(`Unknown Canerd review: ${view}`);
             const t=shot.target,e=shot.eye,ty=t.y??world.heightAt(t.x,t.z)+1,ey=e.y??world.heightAt(e.x,e.z)+1.8;
             reviewTarget=new THREE.Vector3(t.x,ty,t.z);
@@ -10700,7 +10816,7 @@ async function init() {
         if(view.startsWith('aevis-')){
           const showCity=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();reviewFrozen=true;reviewVista=true;questStage=QUEST_DONE;
-            const {runAevisChecks}=await import('./aevis-smoke.js');window.__aevisChecks=runAevisChecks(world,npcById);
+            const {runAevisChecks}=await import('./dev/checks/aevis-smoke.js');window.__aevisChecks=runAevisChecks(world,npcById);
             const palace=AEVIS_BUILDINGS.find(b=>b.kind==='palace'),gate=AEVIS_GATES[0],drill=AEVIS_SOLDIERS.find(s=>s.id==='aevis-drill-2');
             const shots={
               'aevis-overview':[AEVIS.x,AEVIS.z,9,195,.75,1.0],
@@ -10720,7 +10836,7 @@ async function init() {
         if(view.startsWith('nylon-')){
           const showCity=async()=>{
             prepareTesting();stopAutopilot();closeDialogue();reviewFrozen=true;reviewVista=true;questStage=QUEST_DONE;
-            const {runNylonChecks}=await import('./nylon-smoke.js');
+            const {runNylonChecks}=await import('./dev/checks/nylon-smoke.js');
             window.__nylonChecks=runNylonChecks(world);
             const shots={
               'nylon-overview':[-1320,1115,23,200,.62,-.85],
@@ -10740,7 +10856,7 @@ async function init() {
           };
           const pending=pendingRegions([15]);return pending.length?waitForRegions(pending,showCity):showCity();
         }
-        // Mithala (src/mithala-city.js), the river-city at the meeting of the arms. The plain's own views (mithala-meeting,
+        // Mithala (src/content/regions/mithala/mithala-city.js), the river-city at the meeting of the arms. The plain's own views (mithala-meeting,
         // mithala-braid and the rest) are westReviewSpot's; these five are the city's, worked out from its own plan. Every
         // view at walking height stands its eye exactly 1.8 m over what the feet would stand on there - a deck
         // or the ground - and says so with an explicit y. The tower view is elevated above its parapet.
@@ -11007,13 +11123,13 @@ async function init() {
          * the picture showed him on the ground beside his horse.
          */
         // Tidehaven's smithy, from the street it stands on. The plot was chosen by measurement
-        // (TIDEHAVEN_SMITHY, src/region-world.js); the shot is too.
+        // (TIDEHAVEN_SMITHY, src/world/terrain/region-world.js); the shot is too.
         /**
          * **Goibniu at his board**, in Ostel's street. He had no view of his own and was never
          * photographed until the hunter stood a traveler in front of him with `stand-at:` and
          * found him with his back 0.9 m from the smithy wall, unframeable from any ground you
          * can talk to him from (docs/known-issues.md, round 5). He has been moved to the street
-         * corner of his own smithy (`OSTEL_STANDS`, src/amod-world.js) and this is the picture
+         * corner of his own smithy (`OSTEL_STANDS`, src/content/regions/amod/amod-world.js) and this is the picture
          * of him there: the traveler at talking distance, the smith between him and his forge,
          * and the smithy's end wall behind the two of them.
          *
@@ -11080,7 +11196,7 @@ async function init() {
           return;
         }
         // The capital's armourer at the Strand Forge, from the raft way his yard fronts. The plot
-        // was swept headlessly before anything was drawn (AMBRON_FORGE, src/ambron.js).
+        // was swept headlessly before anything was drawn (AMBRON_FORGE, src/content/regions/ambron/ambron.js).
         if(view==='ambron-armourer'){
           questStage=QUEST_DONE;combat.finishPractice();player.setArmed(false);
           // Off his shoulder, not in front of him: `startingSpot` rings the man, and the far side
@@ -11169,7 +11285,7 @@ async function init() {
          * because the runner composes the first view twice.
          */
         /**
-         * **A lone traveler going in with his file** (src/file-fill.js). Nobody walks with him,
+         * **A lone traveler going in with his file** (src/gameplay/combat/file-fill.js). Nobody walks with him,
          * so his commander has assigned him six ordinary soldiers of the side he signed with, and
          * the shot is of the file they stand in. `filled-file-coalition` is the other army's.
          */
@@ -11211,7 +11327,7 @@ async function init() {
           return;
         }
         /**
-         * **The battle a full company meets** (`borderLine`, src/border-chapter.js). Ten walk with
+         * **The battle a full company meets** (`borderLine`, src/content/chapters/chapter-one/border-chapter.js). Ten walk with
          * him, so the other side has counted them and put **twelve** across the field - the largest
          * line `encounterConfig` will accept - and the shot is of the two lines facing each other
          * with the open ground between them.
@@ -11492,7 +11608,7 @@ async function init() {
           const teach=view==='sparring-pike'?'merc-matt':WORD_ID;
           questStage=QUEST_DONE;combat.revive();sparring=null;endMark(null);returnLoan();player.setArmed(true);
           companionOffTheClock=true;
-          // Two lessons given, which is `friendly` (RUNG_AT.friendly, src/companions.js) and a
+          // Two lessons given, which is `friendly` (RUNG_AT.friendly, src/gameplay/company/companions.js) and a
           // ceiling of min(35, his own 35). Restored rather than played, so the shot is the same
           // every time it is taken.
           companions.restore({...createCompanions().snapshot(),walking:[teach],regard:{[teach]:60}});
@@ -11761,10 +11877,10 @@ async function init() {
         // The testing panel itself, so the go-anywhere rows can be looked at rather than believed.
         // Render this one WITHOUT --review-clean: that flag hides every element of the interface.
         if(view==='testing-panel'||view==='testing-strategy'){combat.finishPractice();testingWhereAmI();modal('testing');if(view==='testing-strategy')document.getElementById('test-strategic-prototype').scrollIntoView({block:'center'});}
-        // The phone's HUD (src/touch-controls.css), rendered with --touch --mobile=WxH: the objectives
+        // The phone's HUD (src/ui/input/touch-controls.css), rendered with --touch --mobile=WxH: the objectives
         // brought back by the Quest button, and a conversation at a phone's width.
         // (Only if it is off: main.cjs photographs the first view twice, and a second tap puts it away.)
-        // Kayla's circus family in camp by the Tessen crossing, every one of them mid-act (src/bear-circus.js):
+        // Kayla's circus family in camp by the Tessen crossing, every one of them mid-act (src/content/quests/bear-family/bear-circus.js):
         // bear-circus from the road, bear-circus-close nearer. Kayla is brought to the camp for it.
         if(view==='bear-circus'||view==='bear-circus-close'){questStage=QUEST_DONE;combat.finishPractice();reviewFrozen=true;player.group.visible=false;
           player.group.position.set(CUB_STAND.x-4,world.heightAt(CUB_STAND.x-4,CUB_STAND.z+8),CUB_STAND.z+8);
@@ -11819,11 +11935,11 @@ async function init() {
             westLife.update(.03,player.group.position,true);
           }
         }
-        // A view of somebody who is out of the cast (src/cast.js) photographs nothing rather than
+        // A view of somebody who is out of the cast (src/content/characters/cast.js) photographs nothing rather than
         // throwing: the view is still written, and comes back with them.
         if(view==='lysa'&&npcById.get('acorn-cook')){questStage=QUEST_DONE;combat.finishPractice();const npc=npcData.find(n=>n.id==='acorn-cook'),home=world.npcPositions[npc.id];player.group.position.set(home.x+1.5,world.heightAt(home.x+1.5,home.z+1.4),home.z+1.4);yaw=.65;pitch=.36;distance=targetDistance=5;conversation(npc);}
         // Anyone, close and face on: 'npc-<id>' (Toft is 'npc-jimson-toft').
-        // Alex on Cagney's step with her, the Cagney quest done and the door knocked (src/alex.js);
+        // Alex on Cagney's step with her, the Cagney quest done and the door knocked (src/content/quests/roadside/alex.js);
         // and the start of the bout that follows a flirt, fists up.
         if(view==='alex-cagney'||view==='alex-bout'){questStage=QUEST_DONE;combat.finishPractice();
           const step=QUEST_HOMES[CAGNEY.id];
@@ -11897,7 +12013,7 @@ async function init() {
             const px=t.x+Math.sin(turn)*30,pz=t.z+Math.cos(turn)*30;
             player.group.position.set(px,world.heightAt(px,pz),pz);
             reviewTarget=new THREE.Vector3(t.x,world.heightAt(t.x,t.z)+9,t.z);yaw=turn;pitch=.2;distance=targetDistance=30;}}
-        // Addison's errand (src/rival-light.js): the smugglers' door and its hatch, Sovik in the lantern and in
+        // Addison's errand (src/content/quests/rival-light/rival-light.js): the smugglers' door and its hatch, Sovik in the lantern and in
         // the traveler's arms, and a moment of the fight at the light with Subtractidaughter casting Slow.
         if(['smugglers-door','smugglers-hatch','sovik-lantern','sovik-carried','elod-light-fight','rival-clock'].includes(view)){
           questStage=QUEST_DONE;combat.finishPractice();closeDialogue();combat.revive();
@@ -12042,7 +12158,7 @@ async function init() {
         // The rebel ship at the moment she rounds up, from the end of the pier; and Ed on the
         // strand a moment after he walks out of the water.
         // `word-crew` is `word-ship` at the moment he goes over the side, close enough to see
-        // the two men at her port rail looking down at the water (src/rebel-crew.js).
+        // the two men at her port rail looking down at the water (src/content/quests/roadside/rebel-crew.js).
         if(view==='word-ship'||view==='word-ashore'||view==='word-crew'){questStage=QUEST_DONE;combat.finishPractice();player.group.visible=false;
           const atShip=view==='word-ship'||view==='word-crew';
           playSeconds=landingQuest.departureAt+(view==='word-ship'?WORD_SHIP.turns+8:view==='word-crew'?WORD_SHIP.drops:WORD_ASHORE+3);
@@ -12105,7 +12221,7 @@ async function init() {
         // The Koopwood: the lot from the road, Bowden, and the traveler cutting an oak.
         if(['woodlot','bowden','bowden-close','bowden-back','chopping','woodlot-felled'].includes(view)){questStage=QUEST_DONE;combat.finishPractice();
           const bowden=npcById.get(BOWDEN.id);
-          if(!bowden)return;   // out of the cast while the main quest is built (src/cast.js)
+          if(!bowden)return;   // out of the cast while the main quest is built (src/content/characters/cast.js)
           const b=bowden.actor.group,at=b.position,face=b.rotation.y;let look,turn,d,p;
           if(view==='woodlot'){look={x:at.x-Math.sin(face)*6,y:at.y+2.5,z:at.z-Math.cos(face)*6};turn=face+.45;d=22;p=.32;}
           else if(view==='bowden'){look={x:at.x,y:at.y+1.25,z:at.z};turn=face+.5;d=4.4;p=.08;}

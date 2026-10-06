@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createLizAutopilot } from '../src/liz-autopilot.js';
-import { CAT, LIZ, LIZ_STAND, createCatQuest, createMopWalk, lizConversation } from '../src/cat-quest.js';
-import { FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { createLizAutopilot } from '../src/gameplay/autoplay/liz-autopilot.js';
+import { CAT, LIZ, LIZ_STAND, createCatQuest, createMopWalk, lizConversation } from '../src/content/quests/roadside/cat-quest.js';
+import { FOREST_HIDEOUT_QUEST } from '../src/content/quests/forest/forest-hideout.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const flatWorld = () => ({ bounds: { minX: -1000, maxX: 1000, minZ: -1000, maxZ: 1000 }, colliders: [], heightAt: () => 2 });

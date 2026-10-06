@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import { REFUGEES, REFUGEES_ENABLED, REFUGEE_IDS, REFUGEE_PACE, REFUGEE_REST, REFUGEE_RESTS, REFUGEE_START, REFUGEE_STANDS,
-  refugee, speechFor, createRefugees, validateRefugeesSnapshot, refugeeConversation, refugeeReturnRoute } from '../src/refugees.js';
-import { MAIN_ROAD } from '../src/regions.js';
+  refugee, speechFor, createRefugees, validateRefugeesSnapshot, refugeeConversation, refugeeReturnRoute } from '../src/content/quests/roadside/refugees.js';
+import { MAIN_ROAD } from '../src/world/terrain/regions.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -79,7 +79,7 @@ test('they start at the Lauvel and walk the real road to the landing', async () 
   }
   // Every step of the road they walk is ground a person could stand on - with the Caloss span
   // down again, because six paces of it are in the river until somebody mends it and a column of
-  // people on foot is not what that hole is there to stop (src/world-regions.js).
+  // people on foot is not what that hole is there to stop (src/world/terrain/world-regions.js).
   world.setJourneySiteState?.('bridge-repair', true);
   for (let d = 0; d <= people.total; d += 20) {
     const point = people.along(d);

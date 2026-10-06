@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import { JOHN, SALT_PORTS, SALT_PORT_IDS, HULL, STAY, KEEP, SIGHT, PASTA_WATER, sailTime, passage, shipPose,
-  createSaltSultan, johnConversation, saltToast, validateSaltSnapshot } from '../src/salt-sultan.js';
-import { PUCK, createPuck, puckConversation } from '../src/wine-goblin.js';
+  createSaltSultan, johnConversation, saltToast, validateSaltSnapshot } from '../src/content/quests/salt/salt-sultan.js';
+import { PUCK, createPuck, puckConversation } from '../src/content/quests/wine/wine-goblin.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -128,8 +128,8 @@ test('Ed knows who he works for, and panics about the accounts when the Sultana 
 });
 
 test('the figures: John in his turban, and the Sultana setting and brailing her sail', async () => {
-  const { createJohn, createSultana } = await sourceModule('../src/salt-ship.js');
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createJohn, createSultana } = await sourceModule('../src/content/quests/salt/salt-ship.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const size = group => new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
   const john = createJohn(), plain = createCharacter({ role: 'mercenary', tunic: 0x777777 });
   assert.ok(size(john.group).y > size(plain.group).y + .05, 'a head taller for the turban');

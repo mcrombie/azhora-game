@@ -35,11 +35,11 @@ pass, and smaller imperial forts on every other way south.
 - **No named characters, no quests, no civilians.** Whether anybody stands on the walls is an open
   question for the user (below); build the place.
 - Ambroni soldiers and Ambroni building are **medieval — Stormwind-like — never Roman**. Use the
-  Empire's existing kit (its colours and emblem in `src/campaign-world.js`, the imperial work already in
+  Empire's existing kit (its colours and emblem in `src/content/chapters/civil-war/campaign-world.js`, the imperial work already in
   Ambron, Tidehaven and the garrisons) rather than a new style.
 - Names: **Varn is the user's name; keep it.** Every other name you coin must derive from the language
   profile of the country it stands in (`world-builder/azhoran_language_profiles.py`, and
-  `src/languages.js` for which tongue a country speaks), or the place stays descriptive.
+  `src/gameplay/skills/languages.js` for which tongue a country speaks), or the place stays descriptive.
 - This machine: big heredocs fail and backslashes inside python heredocs get eaten, so write scripts to
   a file and run the file; global `autocrlf=true`; keep each file's line endings as found; three.js is
   vendored; `npm test` cannot run.
@@ -49,8 +49,8 @@ pass, and smaller imperial forts on every other way south.
 The other worker's snapshot rebuilt how the world is made: **the build is step-wise now.** `createWorld`
 runs generator steps, each country's scenery is a `create...ScenerySteps` generator, and
 `regionBuild(id, [region ids], stage => ...)` in `src/world.js` registers it (with `immediate(() => ...)`
-for a plain function). The terrain group is named `'The ground of Azhora'`. Read `src/build-steps.js`,
-`src/scenery-builder.js`, `tests/regional-build-steps.test.js`, and how `createFeradomScenerySteps`
+for a plain function). The terrain group is named `'The ground of Azhora'`. Read `src/world/loading/build-steps.js`,
+`src/world/scenery/scenery-builder.js`, `tests/regional-build-steps.test.js`, and how `createFeradomScenerySteps`
 builds its forts and `createAmodScenerySteps` its towns, and **follow that pattern**: no second,
 non-step path. A world-building test file now takes about one and a half to two and a half minutes.
 
@@ -73,9 +73,9 @@ east as Amod hills, (8,98) (9,98) (10,98); west of (6,98) is East Lotharn mounta
 touches the four. Amod's own nearest places are the Dromel Gate (-879, -562), Vessen and Tir Ostel,
 two to three hundred metres east-south-east.
 
-`src/east-lotharn-world.js` says in its own words that the pass road stops and that "the descent into
+`src/content/regions/east-lotharn/east-lotharn-world.js` says in its own words that the pass road stops and that "the descent into
 Amod below" is not built. **That unbuilt descent is where Varn goes.** The East Lotharn is climbing
-country (`src/climbing.js`), with cliff bands, ramps, ledges and eight caves; the West Lotharn is the
+country (`src/gameplay/movement/climbing.js`), with cliff bands, ramps, ledges and eight caves; the West Lotharn is the
 taller half, with its own ways up and caves. Read `docs/east-lotharn-mountain-plan.md`,
 `docs/west-lotharn-report.md`, `docs/west-lotharn-integration.md` and the Amod and Lotharn lore files.
 
@@ -105,7 +105,7 @@ taller half, with its own ways up and caves. Read `docs/east-lotharn-mountain-pl
      measure whether one exists and report it, do not chase it.)
    - **The gates**: build them so that one flag opens or shuts them, and use the precedent the game
      already has for an imperial gate (the Dromel Gate, East Suval's barred gate, Feradom's castles,
-     `src/closed-border.js`) to choose the default. Say which you chose and why; it is the user's call.
+     `src/world/travel/closed-border.js`) to choose the default. Say which you chose and why; it is the user's call.
    - **The road**: bring the pass road down from where it stops to Varn's north gate, through the
      city, and out of the south gate to join Amod's own road.
    - Nobody may be sealed in, anywhere, gates open or shut (`tests/nobody-sealed-in.test.js`).
@@ -118,9 +118,9 @@ taller half, with its own ways up and caves. Read `docs/east-lotharn-mountain-pl
 
 ## One thing to coordinate
 
-Another builder is adding **a "this rock cannot be climbed" rule** to `src/climbing.js` right now, for
+Another builder is adding **a "this rock cannot be climbed" rule** to `src/gameplay/movement/climbing.js` right now, for
 a crag in a different country (worktree `azhora-game-telemonia`, not on your base). You need the same
-thing for Varn's walls and flanks. Look at that worktree's `src/climbing.js` **read-only** and, if the
+thing for Varn's walls and flanks. Look at that worktree's `src/gameplay/movement/climbing.js` **read-only** and, if the
 rule is there, write yours in the same shape so the two merge as rows of one table. If it is not there
 yet, write yours as a table of named no-climb zones, one row per place.
 

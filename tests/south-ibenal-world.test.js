@@ -5,7 +5,7 @@ import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
 
 /**
- * South Ibenal's ground, and the corridor plain both Ibenals stand on (src/south-ibenal-world.js): the atlas's thirty
+ * South Ibenal's ground, and the corridor plain both Ibenals stand on (src/content/regions/south-ibenal/south-ibenal-world.js): the atlas's thirty
  * hexes, the one plain and its rise to the forest, the five streams and their fords, West Ibenwood's stream and
  * Alezhor's west stream left exactly where they were, the seam with Alezhor (Alezhor meets this country), the coast, the
  * kept flats, the colour, and the places. North Ibenal's own tests are tests/north-ibenal-world.test.js. Pure functions
@@ -15,15 +15,15 @@ import { scopedWorld } from './scoped-world.js';
  * over it (`createIbenwoodRiverSystem`'s `ground`, which src/world.js lays after every country's layer).
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_IDS, REGION_TERRAIN, hexOwnerAt, hexCentre, landDistance, terrainMix, SEA_LEVEL } = await sourceModule('../src/region-world.js');
+const { REGION_IDS, REGION_TERRAIN, hexOwnerAt, hexCentre, landDistance, terrainMix, SEA_LEVEL } = await sourceModule('../src/world/terrain/region-world.js');
 const { groundWithRiver: ground, groundBeforeSouthIbenal: beforeSouth, groundBeforeNorthIbenal: beforeNorth, groundBeforeAlezhor,
-  groundTint, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES } = await sourceModule('../src/world-terrain.js');
-const { canStand, moveCharacter, WATERLINE } = await sourceModule('../src/game-state.js');
-const { createIbenwoodRiverSystem } = await sourceModule('../src/ibenwood-rivers.js');
-const { regionBuildStatus } = await sourceModule('../src/build-status.js');
-const A = await sourceModule('../src/alezhor-world.js');
-const S = await sourceModule('../src/south-ibenal-world.js');
-const N = await sourceModule('../src/north-ibenal-world.js');
+  groundTint, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canStand, moveCharacter, WATERLINE } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { createIbenwoodRiverSystem } = await sourceModule('../src/content/regions/ibenwood/ibenwood-rivers.js');
+const { regionBuildStatus } = await sourceModule('../src/dev/tools/build-status.js');
+const A = await sourceModule('../src/content/regions/alezhor/alezhor-world.js');
+const S = await sourceModule('../src/content/regions/south-ibenal/south-ibenal-world.js');
+const N = await sourceModule('../src/content/regions/north-ibenal/north-ibenal-world.js');
 const { SOUTH_IBENAL, SOUTH_IBENAL_CELLS, SOUTH_IBENAL_CLIMATE, IBENAL_EDGES, IBENAL_LINES, IBENAL_BOX, IBENAL_KEPT, IBENAL_RESERVED,
   IBENAL_STREAM_SPECS, IBENAL_TRAILS, IBENAL_GROUND, IBENAL_FORD, IBENWOOD_STREAM_KEEP, SOUTH_IBENAL_ARRIVAL, SOUTH_IBENAL_LANDMARKS,
   SOUTH_IBENAL_TRAILS, SOUTH_IBENAL_VIEWS, southIbenalGround, southIbenalTint, southIbenalShoreTint, southIbenalOwns, ibenalWriter,

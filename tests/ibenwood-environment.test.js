@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import * as registered from '../src/region-world.js';
-import { timberForSpecies } from '../src/wood-species.js';
-import { createWalkSurfaces } from '../src/walk-surfaces.js';
-import { canStand } from '../src/game-state.js';
+import * as registered from '../src/world/terrain/region-world.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { createWalkSurfaces } from '../src/world/collision/walk-surfaces.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 const names=['East Ibenwood','North Ibenwood','South Ibenwood','West Ibenwood','Central Ibenwood'];
 const geography=registered;
-const env=await import('../src/ibenwood-environment.js');
+const env=await import('../src/content/regions/ibenwood/ibenwood-environment.js');
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createIbenwoodRegionalScenery}=await sourceModule('../src/ibenwood-regional-scenery.js');
+const {createIbenwoodRegionalScenery}=await sourceModule('../src/content/regions/ibenwood/ibenwood-regional-scenery.js');
 const forest=env.ibenwoodForestTrees();
 const ground=(x,z)=>20+.003*x+.006*z;
 const colliders=[],scene=createIbenwoodRegionalScenery({parent:new THREE.Group(),heightAt:ground,renderedGroundHeight:ground,colliders});

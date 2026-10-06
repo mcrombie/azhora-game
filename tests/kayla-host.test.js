@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createKaylaHost, KAYLA_FIGHT } from '../src/kayla-host.js';
-import { KAYLA, KAYLA_START, KAYLA_ROUTE, KAYLA_RIVER_CROSSING, KAYLA_RADIUS, KAYLA_SPEED } from '../src/kayla.js';
-import { canStand } from '../src/game-state.js';
-import { groundWithRiver, calossSurface } from '../src/world-terrain.js';
-import { createCombat } from '../src/combat.js';
-import { createCrimeHost } from '../src/crime-host.js';
-import { createInventoryState } from '../src/inventory.js';
+import { createKaylaHost, KAYLA_FIGHT } from '../src/content/quests/kayla/kayla-host.js';
+import { KAYLA, KAYLA_START, KAYLA_ROUTE, KAYLA_RIVER_CROSSING, KAYLA_RADIUS, KAYLA_SPEED } from '../src/content/quests/kayla/kayla.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { groundWithRiver, calossSurface } from '../src/world/terrain/world-terrain.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createCrimeHost } from '../src/gameplay/law/crime-host.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
 const vector = (x, z) => ({ x, y: 2, z, set(x, y, z) { Object.assign(this, { x, y, z }); } });
 function fixture(terrain = {}) {

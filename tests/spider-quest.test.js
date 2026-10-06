@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
-import { BEN_ROUTE, BEN_GUIDE_PACE, BEN_GUIDE_START, benGuideTarget, restoreBenGuide } from '../src/ben-guide.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { BEN_ROUTE, BEN_GUIDE_PACE, BEN_GUIDE_START, benGuideTarget, restoreBenGuide } from '../src/content/quests/roadside/ben-guide.js';
 import { SPIDER_QUEST, BEN, SPIDER, STAGES, REWARDS, createSpiderQuest,
-  validateSpiderQuestSnapshot } from '../src/spider-quest.js';
-import { SORCERY, SPELLS, SCHOOL_IDS, castWith, castsWith, focusAt, spellXp, schoolLevel, learnableSpell } from '../src/sorcery.js';
-import { SKILLS, SKILL_IDS } from '../src/skills.js';
-import { ENEMY_KINDS } from '../src/combat.js';
+  validateSpiderQuestSnapshot } from '../src/content/quests/spider/spider-quest.js';
+import { SORCERY, SPELLS, SCHOOL_IDS, castWith, castsWith, focusAt, spellXp, schoolLevel, learnableSpell } from '../src/gameplay/magic/sorcery.js';
+import { SKILLS, SKILL_IDS } from '../src/gameplay/skills/skills.js';
+import { ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
 
 test('the whole of it, the way it goes if you help him', () => {
   const said = [];

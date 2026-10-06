@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { regionAt, hexOwnerAt, insideRegion, isOpenCountry, OPEN_COUNTRY, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS,
-  SHORE_FRINGE, hexAt, hexCentre } from '../src/region-world.js';
-import { createMapTutorial } from '../src/map-tutorial.js';
-import { canStand } from '../src/game-state.js';
-import { WEATHERHEAD } from '../src/pipeweed.js';
+  SHORE_FRINGE, hexAt, hexCentre } from '../src/world/terrain/region-world.js';
+import { createMapTutorial } from '../src/ui/map/map-tutorial.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { WEATHERHEAD } from '../src/content/quests/roadside/pipeweed.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-import { roadAudioProfile } from '../src/road-audio.js';
-import { buildLocalMapModel } from '../src/local-map-data.js';
-import { projectTrailPoint } from '../src/trail-map.js';
+import { roadAudioProfile } from '../src/world/environment/road-audio.js';
+import { buildLocalMapModel } from '../src/ui/map/local-map-data.js';
+import { projectTrailPoint } from '../src/ui/map/trail-map.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
@@ -79,7 +79,7 @@ test('walking off the atlas is not arriving in a province', () => {
 });
 
 test('the readers of regionAt say open country rather than borrowing a name', () => {
-  const main = source('main.js'), world = source('world.js'), minimap = source('minimap.js');
+  const main = source('main.js'), world = source('world.js'), minimap = source('ui/map/minimap.js');
   assert.match(main, /if\(isOpenCountry\(region\)\)return 'AZHORA . NO COUNTRY CLAIMS THIS'/, 'the kicker');
   assert.match(main, /OUTSIDE EVERY BORDER THE ATLAS DRAWS/, 'the region card');
   assert.match(main, /if\(widened\.cells\.length&&here&&!isOpenCountry\(here\)\)cartography\.noteHex\(here\.name\)/, 'the chart of countries');
@@ -126,14 +126,14 @@ test('the trails tab opens the nearest sheet in open country, and says you are o
   assert.equal(home.regions.find(region => region.id === home.currentRegionId).name, 'Drent');
   assert.equal(projectTrailPoint(home.player, home.bounds).inside, true);
   // The caption is the one place a player reads it.
-  const map = readFileSync(fileURLToPath(new URL('../src/trail-map.js', import.meta.url)), 'utf8');
+  const map = readFileSync(fileURLToPath(new URL('../src/ui/map/trail-map.js', import.meta.url)), 'utf8');
   assert.match(map, /model\.outside \? `You are outside every border the atlas draws/, 'the sheet says so');
 });
 
 test('a country’s own shore is that country, and the fringe stops at the shore', async () => {
   const world = await built();
   // The atlas is drawn in 100 m hexes; the world is built in metres, so Drent's beach runs on
-  // east of the last hex Drent owns. That fringe is Drent (SHORE_FRINGE, src/region-world.js);
+  // east of the last hex Drent owns. That fringe is Drent (SHORE_FRINGE, src/world/terrain/region-world.js);
   // the unowned west, which is hundreds of metres past the outlines, is not.
   assert.equal(SHORE_FRINGE, 76, 'the fringe is the measured one, not a rounder guess');
 
@@ -211,7 +211,7 @@ test('what the traveler is told and where a tree may go are two questions', () =
 
   // The scatter modules are the callers this is for; if one of them moves to regionAt, the
   // west's scenery moves with it and this test should be the thing that asks why.
-  for (const name of ['west-regions-scenery.js', 'amod-scenery.js', 'pueth-scenery.js', 'world-regions.js']) {
+  for (const name of ['content/regions/western-regions/west-regions-scenery.js', 'content/regions/amod/amod-scenery.js', 'content/regions/pueth/pueth-scenery.js', 'world/terrain/world-regions.js']) {
     const text = source(name);
     assert.match(text, /hexOwnerAt/, `${name} scatters by hex ownership`);
     assert.doesNotMatch(text, /\bregionAt\(/, `${name} should not scatter by what the traveler is told`);

@@ -4,15 +4,15 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/game-state.js';
-import { WORD_BEACH, WORD_SWIM as WORD_CROSSING } from '../src/word-arrival.js';
-import { BODY } from '../src/bodies.js';
+import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/gameplay/movement/game-state.js';
+import { WORD_BEACH, WORD_SWIM as WORD_CROSSING } from '../src/content/quests/roadside/word-arrival.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 const WORD_SWIM_FROM = WORD_CROSSING.from;
-import { createSkills } from '../src/skills.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import {
   SWIM, SWIMMING_SKILL, SWIMMING_LESSON, SWIM_XP, swimSpeed, swimDrain, swimReach, swimGrace, swimRange,
   levelForCrossing, levelForDryCrossing, swimStep, createSwimming, validateSwimmingSnapshot,
-} from '../src/swimming.js';
+} from '../src/gameplay/movement/swimming.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 // Execute these small host boundaries with controlled dependencies. Matching
@@ -129,7 +129,7 @@ test('Willowmere uses its local surface and permits swimming from its fishing ba
 
 test('the crossings are where the doc says they are, shore to shore', async () => {
   const w = await built();
-  const { PEBLOS_ISLANDS, islandAt } = await sourceModule('../src/peblos-world.js');
+  const { PEBLOS_ISLANDS, islandAt } = await sourceModule('../src/content/regions/peblos/peblos-world.js');
   const shoreOf = (test, box, step = 3) => {
     const pts = [];
     for (let x = box.minX; x <= box.maxX; x += step) for (let z = box.minZ; z <= box.maxZ; z += step) {
@@ -240,7 +240,7 @@ test('the skill is paid for metres, for waters crossed, and for the Pebbles', ()
 });
 
 test('drowning ends the way a goblin ends it: the same defeat, the same checkpoint', async () => {
-  const { createCombat } = await sourceModule('../src/combat.js');
+  const { createCombat } = await sourceModule('../src/gameplay/combat/combat.js');
   const events = [];
   const combat = createCombat({ world: await built(), position: { x: 0, z: 0 }, onEvent: event => events.push(event) });
   combat.state.player.hp = 100; combat.state.player.stamina = 100;
@@ -264,7 +264,7 @@ test('a drowned traveler does not wake up in somebody else’s fight', async () 
   // traveler to `lastEncounter.checkpoint` and *starts* `lastEncounter` - and that begins life
   // as DEFAULT_ENCOUNTER. A traveler who had never drawn on anybody, drowned at sea, came back
   // a hundred metres away in an active goblin raid with three live goblins in it.
-  const { createCombat } = await sourceModule('../src/combat.js');
+  const { createCombat } = await sourceModule('../src/gameplay/combat/combat.js');
   const w = await built();
   const position = { x: WORD_SWIM_FROM.x, z: WORD_SWIM_FROM.z };
   const combat = createCombat({ world: w, position, onEvent: () => {} });
@@ -303,7 +303,7 @@ test('getting wet in the middle of a fight resets nothing', async () => {
   const main = source('main.js');
   assert.doesNotMatch(main, /if\(combat\.state\.phase==='active'\)combat\.resetEncounter\(\{\}\);/,
     'nothing about water restarts a fight');
-  const combatSource = source('combat.js');
+  const combatSource = source('gameplay/combat/combat.js');
   assert.doesNotMatch(combatSource, /moveCharacter\(enemy[^)]*swimming/, 'no enemy is given the water');
   // The leash is one named number now (`const LEASH`), because the chase that came in with the
   // archer had to use the same one: an enemy leaves its ground to follow a bowman, and stops
@@ -368,8 +368,8 @@ test('the two ways out of the water both pay for the swim, and drowning ends a q
 test('the checkpoint takes a save made in deep water, which is now the right answer', async () => {
   // Before swimming, a save in the sea was a save the traveler could never be restored to standing
   // on. Now it is a save in the middle of a crossing, and refusing it would be the bug.
-  const { createRoadCheckpoint } = await sourceModule('../src/road-checkpoint.js');
-  const checkpoint = source('road-checkpoint.js');
+  const { createRoadCheckpoint } = await sourceModule('../src/app/saves/road-checkpoint.js');
+  const checkpoint = source('app/saves/road-checkpoint.js');
   assert.doesNotMatch(checkpoint, /canStand|canSwim|heightAt/, 'the checkpoint has no opinion about the ground under a save');
   assert.match(checkpoint, /validateSwimmingSnapshot\(data\.swimming\)/, 'it does have one about the swimming in it');
   assert.ok(typeof createRoadCheckpoint === 'function');
@@ -408,7 +408,7 @@ test('the game refuses the water to a rider, and a sword to a swimmer', () => {
   assert.equal(footSurface(SWIM,14.8,15).height,14.8,'shallow water does not push the feet through the bed');
   assert.equal(footSurface(SWIM,20,15).water,false,'dry ground remains dry');
   assert.match(main, /swimming:inWater,riding:/, 'and the rig is told');
-  assert.match(source('characters.js'), /if \(pose\.swimming\) \{/, 'which the rig has a posture for');
+  assert.match(source('content/characters/characters.js'), /if \(pose\.swimming\) \{/, 'which the rig has a posture for');
   assert.ok(SWIM.sink > .8 && SWIM.sink < 1.4, `sunk ${SWIM.sink} m: head and shoulders, not a periscope or a drowning`);
   // Nothing pushes him back to shore: that was the first draft and it was overruled.
   assert.doesNotMatch(main, /nearestStandable|pushBackToShore/, 'no free push back to land');
@@ -418,7 +418,7 @@ test('the game refuses the water to a rider, and a sword to a swimmer', () => {
 // Fights may be near water. What protects swimming balance is preserving the
 // traveler's spent vitals at disengagement, not a restriction on encounter maps.
 test('swimming beyond a beach fight leash gives no health or second bar of wind', async () => {
-  const { createCombat } = await sourceModule('../src/combat.js');
+  const { createCombat } = await sourceModule('../src/gameplay/combat/combat.js');
   const world={bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},colliders:[],
     heightAt:x=>x<5?1.5:-1,waterAt:()=>WATERLINE};
   const main=source('main.js'),start=main.indexOf('const windBefore=combat.state.player.stamina;');

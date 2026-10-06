@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ALL_FARM_ROWS, FARM_ROWS, CROPS, createFarming, validateFarmingSnapshot } from '../src/farming.js';
-import { FARMSTEADS, REGIONAL_FARM_ROWS } from '../src/regional-farmland.js';
-import { createSkills } from '../src/skills.js';
-import { createInventoryState } from '../src/inventory.js';
-import { farmRowConversation, farmingConversation } from '../src/farming-conversation.js';
+import { ALL_FARM_ROWS, FARM_ROWS, CROPS, createFarming, validateFarmingSnapshot } from '../src/gameplay/skills/farming/farming.js';
+import { FARMSTEADS, REGIONAL_FARM_ROWS } from '../src/world/scenery/regional-farmland.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { farmRowConversation, farmingConversation } from '../src/gameplay/skills/farming/farming-conversation.js';
 import { sourceModule } from './module-loader.js';
 
 function fixture() {
@@ -55,7 +55,7 @@ test('Regional field panel names its bed, stocks local seeds and offers normal c
 });
 test('Regional crop meshes follow local terrain and cull distant beds without losing growth',async()=>{
   const THREE=await import('../vendor/three.module.js');
-  const {createFarmingView}=await sourceModule('../src/farming-view.js');
+  const {createFarmingView}=await sourceModule('../src/gameplay/skills/farming/farming-view.js');
   const {farming}=fixture(),scene=new THREE.Scene(),heightAt=(x,z)=>2+.08*x+.04*z;
   const view=createFarmingView({scene,world:{heightAt},farming});
   const row=REGIONAL_FARM_ROWS[0],another=REGIONAL_FARM_ROWS.at(-1);

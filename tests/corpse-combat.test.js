@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { createCorpses } from '../src/corpses.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createCorpses } from '../src/gameplay/combat/corpses.js';
 
 const world = { bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, colliders: [], heightAt: () => 0 };
 const fight = () => ({ id: 'body-retry', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: -4 }, retreatLine: 20,

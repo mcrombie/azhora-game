@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createAutopilot, nearestOnPath, nextWaypoint, roadRoute } from '../src/autopilot.js';
-import { canStand, canSwim, moveCharacter, QUEST_DONE } from '../src/game-state.js';
-import { AMBUSH } from '../src/road-ambush.js';
-import { INSTRUCTOR_STAND } from '../src/instructor.js';
+import { createAutopilot, nearestOnPath, nextWaypoint, roadRoute } from '../src/gameplay/autoplay/autopilot.js';
+import { canStand, canSwim, moveCharacter, QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { AMBUSH } from '../src/content/quests/road-ambush/road-ambush.js';
+import { INSTRUCTOR_STAND } from '../src/gameplay/skills/instructor.js';
 
 let fixture;
 async function built() {
   if (!fixture) {
     const { createWorld } = await sourceModule('../src/world.js');
     const scene = new THREE.Scene(), world = createWorld(scene);
-    fixture = { scene, world, ...(await sourceModule('../src/regions.js')), ...(await sourceModule('../src/places.js')) };
+    fixture = { scene, world, ...(await sourceModule('../src/world/terrain/regions.js')), ...(await sourceModule('../src/world/scenery/places.js')) };
   }
   return fixture;
 }

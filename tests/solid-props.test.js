@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { OPENING_FIGHT_GROUND } from '../src/opening-fights.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { OPENING_FIGHT_GROUND } from '../src/app/startup/opening-fights.js';
 
 const { createWorld, PROP_SOLID } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
-const { TIDEHAVEN_SMITHY, villageToWorld } = await import('../src/region-world.js');
-const { OUTPOST_LAYOUT } = await import('../src/outpost.js');
-const { AMBRON_FORGE } = await import('../src/ambron.js');
+const { TIDEHAVEN_SMITHY, villageToWorld } = await import('../src/world/terrain/region-world.js');
+const { OUTPOST_LAYOUT } = await import('../src/content/regions/drent/outpost.js');
+const { AMBRON_FORGE } = await import('../src/content/regions/ambron/ambron.js');
 const toRoad = (x, z) => {
   let best = Infinity;
   for (const path of world.paths) for (let i = 1; i < path.length; i++) {

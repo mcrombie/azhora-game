@@ -3,24 +3,24 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
 import {
   REGION_CELLS, REGION_IDS, WORLD_BOUNDS, SEA_LEVEL, TERRAIN_PADS, IZOLVETH_TERRACE,
   regionAt, insideRegion, landDistance, isLandHex,
-} from '../src/region-world.js';
-import { bedrockHeight } from '../src/world-terrain.js';
+} from '../src/world/terrain/region-world.js';
+import { bedrockHeight } from '../src/world/terrain/world-terrain.js';
 import {
   IZOLVETH, P, C, IZOL_QUAY, IZOL_MOLES, IZOL_BOOM, IZOL_SHIPS, IZOLVETH_BUILDINGS, MEETING_HOUSE, IZOL_STONE,
   IZOL_CAMP, IZOL_STANDS, IZOL_NPC_POSITIONS, IZOL_LANDMARKS, IZOL_PATHS, IZOL_ROAD, IZOL_SIGNS, IZOL_CLEARINGS,
   ARDVETH, KELVATH, SEA_GATE, SIGHTSTONE, LONG_PASTURE, THREE_PRESENCES, RECRUITING_STANDS, IZOL_GENERALS,
   izolDeckHeight, moleDistance, terraceHeight, campPicketColliders, campTentColliders, generalsStance,
-} from '../src/izol-world.js';
-import { SUBREGIONS, subregionsAt } from '../src/map-fog.js';
-import { BUILD_STATUS, regionBuildStatus } from '../src/build-status.js';
-import { REGION_DESIGN, SETTLEMENTS } from '../src/campaign-world.js';
+} from '../src/content/regions/izol/izol-world.js';
+import { SUBREGIONS, subregionsAt } from '../src/ui/map/map-fog.js';
+import { BUILD_STATUS, regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { REGION_DESIGN, SETTLEMENTS } from '../src/content/chapters/civil-war/campaign-world.js';
 
-const { SIGN_LABELS } = await sourceModule('../src/signs.js');
+const { SIGN_LABELS } = await sourceModule('../src/world/scenery/signs.js');
 const world = await scopedWorld(new THREE.Scene(), [8]);
 const region = world.regions.find(entry => entry.name === 'West Izol');
 

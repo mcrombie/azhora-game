@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
-import { SPELLS, SCHOOLS, castWith, learnableSpell } from '../src/sorcery.js';
-import { SKILLS } from '../src/skills.js';
-import { createMagic } from '../src/magic.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
+import { SPELLS, SCHOOLS, castWith, learnableSpell } from '../src/gameplay/magic/sorcery.js';
+import { SKILLS } from '../src/gameplay/skills/skills.js';
+import { createMagic } from '../src/gameplay/magic/magic.js';
 
 /**
  * Time Sorcery (the user, 26 September 2026): Subtractidaughter wields a handheld grandfather clock

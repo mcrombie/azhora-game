@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { refineSouthOremindiGround } from '../src/south-oremindi-ground.js';
-import { southOremindiInset, southOremindiOwns } from '../src/south-oremindi-world.js';
+import { refineSouthOremindiGround } from '../src/content/regions/south-oremindi/south-oremindi-ground.js';
+import { southOremindiInset, southOremindiOwns } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
 
 const plane = (x, z) => 35 + (x + 3500) * .08 + (z + 320) * .04;
 const natural = (x, z) => plane(x, z) + 24 + Math.sin((x + 3500) / 14) * 9 + Math.cos((z + 320) / 12) * 7;

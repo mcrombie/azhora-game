@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { REGION_CELLS, regionAt, hexOwnerAt, WORLD_BOUNDS } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { ISCARE_REGION, ISCARE_ISLANDS, ZECRON, ZECRON_BUILDINGS, ISCARE_RUIN_SITES, ISCARE_WILDLIFE_ZONES } from '../src/iscare-world.js';
-import { REGIONAL_WILDLIFE_ZONES } from '../src/regional-wildlife.js';
+import { REGION_CELLS, regionAt, hexOwnerAt, WORLD_BOUNDS } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { ISCARE_REGION, ISCARE_ISLANDS, ZECRON, ZECRON_BUILDINGS, ISCARE_RUIN_SITES, ISCARE_WILDLIFE_ZONES } from '../src/content/regions/iscare/iscare-world.js';
+import { REGIONAL_WILDLIFE_ZONES } from '../src/world/life/regional-wildlife.js';
 
 test('Iscare uses its ten authored island hexes and is distinct from inland Isareos', () => {
   const atlas = JSON.parse(readFileSync(new URL('../assets/azhora-dev-regions.json', import.meta.url)));

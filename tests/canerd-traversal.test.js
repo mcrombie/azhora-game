@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { REGION_IDS } from '../src/region-world.js';
-import { CANERD_PATHS } from '../src/canerd-world.js';
-import { runCanerdChecks } from '../src/canerd-checks.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
+import { CANERD_PATHS } from '../src/content/regions/canerd/canerd-world.js';
+import { runCanerdChecks } from '../src/dev/checks/canerd-checks.js';
 
 // The production fast loader builds only North Celder and its shared jobs.
 // This catches missing registration, stale collision indices and late support

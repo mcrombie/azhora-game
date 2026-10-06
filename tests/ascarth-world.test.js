@@ -3,28 +3,28 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/region-layout.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
-import { LAND_HEXES } from '../src/region-survey.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/world/terrain/region-layout.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
+import { LAND_HEXES } from '../src/dev/tools/region-survey.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, hexOwnerAt, regionAt, regions, landDistance,
   insideRegion, relief, SEA_LEVEL,
-} from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { regionLevel } from '../src/region-levels.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { REGION_LANGUAGE, DIALECTS } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
+} from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { REGION_LANGUAGE, DIALECTS } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
 import { PLAYABLE, WINDOW } from '../scripts/build-region-survey.mjs';
 import {
   NORTH, SOUTH, ASCARTH_CLIMATE, HILL_HEXES, FRONTIER_EDGES, FRONTIER, BAYS, HILLS, SPINE_LENGTH, GREEN_STONE,
   ASCARTH_LANDMARKS, ascarthGround, frontierDistance, frontierWeight, spineAt, bayWeight, cliffShare, isAscarth,
-} from '../src/ascarth-world.js';
-import { LIZEEM_REACH } from '../src/west-regions.js';
-import { ASCARTH_WILDLIFE_ZONES } from '../src/ascarth-wildlife.js';
+} from '../src/content/regions/ascarth/ascarth-world.js';
+import { LIZEEM_REACH } from '../src/content/regions/western-regions/west-regions.js';
+import { ASCARTH_WILDLIFE_ZONES } from '../src/content/regions/ascarth/ascarth-wildlife.js';
 
 /**
  * The Ascarth Peninsula - Northern and Southern Ascarth - built on the user's word of 28 September
@@ -38,7 +38,7 @@ import { ASCARTH_WILDLIFE_ZONES } from '../src/ascarth-wildlife.js';
  * west, sheltered bays on the east and north, wooded rocky hills in the interior.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = createWorld(scene);
 const north = regions.find(region => region.name === NORTH), south = regions.find(region => region.name === SOUTH);

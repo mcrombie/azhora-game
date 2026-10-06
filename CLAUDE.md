@@ -39,7 +39,7 @@ Results, screenshots and `failure.png` / `failure.json` land in `tests/artifacts
 
 ### Generated assets
 
-- `node scripts/build-region-survey.mjs` regenerates `src/region-survey.js` from `assets/azhora-dev-regions.json`. That file is generated; never hand-edit it. `tests/region-survey.test.js` fails if it drifts.
+- `node scripts/build-region-survey.mjs` regenerates `src/dev/tools/region-survey.js` from `assets/azhora-dev-regions.json`. That file is generated; never hand-edit it. `tests/region-survey.test.js` fails if it drifts.
 - After the World Builder map changes, run **both** `npm run map:refresh` (journal parchment chart: `assets/azhora-world-map.svg` + `.json`) and `npm run map:developer` (`assets/azhora-dev-regions.json`, the hex survey). The developer loader rejects mismatched exports.
 
 ## Architecture
@@ -62,10 +62,10 @@ The playable ground is derived from the authored hex atlas, not drawn by hand:
 
 ```
 azhora.wwmap  →  scripts/export-developer-atlas.mjs  →  assets/azhora-dev-regions.json (131 regions)
-              →  scripts/build-region-survey.mjs     →  src/region-survey.js (4 playable regions + nearby land)
-              →  src/region-layout.js   pure geometry: HEX_WORLD_TRANSFORM, regionCells/Outline, routeAnchors, worldBoundsFor
-              →  src/region-world.js    concrete constants: ANCHORS, WORLD_BOUNDS, MAIN_ROAD, regions, regionAt
-              →  src/regions.js         re-exports the above under the names older modules use
+              →  scripts/build-region-survey.mjs     →  src/dev/tools/region-survey.js (4 playable regions + nearby land)
+              →  src/world/terrain/region-layout.js   pure geometry: HEX_WORLD_TRANSFORM, regionCells/Outline, routeAnchors, worldBoundsFor
+              →  src/world/terrain/region-world.js    concrete constants: ANCHORS, WORLD_BOUNDS, MAIN_ROAD, regions, regionAt
+              →  src/world/terrain/regions.js         re-exports the above under the names older modules use
               →  src/world.js           Three.js scene: terrain (world-terrain.js), per-region scenery (world-regions.js), props, colliders, paths
 ```
 
@@ -99,8 +99,12 @@ One slot, key `azhora-road-checkpoint-v1`, version 1. Older version-1 saves must
 
 - Characters are hatless unless the user explicitly requests a hat. Occupations, roles, and model presets must not add headwear automatically; preserve explicit user-requested exceptions. See `docs/design-answers.md` (2026-09-25).
 - Short hair means no bun, knot, or protruding nape. Use the `short-cropped` preset for short-haired characters such as Martin and Killian; retain their specified hair color and accessories.
-- `.gitattributes` sets `* -text`: files are stored byte for byte. `src/main.js`, `index.html` and `src/campaign.js` are CRLF; most other files are LF. Preserve whatever a file already uses.
+- `.gitattributes` sets `* -text`: files are stored byte for byte. `src/main.js`, `index.html` and `src/content/chapters/civil-war/campaign.js` are CRLF; most other files are LF. Preserve whatever a file already uses.
 - Large heredocs fail in Git Bash on this machine. Write a script to a file and run it instead.
 - `src/main.js` and several modules use very long, dense lines on purpose. Do not reformat surrounding code when editing.
 - Never write to the World Builder repo; the export scripts are read-only imports.
 - Content rules from `docs/content-pass.md`: use authored atlas names from `campaign-world.js`; the Legion speaks in orders and calls republicans rebels while Luscians and Suvali speak plainly; Legion soldiers are men by default; there is no South Pyros.
+
+## Confidential manuscript reference
+
+Follow the manuscript-reference rules in [AGENTS.md](AGENTS.md). Private references are reading-only, never game assets, public HTTP files, packages, or runtime dependencies. Detailed notes remain in `reference-private/`.

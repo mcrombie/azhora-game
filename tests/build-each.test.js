@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {forEachBuild} from '../src/build-each.js';
-import {finishBuild} from '../src/build-steps.js';
+import {forEachBuild} from '../src/world/loading/build-each.js';
+import {finishBuild} from '../src/world/loading/build-steps.js';
 
 test('Cooperative callbacks retain forEach ordering, captured length, holes and early returns',()=>{
   const expected=[],actual=[];

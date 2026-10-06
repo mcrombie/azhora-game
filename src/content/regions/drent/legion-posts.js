@@ -1,0 +1,65 @@
+/**
+ * The Ambroni army's posts along the road: the soldiers a hired sword sees
+ * all the way from Tidehaven's landing to the muster on the Moros Plain. They
+ * stand where the road is watched, and each has a word for a mercenary. With
+ * the picket sergeant at the Lauvel they make twelve Empire soldiers. The hired
+ * company they are waiting for is eleven, the traveler among them (`MERCENARY_COMPANY_SIZE`).
+ */
+import { toWorld } from '../../../world/terrain/world-scale.js';
+import { LUMBER_TOWN, townPoint } from '../../../world/terrain/region-world.js';
+
+// Stands are written in the authored 56 m frame and converted here; each post
+// belongs to the gate, clearing or camp it watches, and moves with it.
+const postAt = (id, name, rank, position, yaw, lines) => Object.freeze({
+  id: `post-${id}`, name, rank, role: rank === 'officer' ? 'Marshal of the Moros muster' : 'Ambroni soldier',
+  modelRole: rank === 'officer' ? 'legion-officer' : 'legion-soldier', ...position, yaw, lines: Object.freeze(lines),
+});
+const post = (id, name, rank, x, z, yaw, lines) => postAt(id, name, rank, toWorld(x, z), yaw, lines);
+const townGateYaw = Math.atan2(LUMBER_TOWN.along.x, LUMBER_TOWN.along.z);
+
+export const LEGION_POSTS = Object.freeze([
+  post('landing', 'Footman Ottar', 'legionary', -3, 34, Math.PI / 2, [
+    'Hired sword? The quartermaster signs you in at the Avrel clearing, west along the road past the woods. Keep to it.',
+    'The bell means goblins. It has rung twice this week, and the second time we lost a cart.',
+  ]),
+  // Footman Bram and Footman Dusk stood at the Caloss Gate until the user took the place out
+  // (22 September 2026). There is nothing there to keep now, so the army does not keep it.
+  // Footman Renn stood in the Avrel clearing until the user took the army out of it
+  // (23 September 2026). It is a farm, and it is farmed now.
+  post('caloss-bank', 'Footman Hesk', 'legionary', -330, 90, Math.PI / 2, [
+    'Drent ends at this bank. Luscia is the far side, and Luscia did not ask for us.',
+    'The bridge takes wagons; it will take you. Do not leave the road on the other side after dark. Wolves, and worse.',
+  ]),
+  // Keep the saved NPC identities, but station both sentries at Nothom's south-west gate.
+  postAt('moros-gate-north', 'Footman Vell', 'legionary', townPoint(42, -4.3), townGateYaw, [
+    'This is Nothom’s gate onto the Moros road. The camp is south-west across the plain; you will see the standard before you see the palisade.',
+    'Say your name at the camp gate and who signed you. Eleven hired swords are expected. Nobody has counted eleven yet.',
+  ]),
+  postAt('moros-gate-south', 'Footman Tarn', 'legionary', townPoint(42, 2.9), townGateYaw, [
+    'Nothom ends at these walls. Beyond them is the road onto the plain. Keep your eyes open out there.',
+    'The stockade to the south-east is ours today. Ask me tomorrow.',
+  ]),
+  post('camp-gate-north', 'Footman Coss', 'legionary', -525.9, 327.3, Math.PI / 2, [
+    'Halt. Name and contract.',
+    'Mercenaries muster on the near side of the camp, by the horse line. The Marshal sees hired men at dusk.',
+  ]),
+  post('camp-gate-south', 'Footman Abe', 'legionary', -521.9, 333, Math.PI / 2, [
+    'No fires outside the palisade and no wandering after the horn. That is the whole rule book.',
+    'You are earlier than most. The ones who arrive last get the wet ground.',
+  ]),
+  post('camp-stores', 'Quartermaster Halde', 'legionary', -558, 341, Math.PI / 2, [
+    'Stores are counted. Whatever you carry in, you carry out, and I write both down.',
+    'There is a bench by the smithy tent for iron that wants mending. Do not bring me a broken blade and call it a complaint.',
+  ]),
+  post('camp-legate', 'Marshal Hadric Venmor', 'officer', -543.2, 361.1, Math.PI, [
+    'Twelve hired swords, the Empire promised me. You are one. The others will come, or they will not be paid.',
+    'The Coalition holds Solis in West Suval, and they are gathering. When the muster is full we go to the border. Until then, rest, stay sober, and stay inside the palisade.',
+  ]),
+]);
+
+export const LEGION_POST_IDS = Object.freeze(new Set(LEGION_POSTS.map(entry => entry.id)));
+
+export function legionPostLines(id) {
+  const entry = LEGION_POSTS.find(item => item.id === id);
+  return entry ? [...entry.lines] : [];
+}

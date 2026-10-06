@@ -1,14 +1,14 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBatmanHunt } from '../src/batman.js';
-import { createBatmanQuest } from '../src/batman-quest.js';
-import { questLive } from '../src/quest-slate.js';
-import { buildJournalEntries } from '../src/journal-entries.js';
-import { ADDISON, createLightKeeper, addisonConversation } from '../src/lighthouse.js';
-import { WINEMAKER } from '../src/winery.js';
-import { createWine, winemakerConversation } from '../src/wine.js';
-import { JUAN, createWineAttic, juanConversation } from '../src/wine-attic.js';
-import { JOHN, createSaltSultan, johnConversation } from '../src/salt-sultan.js';
+import { createBatmanHunt } from '../src/content/quests/batman/batman.js';
+import { createBatmanQuest } from '../src/content/quests/batman/batman-quest.js';
+import { questLive } from '../src/gameplay/quests/quest-slate.js';
+import { buildJournalEntries } from '../src/ui/journal/journal-entries.js';
+import { ADDISON, createLightKeeper, addisonConversation } from '../src/content/quests/lighthouse/lighthouse.js';
+import { WINEMAKER } from '../src/content/regions/winery/winery.js';
+import { createWine, winemakerConversation } from '../src/content/quests/wine/wine.js';
+import { JUAN, createWineAttic, juanConversation } from '../src/content/quests/wine/wine-attic.js';
+import { JOHN, createSaltSultan, johnConversation } from '../src/content/quests/salt/salt-sultan.js';
 
 function choices(conversation, person, context) {
   let screen;

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/journey.js';
-import { createInventoryState } from '../src/inventory.js';
-import { questLive } from '../src/quest-slate.js';
-import { createWeapons } from '../src/weapons.js';
+import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/content/chapters/journey/journey.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { questLive } from '../src/gameplay/quests/quest-slate.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
 
 /**
  * **The whole ladder, whatever the slate says.** Most of the road out of Drent is off the slate
- * today (src/quest-slate.js): Chapter 1 is Jojo, Glun and Nothom, and Corvan's parcels and Sava's
+ * today (src/gameplay/quests/quest-slate.js): Chapter 1 is Jojo, Glun and Nothom, and Corvan's parcels and Sava's
  * waymarkers are put away until they are wanted again. They are still built and this is still
  * their test, so the fixture hands the journey a slate of its own with everything on it. The
  * tests at the foot of this file are the other half: what the trimmed slate actually does.

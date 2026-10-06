@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLakota,lakotaTravelChoice} from '../src/lakota.js';
-import {createCompanions,COMPANION_IDS,ASKS} from '../src/companions.js';
-import {birdWatcherConversation,BIRD_WATCHER} from '../src/birding.js';
+import {createLakota,lakotaTravelChoice} from '../src/content/quests/lakota/lakota.js';
+import {createCompanions,COMPANION_IDS,ASKS} from '../src/gameplay/company/companions.js';
+import {birdWatcherConversation,BIRD_WATCHER} from '../src/gameplay/skills/birding/birding.js';
 
 function fixture(){
   const npc={id:'merc-lakota',name:'Lakota'},companions=createCompanions(),dialogs=[];

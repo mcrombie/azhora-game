@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTouchControls, stickInput, wantsTouch, TOUCH_ACTIONS, TOUCH_TOP } from '../src/touch-controls.js';
+import { createTouchControls, stickInput, wantsTouch, TOUCH_ACTIONS, TOUCH_TOP } from '../src/ui/input/touch-controls.js';
 
 /**
  * Touch controls (the user, 26 September 2026): on a phone, a way to reach the testing tools and to

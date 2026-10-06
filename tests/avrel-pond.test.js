@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { AVREL_POND, avrelPondGround } from '../src/avrel-pond.js';
-import { canStand } from '../src/game-state.js';
-import { waterOf } from '../src/fishing-skill.js';
+import { AVREL_POND, avrelPondGround } from '../src/content/regions/drent/avrel-pond.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { waterOf } from '../src/gameplay/skills/fishing/fishing-skill.js';
 
 test('Avrel pool is a basin with dry lesson banks, pond fish and chart geometry', async () => {
   const THREE = await import('../vendor/three.module.js');

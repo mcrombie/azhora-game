@@ -4,10 +4,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BURIAL, HEWES_GRAVE, fieldPoint } from '../src/lauvel-aftermath.js';
-import { createBurying, validateBuryingSnapshot, selaConversation, workerChoice, SON, HAIL, HAIL_FROM, JOBS, JOB_IDS, JOB_FIRST, JOB_AGAIN, THE_QUESTION, NOTHING_SEEN, OFFER_HELP, THE_GREEN_COAT, TELLING, THE_BURYING, AFTER } from '../src/lauvel-burying.js';
-import { LUSCIA_SITES } from '../src/luscia-chapter.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BURIAL, HEWES_GRAVE, fieldPoint } from '../src/content/regions/luscia/lauvel-aftermath.js';
+import { createBurying, validateBuryingSnapshot, selaConversation, workerChoice, SON, HAIL, HAIL_FROM, JOBS, JOB_IDS, JOB_FIRST, JOB_AGAIN, THE_QUESTION, NOTHING_SEEN, OFFER_HELP, THE_GREEN_COAT, TELLING, THE_BURYING, AFTER } from '../src/content/regions/luscia/lauvel-burying.js';
+import { LUSCIA_SITES } from '../src/content/chapters/civil-war/luscia-chapter.js';
 
 /** Take the quest as far as a stage, the way a traveler would. */
 function play(to = 'done') {
@@ -220,7 +220,7 @@ test('the wrecked cart stands inside her call, so the field speaks first and the
   assert.equal(burying.hail().ok, true, 'arriving at the cart is arriving up her road');
   assert.equal(burying.hail().ok, false, 'and it happens once, so the second visit is quiet');
   // So the walkthrough has to do what a player does: hear her, then read the cart.
-  const smoke = readFileSync(fileURLToPath(new URL('../src/road-smoke.js', import.meta.url)), 'utf8');
+  const smoke = readFileSync(fileURLToPath(new URL('../src/dev/checks/road-smoke.js', import.meta.url)), 'utf8');
   const step = smoke.slice(smoke.indexOf('const satchel = LUSCIA_SITES'), smoke.indexOf('the satchel prompt is missing'));
   assert.ok(step, 'the walkthrough still goes to the cart');
   assert.match(step, /getMode\(\) === 'dialogue'[\s\S]*finishDialogue\(\)/, 'it hears her out before it reads the prompt');

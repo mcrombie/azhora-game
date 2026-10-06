@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createFrameErrors, stackLine, messageOf } from '../src/frame-errors.js';
+import { createFrameErrors, stackLine, messageOf } from '../src/dev/tools/frame-errors.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../${name}`, import.meta.url)), 'utf8');
 
@@ -66,7 +66,7 @@ test('all three places that look are wired, and the frame still behaves as it di
   assert.match(main, /testingEnabled \|\| new URLSearchParams\(location\.search\)\.has\('test'\)/);
 
   // The walkthrough asks at every arrival, which is thirty-odd points down the road.
-  const smoke = source('src/road-smoke.js');
+  const smoke = source('src/dev/checks/road-smoke.js');
   assert.match(smoke, /function noThrow\(where\)/);
   assert.match(smoke, /const thrown = state\(\)\.frameErrors;/);
   assert.match(smoke, /noThrow\(`after arriving at/, 'every arrive() asks');

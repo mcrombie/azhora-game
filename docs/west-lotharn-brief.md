@@ -25,11 +25,11 @@ Those are settled. Do not re-open them; everything below serves them.
 
 - **Not registered anywhere, and not in the survey.** Add `'West Lotharn Mountains'` to `PLAYABLE`
   in `scripts/build-region-survey.mjs` after `'Southern Ascarth'` and regenerate with
-  `node scripts/build-region-survey.mjs`. Never hand-edit `src/region-survey.js`;
+  `node scripts/build-region-survey.mjs`. Never hand-edit `src/dev/tools/region-survey.js`;
   `tests/region-survey.test.js` re-derives it.
 - **Region id: `'West Lotharn Mountains': 27`**, after `'Oves Desert': 26`, in that order in every
   ordered list.
-- `src/region-levels.js` already carries it at level 4.
+- `src/world/terrain/region-levels.js` already carries it at level 4.
 - Branch `west-lotharn` in its own worktree, from current main. Never cd into another checkout,
   never a bare `git stash`, **do not commit** — leave the work uncommitted and report.
 
@@ -70,7 +70,7 @@ stash in `world-builder`); if the write is refused, append claim by claim to
   down; the hills skirts should meet the neighbours at their own levels.
 - The East Lotharn's four peaks are ~420 / 325 / 275 / 240 m, reached only by cut ramps and ledge
   paths, with a flat grass bald on each summit and forest on the ledges to about 280 m. Read
-  `src/east-lotharn-world.js` and `docs/design-answers.md` (the entry dated 2026-09-27) before
+  `src/content/regions/east-lotharn/east-lotharn-world.js` and `docs/design-answers.md` (the entry dated 2026-09-27) before
   choosing your numbers, and then choose your own: this is a taller range and the tree line, the
   bald and the cliff-band spacing should all reflect that, not be copied.
 - **Seven shared edges with the East Lotharn.** The two ranges are one massif; the join must read
@@ -79,7 +79,7 @@ stash in `world-builder`); if the write is refused, append claim by claim to
 
 ## Cliffs, ramps, ledges, caves — the rules that carry over
 
-- **Extend the climbing rule to this region.** `src/climbing.js` holds
+- **Extend the climbing rule to this region.** `src/gameplay/movement/climbing.js` holds
   `CLIMB_REGIONS = new Set([4, 5, 18, 20, 21, 'East Suval', 'West Suval', 'South Suval', 'East Lotharn Mountains', 'Feradom'])`
   — add `27` and `'West Lotharn Mountains'`. Its message ("Climbing is available in Suval, East
   Lotharn and Feradom") needs the West naming too. Check `tests/climbing.test.js`,
@@ -91,8 +91,8 @@ stash in `world-builder`); if the write is refused, append claim by claim to
 - **Ways up**: cut ramps slantwise across each cliff band joined by ledge paths, as the East has.
   **Prove with a test** that without the ways nobody gets above a stated height on any massif —
   `tests/east-lotharn-peaks.test.js` shows how, with a flood fill and a slip rule.
-- **Caves**: chimneys bypassing cliff bands, and chambers. `src/east-lotharn-caves.js` and
-  `src/east-lotharn-cave-walk.js` are the precedent — a cave is walked on its own floor from mouth
+- **Caves**: chimneys bypassing cliff bands, and chambers. `src/content/regions/east-lotharn/east-lotharn-caves.js` and
+  `src/content/regions/east-lotharn/east-lotharn-cave-walk.js` are the precedent — a cave is walked on its own floor from mouth
   to mouth, the surface above stays ground, the camera stays in the passage, daylight goes and a
   lantern glow lights the rock. **Nothing lives in them**, as in the East.
 
@@ -113,9 +113,9 @@ step. For each of the four built neighbours, **read its profile in `REGION_TERRA
 
 ## Wildlife
 
-A new `src/west-lotharn-wildlife.js`, zones tagged `region: 'West Lotharn Mountains'`, spread into
-`src/west-regions-life.js` after the Oves zones. `src/east-lotharn-wildlife.js`,
-`src/oves-wildlife.js` and their tests show the shape and how a site is held to its ground.
+A new `src/content/regions/west-lotharn/west-lotharn-wildlife.js`, zones tagged `region: 'West Lotharn Mountains'`, spread into
+`src/content/regions/western-regions/west-regions-life.js` after the Oves zones. `src/content/regions/east-lotharn/east-lotharn-wildlife.js`,
+`src/content/regions/oves/oves-wildlife.js` and their tests show the shape and how a site is held to its ground.
 
 Rigs that exist today: boar, dolphin, duck, egret, goose, gull, harrier, hill-sheep, longhorn,
 nethrani-cattle, otter, plateau-hawk, red-deer, river-fox, sea-plunger, stilt, turkey-vulture,
@@ -129,17 +129,17 @@ backing off needs ~90–150 m of clear room behind it.
 
 ## Registration checklist (every item, or say why not)
 
-`scripts/build-region-survey.mjs` PLAYABLE → regenerate `src/region-survey.js` ·
-`src/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/region-world.js` REGION_IDS (27),
+`scripts/build-region-survey.mjs` PLAYABLE → regenerate `src/dev/tools/region-survey.js` ·
+`src/world/terrain/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/world/terrain/region-world.js` REGION_IDS (27),
 REGION_TERRAIN (default + `byTerrain.mountain` and `.hills`), REGION_TEXT (subtitle, spawn on dry
-walkable ground, description, palette, `npcIds: []`, landmarks) · `src/languages.js` (the East
+walkable ground, description, palette, `npcIds: []`, landmarks) · `src/gameplay/skills/languages.js` (the East
 Lotharn has a `lotharn` dialect — decide whether the West shares it and say why) ·
-`src/developer-atlas.js` LOCALS (`[id, label, target, regionId, anchor]`) · `src/map-fog.js` 3–6
-areas (radius 18–130, > 60 % inside) · `src/build-status.js` · `src/region-sky.js` (the East
-Lotharn has its own; a taller, colder range may want its own again) · `src/climbing.js` CLIMB_REGIONS ·
-`src/west-lotharn-world.js` hooked into the chain in `src/world-terrain.js` ·
-`src/west-lotharn-scenery.js` hooked in `src/world.js` · caves module ·
-`src/west-lotharn-wildlife.js` · `tests/west-lotharn-world.test.js` and a peaks test ·
+`src/dev/tools/developer-atlas.js` LOCALS (`[id, label, target, regionId, anchor]`) · `src/ui/map/map-fog.js` 3–6
+areas (radius 18–130, > 60 % inside) · `src/dev/tools/build-status.js` · `src/world/environment/region-sky.js` (the East
+Lotharn has its own; a taller, colder range may want its own again) · `src/gameplay/movement/climbing.js` CLIMB_REGIONS ·
+`src/content/regions/west-lotharn/west-lotharn-world.js` hooked into the chain in `src/world/terrain/world-terrain.js` ·
+`src/content/regions/west-lotharn/west-lotharn-scenery.js` hooked in `src/world.js` · caves module ·
+`src/content/regions/west-lotharn/west-lotharn-wildlife.js` · `tests/west-lotharn-world.test.js` and a peaks test ·
 `package.json` test list · `docs/west-lotharn-report.md` · a dated entry in `docs/design-answers.md`.
 
 Names: check `world-builder/azhoran_language_profiles.py` before coining anything; if there is no
@@ -182,7 +182,7 @@ One short review render at the end if electron is available
 taken **after** any final scenery tuning — three builders in a row photographed before their last
 change and had nothing to show for it. No autoplays, no long smokes.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js` and `src/developer-atlas.js` are
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` and `src/dev/tools/developer-atlas.js` are
 CRLF; keep every file as found.
 
 ## Report

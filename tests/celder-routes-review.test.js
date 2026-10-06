@@ -4,12 +4,12 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { REGION_IDS } from '../src/region-world.js';
-import { WALK_STEP } from '../src/walk-surfaces.js';
-import { SOUTH_CELDER_ARRIVAL, SOUTH_CELDER_TRAILS } from '../src/south-celder-world.js';
-import { NORTH_CELDER_ARRIVAL, NORTH_CELDER_TRAILS } from '../src/north-celder-world.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
+import { WALK_STEP } from '../src/world/collision/walk-surfaces.js';
+import { SOUTH_CELDER_ARRIVAL, SOUTH_CELDER_TRAILS } from '../src/content/regions/south-celder/south-celder-world.js';
+import { NORTH_CELDER_ARRIVAL, NORTH_CELDER_TRAILS } from '../src/content/regions/canerd/north-celder-world.js';
 import { inspectCelderRoute } from './celder-route-controller.js';
-import { canSwim, canStand } from '../src/game-state.js';
+import { canSwim, canStand } from '../src/gameplay/movement/game-state.js';
 
 // Exact supplied waypoint data from East Izol commit 0a47f26, kept as evidence.
 // The old walk-route.mjs driver is not reused: it held initial Y and could nudge
@@ -36,9 +36,9 @@ const routes = [
   { name: 'supplied scenic waypoint loop', intent: 'diagnostic chords between review sites; classify cliffs and props before adopting as a route', strict: false, points: supplied },
 ];
 
-const files = ['src/world.js', 'src/world-terrain.js', 'src/south-celder-world.js', 'src/north-celder-world.js',
-  'src/south-celder-scenery.js', 'src/north-celder-scenery.js', 'src/west-lotharn-world.js',
-  'src/mithala-water.js', 'src/mithala-scenery.js', 'src/west-lotharn-ground.js', 'src/game-state.js', 'src/terrain-fall.js', 'src/swimming.js', 'src/locomotion-skills.js', 'src/combat.js'];
+const files = ['src/world.js', 'src/world/terrain/world-terrain.js', 'src/content/regions/south-celder/south-celder-world.js', 'src/content/regions/canerd/north-celder-world.js',
+  'src/content/regions/south-celder/south-celder-scenery.js', 'src/content/regions/canerd/north-celder-scenery.js', 'src/content/regions/west-lotharn/west-lotharn-world.js',
+  'src/content/regions/mithala/mithala-water.js', 'src/content/regions/mithala/mithala-scenery.js', 'src/content/regions/west-lotharn/west-lotharn-ground.js', 'src/gameplay/movement/game-state.js', 'src/gameplay/movement/terrain-fall.js', 'src/gameplay/movement/swimming.js', 'src/gameplay/movement/locomotion-skills.js', 'src/gameplay/combat/combat.js'];
 const source = Object.fromEntries(files.map(file => [file, createHash('sha256')
   .update(readFileSync(new URL('../' + file, import.meta.url))).digest('hex')]));
 const names = ['South Celder', 'North Celder', 'West Lotharn Mountains', 'South Mithala', 'West Mithala', 'South Oremindi Mountains', 'Yunethre'];

@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { createJourney } from '../src/journey.js';
-import { createLusciaChapter, LUSCIA_SITES } from '../src/luscia-chapter.js';
-import { createMorosChapter, MOROS_SITES } from '../src/moros-chapter.js';
-import { createBorderChapter, BORDER_NPCS, BORDER_SIDES, BORDER_OUTCOMES } from '../src/border-chapter.js';
-import { createAftermathChapter, AFTERMATH_IDS } from '../src/aftermath-chapter.js';
-import { AFTERMATH_SITES } from '../src/aftermath-sites.js';
-import { AFTERMATH_NPCS } from '../src/aftermath-chapter.js';
-import { createRegionalLife } from '../src/regional-life.js';
-import { createForestStory } from '../src/forest-story.js';
-import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON } from '../src/forest-hideout.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
-import { SOLIS_NPCS } from '../src/solis-town.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createLusciaChapter, LUSCIA_SITES } from '../src/content/chapters/civil-war/luscia-chapter.js';
+import { createMorosChapter, MOROS_SITES } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_SIDES, BORDER_OUTCOMES } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { createAftermathChapter, AFTERMATH_IDS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { AFTERMATH_SITES } from '../src/content/chapters/chapter-one/aftermath-sites.js';
+import { AFTERMATH_NPCS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { createRegionalLife } from '../src/world/life/regional-life.js';
+import { createForestStory } from '../src/content/quests/forest/forest-story.js';
+import { createForestHideoutQuest, FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON } from '../src/content/quests/forest/forest-hideout.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
+import { SOLIS_NPCS } from '../src/content/regions/solis/solis-town.js';
 
 /**
  * A quest step points the traveler at a destination by id: the journal writes its name,

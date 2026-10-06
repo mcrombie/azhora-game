@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLivingStory } from '../src/living-story.js';
-import { createCompanyRouteDriver } from '../src/company-route-host.js';
-import { createCompanyTransport, validCompanyTransit, COMPANY_FERRY_SECONDS } from '../src/company-transport.js';
-import { FERRY_LANDINGS } from '../src/ferry.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
+import { createCompanyRouteDriver } from '../src/gameplay/company/company-route-host.js';
+import { createCompanyTransport, validCompanyTransit, COMPANY_FERRY_SECONDS } from '../src/gameplay/company/company-transport.js';
+import { FERRY_LANDINGS } from '../src/world/travel/ferry.js';
 
 const D = FERRY_LANDINGS.drent.ashore, P = FERRY_LANDINGS.peblos.ashore;
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);

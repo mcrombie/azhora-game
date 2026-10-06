@@ -8,16 +8,16 @@ import {
   VILLAGE_CORNERS, CORNERS_XP, cornersWalked, LANDINGS, LANDING_KEYS, landingAt, DRILLS, drillFor, drillScene, DRILL_LANGUAGE,
   GROUND_PREFIX, isGround, groundOfSighting, longRoadStop as stopById,
   companionPace, COMPANION_REACH, TRAVELER_RUN, knowsAlready, RECOGNISED, recognisedAt, PLAY_TROUPE_STOP, PLAY_TROUPE_STOPS,
-} from '../src/long-road.js';
-import { TROUPE_STOPS, TROUPE_UNSEEN, FIRST_CAMP, createTroupe } from '../src/troupe.js';
-import { PLAYABLE_IDS, startingSkills } from '../src/player-characters.js';
-import { LONG_ROAD_STOPS as ALL_STOPS } from '../src/long-road.js';
-import { ARRIVALS } from '../src/mercenaries.js';
-import { MAIN_ROAD } from '../src/region-world.js';
-import { renderLine } from '../src/linguist.js';
-import { SUBREGION_IDS, SUBREGIONS, subregionsAt } from '../src/map-fog.js';
-import { MERCENARY_ROSTER } from '../src/mercenaries.js';
-import { SKILLS } from '../src/skills.js';
+} from '../src/content/chapters/journey/long-road.js';
+import { TROUPE_STOPS, TROUPE_UNSEEN, FIRST_CAMP, createTroupe } from '../src/content/quests/troupe/troupe.js';
+import { PLAYABLE_IDS, startingSkills } from '../src/content/characters/player-characters.js';
+import { LONG_ROAD_STOPS as ALL_STOPS } from '../src/content/chapters/journey/long-road.js';
+import { ARRIVALS } from '../src/gameplay/company/mercenaries.js';
+import { MAIN_ROAD } from '../src/world/terrain/region-world.js';
+import { renderLine } from '../src/gameplay/skills/language/linguist.js';
+import { SUBREGION_IDS, SUBREGIONS, subregionsAt } from '../src/ui/map/map-fog.js';
+import { MERCENARY_ROSTER } from '../src/gameplay/company/mercenaries.js';
+import { SKILLS } from '../src/gameplay/skills/skills.js';
 
 /** Everything the world would say if the traveler had done the whole of Drent. */
 const ALL_SKILLS = ['cartography', 'birding', 'cooking', 'fishing', 'woodcutting', 'construction', 'mycology', 'archaeology', 'botany', 'geology', 'farming'];
@@ -290,7 +290,7 @@ test('every man on the roster can be remembered, and Drent has nine grounds to c
   assert.ok(validateLongRoadSnapshot(road.snapshot()));
   // Ten from 2026-09-21, when the Toll House - the one stop the chart could not name - was given
   // a ground of its own; nine from the 22nd, when the Caloss Gate came out of the world and took
-  // its ground with it (src/region-world.js, WOOD_EDGE).
+  // its ground with it (src/world/terrain/region-world.js, WOOD_EDGE).
   assert.equal(DRENT_GROUNDS.length, 9, 'Jojo signs your chart when all nine are on it');
   assert.ok(DRENT_GROUNDS.includes('the-toll-house'));
   assert.equal(DRENT_GROUNDS.length, new Set(DRENT_GROUNDS).size, 'and no ground is counted twice');
@@ -393,7 +393,7 @@ test('the companion keeps up with a running traveler, and the set-down is left f
   assert.ok(walked > 1600, `the run covered ${walked.toFixed(0)} m of the 1,668 m road`);
   assert.equal(setDowns, 0, `he was set down ${setDowns} times over the length of the road`);
   assert.ok(gap < COMPANION_REACH.stride + 2, `he settles a stride behind, not ${gap.toFixed(1)} m`);
-  // A horse canters at 13 m/s (RIDE, src/riding.js), which nobody runs down. That is what the
+  // A horse canters at 13 m/s (RIDE, src/gameplay/movement/riding.js), which nobody runs down. That is what the
   // set-down is for, and he reaches it inside a minute of cantering.
   let mounted = 0, seconds = 0;
   while (mounted <= COMPANION_REACH.setDown && seconds < 600) { mounted += (13 - companionPace(mounted)) * .1; seconds += .1; }

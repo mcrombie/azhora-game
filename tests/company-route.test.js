@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import {sourceModule} from './module-loader.js';
-import {companyRoadStops} from '../src/company-route.js';
-import {createMercenaryCompany,MERCENARY_ROSTER,distanceAlongRoad} from '../src/mercenaries.js';
-import {bodyWorld,stepToward,BODY} from '../src/bodies.js';
-import {canStand} from '../src/game-state.js';
+import {companyRoadStops} from '../src/gameplay/company/company-route.js';
+import {createMercenaryCompany,MERCENARY_ROSTER,distanceAlongRoad} from '../src/gameplay/company/mercenaries.js';
+import {bodyWorld,stepToward,BODY} from '../src/gameplay/combat/bodies.js';
+import {canStand} from '../src/gameplay/movement/game-state.js';
 
 test('the paused Avrel register gives nobody an invisible 90-second appointment',()=>{
   const positions={'meadow-courier':{x:10,z:0},'crossing-keeper':{x:20,z:0},'relay-clerk':{x:30,z:0}};
@@ -20,7 +20,7 @@ test('the paused Avrel register gives nobody an invisible 90-second appointment'
 let built;
 async function fixture(){
   if(!built){
-    const {createWorld}=await sourceModule('../src/world.js'),{ANCHORS}=await sourceModule('../src/regions.js');
+    const {createWorld}=await sourceModule('../src/world.js'),{ANCHORS}=await sourceModule('../src/world/terrain/regions.js');
     const world=createWorld(new THREE.Scene());
     world.setJourneySiteState('bridge-repair',true);
     const company=createMercenaryCompany({road:world.paths[0],stops:companyRoadStops(world.npcPositions),

@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCombat } from '../src/combat.js';
-import { WEAPON_TYPES, SWORD_ARC, TRADEABLE_WEAPONS } from '../src/weapons.js';
-import { ARMS_SKILLS, familyOf } from '../src/combat-skills.js';
-import { KIT_WEAPON_ITEM, MERCENARY_STYLES } from '../src/mercenaries.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { WEAPON_TYPES, SWORD_ARC, TRADEABLE_WEAPONS } from '../src/gameplay/combat/weapons.js';
+import { ARMS_SKILLS, familyOf } from '../src/gameplay/combat/combat-skills.js';
+import { KIT_WEAPON_ITEM, MERCENARY_STYLES } from '../src/gameplay/company/mercenaries.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
 import { sourceModule } from './module-loader.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 const open = { heightAt: () => 1.5, colliders: [], bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 } };
 
 /** A fight with one goblin due north, and whatever weapon is being asked about. */
@@ -42,7 +42,7 @@ test('the sword is the reference, and a weapon that says nothing is the sword', 
   assert.equal(WEAPON_TYPES['simple-sword'].arc, SWORD_ARC);
   assert.equal(SWORD_ARC, Math.PI * .34, 'which is the arc the game has always struck in');
   // A bare weapon - the shape every existing test hands `combat` - is the sword's feel exactly.
-  const combat = source('combat.js');
+  const combat = source('gameplay/combat/combat.js');
   assert.match(combat, /const tempoOf = weapon => \(Number\.isFinite\(weapon\?\.tempo\) && weapon\.tempo > 0 \? weapon\.tempo : 1\);/);
   assert.match(combat, /const arcOf = weapon => \(Number\.isFinite\(weapon\?\.arc\) && weapon\.arc > 0 \? weapon\.arc : SWORD_ARC\);/);
   // Nothing anywhere still reads the old constants in place of the weapon's own.
@@ -185,7 +185,7 @@ test('what he takes up is what he is seen holding', () => {
   }
   // They hang off the wrist mount with the blades, so they swing with the arm rather than
   // standing planted the way an npc's does.
-  const characters = source('characters.js');
+  const characters = source('content/characters/characters.js');
   assert.match(characters, /'ash-spear': mount => makeSpearProp\(mount, 'Ash spear', 1\.9\),/);
   // Built the first time he holds one, like the buckler: a figure has a draw-call budget and
   // these three are only ever reached by taking one off the ground where its owner fell.

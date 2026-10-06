@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createSkills } from '../src/skills.js';
-import { createCombat } from '../src/combat.js';
-import { renderFieldCard } from '../src/field-card.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { renderFieldCard } from '../src/gameplay/combat/field-card.js';
 
 function card() {
   const nodes = new Map(['kicker','name','note','fill','level'].map(id => [`#bird-card-${id}`, {textContent:'',style:{}}]));

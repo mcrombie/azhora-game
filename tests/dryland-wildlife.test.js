@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const world = { bounds: { minX: -1000, maxX: 1000, minZ: -1000, maxZ: 1000 },
   heightAt: () => 3, waterAt: () => null, colliders: [] };
 for (const species of ['road-fox', 'spine-lizard']) {

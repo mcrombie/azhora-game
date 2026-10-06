@@ -4,12 +4,12 @@ import { sourceModule } from './module-loader.js';
 import { NETHER_DESERT_CELLS, NETHER_DESERT_OUTLINES, NETHER_DESERT_BOUNDS, NETHER_DESERT_ARRIVAL,
   NETHER_DESERT_LANDMARKS, NETHER_DESERT_TRAILS, NETHER_DESERT_PANS, netherDesertOwns,
   netherDesertGround, netherDesertTint, netherDesertInset, netherDesertFeatures,
-  netherDesertRiverDistance } from '../src/nether-desert-world.js';
-import { NETHER_DESERT_WILDLIFE_ZONES } from '../src/nether-desert-wildlife.js';
-import { NETH_HEAD, NETH } from '../src/west-regions.js';
-import { courseSurface } from '../src/west-ground.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { regionAt, hexOwnerAt } from '../src/region-world.js';
+  netherDesertRiverDistance } from '../src/content/regions/nether-desert/nether-desert-world.js';
+import { NETHER_DESERT_WILDLIFE_ZONES } from '../src/content/regions/nether-desert/nether-desert-wildlife.js';
+import { NETH_HEAD, NETH } from '../src/content/regions/western-regions/west-regions.js';
+import { courseSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { regionAt, hexOwnerAt } from '../src/world/terrain/region-world.js';
 
 test('The Nether Desert owns all 26 atlas cells without changing neighbouring ground',()=>{
   assert.equal(NETHER_DESERT_CELLS.length,26);
@@ -134,7 +134,7 @@ test('Sparse desert wildlife has terrestrial homes on gentle dry habitat, includ
 
 test('Desert scenery is bounded, grounded, visibly collidable only at real slabs and clear along natural walks',async()=>{
   const THREE=await sourceModule('../vendor/three.module.js');
-  const {createNetherDesertScenerySteps}=await sourceModule('../src/nether-desert-scenery.js');
+  const {createNetherDesertScenerySteps}=await sourceModule('../src/content/regions/nether-desert/nether-desert-scenery.js');
   const parent=new THREE.Group(),colliders=[];
   // Distinct rendered surface verifies every prop uses the supplied mesh height
   // callback, rather than silently reverting to the logical height field.

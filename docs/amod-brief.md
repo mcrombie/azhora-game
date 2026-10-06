@@ -58,10 +58,10 @@ Where the lore is silent, invent in its voice and say so in your report.
 ## What to build
 
 - **The region.** Add `'Amod'` to `PLAYABLE_REGIONS` with its own biome, terrain profile and region
-  card, regenerate `src/region-survey.js`, take the id the registry gives you, and report any
+  card, regenerate `src/dev/tools/region-survey.js`, take the id the registry gives you, and report any
   `WORLD_BOUNDS` growth. Terrain from the atlas: hills, grassland and mountain. The reads to copy
-  are `src/pueth-world.js` + `src/pueth-scenery.js` (a neighbouring land region) and
-  `src/west-suval-world.js`.
+  are `src/content/regions/pueth/pueth-world.js` + `src/content/regions/pueth/pueth-scenery.js` (a neighbouring land region) and
+  `src/content/regions/solis/west-suval-world.js`.
 - **Terraces as terrain, not props.** The single thing that will make this region recognisable is
   stone terrace ribs following the contours across the hillsides, with the channels, gates and
   springhouses that serve them. Get that right before anything else and the rest is decoration.
@@ -75,9 +75,9 @@ Where the lore is silent, invent in its voice and say so in your report.
   clearing, the first terrace the player sees, and a view back down into Pueth.
 - **Two or three more places** with discovery text — a spring village, a burial terrace above a
   village, a water gate with a dispute attached.
-- **The chart**: add Amod's named ground to `SUBREGIONS` in `src/map-fog.js` (areas must not
+- **The chart**: add Amod's named ground to `SUBREGIONS` in `src/ui/map/map-fog.js` (areas must not
   overlap; `tests/map-fog.test.js` checks) and an honest `BUILD_STATUS` entry in
-  `src/build-status.js`.
+  `src/dev/tools/build-status.js`.
 
 ## The ogre
 
@@ -96,10 +96,10 @@ important single piece of the build, because it is also a **test of the combat s
   dangerous choice. Everything else — paying, talking, walking away — leaves him peaceable. This is
   optional content beside a level-1-to-2 road, and the player must be able to decline forever.
 - **He should very probably kill you.** The player has 100 HP and heals with food; the existing
-  bestiary is `ENEMY_KINDS` in `src/combat.js` (goblin: 75 HP, 17 damage, 0.94s tell; wolf: 14
+  bestiary is `ENEMY_KINDS` in `src/gameplay/combat/combat.js` (goblin: 75 HP, 17 damage, 0.94s tell; wolf: 14
   damage, fast; soldier: 16 damage). The player's three-swing combo does 24/26/34 with a 2.35–2.65 m
   reach and a 3.05 m dodge.
-  Build the ogre as a new enemy kind with its own numbers, and expect to extend `src/combat.js` to
+  Build the ogre as a new enemy kind with its own numbers, and expect to extend `src/gameplay/combat/combat.js` to
   support what he needs. Aim for roughly:
   - **damage 45–55** — two connected blows kill, and the third swing of a combo is never worth
     trading for one;
@@ -117,7 +117,7 @@ important single piece of the build, because it is also a **test of the combat s
   feel matters as much as the code.
 - Defeating him should be worth something in the region's terms — the road house stops paying, a
   water court records the judgement it could never enforce — and losing must be survivable in the
-  ordinary way the game handles defeat (check `src/combat.js`'s retreat and checkpoint handling and
+  ordinary way the game handles defeat (check `src/gameplay/combat/combat.js`'s retreat and checkpoint handling and
   keep it).
 - **Tests**: the ogre's numbers, that he is peaceable unless challenged, that the challenge is
   reachable only through dialogue, that a scripted perfect player can win and a scripted greedy one
@@ -131,13 +131,13 @@ important single piece of the build, because it is also a **test of the combat s
   `REGION_TERRAIN`, `REGION_TEXT`, `REGION_BIOMES`, `scripts/build-region-survey.mjs`,
   `package.json`'s test list, `src/world.js`, `src/main.js`) as small and local as you can. Put your
   work in new modules with one call from the world builder and one hook in `src/main.js`.
-  `src/combat.js` is shared and is being touched by nobody else — but keep your changes additive:
+  `src/gameplay/combat/combat.js` is shared and is being touched by nobody else — but keep your changes additive:
   a new enemy kind and the mechanics it needs, not a rewrite.
 - `src/main.js`, `index.html` and others are CRLF with very long lines: never reformat, patch by
   exact anchors with a Python script that asserts each anchor occurs once and writes nothing if one
   fails.
 - Performance: Ostel must not cost more in draw calls than Solis (about 95 at its gate). Merge static
-  scenery into vertex-coloured batches as `src/west-suval-world.js` and `src/peblos-scenery.js` do,
+  scenery into vertex-coloured batches as `src/content/regions/solis/west-suval-world.js` and `src/content/regions/peblos/peblos-scenery.js` do,
   instance the terraces and the scatter, keep shadow casters down. Measure and report.
 - `npm test` stays green. Add tests for the region, the town, the chart entries, the people and the
   ogre. Run `npm run test:game` and `npm run test:road` once each at the end. Do **not** run

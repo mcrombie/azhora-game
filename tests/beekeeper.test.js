@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HONEYCOMB, COMB_PRICE, BEE_LINES, createBeekeeper, validateBeekeeperSnapshot } from '../src/beekeeper.js';
-import { LIZ, createCatQuest, lizConversation } from '../src/cat-quest.js';
-import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
+import { HONEYCOMB, COMB_PRICE, BEE_LINES, createBeekeeper, validateBeekeeperSnapshot } from '../src/content/quests/bear-family/beekeeper.js';
+import { LIZ, createCatQuest, lizConversation } from '../src/content/quests/roadside/cat-quest.js';
+import { INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
 /**
  * **The comb, which is Liz's trade now** (the user, 22 September 2026: Troy goes to Cobble and
  * the skeps go to Liz). The machinery did not move - how many have been cut, what the next one
  * costs, what happens when the satchel is full - so this is still its test; who is holding the
- * knife is `src/cat-quest.js`.
+ * knife is `src/content/quests/roadside/cat-quest.js`.
  */
 
 /** A dialogue box that records what she says and lets a test pick a reply. */

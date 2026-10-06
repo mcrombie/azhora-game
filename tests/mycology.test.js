@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { createSkills } from '../src/skills.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import { MUSHROOM_SPECIES, MUSHROOM_IDS, EDIBLE_IDS, MYCOLOGIST, MYCOLOGY_LESSON, mushroom,
-  createMycology, validateMycologySnapshot, mycologistConversation } from '../src/mycology.js';
+  createMycology, validateMycologySnapshot, mycologistConversation } from '../src/gameplay/skills/nature/mycology.js';
 
 const fixture = () => { const skills = createSkills(); return { skills, mycology: createMycology({ skills }) }; };
 const satchel = () => { const bag = []; return { bag, add: (id, n) => { bag.push([id, n]); return true; } }; };
@@ -14,7 +14,7 @@ let built = null;
 async function woods() {
   built ??= (async () => {
     const { createWorld } = await sourceModule('../src/world.js');
-    const { createMushrooms, MUSHROOM_PATCHES } = await sourceModule('../src/mushrooms.js');
+    const { createMushrooms, MUSHROOM_PATCHES } = await sourceModule('../src/gameplay/skills/nature/mushrooms.js');
     const world = createWorld(new THREE.Scene());
     return { world, MUSHROOM_PATCHES, mushrooms: createMushrooms(new THREE.Scene(), world, { avoid: Object.values(world.npcPositions) }) };
   })();

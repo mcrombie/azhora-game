@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createCombat } from '../src/combat.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 
-const { createWolf } = await sourceModule('../src/characters.js');
+const { createWolf } = await sourceModule('../src/content/characters/characters.js');
 
 function fixture(options = {}) {
   const world = { bounds: { minX: -100, maxX: 100, minZ: -110, maxZ: 60 }, colliders: [], heightAt: () => 1.5, ...options.world };

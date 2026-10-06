@@ -24,14 +24,14 @@ half-finished fifth pass is worth less than four finished countries.
 
 - **None of the four is registered, and none is in the survey.** Add all four to `PLAYABLE` in
   `scripts/build-region-survey.mjs` after `'West Lotharn Mountains'` and regenerate with
-  `node scripts/build-region-survey.mjs`. Never hand-edit `src/region-survey.js`.
+  `node scripts/build-region-survey.mjs`. Never hand-edit `src/dev/tools/region-survey.js`.
 - **Region ids, in this order after `'West Lotharn Mountains': 27`:**
   `'South Mithala': 28`, `'West Mithala': 29`, `'East Mithala': 30`, `'North Mithala': 31`.
   South first because it is the one that touches built country.
 - Branch `mithala` in its own worktree, cut from **`west-lotharn` (1722740)**, so the two Lotharn
   ranges are real built ground under South Mithala's northern border. Never cd into another
   checkout, never a bare `git stash`, **do not commit** — leave the work uncommitted and report.
-- `src/region-levels.js` already carries `South Mithala` and `West Mithala` at level 3; check what
+- `src/world/terrain/region-levels.js` already carries `South Mithala` and `West Mithala` at level 3; check what
   it says about the other two and follow it.
 
 ## What the atlas says (authority; the lore is adjusted to it)
@@ -88,9 +88,9 @@ north of the current survey window, so:
 
 ## Wildlife
 
-A new `src/mithala-wildlife.js`, zones tagged with each of the four region names, spread into
-`src/west-regions-life.js` after the West Lotharn's. `src/oves-wildlife.js`,
-`src/west-lotharn-wildlife.js` and their tests show the shape and how a site is held to its ground.
+A new `src/content/regions/mithala/mithala-wildlife.js`, zones tagged with each of the four region names, spread into
+`src/content/regions/western-regions/west-regions-life.js` after the West Lotharn's. `src/content/regions/oves/oves-wildlife.js`,
+`src/content/regions/west-lotharn/west-lotharn-wildlife.js` and their tests show the shape and how a site is held to its ground.
 
 Rigs today: boar, dolphin, duck, egret, goose, gull, harrier, hill-sheep, longhorn,
 nethrani-cattle, otter, plateau-hawk, red-deer, river-fox, sea-plunger, stilt, turkey-vulture,
@@ -106,15 +106,15 @@ new zones a country at a time, because that loop stops at the first failing zone
 
 ## Registration checklist — four times over
 
-For **each** of the four: `src/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS ·
-`src/region-world.js` REGION_IDS, REGION_TERRAIN (default + `byTerrain` for grassland/plains/hills),
+For **each** of the four: `src/world/terrain/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS ·
+`src/world/terrain/region-world.js` REGION_IDS, REGION_TERRAIN (default + `byTerrain` for grassland/plains/hills),
 REGION_TEXT (subtitle, spawn on dry ground, description, palette, `npcIds: []`, landmarks) ·
-`src/developer-atlas.js` LOCALS (`[id, label, target, regionId, anchor]`) · `src/map-fog.js` areas
-(radius 18–130, > 60 % inside its own region) · `src/build-status.js` · `src/region-sky.js` (one
-continental sky shared by all four is probably right — argue it either way) · `src/languages.js`
+`src/dev/tools/developer-atlas.js` LOCALS (`[id, label, target, regionId, anchor]`) · `src/ui/map/map-fog.js` areas
+(radius 18–130, > 60 % inside its own region) · `src/dev/tools/build-status.js` · `src/world/environment/region-sky.js` (one
+continental sky shared by all four is probably right — argue it either way) · `src/gameplay/skills/languages.js`
 (the lore has Mithali temple speech; decide what the plain speaks and say why) ·
-`src/mithala-world.js` hooked into the chain in `src/world-terrain.js` · `src/mithala-scenery.js`
-hooked in `src/world.js` · `src/mithala-wildlife.js` · `tests/mithala-world.test.js` ·
+`src/content/regions/mithala/mithala-world.js` hooked into the chain in `src/world/terrain/world-terrain.js` · `src/content/regions/mithala/mithala-scenery.js`
+hooked in `src/world.js` · `src/content/regions/mithala/mithala-wildlife.js` · `tests/mithala-world.test.js` ·
 `package.json` · `docs/mithala-report.md` · a dated entry in `docs/design-answers.md`.
 
 Names: check `world-builder/azhoran_language_profiles.py` first; coin nothing if there is no
@@ -159,7 +159,7 @@ Maps: `node scripts/region-map.mjs minX,minZ,maxX,maxZ [scale] [out.png] [x,z;x,
 render at the end if electron is available, taken **after** any final scenery tuning. No autoplays,
 no long smokes.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js` and `src/developer-atlas.js` are
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` and `src/dev/tools/developer-atlas.js` are
 CRLF; keep every file as found.
 
 ## Report

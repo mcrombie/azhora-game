@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { borderGoal, aftermathGoal } from '../src/autopilot.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, clearLine, CHOICE_PRIORITY } from '../src/autopilot.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createRiding } from '../src/riding.js';
-import { OSTLER_NPC, OSTLER_TOKEN, horseWaiting, redeemHorse, ostlerConversation } from '../src/ostler.js';
+import { borderGoal, aftermathGoal } from '../src/gameplay/autoplay/autopilot.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { createAutopilot, planGoal, fightCommand, chooseReply, nextWaypoint, bestTrail, freeDirection, moveInput, nearestVertex, clearLine, CHOICE_PRIORITY } from '../src/gameplay/autoplay/autopilot.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createRiding } from '../src/gameplay/movement/riding.js';
+import { OSTLER_NPC, OSTLER_TOKEN, horseWaiting, redeemHorse, ostlerConversation } from '../src/content/quests/roadside/ostler.js';
 
 /** A small flat world with the same collision rules as the game. */
 function fakeWorld() {
@@ -80,13 +80,13 @@ test('the planner walks the tutorial: Jojo at the pier, Glun at the post, and th
   assert.equal(planGoal(snapshot({ questStage: 0 }), world).kind, 'talk', 'speaking to the harbourmaster is what brings the traveler ashore');
   const mara = planGoal(snapshot({ questStage: 1 }), world);
   assert.equal(mara.kind, 'talk'); assert.equal(mara.npcId, 'harbormaster');
-  // Officer Glun sets the lesson before the straw counts for anything (src/instructor.js).
+  // Officer Glun sets the lesson before the straw counts for anything (src/gameplay/skills/instructor.js).
   assert.equal(planGoal(snapshot({ questStage: 2, lessonSet: false }), world).npcId, 'instructor');
   assert.equal(planGoal(snapshot({ questStage: 2 }), world).kind, 'practice');
   assert.match(planGoal(snapshot({ questStage: 2, practiceHits: 2 }), world).intent, /dodge/);
   // And the third subquest is the road west, which the journey below takes from the boundary.
   // The eight steps that used to sit between - the bell, the fight, the watch, the satchel,
-  // Fernway Rest - are off the slate with the quests that needed them (src/quest-slate.js).
+  // Fernway Rest - are off the slate with the quests that needed them (src/gameplay/quests/quest-slate.js).
   assert.deepEqual(planGoal(snapshot({ questStage: QUEST_DONE }), world).target, world.border);
   assert.equal(planGoal(snapshot({ questStage: QUEST_DONE, combat: { phase: 'active', action: 'idle', stamina: 100, hp: 100, enemies: [] } }), world).kind, 'fight');
   assert.equal(planGoal(snapshot({ mode: 'inventory' }), world).kind, 'close-inventory', 'the satchel is no longer a lesson');
@@ -341,7 +341,7 @@ test('the autopilot answers every chapter that can put a reply in front of it, n
 });
 
 test('the autopilot carries the terms to Solis, keeps the Empire’s contract, reports to the Marshal and marches to the line', async () => {
-  const { createBorderChapter } = await import('../src/border-chapter.js');
+  const { createBorderChapter } = await import('../src/content/chapters/chapter-one/border-chapter.js');
   const border = createBorderChapter(); border.start();
   const world = { npcPositions: { 'post-camp-legate': { x: 1, z: 1 }, 'solis-gate-captain': { x: 2, z: 2 }, 'coalition-envoy': { x: 3, z: 3 }, 'battle-tribune': { x: 4, z: 4 } }, npcNames: {} };
   const walked = [];
@@ -359,7 +359,7 @@ test('the autopilot carries the terms to Solis, keeps the Empire’s contract, r
 });
 
 test('walled places are entered and left by their gates, innermost first on the way out', async () => {
-  const { enclosureWaypoint } = await import('../src/autopilot.js');
+  const { enclosureWaypoint } = await import('../src/gameplay/autoplay/autopilot.js');
   const box = (id, half, gates) => ({ id, contains: (x, z) => Math.abs(x) < half && Math.abs(z) < half, gates });
   const town = box('town', 50, [{ id: 'north', outer: { x: 0, z: -60 }, inner: { x: 0, z: -40 } }, { id: 'west', outer: { x: -60, z: 0 }, inner: { x: -40, z: 0 } }]);
   const hall = { id: 'hall', contains: (x, z) => x > 20 && x < 40 && Math.abs(z) < 10, gates: [{ id: 'door', outer: { x: 15, z: 0 }, inner: { x: 25, z: 0 } }] };
@@ -374,8 +374,8 @@ test('walled places are entered and left by their gates, innermost first on the 
 });
 
 test('a fort’s ditch is outside it: a traveler in front of the wall walks away instead of through it', async () => {
-  const { enclosureWaypoint } = await import('../src/autopilot.js');
-  const { STOCKADE_CIRCUIT, STOCKADE_CENTRE, enclosureOf } = await import('../src/outpost.js');
+  const { enclosureWaypoint } = await import('../src/gameplay/autoplay/autopilot.js');
+  const { STOCKADE_CIRCUIT, STOCKADE_CENTRE, enclosureOf } = await import('../src/content/regions/drent/outpost.js');
   const stockade = enclosureOf(STOCKADE_CIRCUIT, 'stockade', 'The border stockade');
   const world = { enclosures: [stockade] };
   // Where the Empire's autoplay stood after winning the border battle: eight metres
@@ -391,7 +391,7 @@ test('a fort’s ditch is outside it: a traveler in front of the wall walks away
 });
 
 test('the roads are one network: a journey is routed across as many of them as it takes', async () => {
-  const { roadRoute } = await import('../src/autopilot.js');
+  const { roadRoute } = await import('../src/gameplay/autoplay/autopilot.js');
   // Three roads meeting end to end, like the Solis road, the stockade spur and the Moros road.
   const paths = [
     [{ x: 0, z: 0 }, { x: 100, z: 0 }],
@@ -409,7 +409,7 @@ test('the roads are one network: a journey is routed across as many of them as i
 });
 
 test('through journeys prefer the road to a shorter dirt bypass, while trail destinations stay reachable', async () => {
-  const { roadRoute } = await import('../src/autopilot.js');
+  const { roadRoute } = await import('../src/gameplay/autoplay/autopilot.js');
   const road = Object.assign([{ x: 0, z: 0 }, { x: 0, z: 15 }, { x: 50, z: 15 }, { x: 100, z: 15 }, { x: 100, z: 0 }], { kind: 'road' });
   const trail = Object.assign([{ x: 0, z: 0 }, { x: 30, z: 0 }, { x: 70, z: 0 }, { x: 100, z: 0 }], { kind: 'trail' });
   const paths = [road, trail];
@@ -421,7 +421,7 @@ test('through journeys prefer the road to a shorter dirt bypass, while trail des
 });
 
 test('a harbour gate is the way to the water, not the way inland', async () => {
-  const { enclosureWaypoint } = await import('../src/autopilot.js');
+  const { enclosureWaypoint } = await import('../src/gameplay/autoplay/autopilot.js');
   const city = { id: 'city', contains: (x, z) => Math.abs(x) < 50 && Math.abs(z) < 50, gates: [
     { id: 'land', outer: { x: 0, z: -60 }, inner: { x: 0, z: -40 } },
     { id: 'quay', outer: { x: -60, z: 0 }, inner: { x: -40, z: 0 }, harbour: true },
@@ -433,7 +433,7 @@ test('a harbour gate is the way to the water, not the way inland', async () => {
 });
 
 test('the day after, chapter two closes in the place your side took, where you already stand', async () => {
-  const { sideSeat } = await import('../src/story-chapters.js');
+  const { sideSeat } = await import('../src/content/chapters/journey/story-chapters.js');
   const world = { sideSeat: (side, conquest) => sideSeat(side, conquest) };
   const at = (side, variant, position) => aftermathGoal({ campaign: { side }, position, aftermath: { variant, complete: true, built: true, destinationIds: [] } }, world);
   const solis = sideSeat('empire', 'solis-sweep'), outpost = sideSeat('coalition', 'moros-outpost');
@@ -455,9 +455,9 @@ test('from the Court of Oaths the way to the outpost on the Moros goes by the ro
   const THREE = await import('../vendor/three.module.js');
   const { sourceModule } = await import('./module-loader.js');
   const { createWorld } = await sourceModule('../src/world.js');
-  const { moveCharacter } = await import('../src/game-state.js');
-  const { aftermathSite } = await import('../src/aftermath-sites.js');
-  const { sideSeat } = await import('../src/story-chapters.js');
+  const { moveCharacter } = await import('../src/gameplay/movement/game-state.js');
+  const { aftermathSite } = await import('../src/content/chapters/chapter-one/aftermath-sites.js');
+  const { sideSeat } = await import('../src/content/chapters/journey/story-chapters.js');
   const world = createWorld(new THREE.Scene());
   const adapter = { bounds: world.bounds, colliders: world.colliders, nearColliders: (x, z, r, out) => world.nearColliders(x, z, r, out),
     heightAt: (x, z) => world.heightAt(x, z), paths: world.paths, enclosures: world.enclosures };
@@ -484,8 +484,8 @@ test('a wrecked cart between the traveler and a nearby field objective is walked
   const THREE = await import('../vendor/three.module.js');
   const { sourceModule } = await import('./module-loader.js');
   const { createWorld } = await sourceModule('../src/world.js');
-  const { moveCharacter } = await import('../src/game-state.js');
-  const { toWorld } = await import('../src/world-scale.js');
+  const { moveCharacter } = await import('../src/gameplay/movement/game-state.js');
+  const { toWorld } = await import('../src/world/terrain/world-scale.js');
   const world = createWorld(new THREE.Scene());
   const adapter = { bounds: world.bounds, colliders: world.colliders, nearColliders: (x, z, r, out) => world.nearColliders(x, z, r, out),
     heightAt: (x, z) => world.heightAt(x, z), paths: world.paths, enclosures: world.enclosures };

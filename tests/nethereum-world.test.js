@@ -3,28 +3,28 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY, LAND_HEXES } from '../src/region-survey.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY, LAND_HEXES } from '../src/dev/tools/region-survey.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexOwnerAt, regions, landDistance, hexCentre,
-} from '../src/region-world.js';
+} from '../src/world/terrain/region-world.js';
 import {
   LIZEEM, ISAREOS_RIVER, NETH, NETH_HEAD, NETHEREUM_OUTLET, NETHEREUM_STREAMS, NETHEREUM_HOLLOW,
   ISAMOUTH_GROUND, WEST_REGION_LANDMARKS, WEST_RIVERS, courseDistance, coursePosition, westBareGround,
-} from '../src/west-regions.js';
+} from '../src/content/regions/western-regions/west-regions.js';
 import {
   WEST_PROFILES, westGroundAt, westWaterSurface, nethereumHollow, nethereumWet,
-} from '../src/west-ground.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { menoraGround } from '../src/menora-city.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { regionLevel, levelWords } from '../src/region-levels.js';
-import { REGION_LANGUAGE, LANGUAGES, DIALECTS } from '../src/languages.js';
-import { CHAMELEON_SPOTS } from '../src/chameleon.js';
+} from '../src/content/regions/western-regions/west-ground.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { menoraGround } from '../src/content/regions/minora-frontier/menora-city.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { regionLevel, levelWords } from '../src/world/terrain/region-levels.js';
+import { REGION_LANGUAGE, LANGUAGES, DIALECTS } from '../src/gameplay/skills/languages.js';
+import { CHAMELEON_SPOTS } from '../src/content/quests/chameleon/chameleon.js';
 
 /**
  * Nethereum: the third of the six south-western countries, and the one the atlas took a whole
@@ -40,7 +40,7 @@ import { CHAMELEON_SPOTS } from '../src/chameleon.js';
  * builder would be most tempted to put back.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = createWorld(scene);
 const cells = REGION_CELLS.Nethereum;

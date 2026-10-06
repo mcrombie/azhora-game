@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBeggar, beggarConversation, BEGGAR_NPC, BEGGAR_LINES, BEGGAR_DEFAULTS } from '../src/beggar.js';
-import { TOWN_BEGGAR_ROUTE } from '../src/luscia-town.js';
-import { createInventoryState } from '../src/inventory.js';
+import { createBeggar, beggarConversation, BEGGAR_NPC, BEGGAR_LINES, BEGGAR_DEFAULTS } from '../src/content/quests/roadside/beggar.js';
+import { TOWN_BEGGAR_ROUTE } from '../src/content/regions/luscia/luscia-town.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
 const route = [{ x: 0, z: 0 }, { x: 8, z: 0 }, { x: 0, z: 8 }];
 const far = { x: 200, z: 200 };

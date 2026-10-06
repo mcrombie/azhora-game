@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { hexOwnerAt } from '../src/region-world.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
 
 const baseline = process.env.AZHORA_CAPTURE_R11 === '1';
 const regions = new Set(['Drent', 'Luscia', 'Moros Plain', 'West Suval']);

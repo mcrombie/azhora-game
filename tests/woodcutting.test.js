@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { SKILLS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, skillGuide, levelUpLine, validateSkillsSnapshot } from '../src/skills.js';
-import { INVENTORY_ITEMS, ICON_KINDS, createInventoryState } from '../src/inventory.js';
-import { createCampcraft } from '../src/campcraft.js';
-import { createWeapons } from '../src/weapons.js';
-import { WOOD_SPECIES, timberForSpecies } from '../src/wood-species.js';
-import { PLANKS, sawOffer } from '../src/construction.js';
-import { TREE_IDS } from '../src/botany.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { SKILLS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, skillGuide, levelUpLine, validateSkillsSnapshot } from '../src/gameplay/skills/skills.js';
+import { INVENTORY_ITEMS, ICON_KINDS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { WOOD_SPECIES, timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { PLANKS, sawOffer } from '../src/gameplay/skills/woodcutting/construction.js';
+import { TREE_IDS } from '../src/gameplay/skills/nature/botany.js';
 import { WOODCUTTING_SKILL, TREE_KINDS, TREE_KIND_IDS, LOG_ITEMS, AXES, KINGS_AXE_LEVEL, KOOPWOOD, WOODLOT_TREES, WOODLOT_SIGN, BOWDEN, BOWDEN_STAND,
-  inKoopwood, woodlotColliders, chopChance, bestAxe, createWoodcutting, bowdenConversation, validateWoodcuttingSnapshot } from '../src/woodcutting.js';
+  inKoopwood, woodlotColliders, chopChance, bestAxe, createWoodcutting, bowdenConversation, validateWoodcuttingSnapshot } from '../src/gameplay/skills/woodcutting/woodcutting.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { SIGN_LABELS } = await sourceModule('../src/signs.js');
+const { SIGN_LABELS } = await sourceModule('../src/world/scenery/signs.js');
 const world = createWorld(new THREE.Scene());
 const sequence = values => { let i = 0; return () => values[i++ % values.length]; };
 const talker = () => {
@@ -133,7 +133,7 @@ test('each harvest keeps its actual species through the rendered tree, log and s
 });
 
 test('botanical specimens and every shared forest trunk have explicit timber identity without relabeling their saved IDs', async () => {
-  const { SPECIMEN_TREES } = await sourceModule('../src/drent-trees.js');
+  const { SPECIMEN_TREES } = await sourceModule('../src/content/regions/drent/drent-trees.js');
   for (const id of TREE_IDS) assert.ok(WOOD_SPECIES[id], `wood identity for ${id}`);
   for (const tree of SPECIMEN_TREES) {
     assert.equal(tree.woodKind, WOOD_SPECIES[tree.species].woodKind);
@@ -207,8 +207,8 @@ test('saves: woodcutting is kept, and nonsense is refused', () => {
 });
 
 test('Bowden looks the part: a head bigger than anybody, and his shell on his back', async () => {
-  const { createBowden, BOWDEN_SIZE } = await sourceModule('../src/woodcutter-model.js');
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createBowden, BOWDEN_SIZE } = await sourceModule('../src/world/actors/woodcutter-model.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const size = group => new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
   const bowden = createBowden(), plain = createCharacter({ role: 'mercenary', tunic: 0x777777 });
   assert.ok(BOWDEN_SIZE > 1.1 && size(bowden.group).y > size(plain.group).y * 1.1, 'huge');

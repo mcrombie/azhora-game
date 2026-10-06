@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ACTING_EMOTES, ACTING_LESSON, ACTING_XP, createActing, actingPracticeConversation } from '../src/acting.js';
-import { createSkills, RUNESCAPE_TABLE, SKILLS } from '../src/skills.js';
-import { createTroupe, troupeConversation } from '../src/troupe.js';
+import { ACTING_EMOTES, ACTING_LESSON, ACTING_XP, createActing, actingPracticeConversation } from '../src/gameplay/skills/performance/acting.js';
+import { createSkills, RUNESCAPE_TABLE, SKILLS } from '../src/gameplay/skills/skills.js';
+import { createTroupe, troupeConversation } from '../src/content/quests/troupe/troupe.js';
 
 test('Acting introduces the skill without resetting prior practice or excluding other teachers', () => {
   const skills = createSkills(), acting = createActing({ skills });

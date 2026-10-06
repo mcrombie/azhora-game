@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 /**
  * A fingerpost is only worth building if a traveler can walk up to it and read it.

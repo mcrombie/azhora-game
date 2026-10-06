@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCampaign, settleBorderBattle, CHAPTERS, REGIONAL_ARCS, CAMPAIGN_MISSIONS, LOTHARN_SURVEY_POINTS, campaignGraphIssues, validateCampaignSnapshot } from '../src/campaign.js';
-import { LEVEL_ONE_PROVINCES } from '../src/campaign-world.js';
+import { createCampaign, settleBorderBattle, CHAPTERS, REGIONAL_ARCS, CAMPAIGN_MISSIONS, LOTHARN_SURVEY_POINTS, campaignGraphIssues, validateCampaignSnapshot } from '../src/content/chapters/civil-war/campaign.js';
+import { LEVEL_ONE_PROVINCES } from '../src/content/chapters/civil-war/campaign-world.js';
 
 function fixture() {
   const events = [];

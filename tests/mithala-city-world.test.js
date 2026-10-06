@@ -5,7 +5,7 @@ import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
 
 /**
- * Mithala on the world: the layout (src/mithala-city.js) laid into the terrain chain and built with the four Mithala
+ * Mithala on the world: the layout (src/content/regions/mithala/mithala-city.js) laid into the terrain chain and built with the four Mithala
  * countries, asked of one world scoped to them [28-31]. The platforms read their level; the river's own ground within two
  * metres of the water is exactly what it was before the city; the game's own movement rules walk through every quarter,
  * down Gauge Lane to the gauge, across the ford in the water and over the three bridges and up the tower's stair; the
@@ -15,25 +15,25 @@ import { scopedWorld } from './scoped-world.js';
  * route's waypoints in order, a steer of up to 1.7 rad round anything in the way, a fall wherever the ground drops a
  * metre in one step, and no swimming. The bridges and the stair are walking surfaces (decks and ramps), which the ground
  * under them does not know about, so those two routes stand the walker on what the traveller's own controller stands
- * on (`bodyWorld`, src/bodies.js: the highest surface within a step of the feet).
+ * on (`bodyWorld`, src/gameplay/combat/bodies.js: the highest surface within a step of the feet).
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { groundBeforeMithalaCity } = await sourceModule('../src/world-terrain.js');
-const { westWaterSurface } = await sourceModule('../src/west-ground.js');
-const { canStand, moveCharacter } = await sourceModule('../src/game-state.js');
-const { canWalkSlope } = await sourceModule('../src/climbing.js');
-const { BODY, bodyWorld } = await sourceModule('../src/bodies.js');
-const { createWestLife } = await sourceModule('../src/west-regions-life.js');
-const { MITHALA_WILDLIFE_ZONES } = await sourceModule('../src/mithala-wildlife.js');
-const { SUBREGIONS } = await sourceModule('../src/map-fog.js');
-const { travelPlaces, landingSpot } = await sourceModule('../src/testing-travel.js');
-const { TRANSFORM } = await sourceModule('../src/region-world.js');
-const { ATLAS_CITY_DESIGNATIONS, atlasPlaceMarks, atlasCityBoundaries } = await sourceModule('../src/world-map-detail.js');
+const { groundBeforeMithalaCity } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { westWaterSurface } = await sourceModule('../src/content/regions/western-regions/west-ground.js');
+const { canStand, moveCharacter } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { canWalkSlope } = await sourceModule('../src/gameplay/movement/climbing.js');
+const { BODY, bodyWorld } = await sourceModule('../src/gameplay/combat/bodies.js');
+const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
+const { MITHALA_WILDLIFE_ZONES } = await sourceModule('../src/content/regions/mithala/mithala-wildlife.js');
+const { SUBREGIONS } = await sourceModule('../src/ui/map/map-fog.js');
+const { travelPlaces, landingSpot } = await sourceModule('../src/dev/tools/testing-travel.js');
+const { TRANSFORM } = await sourceModule('../src/world/terrain/region-world.js');
+const { ATLAS_CITY_DESIGNATIONS, atlasPlaceMarks, atlasCityBoundaries } = await sourceModule('../src/ui/map/world-map-detail.js');
 const {
   MITHALA_CITY, MITHALA_DISTRICTS, MITHALA_STREETS, MITHALA_BRIDGES, MITHALA_FORD, MITHALA_QUAY, MITHALA_APPROACHES, APPROACH_BAND,
   MITHALA_TOWER_STAIR, MITHALA_GAUGE, mithalaCityWaterClearance, mithalaCityReserved, mithalaDeckHeight, mithalaDistrictAt,
   inMithalaCity, polygonDepth, mithalaSegmentDistance,
-} = await sourceModule('../src/mithala-city.js');
+} = await sourceModule('../src/content/regions/mithala/mithala-city.js');
 
 const scene = new THREE.Scene();
 const world = await scopedWorld(scene, [28, 29, 30, 31]);
@@ -192,7 +192,7 @@ test('the strict walker goes through every quarter, down Gauge Lane to the gauge
 const surfaceAt = (x, z, y) => world.supportAt(x, z, { maxY: y, stepUp: .35, groundSlope: false });
 const unbuiltBridges = MITHALA_BRIDGES.filter(b => !surfaceAt((b.a.x + b.b.x) / 2, (b.a.z + b.b.z) / 2, b.deck + .5)?.id).map(b => b.name);
 test('the walker crosses all three bridges dry, on their decks', {
-  todo: unbuiltBridges.length ? `no walking surface yet on ${unbuiltBridges.join(', ')} (src/mithala-city-scenery.js builds the bridges)` : false,
+  todo: unbuiltBridges.length ? `no walking surface yet on ${unbuiltBridges.join(', ')} (src/content/regions/mithala/mithala-city-scenery.js builds the bridges)` : false,
 }, () => {
   const result = walk(route('mithala-bridges'), { surfaces: true });
   assert.deepEqual(result.failures, []);
@@ -210,7 +210,7 @@ const quayBuilt = MITHALA_QUAY.points.slice(1).every((b, i) => {
   return surfaceAt((a.x + b.x) / 2, (a.z + b.z) / 2, MITHALA_QUAY.deck + .5)?.id;
 });
 test('the walker goes down the Quay Stairs onto the Grain Quay and along it', {
-  todo: quayBuilt ? false : 'no walking surface yet on the Grain Quay (src/mithala-city-scenery.js builds it)',
+  todo: quayBuilt ? false : 'no walking surface yet on the Grain Quay (src/content/regions/mithala/mithala-city-scenery.js builds it)',
 }, () => {
   const result = walk(route('mithala-quay'), { surfaces: true });
   assert.deepEqual(result.failures, []);
@@ -220,7 +220,7 @@ test('the walker goes down the Quay Stairs onto the Grain Quay and along it', {
 const stairTop = MITHALA_TOWER_STAIR.landings.at(-1), topHeight = P + MITHALA_TOWER_STAIR.top;
 const towerBuilt = Math.abs((surfaceAt(stairTop.x, stairTop.z, topHeight + .5)?.height ?? -Infinity) - topHeight) < .3;
 test('the walker climbs the sky tower’s stair from the door to the open platform', {
-  todo: towerBuilt ? false : 'no walking surface yet at the top of the tower stair (src/mithala-city-buildings.js builds the tower)',
+  todo: towerBuilt ? false : 'no walking surface yet at the top of the tower stair (src/content/regions/mithala/mithala-city-buildings.js builds the tower)',
 }, () => {
   const points = route('mithala-tower'), result = walk(points, { surfaces: true });
   assert.deepEqual(result.failures, []);
@@ -265,11 +265,11 @@ test('no animal is put down on the city', () => {
 });
 
 // Written homes the city now stands on: the placing moves each of these off the city to the nearest clear spot, so the
-// test above holds, but the sites themselves want moving in src/mithala-wildlife.js (not this layout's file).
+// test above holds, but the sites themselves want moving in src/content/regions/mithala/mithala-wildlife.js (not this layout's file).
 const writtenOnCity = MITHALA_WILDLIFE_ZONES.flatMap(zone => (zone.air || zone.sea ? [] : zone.sites
   .filter(([x, z]) => mithalaCityReserved(x, z)).map(([x, z]) => `${zone.id} at ${x},${z}`)));
 test('no wildlife range writes a home on the city', {
-  todo: writtenOnCity.length ? `${writtenOnCity.join('; ')}: move in src/mithala-wildlife.js` : false,
+  todo: writtenOnCity.length ? `${writtenOnCity.join('; ')}: move in src/content/regions/mithala/mithala-wildlife.js` : false,
 }, () => assert.deepEqual(writtenOnCity, []));
 
 test('the chart’s royal seat and the travel panel’s Mithala are the city', () => {

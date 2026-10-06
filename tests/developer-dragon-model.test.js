@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-const { createDeveloperDragon } = await sourceModule('../src/developer-dragon-model.js');
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createDeveloperDragon } = await sourceModule('../src/dev/tools/developer-dragon-model.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 test('The green dragon has finite closed hide, four legs, a long tail and real triangular flight membranes', () => {
   const dragon = createDeveloperDragon();

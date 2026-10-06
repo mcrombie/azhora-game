@@ -14,9 +14,9 @@ The baseline used actual Fast-loaded region scenery, the `bodyWorld` walking ada
 
 ## Correction and preserved contracts
 
-- `src/izol-ground.js` derives the island's 84 unique atlas edges. It uses the existing continuous terrain blend within 6 m of an edge and fades to the original blend by 24 m. Bucket lookup and an island bounding box keep unrelated terrain calls inexpensive.
-- `src/world-terrain.js` applies that bounded inland correction before the existing beach and settlement-pad rules. It also exposes the original island height for legacy scatter decisions. Global terrain blending, atlas ownership, rivers and other regional terrain layers are unchanged.
-- `src/izol-scenery.js` keeps original height-based candidate eligibility and color choices, preserving every subsequent random draw. Actual drawing heights follow the corrected ground.
+- `src/content/regions/izol/izol-ground.js` derives the island's 84 unique atlas edges. It uses the existing continuous terrain blend within 6 m of an edge and fades to the original blend by 24 m. Bucket lookup and an island bounding box keep unrelated terrain calls inexpensive.
+- `src/world/terrain/world-terrain.js` applies that bounded inland correction before the existing beach and settlement-pad rules. It also exposes the original island height for legacy scatter decisions. Global terrain blending, atlas ownership, rivers and other regional terrain layers are unchanged.
+- `src/content/regions/izol/izol-scenery.js` keeps original height-based candidate eligibility and color choices, preserving every subsequent random draw. Actual drawing heights follow the corrected ground.
 - Three narrow `src/world.js` edits import that legacy sampler, pass it to the Izol kit and select `max(izolDeck, groundHeight)` at the harbor contact. Mole footprints, deck levels, ships and harbor geometry are unchanged.
 
 All 35 island scatter batches, 5,934 instances and 118 registered stone pines retain exact non-height data. Instance hash: `137e22c15b058bbdc2e252c987b7bf9e7d20afcebedd826f9e89d68534bf69e8`. Tree ID/position/height/species hash: `d2125bf1971885c9a5fe3cbf7b074813124a9dff271b7194a7fcbacae9112cf3`. Saved tree identities do not require migration. This hash check does not substitute for a save/reload run or a rendered-root-footprint audit.

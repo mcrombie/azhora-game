@@ -51,7 +51,7 @@ What the game should do with that:
   bones of a lair, not a house.
 - Nobody in Ambron treats it as a legend. It is in the tally books as a property title.
 - It is never confirmed on screen. The only live dragon in Azhora is a secret in a box under a
-  carriage at Vaervelm Caelazh (src/vineyard.js), and the only other evidence anybody has is a
+  carriage at Vaervelm Caelazh (src/content/quests/wine/vineyard.js), and the only other evidence anybody has is a
   jaw on a winery mantel that everyone agrees is a cow's. The three should never be put in a
   room together; they should sit at three corners of the world and let the traveler do the work.
 

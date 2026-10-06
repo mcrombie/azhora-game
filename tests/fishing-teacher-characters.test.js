@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 test('ordinary teachers gain one visible, animated rod only when asked to demonstrate', () => {
   for (const role of ['legion-officer', 'doomsayer', 'garden-keeper', 'avrel-farmer']) {

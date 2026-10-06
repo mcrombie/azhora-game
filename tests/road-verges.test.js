@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sourceModule as load} from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import {canStand} from '../src/game-state.js';
-import {WORLD_SCALE} from '../src/world-scale.js';
+import {canStand} from '../src/gameplay/movement/game-state.js';
+import {WORLD_SCALE} from '../src/world/terrain/world-scale.js';
 
 // Verge counts follow the road's length, so both the count and the triangle
 // budget are stated per authored metre of road.
 const along=count=>Math.round(count*WORLD_SCALE), budget=Math.round(20000*WORLD_SCALE);
 
-const {createRoadVerges}=await load('../src/road-verges.js');
+const {createRoadVerges}=await load('../src/content/regions/drent/road-verges.js');
 
 test('botanical patches are deterministic, small, collision-free and clear of road interactions',()=>{
   const world={heightAt:()=>2,bounds:{minX:-94,maxX:94,minZ:-680,maxZ:48},

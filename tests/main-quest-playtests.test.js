@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAIN_QUEST_PLAYTESTS, mainQuestPlaytest, mainQuestPlaytestFinished } from '../src/main-quest-playtests.js';
+import { MAIN_QUEST_PLAYTESTS, mainQuestPlaytest, mainQuestPlaytestFinished } from '../src/dev/checks/main-quest-playtests.js';
 
 test('gold playtests stop at their own completion, after the final conversation', () => {
   for (const entry of MAIN_QUEST_PLAYTESTS) {

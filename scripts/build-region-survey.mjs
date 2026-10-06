@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generate src/region-survey.js from assets/azhora-dev-regions.json.
+ * Generate src/dev/tools/region-survey.js from assets/azhora-dev-regions.json.
  *
  * The renderer builds the playable world synchronously, and the Node tests load
  * src modules through a data: URL loader, so neither can fetch or read the
@@ -9,9 +9,9 @@
  * hex near the playable window so the coastline knows where the sea is.
  *
  * tests/region-survey.test.js re-derives the same file and fails if it drifts.
- * Never hand-edit src/region-survey.js; run `node scripts/build-region-survey.mjs`.
+ * Never hand-edit src/dev/tools/region-survey.js; run `node scripts/build-region-survey.mjs`.
  */
-import { OUTER_NAMES } from '../src/outer-regions-data.js';
+import { OUTER_NAMES } from '../src/content/regions/outer-regions/outer-regions-data.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,7 +33,7 @@ export const PLAYABLE = ['Drent', 'Luscia', 'Moros Plain', 'East Suval', 'West S
  *  - **the Stillwater** at (6,120), `lake`, ringed by South Suval. Of the atlas's twenty-eight lake
  *    hexes exactly one meets the rule; the lakes between Elagos, Amod and Drent, and those round
  *    Nethereum, touch several regions or open water and stay as they are. The region takes the hex as
- *    a `lake` cell, the way Elagos holds its own lakes, and src/south-suval-world.js cuts the basin
+ *    a `lake` cell, the way Elagos holds its own lakes, and src/content/regions/south-suval/south-suval-world.js cuts the basin
  *    to the lake's own level. tests/south-suval-world.test.js checks the World Builder map agrees;
  *  - **(5,92)**, `hills`, ringed by South Mithala on all six sides - found when the Mithala plain was
  *    built, because the ground there came out at 0.6 m between two hexes at 12 and 13, with a beach
@@ -311,7 +311,7 @@ export function readAtlas() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith('build-region-survey.mjs')) {
-  const target = path.join(root, 'src/region-survey.js');
+  const target = path.join(root, 'src/dev/tools/region-survey.js');
   writeFileSync(target, buildSource(readAtlas()));
   console.log(`Wrote ${target}`);
 }

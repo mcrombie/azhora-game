@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { HAIL_FROM, createBurying, validateBuryingSnapshot, JOB_IDS, BURYING_STAGES, FOUND_ON_TRIP } from '../src/lauvel-burying.js';
-import { fieldPoint } from '../src/lauvel-aftermath.js';
-import { HANDOVER } from '../src/batman.js';
+import { HAIL_FROM, createBurying, validateBuryingSnapshot, JOB_IDS, BURYING_STAGES, FOUND_ON_TRIP } from '../src/content/regions/luscia/lauvel-burying.js';
+import { fieldPoint } from '../src/content/regions/luscia/lauvel-aftermath.js';
+import { HANDOVER } from '../src/content/quests/batman/batman.js';
 
 /**
  * Two things in the frame loop open a dialogue on their own: Sela's hail at the Lauvel and

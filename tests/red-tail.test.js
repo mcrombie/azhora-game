@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { RED_TAIL, createHawkFlight } from '../src/hawk-flight.js';
-import { BIRD_WATCHER, RED_TAIL_LINES, birdWatcherConversation } from '../src/birding.js';
-import { createLakota } from '../src/lakota.js';
+import { RED_TAIL, createHawkFlight } from '../src/gameplay/movement/hawk-flight.js';
+import { BIRD_WATCHER, RED_TAIL_LINES, birdWatcherConversation } from '../src/gameplay/skills/birding/birding.js';
+import { createLakota } from '../src/content/quests/lakota/lakota.js';
 
 const sequence = values => { let i = 0; return () => values[i++ % values.length]; };
 const anchor = { x: 10, y: 2, z: -5 }, glove = { x: 10.3, y: 3.2, z: -4.7, yaw: .4 };
@@ -42,7 +42,7 @@ test('while the traveler talks with Lakota she comes in early and stays on the g
 });
 
 test('the hawk is a half-metre raptor with a red tail, folded on the fist and a metre and more across in the air', async () => {
-  const { createRedTailHawk } = await sourceModule('../src/lakota-hawk.js');
+  const { createRedTailHawk } = await sourceModule('../src/content/quests/lakota/lakota-hawk.js');
   const hawk = createRedTailHawk();
   for (const name of ['Hawk body', 'Hawk head', 'Hawk tail', 'Hawk left wing', 'Hawk right wing', 'Hawk legs']) assert.ok(hawk.group.getObjectByName(name), name);
   const span = () => { hawk.group.updateMatrixWorld(true); const b = new THREE.Box3().setFromObject(hawk.group); return b.max.x - b.min.x; };
@@ -54,7 +54,7 @@ test('the hawk is a half-metre raptor with a red tail, folded on the fist and a 
 });
 
 test('Lakota is drawn from the sketch, holds his fist up for her, and talks about her', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const lakota = createCharacter({ role: BIRD_WATCHER.modelRole, tunic: BIRD_WATCHER.color });
   const wristHeight = pose => {
     for (let i = 0; i < 90; i++) lakota.animate(i / 30, 0, true, pose);

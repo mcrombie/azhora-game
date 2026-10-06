@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 
 function fixture(options = {}) {
   const world = { bounds: { minX: -100, maxX: 100, minZ: -110, maxZ: 60 }, colliders: [], heightAt: () => 1.5, ...options.world };

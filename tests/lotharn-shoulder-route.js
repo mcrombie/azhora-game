@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { canStand } from '../src/game-state.js';
-import { canWalkSlope, sampleClimbSurface } from '../src/climbing.js';
-import { RAMPS, PEAKS, pointOn } from '../src/east-lotharn-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope, sampleClimbSurface } from '../src/gameplay/movement/climbing.js';
+import { RAMPS, PEAKS, pointOn } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
 export function walkingLane(world, way) {
   const steps = Math.ceil(way.line.length / .75), offsets = [-1.4, -1.2, -.9, -.6, -.3, 0, .3, .6, .9, 1.2, 1.4];
   const stages = [];

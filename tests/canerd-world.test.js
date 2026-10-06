@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { CANERD, CANERD_PATHS, CANERD_BUILDINGS, CANERD_WALLS, CANERD_LANDMARKS,
-  canerdGround, canerdClear, canerdTint, canerdTerrainSink } from '../src/canerd-world.js';
-import { refineCanerdGround } from '../src/canerd-ground.js';
-import { CELDER_MOUND_SITE } from '../src/south-celder-world.js';
+  canerdGround, canerdClear, canerdTint, canerdTerrainSink } from '../src/content/regions/canerd/canerd-world.js';
+import { refineCanerdGround } from '../src/content/regions/canerd/canerd-ground.js';
+import { CELDER_MOUND_SITE } from '../src/content/regions/south-celder/south-celder-world.js';
 
 const incoming = 19.5;
 const ground = (x, z) => canerdGround(x, z, incoming);

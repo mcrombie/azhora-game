@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
 import { createForestStory, validateForestStorySnapshot, FOREST_STORY_NPC, FOREST_STORY_SITES,
-  forestConversation, forestSiteConversation } from '../src/forest-story.js';
+  forestConversation, forestSiteConversation } from '../src/content/quests/forest/forest-story.js';
 
 function fixture({ sticks = 0 } = {}) {
   const inventory = createInventoryState();

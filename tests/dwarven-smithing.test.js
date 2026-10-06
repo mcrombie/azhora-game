@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SKILLS, SKILL_IDS, MAX_XP, createSkills, skillTechniques, validateSkillsSnapshot } from '../src/skills.js';
-import { filterSkills, skillCategory, createSkillsBrowser } from '../src/skills-browser.js';
-import { skillIntroduction } from '../src/skill-announcement.js';
+import { SKILLS, SKILL_IDS, MAX_XP, createSkills, skillTechniques, validateSkillsSnapshot } from '../src/gameplay/skills/skills.js';
+import { filterSkills, skillCategory, createSkillsBrowser } from '../src/ui/skills/skills-browser.js';
+import { skillIntroduction } from '../src/ui/skills/skill-announcement.js';
 
 const read = skills => skills.view().find(skill => skill.id === 'dwarvenSmithing');
 

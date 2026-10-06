@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SUBREGIONS, SUBREGION_IDS, subregion, subregionsAt, createMapFog, validateMapFogSnapshot } from '../src/map-fog.js';
-import { IBENWOOD_GROVES, IBENWOOD_ARRIVALS, IBENWOOD_PILOT } from '../src/ibenwood-environment.js';
-import { FACTIONS, describeRegion } from '../src/campaign-world.js';
-import { createCampaign, campaignGraphIssues, SIDES } from '../src/campaign.js';
-import { buildStatusList, regionBuildStatus } from '../src/build-status.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
+import { SUBREGIONS, SUBREGION_IDS, subregion, subregionsAt, createMapFog, validateMapFogSnapshot } from '../src/ui/map/map-fog.js';
+import { IBENWOOD_GROVES, IBENWOOD_ARRIVALS, IBENWOOD_PILOT } from '../src/content/regions/ibenwood/ibenwood-environment.js';
+import { FACTIONS, describeRegion } from '../src/content/chapters/civil-war/campaign-world.js';
+import { createCampaign, campaignGraphIssues, SIDES } from '../src/content/chapters/civil-war/campaign.js';
+import { buildStatusList, regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
 
 test('Ibenwood chart names follow the actual groves and arrival points without duplicating the Central grove', () => {
   for (const grove of IBENWOOD_GROVES) {

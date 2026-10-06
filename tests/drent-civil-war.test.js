@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDrentCivilWar, validateDrentCivilWarSnapshot, DRENT_EVIDENCE_ID, DRENT_SUPPLIES_ID,
-  DRENT_EVIDENCE_TEXT, DRENT_QUEST_ID } from '../src/drent-civil-war.js';
-import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createJourney } from '../src/journey.js';
-import { createWeapons } from '../src/weapons.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
-import { questLive } from '../src/quest-slate.js';
+  DRENT_EVIDENCE_TEXT, DRENT_QUEST_ID } from '../src/content/chapters/civil-war/drent-civil-war.js';
+import { createInventoryState, INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
+import { questLive } from '../src/gameplay/quests/quest-slate.js';
 
 const discover=['defeat-ambush','accept-investigation','search-camp'];
 const monarchy=[...discover,'report-glun','confront-killian','kill-killian','report-victory'];

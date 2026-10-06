@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { MITHALA_CITY, MITHALA_DISTRICTS, MITHALA_CURTAIN, MITHALA_FLOOD_BANKS, MITHALA_BRIDGES, MITHALA_FORD,
   MITHALA_QUAY, MITHALA_BARGES, MITHALA_STREETS, MITHALA_GATES, MITHALA_BUILDINGS, MITHALA_TOWER_STAIR, MITHALA_GAUGE,
   MITHALA_CITY_LANDMARKS, MITHALA_APPROACHES, mithalaCityWaterClearance, mithalaDistrictAt, mithalaDeckHeight, mithalaCityGround,
-  mithalaCityReserved, inMithalaCity, polygonDepth, mithalaSegmentDistance } from '../src/mithala-city.js';
-import { hexAt, hexOwnerAt } from '../src/region-world.js';
+  mithalaCityReserved, inMithalaCity, polygonDepth, mithalaSegmentDistance } from '../src/content/regions/mithala/mithala-city.js';
+import { hexAt, hexOwnerAt } from '../src/world/terrain/region-world.js';
 
 const ring = poly => poly.map((a, i) => [a, poly[(i + 1) % poly.length]]);
 const along = (a, b, n) => Array.from({ length: n + 1 }, (_, i) => ({ x: a.x + (b.x - a.x) * i / n, z: a.z + (b.z - a.z) * i / n }));

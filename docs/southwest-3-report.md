@@ -79,7 +79,7 @@ emptier**, and the wildlife arithmetic below is the whole argument.
 | level (`region-levels.js`) | 5 | 5 | 2 |
 
 Every number was read off the survey and `tests/southwest-world.test.js` re-derives them.
-`src/region-levels.js` and `src/campaign-world.js` already carried all three and were not touched.
+`src/world/terrain/region-levels.js` and `src/content/chapters/civil-war/campaign-world.js` already carried all three and were not touched.
 
 **Job 3's three are not one piece**, which is worth stating: Cape Heth and the Dinelv Highlands share
 eight hex edges and Hama touches neither of them. Hama's only neighbours in eleven countries are the
@@ -93,7 +93,7 @@ the three jobs — and still not one edge against a built country outside it.
 
 Read per hex from `world-builder/map/resources/examples/azhora.wwmap` (`hexes[key].climate`,
 `koppen-v1` — **not** `azhora.cmap.json`). `CAPE_HETH_CLIMATE`, `DINELV_CLIMATE` and `HAMA_CLIMATE` in
-`src/southwest-world.js` record all seventy-three and the test holds them to the map hex for hex.
+`src/content/regions/southwest/southwest-world.js` record all seventy-three and the test holds them to the map hex for hex.
 `SOUTHWEST_CLIMATE` now carries **275** across three jobs.
 
 **`BWh` × 63, `Csb` × 9, `Cfb` × 1.** With jobs 1 and 2 that makes **239 of the block's 275 hexes hot
@@ -528,7 +528,7 @@ escarpment, and is the slope a real one has.
 
 ## What grows
 
-`src/southwest-scenery.js`, extended with **a third pass of its own** after job 2's, for job 2's reason:
+`src/content/regions/southwest/southwest-scenery.js`, extended with **a third pass of its own** after job 2's, for job 2's reason:
 job 1's loop sorts by how dry the air is and where the wind has left sediment, job 2's by which of four
 desert surfaces is underfoot, and neither vocabulary contains salt spray, a bedding course or a line of
 grass. Keeping the three passes apart also keeps the two earlier loops at exactly 107 and 95 cells, so
@@ -639,7 +639,7 @@ and every range's half-diagonal is between **57 and 96 m** against `LIFE_REACH`'
 ### No new rig, and the two calls that were close
 
 **The block has now built eleven countries on job 1's one new rig.** Every species here was already in
-`src/west-regions-life.js`. The sea-plunger had been used once, at the Ascarth tip, and is the
+`src/content/regions/western-regions/west-regions-life.js`. The sea-plunger had been used once, at the Ascarth tip, and is the
 best-argued extension available: the overview places it on exposed headlands over productive water, and
 Cape Heth is the only other one the atlas draws.
 
@@ -762,29 +762,29 @@ staged, committed or stashed there). Nine claims across three files.
 
 `scripts/build-region-survey.mjs` PLAYABLE + `WINDOW.minQ` −45 → −49 → `node scripts/build-region-survey.mjs`
 (LAND_HEXES unchanged at 2,078) ·
-`src/region-layout.js` PLAYABLE_REGIONS + three REGION_BIOMES ·
-`src/region-world.js` REGION_IDS 40–42, three REGION_TERRAIN (five profiles between them), three
+`src/world/terrain/region-layout.js` PLAYABLE_REGIONS + three REGION_BIOMES ·
+`src/world/terrain/region-world.js` REGION_IDS 40–42, three REGION_TERRAIN (five profiles between them), three
 REGION_TEXT (subtitle, spawn, description, palette with the three skies, `npcIds: []`, seventeen
 landmarks between them) ·
-`src/southwest-world.js` (`WEST_EDGE_REGIONS`, the three climates, `COAST_HEX_DRY`, `westEdgeShare`, the
+`src/content/regions/southwest/southwest-world.js` (`WEST_EDGE_REGIONS`, the three climates, `COAST_HEX_DRY`, `westEdgeShare`, the
 spine, the hollows, the spray, the bedding, the six ridges, the four gaps, the four basins, the three
 mesas, the four channels, the ascent, `hamaGreen`, the broken ground, the three winter beds, five ground
 colours, seventeen landmarks) ·
-`src/southwest-scenery.js` (the third pass) ·
-`src/southwest-wildlife.js` (thirteen zones) ·
-`src/languages.js` (two new dialects, `maroshi.dialects`, three `spoken` entries) ·
-`src/developer-atlas.js` (three anchors, one middle hex each) ·
-`src/map-fog.js` (seventeen areas) ·
-`src/build-status.js` (three `early` entries) ·
-`src/west-regions.js` (`WEST_REGION_NAMES`) ·
+`src/content/regions/southwest/southwest-scenery.js` (the third pass) ·
+`src/content/regions/southwest/southwest-wildlife.js` (thirteen zones) ·
+`src/gameplay/skills/languages.js` (two new dialects, `maroshi.dialects`, three `spoken` entries) ·
+`src/dev/tools/developer-atlas.js` (three anchors, one middle hex each) ·
+`src/ui/map/map-fog.js` (seventeen areas) ·
+`src/dev/tools/build-status.js` (three `early` entries) ·
+`src/content/regions/western-regions/west-regions.js` (`WEST_REGION_NAMES`) ·
 `src/main.js` (ten review views) ·
 `tests/southwest-world.test.js` · **`tests/own-sky.js` (new)** · the guard files above ·
 this report · `docs/design-answers.md`.
 
-`src/region-levels.js` already carried all three (5, 5, 2) and was not touched.
-`src/campaign-world.js` already had their one-line designs and was not touched.
+`src/world/terrain/region-levels.js` already carried all three (5, 5, 2) and was not touched.
+`src/content/chapters/civil-war/campaign-world.js` already had their one-line designs and was not touched.
 `package.json` already lists `tests/southwest-world.test.js` and was not touched.
-`src/west-ground.js`, `src/world.js` and `src/world-terrain.js` needed nothing: the new landforms go
+`src/content/regions/western-regions/west-ground.js`, `src/world.js` and `src/world/terrain/world-terrain.js` needed nothing: the new landforms go
 through `southwestGround` and the new colours through `southwestTint`, both of which job 1 hooked into
 the chain and job 2 fixed. `scripts/build-region-rivers.mjs` needed nothing: none of the three has a
 river edge on the atlas.

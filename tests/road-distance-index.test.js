@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoadDistanceIndex } from '../src/road-distance-index.js';
+import { createRoadDistanceIndex } from '../src/world/terrain/road-distance-index.js';
 
 const linear = (segments, x, z) => {
   let min = Infinity;

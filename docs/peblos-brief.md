@@ -2,11 +2,11 @@
 
 Peblos is the user's next region: islands off Drent's coast, open from the very first hour of the
 game. A traveler who has just stepped ashore at Tidehaven can pay the boatman at the pier a few
-coppers and be taken across. It is a quiet, level-1 province (`src/campaign-world.js`): fishing
+coppers and be taken across. It is a quiet, level-1 province (`src/content/chapters/civil-war/campaign-world.js`): fishing
 people, a small Empire garrison, and no chapter of the main quest.
 
 Read first: `CLAUDE.md`, `docs/world-scale-report.md` (one authored hex is 100 m; hand-placed
-places are rigid clusters in `src/world-scale.js`), `docs/pueth-report.md` and `docs/west-suval-report.md`
+places are rigid clusters in `src/world/terrain/world-scale.js`), `docs/pueth-report.md` and `docs/west-suval-report.md`
 (the two most recent regions: follow their shape of work), and `docs/content-pass.md` for tone.
 
 ## What the user asked for, in their words
@@ -21,16 +21,16 @@ places are rigid clusters in `src/world-scale.js`), `docs/pueth-report.md` and `
 
 ## The region
 
-- Add `'Peblos'` to `PLAYABLE_REGIONS` (`src/region-layout.js`) with its own biome in `REGION_BIOMES`,
-  its terrain profile in `REGION_TERRAIN` and its card in `REGION_TEXT` (`src/region-world.js`), and
-  regenerate `src/region-survey.js` with `node scripts/build-region-survey.mjs` after adding it to
+- Add `'Peblos'` to `PLAYABLE_REGIONS` (`src/world/terrain/region-layout.js`) with its own biome in `REGION_BIOMES`,
+  its terrain profile in `REGION_TERRAIN` and its card in `REGION_TEXT` (`src/world/terrain/region-world.js`), and
+  regenerate `src/dev/tools/region-survey.js` with `node scripts/build-region-survey.mjs` after adding it to
   `PLAYABLE` in the script. Peblos takes **region id 7** (Drent 1, Luscia 2, Moros Plain 3,
   East Suval 4, West Suval 5, Pueth 6). Everything derives ids from the registry; do not hard-code.
 - The atlas authored Peblos: read its hexes from `assets/azhora-dev-regions.json` (the survey
   generator shows how) and keep the region true to them — the islands' number, sizes and spread
   should come from the map, not from imagination. `WORLD_BOUNDS` will have to grow; say by how much
   in the report.
-- Sea between Drent and the islands is the Stills (`SEA_LEVEL`, `src/world-terrain.js`). Water must
+- Sea between Drent and the islands is the Stills (`SEA_LEVEL`, `src/world/terrain/world-terrain.js`). Water must
   read as water from the shore of both, and the crossing must not put standable ground in between.
 - The islands' look: low, rocky, wind-cut. Salt grass, thrift and gorse rather than forest; a few
   wind-bent pines on the higher ground; grey rock at the waterline, pale sand in the coves.
@@ -39,7 +39,7 @@ places are rigid clusters in `src/world-scale.js`), `docs/pueth-report.md` and `
 
 - The boatman is the man who rowed the traveler ashore in the opening: he is at Tidehaven's landing
   (`world.boatStart`, the arrival boat, and the pier in `src/world.js`). Give him a name, a stand at
-  the pier and a conversation. He ferries to Peblos for a fee in copper (`COPPER_ITEM`, `src/economy.js`;
+  the pier and a conversation. He ferries to Peblos for a fee in copper (`COPPER_ITEM`, `src/gameplay/inventory/economy.js`;
   the traveler starts with `STARTING_PURSE`). A few coppers — pick the number and say why in the report.
 - He also brings the traveler **back**, from the harbour on the main island, for the same fee.
 - The crossing itself is not a sailing sim: a short scene — the boat pulls out, the view fades, the
@@ -67,16 +67,16 @@ places are rigid clusters in `src/world-scale.js`), `docs/pueth-report.md` and `
 
 ## Fit it to what already exists
 
-- **The chart**: add Peblos's named ground to `SUBREGIONS` in `src/map-fog.js` (the harbour village,
+- **The chart**: add Peblos's named ground to `SUBREGIONS` in `src/ui/map/map-fog.js` (the harbour village,
   the headland, each outer island) — areas are a point, a reach and a note, and they must not overlap
-  (`tests/map-fog.test.js` checks). Add a `BUILD_STATUS` entry for Peblos in `src/build-status.js`
+  (`tests/map-fog.test.js` checks). Add a `BUILD_STATUS` entry for Peblos in `src/dev/tools/build-status.js`
   that is honest about how far it got.
-- **The local trail chart** (`src/local-map-data.js`), minimap, region card, autosave on entry and
-  the developer atlas (`src/developer-atlas.js` stops, `src/developer-mode.js` travel points) all
+- **The local trail chart** (`src/ui/map/local-map-data.js`), minimap, region card, autosave on entry and
+  the developer atlas (`src/dev/tools/developer-atlas.js` stops, `src/dev/tools/developer-mode.js` travel points) all
   follow the registry; add what each needs.
 - **Riding**: the horse cannot come on the boat. Dismount and leave it behind; say so in the ferryman's
   line, and make sure a mounted traveler cannot board.
-- Put Peblos's scenery, places and people in new modules (`src/peblos-world.js`, `src/peblos-people.js`
+- Put Peblos's scenery, places and people in new modules (`src/content/regions/peblos/peblos-world.js`, `src/content/regions/peblos/peblos-people.js`
   or similar) with one call from `src/world.js` and one hook in `src/main.js`. `src/main.js` and
   `index.html` are CRLF with very long lines: never reformat, patch by exact anchors.
 

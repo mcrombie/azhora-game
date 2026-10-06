@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { BUILD_STATES, BUILD_STATUS, buildStatusList, regionBuildStatus } from '../src/build-status.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
+import { BUILD_STATES, BUILD_STATUS, buildStatusList, regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
 
 const atlasNames = JSON.parse(readFileSync(new URL('../assets/azhora-dev-regions.json', import.meta.url), 'utf8'))
   .regions.map(region => region.name);

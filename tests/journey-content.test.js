@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation, registerLine } from '../src/journey-content.js';
-import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/journey.js';
-import { questLive } from '../src/quest-slate.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
+import { JOURNEY_NPCS, SITE_ACTIONS, journeyConversation, registerLine } from '../src/content/chapters/journey/journey-content.js';
+import { createJourney, PARCEL_IDS, BEACON_IDS } from '../src/content/chapters/journey/journey.js';
+import { questLive } from '../src/gameplay/quests/quest-slate.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
 
 /**
  * **The whole slate**, which is not the slate the game is playing on: Corvan's parcels and Sava's
- * waymarkers are put away today and the bridge stands on its own (src/quest-slate.js). Everything
+ * waymarkers are put away today and the bridge stands on its own (src/gameplay/quests/quest-slate.js). Everything
  * here is still written, so it is still tested; the last test in this file is the trimmed one.
  */
 const WHOLE = () => true;
@@ -259,7 +259,7 @@ test('Chip is a carpenter with his own hair, and his ids are the ones he always 
   assert.equal(chip.name, 'Chip');
   assert.match(chip.role, /[Cc]arpenter/);
   // Light brown, and on him: Jess on the Stills is built from the same `bridge-keeper` and hers
-  // is black, so the hair cannot live on the role (src/ferry.js).
+  // is black, so the hair cannot live on the role (src/world/travel/ferry.js).
   assert.equal(chip.look.hair, 0x8a6b45);
   assert.equal(chip.modelRole, 'bridge-keeper');
   // Nobody reads an id, and saves and the planner both hold these.
@@ -280,8 +280,8 @@ test('Chip will talk about Glun, and the two accounts of him agree', async () =>
   assert.match(lines, /fish|rod|trout|water/i, 'they were fishing buddies and he does not say so');
   assert.match(lines, /seventeen/, 'the age he went into the army');
   assert.match(lines, /Drent/);
-  // And Glun tells the same story about himself, in his own words (src/instructor.js).
-  const { instructorLines, INSTRUCTOR } = await import('../src/instructor.js');
+  // And Glun tells the same story about himself, in his own words (src/gameplay/skills/instructor.js).
+  const { instructorLines, INSTRUCTOR } = await import('../src/gameplay/skills/instructor.js');
   const his = instructorLines('waiting').join(' ');
   assert.match(his, /seventeen/, 'Glun gives a different age than Chip does');
   assert.match(his, /born|from here/i, 'Glun does not say he is from Drent');

@@ -152,8 +152,8 @@ The final gate reconciles all 131 atlas names against accepted environment recor
 
 ## Source records
 
-- `assets/azhora-dev-regions.json`, `src/region-layout.js`, `src/region-world.js`, `src/build-status.js`, and `src/region-levels.js` for the current atlas and registrations.
-- Regional world/scenery/wildlife modules and `src/region-loading.js` for actual behavior.
+- `assets/azhora-dev-regions.json`, `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`, `src/dev/tools/build-status.js`, and `src/world/terrain/region-levels.js` for the current atlas and registrations.
+- Regional world/scenery/wildlife modules and `src/world/loading/region-loading.js` for actual behavior.
 - [Design answers](design-answers.md), including later Varn and Telemonia decisions, and the existing regional briefs and reports.
 - [Northern integration](northern-regions-integration.md), [West Lotharn integration](west-lotharn-integration.md), [Telemonia report](telemonia-stage2-report.md), and [Varn report](varn-report.md).
 - The frozen Celder brief, report and source at `136b582` in `../azhora-game-celder`; preserve that checkout and resolve integration separately.

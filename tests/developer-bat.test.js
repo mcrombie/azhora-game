@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDeveloperBat, DEVELOPER_BAT } from '../src/developer-bat.js';
+import { createDeveloperBat, DEVELOPER_BAT } from '../src/dev/tools/developer-bat.js';
 
 test('The developer bat moves in three dimensions and freezes when paused', () => {
   const bat = createDeveloperBat({ heightAt: () => 2 });

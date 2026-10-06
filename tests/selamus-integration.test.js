@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
-import { SELAMUS_BUILDINGS, SELAMUS_ARRIVAL, SELAMUS_BRIDGES, selamusPoint, selamusCanalAt } from '../src/selamus-city.js';
-import { canStand, canSwim } from '../src/game-state.js';
-import { restoreWalkPosition } from '../src/walk-surfaces.js';
+import { SELAMUS_BUILDINGS, SELAMUS_ARRIVAL, SELAMUS_BRIDGES, selamusPoint, selamusCanalAt } from '../src/content/regions/selamus/selamus-city.js';
+import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
+import { restoreWalkPosition } from '../src/world/collision/walk-surfaces.js';
 const scene=new THREE.Scene(),world=await scopedWorld(scene,[24]);
-const {runSelamusChecks}=await sourceModule('../src/selamus-checks.js');
-const {SELAMUS_PIERS}=await sourceModule('../src/selamus-harbor.js');
+const {runSelamusChecks}=await sourceModule('../src/dev/checks/selamus-checks.js');
+const {SELAMUS_PIERS}=await sourceModule('../src/content/regions/selamus/selamus-harbor.js');
 async function loadIsland(){
   const frame=globalThis.requestAnimationFrame,cancel=globalThis.cancelAnimationFrame;
   globalThis.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),0);globalThis.cancelAnimationFrame=clearTimeout;

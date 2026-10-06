@@ -6,11 +6,11 @@ import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
 import { inspectCelderRoute } from './celder-route-controller.js';
-import { MAROSH_COMBES, TROGO_GULLIES, TROGO_PATHS, trogoWay, TROGO_WAY, TROGO_REVIEW_SEAMS } from '../src/southwest-world.js';
-import { SOUTHWEST_WILDLIFE_ZONES } from '../src/southwest-wildlife.js';
-import { REGION_IDS, hexOwnerAt } from '../src/region-world.js';
-import { canStand } from '../src/game-state.js';
-import { WALK_STEP } from '../src/walk-surfaces.js';
+import { MAROSH_COMBES, TROGO_GULLIES, TROGO_PATHS, trogoWay, TROGO_WAY, TROGO_REVIEW_SEAMS } from '../src/content/regions/southwest/southwest-world.js';
+import { SOUTHWEST_WILDLIFE_ZONES } from '../src/content/regions/southwest/southwest-wildlife.js';
+import { REGION_IDS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { WALK_STEP } from '../src/world/collision/walk-surfaces.js';
 
 // Natural drainage lines and a published animal path, not arbitrary chords
 // through Trogo's deliberately impassable thicket. Marosh's caravan road at
@@ -43,14 +43,14 @@ const routes = selected.map(([region, row]) => {
 if (process.env.AZHORA_R7_FULL_APPROACHES === '1') for (const [region, row] of selected.filter(([, row]) => row.id !== 'south-gully'))
   routes.push({ name: `${region} unresolved whole ${row.id} out and back`, region, intent: row.name, strict: true,
     points: [...row.line, ...row.line.slice(0, -1).reverse()].map(p => ({ x: p.x, z: p.z })) });
-const sourceFiles = ['src/world.js', 'src/world-terrain.js', 'src/west-ground.js', 'src/southwest-world.js',
-  'src/southwest-scenery.js', 'src/southwest-wildlife.js', 'src/west-regions-life.js',
-  'src/game-state.js', 'src/climbing.js', 'src/undergrowth.js', 'src/terrain-fall.js',
-  'src/locomotion-skills.js', 'src/swimming.js', 'src/combat.js', 'tests/celder-route-controller.js'];
+const sourceFiles = ['src/world.js', 'src/world/terrain/world-terrain.js', 'src/content/regions/western-regions/west-ground.js', 'src/content/regions/southwest/southwest-world.js',
+  'src/content/regions/southwest/southwest-scenery.js', 'src/content/regions/southwest/southwest-wildlife.js', 'src/content/regions/western-regions/west-regions-life.js',
+  'src/gameplay/movement/game-state.js', 'src/gameplay/movement/climbing.js', 'src/world/scenery/undergrowth.js', 'src/gameplay/movement/terrain-fall.js',
+  'src/gameplay/movement/locomotion-skills.js', 'src/gameplay/movement/swimming.js', 'src/gameplay/combat/combat.js', 'tests/celder-route-controller.js'];
 const source = Object.fromEntries(sourceFiles.map(file => [file, createHash('sha256')
   .update(readFileSync(new URL('../' + file, import.meta.url))).digest('hex')]));
 const scene = new THREE.Scene(), world = await scopedWorld(scene, [REGION_IDS.Marosh, REGION_IDS.Trogo]);
-const { createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const report = { source, routes: [], wildlife: [] };
 const trace = () => {
   if (process.env.AZHORA_R7_ROUTE_TRACE) writeFileSync(process.env.AZHORA_R7_ROUTE_TRACE, JSON.stringify(report, null, 2));

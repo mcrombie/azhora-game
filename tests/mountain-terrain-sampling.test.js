@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { regionOutline, METRES_PER_HEX } from '../src/region-layout.js';
-import { REGION_OUTLINES, TRANSFORM, hexAtlasCorners } from '../src/region-world.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { BALDRO_CELLS, baldroOwns, baldroInset, BALDRO_PATHS, baldroSurfaceHeight } from '../src/baldro-world.js';
-import { SOUTH_OREMINDI_CELLS, southOremindiOwns, southOremindiInset, SOUTH_OREMINDI, PATHS, southOremindiGround } from '../src/south-oremindi-world.js';
-import { cacheTerrainPointSamples } from '../src/terrain-point-cache.js';
+import { regionOutline, METRES_PER_HEX } from '../src/world/terrain/region-layout.js';
+import { REGION_OUTLINES, TRANSFORM, hexAtlasCorners } from '../src/world/terrain/region-world.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { BALDRO_CELLS, baldroOwns, baldroInset, BALDRO_PATHS, baldroSurfaceHeight } from '../src/content/regions/baldro/baldro-world.js';
+import { SOUTH_OREMINDI_CELLS, southOremindiOwns, southOremindiInset, SOUTH_OREMINDI, PATHS, southOremindiGround } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
+import { cacheTerrainPointSamples } from '../src/world/terrain/terrain-point-cache.js';
 
 const baldroOutline = regionOutline({ origin: PLAYABLE_SURVEY.origin, regions: [{name: 'Baldro', cells: BALDRO_CELLS}] }, 'Baldro', TRANSFORM);
 const fixtures = [

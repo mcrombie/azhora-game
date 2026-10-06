@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { SOUTH_CELDER_WILDLIFE_ZONES } from '../src/south-celder-wildlife.js';
-import { NORTH_CELDER_WILDLIFE_ZONES } from '../src/north-celder-wildlife.js';
+import { SOUTH_CELDER_WILDLIFE_ZONES } from '../src/content/regions/south-celder/south-celder-wildlife.js';
+import { NORTH_CELDER_WILDLIFE_ZONES } from '../src/content/regions/canerd/north-celder-wildlife.js';
 
 const delivered = JSON.parse(readFileSync(new URL('./fixtures/celder-delivered-identities.json', import.meta.url), 'utf8'));
 const zones = [...SOUTH_CELDER_WILDLIFE_ZONES, ...NORTH_CELDER_WILDLIFE_ZONES];
@@ -151,7 +151,7 @@ export async function inspectCelderScene(scene, world) {
   }
   if (JSON.stringify(zones) !== JSON.stringify(delivered.zones)) problems.push('Delivered wildlife zones/species/sites changed');
 
-  const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+  const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
   const animalScene = new THREE.Scene(), life = createWestLife(animalScene, world, { zones });
   const animals = [], animalProblems = [];
   let savedBefore, savedAfter;

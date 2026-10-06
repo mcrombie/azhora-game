@@ -184,7 +184,7 @@ it has been written away.
    the lore, because the atlas does not deny it — it simply stops before it, at the edge of
    the survey window, the way it stops before Minora and the Ibenwood.
 
-`src/campaign-world.js` already carries one-line designs for five of the six (Ovesos "dry
+`src/content/chapters/civil-war/campaign-world.js` already carries one-line designs for five of the six (Ovesos "dry
 grassland at the edge of the Oves Desert", Oves Desert "open desert with low hills", Isareos
 "grassland west of the Lotharn", Nethereum "grassland toward the Nether Desert", Gala "plains
 south of Nesdor"). Those are older and thinner than the region files, and one is wrong twice
@@ -631,7 +631,7 @@ is not built. And the atlas gives Gala nineteen `plains` hexes and two `grasslan
 
 Combat phase 2 is on main: a fight takes its country's level from
 `getLevel: centre => regionLevel(world.regionAt(centre).name)` in `src/main.js`, and
-`COUNTRY = { health: .45, damage: .30 }` in `src/combat-skills.js` gives enemy health
+`COUNTRY = { health: .45, damage: .30 }` in `src/gameplay/combat/combat-skills.js` gives enemy health
 ×(1 + 0.45 L) and damage ×(1 + 0.30 L).
 
 | Region | level | words on the card | health × | damage × |
@@ -736,7 +736,7 @@ Six countries, seven commits, each leaving the game bootable.
 breaks a chain wherever three edges meet a corner, and the new courses meet the Lizeem at
 four new confluences, so today's `atlasCourse('Caricas,Isareos,Nethereum,Ovesos')` (21 edges)
 becomes three chains and `atlasCourse('Gala,Nesdor,Ovesos')` (10 edges) becomes one chain
-plus the head of another. `src/west-regions.js` throws on a missing key, so **the game will
+plus the head of another. `src/content/regions/western-regions/west-regions.js` throws on a missing key, so **the game will
 not boot until those are rejoined by hand** — which `LIZEEM` already does once, for the
 confluence with the Carica, and which is the pattern. The commit's job is that the Lizeem and
 the Carica come out **point for point identical**, with a test that says so, because moving
@@ -764,15 +764,15 @@ to west, on purpose and with the reason written in, as the last builder was aske
 **The files.** New: `src/south-regions.js` (pure: the water, the Nethereum hollow, the
 aridity gradient, the named natural ground), `src/south-ground.js` (pure: the landform, on the
 `west-ground.js` model), `src/south-regions-scenery.js`, `src/south-regions-life.js`. Touched
-in the west family: `src/west-regions.js` only where the Lizeem is rejoined and its new reach
+in the west family: `src/content/regions/western-regions/west-regions.js` only where the Lizeem is rejoined and its new reach
 declared. Touched elsewhere, additively and in the same places the four touched:
-`src/region-layout.js` (`PLAYABLE_REGIONS`, six biomes), `src/region-world.js` (ids 15-20, six
-terrain profiles, region text, landmarks), `src/world-terrain.js` (one call), `src/world.js`
-(the scenery hook and the bare-ground test), `src/build-status.js`, `src/map-fog.js`,
-`src/developer-atlas.js` (six travel buttons, which is how the user goes and looks —
+`src/world/terrain/region-layout.js` (`PLAYABLE_REGIONS`, six biomes), `src/world/terrain/region-world.js` (ids 15-20, six
+terrain profiles, region text, landmarks), `src/world/terrain/world-terrain.js` (one call), `src/world.js`
+(the scenery hook and the bare-ground test), `src/dev/tools/build-status.js`, `src/ui/map/map-fog.js`,
+`src/dev/tools/developer-atlas.js` (six travel buttons, which is how the user goes and looks —
 `DEV_WORLD_DESTINATIONS`, one anchor hex each), `src/main.js` (the life module and the review
-views, in the two small additive edits the four used), `src/region-survey.js` and
-`src/region-rivers.js` (generated), `package.json` (every new test file, by name).
+views, in the two small additive edits the four used), `src/dev/tools/region-survey.js` and
+`src/world/terrain/region-rivers.js` (generated), `package.json` (every new test file, by name).
 
 Tests: one file per region in `tests/`, plus `tests/south-life.test.js` holding the same six
 laws `tests/west-life.test.js` holds — nothing can be walked down, the quick ones cannot be
@@ -815,7 +815,7 @@ the hunter's own box and the far south-west, 869 samples moved. 276 of them lie 
   is five metres of river, so its water surface differs from its neighbour's by about a
   centimetre. Every one of the twenty-one is inside the deep water, where nobody can stand.
 * **The hunter's own box — x -1400…-900, z 0…700 — has nought changed samples.** That box is
-  the Lake Lands: its water is Lake Ela and the Ela-south, authored in `src/elagos-world.js`,
+  the Lake Lands: its water is Lake Ela and the Ela-south, authored in `src/content/regions/ambron/elagos-world.js`,
   and nothing in it is a western river. Its 98 swimmable and 72 solid samples read the same
   before and after.
 

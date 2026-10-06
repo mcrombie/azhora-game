@@ -97,7 +97,7 @@ landmarks, the map-fog areas, the reports and the lore if it names them.
 
 ## 4. groundTint should be a table, not an if/else chain
 
-**The user's decision: do it.** `groundTint` in `src/world-terrain.js` has now failed **silently
+**The user's decision: do it.** `groundTint` in `src/world/terrain/world-terrain.js` has now failed **silently
 twice** — job 2 found an entire block's tint computed and dropped because an `else if` was never
 written, and job 3 met the same shape one level down inside `southwestTint`. A missing branch
 produces no error, no warning and no visible difference until somebody photographs the right place.

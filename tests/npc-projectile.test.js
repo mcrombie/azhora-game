@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 
 function fixture(margins = {}) {
   const position = { x: 0, y: 1.5, z: 0 }, events = [];

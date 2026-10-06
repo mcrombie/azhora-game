@@ -5,10 +5,10 @@ import {createHash} from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import {scopedWorld} from './scoped-world.js';
 import {sourceModule} from './module-loader.js';
-import {createAlezhorBankGround} from '../src/alezhor-bank-ground.js';
-import {goldReach} from '../src/alezhor-world.js';
-import {ibenwoodForestTrees} from '../src/ibenwood-environment.js';
-import {ALEZHOR_WILDLIFE_ZONES} from '../src/alezhor-wildlife.js';
+import {createAlezhorBankGround} from '../src/content/regions/alezhor/alezhor-bank-ground.js';
+import {goldReach} from '../src/content/regions/alezhor/alezhor-world.js';
+import {ibenwoodForestTrees} from '../src/content/regions/ibenwood/ibenwood-environment.js';
+import {ALEZHOR_WILDLIFE_ZONES} from '../src/content/regions/alezhor/alezhor-wildlife.js';
 import {createCelderRouteController} from './celder-route-controller.js';
 
 const scene=new THREE.Scene(),world=await scopedWorld(scene,[64,35]);
@@ -60,7 +60,7 @@ test('the repaired bank preserves old trees, all Alezhor non-Y transforms, fauna
     }
   });
   assert.ok(report.roots.every(r=>Number.isFinite(r.maxGap)&&r.maxGap<=.025),JSON.stringify(report.roots.filter(r=>r.maxGap>.025)));
-  const {createWestLife}=await sourceModule('../src/west-regions-life.js'),life=createWestLife(new THREE.Scene(),world,{zones:ALEZHOR_WILDLIFE_ZONES});
+  const {createWestLife}=await sourceModule('../src/content/regions/western-regions/west-regions-life.js'),life=createWestLife(new THREE.Scene(),world,{zones:ALEZHOR_WILDLIFE_ZONES});
   try{const creatures=life.state().creatures;report.fauna=creatures.map(a=>({id:a.id,x:a.x,z:a.z}));
     // No simulation tick has run: the public live positions are authored homes.
     for(const zone of ALEZHOR_WILDLIFE_ZONES)assert.deepEqual(creatures.filter(a=>a.id.startsWith(zone.id+'-')).map(a=>[a.x,a.z]),zone.sites.map(p=>[...p]));

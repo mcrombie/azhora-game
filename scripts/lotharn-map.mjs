@@ -1,4 +1,4 @@
-// A top-down picture of the East Lotharn's ground, for designing the peaks (src/east-lotharn-world.js):
+// A top-down picture of the East Lotharn's ground, for designing the peaks (src/content/regions/east-lotharn/east-lotharn-world.js):
 // height as shade, ground above the selected hiking grade in red, climbs in brown, ramps yellow, ledge paths blue,
 // peaks as white dots, a fifty-metre grid, and in green what a traveler can reach from the pass road
 // under the authored hiking-route budget. Prints each summit and each way, reached or not. NORAMPS=1 closes the ways.
@@ -7,8 +7,8 @@ import { writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from '../tests/module-loader.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { LOTHARN, LOTHARN_BOX, PEAKS, RAMPS, nearestOn } from '../src/east-lotharn-world.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { LOTHARN, LOTHARN_BOX, PEAKS, RAMPS, nearestOn } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

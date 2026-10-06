@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
-import { createBatmanQuest, BATMAN_QUEST } from '../src/batman-quest.js';
-import { createBatmanFlight, buildSuvalFlightRoute, SUVAL_FLIGHT_REGIONS } from '../src/batman-flight.js';
-import { REGION_CELLS } from '../src/region-world.js';
-import { BAT_CAVE, BAT_LANDING } from '../src/suval-highlands.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
+import { createBatmanQuest, BATMAN_QUEST } from '../src/content/quests/batman/batman-quest.js';
+import { createBatmanFlight, buildSuvalFlightRoute, SUVAL_FLIGHT_REGIONS } from '../src/content/quests/batman/batman-flight.js';
+import { REGION_CELLS } from '../src/world/terrain/region-world.js';
+import { BAT_CAVE, BAT_LANDING } from '../src/content/regions/suval-highlands/suval-highlands.js';
 const routes = buildSuvalFlightRoute({ cells: SUVAL_FLIGHT_REGIONS.flatMap(region => REGION_CELLS[region].map(cell => ({ ...cell, region }))), cave: BAT_CAVE.perch, landing: BAT_LANDING, heightAt: () => 2 });
 function fixture() {
   const inventory = createInventoryState(); for (const id of ['simple-sword', 'harbor-letter', 'road-token']) inventory.grant(id);

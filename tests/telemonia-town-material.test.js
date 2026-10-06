@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createTelemoniaTownScenery, createTelemoniaTownScenerySteps } = await sourceModule('../src/telemonia-town-scenery.js');
+const { createTelemoniaTownScenery, createTelemoniaTownScenerySteps } = await sourceModule('../src/content/regions/telemonia/telemonia-town-scenery.js');
 
 test('Kethorn cistern water owns its gloss without changing the cached terrain and stone material', () => {
   // Use the production material-cache contract. An uncached material stub would

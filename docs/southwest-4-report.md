@@ -47,7 +47,7 @@ game's ordinary air — Trogo's is **`.0144`**, which hides a traveler half at f
 entirely at a hundred and twenty, where the game's default takes two hundred and seventy-nine — and
 the haze colour must be **dark**, a grey-green that is cloud inside a canopy rather than milk, because
 a near-white haze this thick is most of every pixel at any distance at all. The second is
-**`src/undergrowth.js`**, which is the climbing rule's shape exactly: no input, no rendering, no saved
+**`src/world/scenery/undergrowth.js`**, which is the climbing rule's shape exactly: no input, no rendering, no saved
 state, gated on a named region set, composed with `canWalkSlope` into the one `canTraverse` hook
 `moveCharacter` already takes. A forest country hands that rule **one field** — `open(x, z)`, 1 on
 ground a traveler can walk and 0 in thicket — and nothing else; the rule knows no geometry, so the
@@ -84,7 +84,7 @@ turns out to mean in numbers.
 | level (`region-levels.js`) | 2 | 3 |
 
 Every number was read off the survey and `tests/southwest-world.test.js` re-derives them.
-`src/region-levels.js` and `src/campaign-world.js` already carried both and were not touched.
+`src/world/terrain/region-levels.js` and `src/content/chapters/civil-war/campaign-world.js` already carried both and were not touched.
 
 **The two are joined by one hex edge** — Marosh's southernmost `grassland` hex (−25,135) against
 Trogo's northernmost `deep_forest` hex (−25,136) — and that edge is a Mediterranean terrace against a
@@ -101,7 +101,7 @@ hexes. These seven have the same country on both banks, and both chains reach th
 
 Read per hex from `world-builder/map/resources/examples/azhora.wwmap` (`hexes[key].climate`,
 `koppen-v1` — **not** `azhora.cmap.json`). `MAROSH_CLIMATE` and `TROGO_CLIMATE` in
-`src/southwest-world.js` record all forty-seven and the test holds them to the map hex for hex.
+`src/content/regions/southwest/southwest-world.js` record all forty-seven and the test holds them to the map hex for hex.
 `SOUTHWEST_CLIMATE` now carries **322** — the whole quarter.
 
 **`Af` × 22, `Csa` × 17, `Csb` × 8, and not one `BWh` between the two countries**, which nothing else
@@ -334,7 +334,7 @@ base and made the whole rainforest read as a flat shelf at 42 m.
 | **the Nahr** | `small` × 3 | the water gap | the Iberos | 22.1 m over 170 | the only river the atlas draws on the eastern face of the peninsula |
 | **the Trogoreth** | `small` × 4 | the canopy | the southern ocean | 26.4 m over 230 | the only permanent water in the first rainforest in the game |
 
-**The names.** *Nahr* is simply the Maroshi for "river" (`maroshi.roots.river` in `src/languages.js`),
+**The names.** *Nahr* is simply the Maroshi for "river" (`maroshi.roots.river` in `src/gameplay/skills/languages.js`),
 so the one river this coast has is called the river — which is job 1's *Vaellir* and job 2's *Malhat*
 for the third time: the tongue's own word, nothing coined. **The Trogoreth is the lore's own name**:
 "the largest, which Maroshi records call the Trogoreth ('the Trogo river,' a construction that
@@ -351,7 +351,7 @@ into a corner. One gate in this country, and it is the undergrowth.
 
 ## The undergrowth rule
 
-`src/undergrowth.js`, new, 119 lines, pure. **It is `src/climbing.js`'s shape and deliberately so**: it
+`src/world/scenery/undergrowth.js`, new, 119 lines, pure. **It is `src/gameplay/movement/climbing.js`'s shape and deliberately so**: it
 owns no input, no rendering and no saved state; it gates movement through the `canTraverse` hook
 `moveCharacter` already takes; and it applies only inside a named set of regions, because the climbing
 rule is Lotharn-and-Suval-only for exactly the reason a movement gate anywhere else would strand the
@@ -618,7 +618,7 @@ job 2's 143, job 3's none and job 4's one.
 
 ## What grows
 
-`src/southwest-scenery.js`, extended with **a fourth pass of its own** after job 3's, for the reason
+`src/content/regions/southwest/southwest-scenery.js`, extended with **a fourth pass of its own** after job 3's, for the reason
 each of the earlier three gives: job 1's loop sorts by how dry the air is, job 2's by which desert
 surface is underfoot, job 3's by salt, bedding and a green line, and **none of those vocabularies
 contains a canopy**. Keeping the four apart also keeps the earlier loops at exactly their own cell
@@ -640,7 +640,7 @@ light gap in a rainforest is, is light.
 ### `groundTint` is a table now, with the permanent guard two jobs asked for
 
 Job 2 found `southwestTint` computed and dropped on the floor; job 3 met the same failure mode one level
-down. Both asked for the `if/else` chain in `src/world-terrain.js` to become a list of pairs walked in
+down. Both asked for the `if/else` chain in `src/world/terrain/world-terrain.js` to become a list of pairs walked in
 order, and **it is one**: four families — `gala`, `oves`, `mithala`, `southwest` — each answering `null`
 where it has no opinion, the first with an opinion painting, and nothing about the colour of any ground
 in Azhora changed. The order is the chain's own.
@@ -669,7 +669,7 @@ Vaellir, 71 thorn on the hamada, 21 in the Dinelv basins and 16 leaning inland o
 The whole world carries **72,341 colliders** with both countries in it. What job 4 put into that is the
 trees and Marosh's maquis and nothing else: **Trogo's 7,294 understory clumps carry no collider at all**,
 which is the sentence the whole movement rule rests on. The thing that stops a body in that forest is
-`src/undergrowth.js`, and `canStand` cannot see it.
+`src/world/scenery/undergrowth.js`, and `canStand` cannot see it.
 
 ---
 
@@ -853,7 +853,7 @@ staged, committed or stashed there). **Twelve claims across two files.**
 **And two landmarks of job 2's were promises about unbuilt country and have come true**, so their text
 changed: `meroshe-green-shoulder` ("Marosh is not built, so what stands on that horizon today is open
 country") and `meroshe-forest-wall` ("Trogo is not built, so there is no canopy on that horizon yet"),
-in `src/southwest-world.js`, `src/map-fog.js` and the South Meroshe's own region description.
+in `src/content/regions/southwest/southwest-world.js`, `src/ui/map/map-fog.js` and the South Meroshe's own region description.
 
 ---
 
@@ -863,31 +863,31 @@ in `src/southwest-world.js`, `src/map-fog.js` and the South Meroshe's own region
 `node scripts/build-region-survey.mjs` (LAND_HEXES 2,078 → 2,079) ·
 `scripts/build-region-rivers.mjs` RIVER_REGIONS + Marosh and Trogo →
 `node scripts/build-region-rivers.mjs` (222 → 229 edges) ·
-`src/region-layout.js` PLAYABLE_REGIONS + two REGION_BIOMES ·
-`src/region-world.js` REGION_IDS 43–44, two REGION_TERRAIN (four profiles, **`deep_forest`'s first**),
+`src/world/terrain/region-layout.js` PLAYABLE_REGIONS + two REGION_BIOMES ·
+`src/world/terrain/region-world.js` REGION_IDS 43–44, two REGION_TERRAIN (four profiles, **`deep_forest`'s first**),
 two REGION_TEXT (subtitle, spawn, description, palette with the two skies, `npcIds: []`, fourteen
 landmarks) ·
-`src/west-regions.js` (`MAROSH_NAHR`, `TROGORETH`, `SOUTHWEST_RIVERS`, `WEST_REGION_NAMES`) ·
-`src/southwest-world.js` (`EAST_EDGE_REGIONS`, the two climates, `EAST_EDGE_BOX`/`eastEdgeShare`,
+`src/content/regions/western-regions/west-regions.js` (`MAROSH_NAHR`, `TROGORETH`, `SOUTHWEST_RIVERS`, `WEST_REGION_NAMES`) ·
+`src/content/regions/southwest/southwest-world.js` (`EAST_EDGE_REGIONS`, the two climates, `EAST_EDGE_BOX`/`eastEdgeShare`,
 `ARIDITY.Af`, the ridge, the gap, the four combes, the crest, the four gullies, the six clearings, the
 five paths, `trogoThicket`, **`trogoWay`**, `trogoBand`, `trogoFogForest`, `SOUTHWEST_SWALE_RIVERS`, five
 ground colours, fourteen landmarks) ·
-**`src/undergrowth.js` (new)** and its hook in `src/main.js` ·
-`src/southwest-scenery.js` (the fourth pass) ·
-`src/southwest-wildlife.js` (seventeen zones) ·
-`src/west-regions-life.js` (two new rigs, their `SOAR` row and four table entries) ·
-`src/languages.js` (`fogspeech`, `maroshi.dialects`, two `spoken` entries) ·
-`src/developer-atlas.js` (two anchors) · `src/map-fog.js` (fourteen areas, two rewritten) ·
-`src/build-status.js` (two `early` entries) ·
-**`src/world-terrain.js` (the `if/else` chain becomes `GROUND_TINTS`, a table)** ·
+**`src/world/scenery/undergrowth.js` (new)** and its hook in `src/main.js` ·
+`src/content/regions/southwest/southwest-scenery.js` (the fourth pass) ·
+`src/content/regions/southwest/southwest-wildlife.js` (seventeen zones) ·
+`src/content/regions/western-regions/west-regions-life.js` (two new rigs, their `SOAR` row and four table entries) ·
+`src/gameplay/skills/languages.js` (`fogspeech`, `maroshi.dialects`, two `spoken` entries) ·
+`src/dev/tools/developer-atlas.js` (two anchors) · `src/ui/map/map-fog.js` (fourteen areas, two rewritten) ·
+`src/dev/tools/build-status.js` (two `early` entries) ·
+**`src/world/terrain/world-terrain.js` (the `if/else` chain becomes `GROUND_TINTS`, a table)** ·
 `src/main.js` (nine review views, the undergrowth import, the composed gate) ·
 `tests/southwest-world.test.js` · **`tests/trogo-undergrowth.test.js` (new)** · `tests/own-sky.js` ·
 the seven guard files above · `package.json` · this report · `docs/design-answers.md`.
 
-`src/region-levels.js` already carried both (2, 3) and was not touched.
-`src/campaign-world.js` already had their one-line designs and was not touched.
-`src/region-sky.js` needed nothing: a country declares its own sky in `REGION_TEXT`.
-`src/west-ground.js` and `src/world.js` needed nothing: the new landforms go through `southwestGround`
+`src/world/terrain/region-levels.js` already carried both (2, 3) and was not touched.
+`src/content/chapters/civil-war/campaign-world.js` already had their one-line designs and was not touched.
+`src/world/environment/region-sky.js` needed nothing: a country declares its own sky in `REGION_TEXT`.
+`src/content/regions/western-regions/west-ground.js` and `src/world.js` needed nothing: the new landforms go through `southwestGround`
 and the new colours through `southwestTint`, both of which job 1 hooked into the chain and job 2 fixed.
 
 ---
@@ -1019,7 +1019,7 @@ shows. Images: `tests/artifacts/southwest-*.jpg`.
    routes through a forest country today; the Ibenwoods are the belt between the built west and this
    island, so the first thing a traveler will want to do with them is cross them, and whatever road they
    get must be a way through by construction.
-3. **The autopilot goes through this gate and nothing routes it here yet.** `src/autopilot.js` sets a
+3. **The autopilot goes through this gate and nothing routes it here yet.** `src/gameplay/autoplay/autopilot.js` sets a
    heading and `src/main.js` walks the body, so an autopilot walk is gated exactly as a player's is.
    The main road is a quarter of a continent away. **When the Ibenwoods land that stops being true**, and
    `planGoal` will be the first thing to meet a movement rule it does not know about.

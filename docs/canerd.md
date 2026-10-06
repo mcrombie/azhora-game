@@ -21,7 +21,7 @@ The local Celder lore supplies successive chief-lord building campaigns, the arb
 
 ## Implementation
 
-`src/canerd-world.js` owns the layout, level foundations, tint, discovery places, routes and review cameras. `canerd-ground.js` renders a one-metre terrain mesh and samples those same triangles for feet. The coarse terrain is lowered underneath it, avoiding invisible terrain above the court. The mound's terrain-climbing override and striped earth tint have been removed. Existing internal route/view ids retain `canerd-ascent` for compatibility.
+`src/content/regions/canerd/canerd-world.js` owns the layout, level foundations, tint, discovery places, routes and review cameras. `canerd-ground.js` renders a one-metre terrain mesh and samples those same triangles for feet. The coarse terrain is lowered underneath it, avoiding invisible terrain above the court. The mound's terrain-climbing override and striped earth tint have been removed. Existing internal route/view ids retain `canerd-ascent` for compatibility.
 
 `canerd-scenery.js` emits 16 merged meshes and vertically bounded collision. Its raised walking surfaces keep the gate passage open underneath the battlement. `canerd-checks.js` exercises actual traveler movement, body clearance, floor support, slope restrictions and falling rules without changing the player's position or save.
 

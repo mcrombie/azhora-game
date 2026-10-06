@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
+import { createInventoryState, INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import {
   BIRD_SPECIES, DRENT_BIRDS, BIRD_GROUPS, BIRD_WATCHER, GARDEN_KEEPER, GARDEN_BIRDS, FEEDER_ITEM, FILLED_FEEDER_ITEM, BIRDING_LESSON,
   createBirding, observeRange, validateBirdingSnapshot, gardenKeeperConversation, lysaFeederChoice,
-} from '../src/birding.js';
+} from '../src/gameplay/skills/birding/birding.js';
 
 function fixture() {
   const skills = createSkills(), birding = createBirding({ skills }), inventory = createInventoryState();
@@ -162,7 +162,7 @@ test('Jean teaches birding first, then offers the feeder; Lysa fills it only whi
 });
 
 test('the garden\u2019s own birds are the ones that actually come to it', () => {
-  // Measured against BIRD_HABITATS in src/drent-birds.js: nothing else in the village comes within
+  // Measured against BIRD_HABITATS in src/content/regions/drent/drent-birds.js: nothing else in the village comes within
   // fourteen metres of the garden, and the hummingbird is counted apart because it wants the feeder.
   assert.deepEqual([...GARDEN_BIRDS], ['chickadee', 'catbird', 'wren']);
   for (const id of GARDEN_BIRDS) assert.ok(DRENT_BIRDS.includes(id), id);

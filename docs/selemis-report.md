@@ -27,12 +27,12 @@ the brief was written (see "Where the number is written", below).
 | climate (per hex, World Builder map) | `Csa` x 8 - the same code as all eighteen hexes of Southern Ascarth |
 | neighbours | none. All fourteen hexes round it are unclaimed `coast` |
 | water inside | none: no river edge on or beside any of the eight (572 river edges on the map, none within three hexes) |
-| level | 3 (`src/region-levels.js`, already there) |
+| level | 3 (`src/world/terrain/region-levels.js`, already there) |
 | nearest country | Southern Ascarth, 173.205 m hex centre to hex centre: (-8,133) against (-7,131). Then Iscare 557 m, Northern Ascarth 700 m, West Izol 889 m, Gala 1,200 m, Marosh 1,510 m |
 
 **The crescent is the atlas's own, and I checked it rather than took it.** The brief's lead was that
 (-7,133) is water held on three sides. Asked of the survey rather than typed in (`HARBOUR`,
-`src/selemis-world.js`): every sea hex beside the island is asked how many of the island's hexes
+`src/content/regions/selemis/selemis-world.js`): every sea hex beside the island is asked how many of the island's hexes
 stand round it, and **exactly one answers three** - (-7,133), held on its west by (-8,133), on its
 south-west by (-8,134) and on its south-east by (-7,134). No other sea hex on the island's whole shore
 has more than two.
@@ -75,7 +75,7 @@ the lore has that is not the city. Every physical sentence, and what it became:
 the lower harbour district built over its own foundations, the residential districts, the warehouses
 and chandlers' yards, the foreign merchants' quarters, the archive with its copper roof gone green,
 the harbour fortifications, the fast ships kept in the channel, the outpost network. In the game's own
-story (`src/izol-world.js`, `docs/izol-and-the-triumvirate.md`) the city was taken in 979 and General
+story (`src/content/regions/izol/izol-world.js`, `docs/izol-and-the-triumvirate.md`) the city was taken in 979 and General
 Tavren Doreth sits in it. Nothing built here says any of that is not there: the region's own
 description, the chart and the build status all name the city as somebody's and unbuilt, as Aevis is
 on the peninsula.
@@ -167,7 +167,7 @@ either end.
 
 ### The swim, both ways
 
-**The rule was not changed.** `canSwim`, `moveCharacter` and `src/swimming.js` are as they were.
+**The rule was not changed.** `canSwim`, `moveCharacter` and `src/gameplay/movement/swimming.js` are as they were.
 
 Under the rule as it stands (`docs/swimming.md`): a level-1 bar of wind is 57.8 m and a level-1
 swimmer dies at 77.0 m.
@@ -253,7 +253,7 @@ spare, and every claimed hex the coast lattice can sample is land.
 **The window.** `WINDOW` is `{ minQ: -50, maxQ: 34, minR: 79, maxR: 145 }` before and after. The coast
 lattice is the same 1,355 x 1,408 = 1,907,840 points. `LAND_HEXES` is 2,079 before and after and does
 not change by a hex: all eight of Selemi's were already land in it (six of them since the Ascarths
-took `maxR` to 135). The regenerated `src/region-survey.js` differs from the base by exactly four
+took `maxR` to 135). The regenerated `src/dev/tools/region-survey.js` differs from the base by exactly four
 lines, which are Selemi's own entry in `PLAYABLE_SURVEY`.
 
 **The rivers file** was regenerated with `node scripts/build-region-rivers.mjs` and is byte-identical.
@@ -302,7 +302,7 @@ Nothing is built. This is the ground the lore's city would go on, and how much o
 - **What is on that ground now** is what it would carry with no city on it: maquis, seven wild olives,
   nine tamarisks along the back of the strand, eighteen pines under the hills and two winter beds.
   Whoever builds the city clears it; the scatter is decided by `selemisCover` and a `cityClear`
-  predicate in `src/selemis-scenery.js` is one line.
+  predicate in `src/content/regions/selemis/selemis-scenery.js` is one line.
 - **Nothing contradicts the story.** There is no garrison, no fleet and no sign of 979 because there
   is nobody; the island's text says the city and everybody in it are somebody's and unbuilt.
 
@@ -314,7 +314,7 @@ Nothing is built. This is the ground the lore's city would go on, and how much o
 says only that they "have been absorbing foreign vocabulary ... for long enough that the question of
 what is originally Selemi culture is genuinely difficult to answer", and `suval.md` that Sorveth's
 commercial register "has absorbed vocabulary from Selemi" - so it is a tongue of its own.
-`src/languages.js` has had it since the company was hired: **`selemi`, endonym Selanoc, family "Iberos
+`src/gameplay/skills/languages.js` has had it since the company was hired: **`selemi`, endonym Selanoc, family "Iberos
 maritime"**, whose `where` is "Selemis and every Selemi outpost", with a lexicon of twenty-one roots.
 Its `from` says where its sound comes from: *"derived - the world-builder profile `tennoca`"*.
 
@@ -383,7 +383,7 @@ hexes, which the blend counts as `outland` and colours a green that belongs to n
 
 ## What grows
 
-`src/selemis-scenery.js`, its own seeded stream after the southwest's. The lore catalogues no flora
+`src/content/regions/selemis/selemis-scenery.js`, its own seeded stream after the southwest's. The lore catalogues no flora
 for the island; all of this is derived from the climate code, `iberos_coast.md` and the peninsula, and
 is a builder's choice.
 
@@ -402,7 +402,7 @@ Thirty-four trees in all, on purpose. Nothing is planted in rows, cut, walled or
 
 ## What lives there, and why
 
-`src/selemis-wildlife.js`: five ranges, fourteen animals, **every one of them a seabird or a dolphin**.
+`src/content/regions/selemis/selemis-wildlife.js`: five ranges, fourteen animals, **every one of them a seabird or a dolphin**.
 
 | range | animals | where | why |
 | --- | --- | --- | --- |
@@ -493,14 +493,14 @@ files' CRLF endings are untouched:
 
 `scripts/build-region-survey.mjs` (PLAYABLE, and Selemi's paragraph in the `WINDOW` ledger) ->
 `node scripts/build-region-survey.mjs` (four lines) -> `node scripts/build-region-rivers.mjs` (no
-change) · `src/region-layout.js` (PLAYABLE_REGIONS, one biome, `harbour-island`) ·
-`src/region-world.js` (REGION_IDS, REGION_TERRAIN, REGION_TEXT with seven landmarks) ·
-**`src/selemis-world.js`**, **`src/selemis-scenery.js`**, **`src/selemis-wildlife.js`** (new) ·
-`src/world-terrain.js` (the ground chain, a row in `GROUND_TINTS`, and `SHORE_TINTS`) ·
-`src/world.js` (scenery, metrics, landmarks) · `src/west-regions-life.js` (the ranges) ·
-`src/languages.js` (`Selemi: spoken('selemi')`) · `src/build-status.js` (`early`) ·
-`src/developer-atlas.js` (one travel stop, on (-8,134), its number read from `REGION_IDS`) ·
-`src/map-fog.js` (four chart areas, after Trogo's and before Peblos's - not at the end of the list,
+change) · `src/world/terrain/region-layout.js` (PLAYABLE_REGIONS, one biome, `harbour-island`) ·
+`src/world/terrain/region-world.js` (REGION_IDS, REGION_TERRAIN, REGION_TEXT with seven landmarks) ·
+**`src/content/regions/selemis/selemis-world.js`**, **`src/content/regions/selemis/selemis-scenery.js`**, **`src/content/regions/selemis/selemis-wildlife.js`** (new) ·
+`src/world/terrain/world-terrain.js` (the ground chain, a row in `GROUND_TINTS`, and `SHORE_TINTS`) ·
+`src/world.js` (scenery, metrics, landmarks) · `src/content/regions/western-regions/west-regions-life.js` (the ranges) ·
+`src/gameplay/skills/languages.js` (`Selemi: spoken('selemi')`) · `src/dev/tools/build-status.js` (`early`) ·
+`src/dev/tools/developer-atlas.js` (one travel stop, on (-8,134), its number read from `REGION_IDS`) ·
+`src/ui/map/map-fog.js` (four chart areas, after Trogo's and before Peblos's - not at the end of the list,
 which `tests/ibenwood-metadata.test.js` keeps for the Ibenwood's) ·
 `src/main.js` (seven `selemis-*` review views) · `tests/own-sky.js` (one line) ·
 `tests/region-layout.test.js` (the ledger and its assertion) · `tests/southwest-world.test.js` (the
@@ -509,18 +509,18 @@ Gala and the two Ascarths in `WITHOUT_ED`, so registering the island does not mo
 number) · **`tests/selemis-world.test.js`** (new, fifteen tests) · `package.json` ·
 `docs/design-answers.md` · this report.
 
-Not touched, and why: `src/region-levels.js` already had `Selemi: 3`. `src/campaign-world.js` already
+Not touched, and why: `src/world/terrain/region-levels.js` already had `Selemi: 3`. `src/content/chapters/civil-war/campaign-world.js` already
 had the Coalition member `selemis` with `regions: ['Selemi']`; it has **no `REGION_DESIGN` row** for
-the island, and adding one would be story. `src/region-sky.js` needs nothing: a country declares its
-sky in `REGION_TEXT`. `src/game-state.js` and `src/swimming.js`: the swim rule was not changed.
-`src/climbing.js`: the island is not climbing terrain.
+the island, and adding one would be story. `src/world/environment/region-sky.js` needs nothing: a country declares its
+sky in `REGION_TEXT`. `src/gameplay/movement/game-state.js` and `src/gameplay/movement/swimming.js`: the swim rule was not changed.
+`src/gameplay/movement/climbing.js`: the island is not climbing terrain.
 
 ### Where the number is written
 
 The coordinator's word during the build: Selemi will not land as 52, so keep the literal out of
 everything a renumber would have to touch, and list where it still appears.
 
-- **`src/region-world.js`, `REGION_IDS`: `Selemi: 52`.** The one place, and the only line a renumber
+- **`src/world/terrain/region-world.js`, `REGION_IDS`: `Selemi: 52`.** The one place, and the only line a renumber
   has to change in the code.
 - **Nowhere else in code, tests, views, atlas rows or comments.** The developer atlas's row is
   `[REGION_IDS.Selemi, 'Selemis', 'selemis', 'Selemi', selemisAnchor]` (it imports `REGION_IDS` for
@@ -535,22 +535,22 @@ everything a renumber would have to touch, and list where it still appears.
 - **Other 52s in what I wrote that are not the id**, so that a search does not mislead whoever
   renumbers: the coast lattice's column q -52 (the `WINDOW` comment in
   `scripts/build-region-survey.mjs`, and a comment in the island's test), a scatter offset of 52 m
-  (`src/selemis-scenery.js`), and a camera offset of 52 m in the `selemis-south-cliffs` view
+  (`src/content/regions/selemis/selemis-scenery.js`), and a camera offset of 52 m in the `selemis-south-cliffs` view
   (`src/main.js`).
 
 **At landing, after the Baldros**, what has to be done by hand is the usual and no more: the number in
 `REGION_IDS`; the name's place at the end of `PLAYABLE_REGIONS` and of the survey script's `PLAYABLE`,
-and `src/region-survey.js` regenerated rather than merged; the developer atlas's row moved to its
+and `src/dev/tools/region-survey.js` regenerated rather than merged; the developer atlas's row moved to its
 place in id order; and the two branches' lines put side by side where both append to the same list
 or comment (the `WINDOW` ledger, the ledger in `tests/region-layout.test.js`, `REGION_TERRAIN`,
 `REGION_TEXT`, `REGION_BIOMES`, `GROUND_TINTS` and its guard in `tests/southwest-world.test.js`,
 `OWN_SKY`, `WITHOUT_ED`, `package.json`). The island's wrap of the ground chain in
-`src/world-terrain.js` can go inside or outside anybody else's: `selemisGround` writes only where the
+`src/world/terrain/world-terrain.js` can go inside or outside anybody else's: `selemisGround` writes only where the
 point is Selemi's and above the coast field's zero. The four chart areas stay ahead of Peblos's in
 `SUBREGIONS`, wherever the Baldros put theirs.
 
-**Line endings.** The brief calls `src/main.js`, `src/world.js`, `src/map-fog.js` and
-`src/developer-atlas.js` CRLF. They are in fact **mixed** on the base (`main.js` is 493 CRLF lines and
+**Line endings.** The brief calls `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` and
+`src/dev/tools/developer-atlas.js` CRLF. They are in fact **mixed** on the base (`main.js` is 493 CRLF lines and
 10,560 LF; `world.js` 1,993 and 386), and `.gitattributes` stores every file byte for byte. Every line
 I added takes the ending of the line it was put beside, and no existing line's ending changed:
 `main.js` gained 38 LF lines and still has 493 CRLF.
@@ -597,9 +597,9 @@ were not run on this branch, and the same kind of thing may be waiting in one of
 - **final** - after the last change to any file under `src/`, `scripts/` or `tests/`.
 - **late** - after the last change to the ground, the scenery, the wildlife and `src/main.js`, and
   before the four chart areas were moved up their list. None of the files so marked imports
-  `src/map-fog.js`.
+  `src/ui/map/map-fog.js`.
 - **early** - on the state of 16:40-18:16, before what the first review pictures caused (the grass
-  count and colour in `src/selemis-scenery.js`, the nine gull sites in `src/selemis-wildlife.js`, two
+  count and colour in `src/content/regions/selemis/selemis-scenery.js`, the nine gull sites in `src/content/regions/selemis/selemis-wildlife.js`, two
   view definitions in `src/main.js`), before the renumber-proofing (the atlas row reading
   `REGION_IDS`, two comments) and before the chart areas moved. **Not re-run.** The world those
   files built differs from the final one by how much grass is on the island and what colour it is, by
@@ -814,7 +814,7 @@ For the coordinator. None of these was changed.
    unaffected (it is laid over both). Removing the first line would change the colour of every beach
    in the world slightly, so it is the user's or the coordinator's; the island's cliff tops are drawn
    with it as it stands.
-4. **`src/undergrowth.js` still carries Trogo's pre-merge id.** `THICKETS` is
+4. **`src/world/scenery/undergrowth.js` still carries Trogo's pre-merge id.** `THICKETS` is
    `new Set([44, 'Trogo'])`; Trogo is 51 now and 44 is the West Meroshe Desert. Measured: all 80
    samples of the West Meroshe are treated as thicket country and none is refused a step, because
    `trogoWay` answers 1 outside Trogo. Harmless today, and a trap.

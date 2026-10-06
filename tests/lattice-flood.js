@@ -1,9 +1,9 @@
-import { canStand, moveCharacter, waterAt } from '../src/game-state.js';
-import { colliderOverlapsHeight } from '../src/walk-surfaces.js';
-import { CLIMBING, isClimbTerrain, canWalkSlope } from '../src/climbing.js';
-import { TERRAIN_FALL, createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { nearestPlain } from '../src/east-lotharn-caves.js';
+import { canStand, moveCharacter, waterAt } from '../src/gameplay/movement/game-state.js';
+import { colliderOverlapsHeight } from '../src/world/collision/walk-surfaces.js';
+import { CLIMBING, isClimbTerrain, canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { TERRAIN_FALL, createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { nearestPlain } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
 
 /**
  * **Where can a traveler get to, and what does it cost him?** - asked of the built world, on a lattice, by
@@ -12,9 +12,9 @@ import { nearestPlain } from '../src/east-lotharn-caves.js';
  * Not a test: the measuring tool `tests/varn-world.test.js` and `tests/lotharn-forts.test.js` share.
  * A flood says where a traveler can get to; `travel`, at the foot of this file, is one traveler sent to see.
  *
- *  - **Standing** is `canStand` itself (src/game-state.js), asked of the built world at every lattice
+ *  - **Standing** is `canStand` itself (src/gameplay/movement/game-state.js), asked of the built world at every lattice
  *    point with a traveler's radius: colliders, water, the world's edge.
- *  - **Walking** is `canWalkSlope`'s rule (src/climbing.js) on the lattice's own heights: in a climbing
+ *  - **Walking** is `canWalkSlope`'s rule (src/gameplay/movement/climbing.js) on the lattice's own heights: in a climbing
  *    country a step up is refused when it rises faster than the grab slope or the face under it is steeper
  *    than that; anywhere else there is no limit; and a step down is always allowed. **The face is read twice**:
  *    by the lattice, a step either side of each end, and - where the lattice's reading is over half the grab
@@ -22,14 +22,14 @@ import { nearestPlain } from '../src/east-lotharn-caves.js';
  *    reading `canWalkSlope` itself takes. The lattice's alone irons a ledge that tilts at a grade of one into
  *    one it walks up (it took a climber along the eastern massif's first ledge that way, on ground the
  *    traveler's own step refuses); a step must pass both.
- *  - **Falling** is what a step down onto ground too steep to stand on becomes (src/terrain-fall.js): the
+ *  - **Falling** is what a step down onto ground too steep to stand on becomes (src/gameplay/movement/terrain-fall.js): the
  *    body comes down the face to the first ground that holds it. A fall is never refused - the game does
  *    not refuse it - it is **costed**: what a flood answers, for every point, is the least worst single
  *    fall on any way there (`Infinity` where there is no way at all). `LETHAL_FALL` is the fall that kills
  *    a traveler with a hundred health; a fall's damage stops at a hundred, so a traveler with more lives
  *    through any of them, and "no way whatever he is willing to fall" is a cost of `Infinity`.
  *  - **The caves** are ways the surface does not show: a passage walked into at one mouth is walked out of
- *    at the other (src/east-lotharn-caves.js), so the two mouths are one step apart (`caveLinks`).
+ *    at the other (src/content/regions/east-lotharn/east-lotharn-caves.js), so the two mouths are one step apart (`caveLinks`).
  *  - **Climbing**, for a flood asked as a climber's, is the controller's rule (`sampleClimbSurface`): in a
  *    climbing country, on a face no steeper than its limit, clear of colliders, and not on rock the world
  *    marks unclimbable - at either end of the step **or at its quarter points**, because the controller asks at
@@ -40,7 +40,7 @@ import { nearestPlain } from '../src/east-lotharn-caves.js';
  *    than something thin cannot step over it. Without, the flood is the more generous, which is the safe
  *    side for saying that somewhere cannot be reached.
  *  - **Risers** (`risers(x, z)`): ground that stands in steps the lattice cannot see. The rims Varn raises on the
- *    ledges' brinks (src/varn-world.js, `lipRib`) are built in treads and risers of half a metre to two metres, and
+ *    ledges' brinks (src/content/regions/varn/varn-world.js, `lipRib`) are built in treads and risers of half a metre to two metres, and
  *    a lattice a metre apart, reading the face two metres across, irons three of them into a hill it walks up
  *    slantwise - which the traveler's own step does not: `moveCharacter` takes eighteen centimetres at a time and
  *    `canWalkSlope` refuses any of them that rises more than a quarter of a metre. So where `risers` answers more
@@ -58,7 +58,7 @@ import { nearestPlain } from '../src/east-lotharn-caves.js';
  */
 const N8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
 const RADIUS = .34;
-/** `moveCharacter`'s longest stride (src/game-state.js), and the most `canWalkSlope` lets one of them rise: its grade and its eight centimetres of roughness. */
+/** `moveCharacter`'s longest stride (src/gameplay/movement/game-state.js), and the most `canWalkSlope` lets one of them rise: its grade and its eight centimetres of roughness. */
 const STRIDE = .18, RISER = STRIDE * CLIMBING.grabSlope + .08;
 /** The fall a traveler with a hundred health does not walk away from, in metres. */
 export const LETHAL_FALL = TERRAIN_FALL.safeDrop + TERRAIN_FALL.maxDamage / TERRAIN_FALL.damagePerMetre;
@@ -98,7 +98,7 @@ export function sampleLattice(world, box, step, use = () => true) {
 
 /**
  * Whether something solid stands at a point, among the colliders `near` answers with: `canStand`'s own
- * test (src/game-state.js), water markers passed over and a collider with a height asked whether it
+ * test (src/gameplay/movement/game-state.js), water markers passed over and a collider with a height asked whether it
  * reaches a body standing on the ground there.
  */
 function solidAt(near, world, x, z) {
@@ -197,7 +197,7 @@ export function leastFall(L, world, seeds, { open = null, climber = false, forbi
     }
     return took;
   };
-  // Where a falling body comes to rest is judged as the game judges it (src/terrain-fall.js): on the ground's own slope
+  // Where a falling body comes to rest is judged as the game judges it (src/gameplay/movement/terrain-fall.js): on the ground's own slope
   // read forty centimetres either side of the foot, not the lattice's, which reads it a step either side and so
   // smooths a ridge a metre wide into a shelf a body could stand on.
   // (The same reading decides whether a step down onto a cell is a step or the start of a fall: src/main.js asks

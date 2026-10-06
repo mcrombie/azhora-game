@@ -11,8 +11,8 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/game-atlas-adjustments.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/world/terrain/game-atlas-adjustments.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const builder = path.resolve(root, '../world-builder');

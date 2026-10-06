@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createJourneyIndex, normalizeJourneyEntries } from '../src/journey-browser.js';
+import { createJourneyIndex, normalizeJourneyEntries } from '../src/ui/journal/journey-browser.js';
 
 const entries = Object.freeze([
   Object.freeze({ id: 'main', title: 'Report to Nothom', type: 'main', status: 'active', detail: 'Take the letter to Iven.', region: 'Luscia' }),

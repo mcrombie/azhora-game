@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 function inspect(actor) {
   let draws = 0, triangles = 0, red = 0, black = 0;

@@ -25,13 +25,13 @@ That is two rules, and both are yours to build:
    with trees. Pick your number from what the country looks like, and say what sight distance it
    buys in paces.
 2. **An undergrowth movement rule** — the direct analogue of the Lotharn climbing rule. Read
-   `src/climbing.js`: it owns no input, no rendering and no saved state, gates movement through the
-   `canTraverse` hook in `moveCharacter` (`src/game-state.js`), and applies only inside a named set
+   `src/gameplay/movement/climbing.js`: it owns no input, no rendering and no saved state, gates movement through the
+   `canTraverse` hook in `moveCharacter` (`src/gameplay/movement/game-state.js`), and applies only inside a named set
    of regions. Build the same shape for undergrowth: **passable along watercourses, animal paths
-   and clearings; refused through the thicket**. A new module (`src/undergrowth.js`) rather than an
+   and clearings; refused through the thicket**. A new module (`src/world/scenery/undergrowth.js`) rather than an
    addition to `climbing.js` — it is a different rule.
 
-**`deep_forest` is used nowhere in the game's code today** — only in `src/campaign-world.js` labels
+**`deep_forest` is used nowhere in the game's code today** — only in `src/content/chapters/civil-war/campaign-world.js` labels
 and the survey data. This job is where the terrain type gets its meaning, and **the pattern carries
 to the Ibenwoods** (five regions, ~153 hexes of forest and deep forest) whenever those are built.
 Write it to be reused: the rule should take a region set, as the climbing rule does.
@@ -89,9 +89,9 @@ Read `docs/southwest-1-report.md`, `-2-report.md` and `-3-report.md` in full. Sp
   and report.**
 - `merosheFog` was written toward the Trogo margin and should need nothing, **but the fog belt's own
   aridity wants re-measuring** once a rainforest stands next to it.
-- **Extend `southwestAridity`, `src/southwest-world.js`, `-scenery.js`, `-wildlife.js` and
+- **Extend `southwestAridity`, `src/content/regions/southwest/southwest-world.js`, `-scenery.js`, `-wildlife.js` and
   `tests/southwest-world.test.js`** — this is the fourth job to do so.
-- **`groundTint` in `src/world-terrain.js` is an if/else chain that has now failed silently twice**
+- **`groundTint` in `src/world/terrain/world-terrain.js` is an if/else chain that has now failed silently twice**
   (job 2 found a whole block's tint dropped; job 3 met it again one level down inside
   `southwestTint`). Job 3 recommends it become a table. **If you add a tint, prove it reaches the
   screen.** Making it a table is welcome if you have the room.
@@ -113,7 +113,7 @@ its own measurement, so a move is arithmetic; job 3 lists them.
 
 ## Wildlife
 
-Extend `src/southwest-wildlife.js`. The block's density has been climbing back: job 2's desert
+Extend `src/content/regions/southwest/southwest-wildlife.js`. The block's density has been climbing back: job 2's desert
 0.074 a hex, job 3's 0.178. **A rainforest should be the densest country in the game** — that is
 what `Af` means — and Marosh's Mediterranean hills are not far behind. Say each country's density
 and why, and make the contrast with the Meroshe explicit, because these two countries are the other
@@ -136,11 +136,11 @@ it took the river-name *Vaellir* straight from the Pyrosi lexicon rather than in
 
 ## Registration checklist
 
-For each: `src/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/region-world.js`
+For each: `src/world/terrain/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/world/terrain/region-world.js`
 REGION_IDS, REGION_TERRAIN (with `byTerrain.deep_forest` — its first use anywhere), REGION_TEXT ·
-`src/developer-atlas.js` LOCALS · `src/map-fog.js` areas · `src/build-status.js` ·
-`src/region-sky.js` (a rainforest sky is not a desert sky) · `src/languages.js` ·
-**`src/undergrowth.js`** and its hook · extend the three `southwest-*` modules ·
+`src/dev/tools/developer-atlas.js` LOCALS · `src/ui/map/map-fog.js` areas · `src/dev/tools/build-status.js` ·
+`src/world/environment/region-sky.js` (a rainforest sky is not a desert sky) · `src/gameplay/skills/languages.js` ·
+**`src/world/scenery/undergrowth.js`** and its hook · extend the three `southwest-*` modules ·
 `tests/southwest-world.test.js` **and a dedicated undergrowth/crossing test** · `package.json` ·
 `docs/southwest-4-report.md` · a dated entry in `docs/design-answers.md`.
 
@@ -172,7 +172,7 @@ never exercised a single southwest range. Your own site checks are what stand be
 One short review render at the end if electron is available, **after** the last scenery change —
 four builders photographed too early and regretted it. No autoplays, no long smokes.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js`, `src/developer-atlas.js` are CRLF.
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js`, `src/dev/tools/developer-atlas.js` are CRLF.
 
 ## Report
 

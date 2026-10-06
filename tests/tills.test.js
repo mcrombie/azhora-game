@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { purchase, peddlerOffers, PEDDLER_STOCK } from '../src/economy.js';
-import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
-import { ATTIC_WINES } from '../src/attic-wines.js';
+import { purchase, peddlerOffers, PEDDLER_STOCK } from '../src/gameplay/inventory/economy.js';
+import { INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { ATTIC_WINES } from '../src/content/quests/wine/attic-wines.js';
 
 /**
  * A till takes the money and hands over the goods, and either step can refuse: the

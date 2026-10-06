@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DEFAULT_SKY, regionSky, mixHex, mixSky, composeSky, createSkyBlend } from '../src/region-sky.js';
-import { regions, OPEN_COUNTRY } from '../src/region-world.js';
+import { DEFAULT_SKY, regionSky, mixHex, mixSky, composeSky, createSkyBlend } from '../src/world/environment/region-sky.js';
+import { regions, OPEN_COUNTRY } from '../src/world/terrain/region-world.js';
 import { OWN_SKY } from './own-sky.js';
 
 /**

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createPeninsulaTutorial, PENINSULA_TUTORIAL_ANCHORS as A } from '../src/peninsula-tutorial.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
-import { freshMinoraStart, MINORA_START } from '../src/minora-opening.js';
-import { QUEST_DONE } from '../src/game-state.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createPeninsulaTutorial, PENINSULA_TUTORIAL_ANCHORS as A } from '../src/content/chapters/prologue/peninsula-tutorial.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
+import { freshMinoraStart, MINORA_START } from '../src/app/startup/minora-opening.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 
 function fixture(path = 'tutorial') {
   const inventory = createInventoryState(); inventory.grant('simple-sword');

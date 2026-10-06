@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 const { sourceModule } = await import('./module-loader.js');
-const { forestPlaceDefinitions, forestPlacePaths, forestFeatureClear, tintForestGround } = await sourceModule('../src/forest-places.js');
+const { forestPlaceDefinitions, forestPlacePaths, forestFeatureClear, tintForestGround } = await sourceModule('../src/content/quests/forest/forest-places.js');
 const { createWorld } = await sourceModule('../src/world.js');
-const { villageToWorld } = await sourceModule('../src/region-world.js');
+const { villageToWorld } = await sourceModule('../src/world/terrain/region-world.js');
 const W = point => villageToWorld(point.x, point.z);
 const scene = new THREE.Scene(), world = createWorld(scene);
 

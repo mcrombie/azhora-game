@@ -7,7 +7,7 @@ Queue rows 1 and 2 of the [completion ledger](../regional-completion-ledger.md) 
 | | |
 | --- | --- |
 | Base | `a2e49c3` (main and origin/main when the work was cut, and still when it was delivered) |
-| Delivered | branch `celder`: `e7012d9` (the build), then this report's commit, which also gives the Celder builds their own loading label and corrects a stale comment in `src/region-world.js` |
+| Delivered | branch `celder`: `e7012d9` (the build), then this report's commit, which also gives the Celder builds their own loading label and corrects a stale comment in `src/world/terrain/region-world.js` |
 | Worktree | `C:\Users\Michael\Programs\typescript\azhora-game-celder`, clean after both commits apart from the ignored `tests/artifacts/` |
 | Not done | Not merged into main, not pushed. Runtime IDs 61 and 62 are provisional: append them centrally at integration. |
 
@@ -22,7 +22,7 @@ Queue rows 1 and 2 of the [completion ledger](../regional-completion-ledger.md) 
 
 **New files**: `src/{south,north}-celder-world.js` (ground, water, colour, landmarks, views), `src/{south,north}-celder-scenery.js`, `src/{south,north}-celder-wildlife.js`, `tests/{south,north}-celder-world.test.js`, `tests/celder-life.test.js`, `docs/celder-brief.md`, this report.
 
-**Registration and wiring** (small diffs, line endings preserved; 16 files, +96 -16): `scripts/build-region-survey.mjs` and the regenerated `src/region-survey.js`, `src/region-layout.js`, `src/region-world.js` (IDs, terrain and text rows), `src/developer-atlas.js`, `src/build-status.js` (state `environment`), `src/languages.js` (both speak `mittoli`), `src/map-fog.js`, `src/world.js` (two `regionBuild` steps, landmarks), `src/world-terrain.js` (an outermost `celderLayer`, `groundBeforeCelder` for seams, two tint rows), `src/west-regions-life.js` (zones, rendered footing), `src/main.js` (views; a Celder `-wildlife` view frames a frostback), `tests/test-manifest.json` (+3), and two neighbour corrections described under the border contract: `src/west-lotharn-world.js` and `tests/mithala-world.test.js`, plus the Celder probes in `tests/southwest-world.test.js`.
+**Registration and wiring** (small diffs, line endings preserved; 16 files, +96 -16): `scripts/build-region-survey.mjs` and the regenerated `src/dev/tools/region-survey.js`, `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js` (IDs, terrain and text rows), `src/dev/tools/developer-atlas.js`, `src/dev/tools/build-status.js` (state `environment`), `src/gameplay/skills/languages.js` (both speak `mittoli`), `src/ui/map/map-fog.js`, `src/world.js` (two `regionBuild` steps, landmarks), `src/world/terrain/world-terrain.js` (an outermost `celderLayer`, `groundBeforeCelder` for seams, two tint rows), `src/content/regions/western-regions/west-regions-life.js` (zones, rendered footing), `src/main.js` (views; a Celder `-wildlife` view frames a frostback), `tests/test-manifest.json` (+3), and two neighbour corrections described under the border contract: `src/content/regions/west-lotharn/west-lotharn-world.js` and `tests/mithala-world.test.js`, plus the Celder probes in `tests/southwest-world.test.js`.
 
 **What is built**
 

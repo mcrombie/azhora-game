@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDrentHost,guardLineOfSight,DRENT_FIGHT_ID} from '../src/drent-host.js';
-import {DRENT_NPCS,DRENT_NPC_POSITIONS,DRENT_SITES,DRENT_GUARD_PATROLS} from '../src/drent-sites.js';
-import {DRENT_EVIDENCE_ID,DRENT_SUPPLIES_ID,DRENT_QUEST_ID} from '../src/drent-civil-war.js';
-import {INSTRUCTOR,INSTRUCTOR_STAND} from '../src/instructor.js';
-import {createInventoryState} from '../src/inventory.js';
-import {createSkills} from '../src/skills.js';
-import {STEALTH} from '../src/stealth.js';
+import {createDrentHost,guardLineOfSight,DRENT_FIGHT_ID} from '../src/content/regions/drent/drent-host.js';
+import {DRENT_NPCS,DRENT_NPC_POSITIONS,DRENT_SITES,DRENT_GUARD_PATROLS} from '../src/content/regions/drent/drent-sites.js';
+import {DRENT_EVIDENCE_ID,DRENT_SUPPLIES_ID,DRENT_QUEST_ID} from '../src/content/chapters/civil-war/drent-civil-war.js';
+import {INSTRUCTOR,INSTRUCTOR_STAND} from '../src/gameplay/skills/instructor.js';
+import {createInventoryState} from '../src/gameplay/inventory/inventory.js';
+import {createSkills} from '../src/gameplay/skills/skills.js';
+import {STEALTH} from '../src/gameplay/law/stealth.js';
 
 const vector=at=>({x:at.x,y:0,z:at.z,set(x,y,z){this.x=x;this.y=y;this.z=z;}});
 function fixture(){

@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { AMBRON, ambronPoint, WORLD_BOUNDS, SOLIS } from '../src/region-world.js';
-import { SOLIS_CIRCUIT } from '../src/west-suval.js';
-import { FORT_STANDARD, longestTowerGap } from '../src/fortification.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { AMBRON, ambronPoint, WORLD_BOUNDS, SOLIS } from '../src/world/terrain/region-world.js';
+import { SOLIS_CIRCUIT } from '../src/content/regions/solis/west-suval.js';
+import { FORT_STANDARD, longestTowerGap } from '../src/world/scenery/fortification.js';
 import {
   AMBRON_STANDARD, AMBRON_CIRCUIT, AMBRON_GATES, AMBRON_LAND_GATES, AMBRON_WATER_GATES, AMBRON_BUILDINGS,
   ambronLocal,
   AMBRON_OUTSIDE, AMBRON_STREETS, AMBRON_QUAYS, AMBRON_STANDS, AMBRON_ENCLOSURE, AMBRON_CHAIN, AMBRON_MARKET,
   AMBRON_FORGE, CAUSEWAY, CHANNEL, ambronDeckHeight, cityGround,
-} from '../src/ambron.js';
+} from '../src/content/regions/ambron/ambron.js';
 import {
   AMBRON_NPCS, ELAGOS_NPCS, ELAGOS_AMBIENT, ELAGOS_NPC_POSITIONS, elagosConversation, isElagosNpc,
   AMBRON_SPECIALISTS, SPECIALIST_IDS, TALKING_TREE_QUEST, TALKING_TREE_LINES,
-} from '../src/ambron-people.js';
-import { elagosWaterDistance, AMBRON_ROAD } from '../src/elagos-world.js';
-import { RIDE } from '../src/riding.js';
-import {AMBRON_OUTLINE,inAmbronOutline,ambronTerraceWeight} from '../src/ambron-city-layout.js';
-import {ELAGOS_BASINS} from '../src/elagos-world.js';
+} from '../src/content/regions/ambron/ambron-people.js';
+import { elagosWaterDistance, AMBRON_ROAD } from '../src/content/regions/ambron/elagos-world.js';
+import { RIDE } from '../src/gameplay/movement/riding.js';
+import {AMBRON_OUTLINE,inAmbronOutline,ambronTerraceWeight} from '../src/content/regions/ambron/ambron-city-layout.js';
+import {ELAGOS_BASINS} from '../src/content/regions/ambron/elagos-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import './module-loader.js';
-import { canerdClear } from '../src/canerd-world.js';
-import { REGION_IDS, REGION_TERRAIN, REGION_OUTLINES, hexOwnerAt, regionAt } from '../src/region-world.js';
-import { groundWithRiver as ground, groundBeforeCelder as before } from '../src/world-terrain.js';
-import { westWaterSurface, courseSample } from '../src/west-ground.js';
-import { MITHALA_CELDER_WATER } from '../src/west-regions.js';
+import { canerdClear } from '../src/content/regions/canerd/canerd-world.js';
+import { REGION_IDS, REGION_TERRAIN, REGION_OUTLINES, hexOwnerAt, regionAt } from '../src/world/terrain/region-world.js';
+import { groundWithRiver as ground, groundBeforeCelder as before } from '../src/world/terrain/world-terrain.js';
+import { westWaterSurface, courseSample } from '../src/content/regions/western-regions/west-ground.js';
+import { MITHALA_CELDER_WATER } from '../src/content/regions/western-regions/west-regions.js';
 import { SOUTH_CELDER, SOUTH_CELDER_CELLS, SOUTH_CELDER_CLIMATE, SOUTH_CELDER_KOPPEN, SOUTH_CELDER_ARRIVAL,
   SOUTH_CELDER_LANDMARKS, SOUTH_CELDER_TRAILS, SOUTH_CELDER_VIEWS, CELDER_EDGES, CELDER_BOX, CELDER_HEAD, CELDER_PLAIN,
-  CELDER_MOUND_SITE, celderOwns, celderStreamField, celderPlainHeight, celderLand, southCelderGround, southCelderTint, southCelderOwns } from '../src/south-celder-world.js';
+  CELDER_MOUND_SITE, celderOwns, celderStreamField, celderPlainHeight, celderLand, southCelderGround, southCelderTint, southCelderOwns } from '../src/content/regions/south-celder/south-celder-world.js';
 
 const WWMAP = new URL('../../world-builder/map/resources/examples/azhora.wwmap', import.meta.url);
 const tally = edges => edges.reduce((t, e) => ({ ...t, [e.far]: (t[e.far] ?? 0) + 1 }), {});

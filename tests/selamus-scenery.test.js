@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sourceModule} from './module-loader.js';
-import {createWalkSurfaces} from '../src/walk-surfaces.js';
-import {createColliderGrid} from '../src/collider-grid.js';
-import {canStand} from '../src/game-state.js';
-import {SELAMUS,SELAMUS_BUILDINGS,SELAMUS_BRIDGES,SELAMUS_PLAZAS,SELAMUS_CANALS,selamusGround,selamusFloor,selamusPoint} from '../src/selamus-city.js';
+import {createWalkSurfaces} from '../src/world/collision/walk-surfaces.js';
+import {createColliderGrid} from '../src/world/collision/collider-grid.js';
+import {canStand} from '../src/gameplay/movement/game-state.js';
+import {SELAMUS,SELAMUS_BUILDINGS,SELAMUS_BRIDGES,SELAMUS_PLAZAS,SELAMUS_CANALS,selamusGround,selamusFloor,selamusPoint} from '../src/content/regions/selamus/selamus-city.js';
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createSelamusScenerySteps}=await sourceModule('../src/selamus-scenery.js');
+const {createSelamusScenerySteps}=await sourceModule('../src/content/regions/selamus/selamus-scenery.js');
 const parent=new THREE.Group(),colliders=[],heightAt=(x,z)=>selamusGround(x,z,selamusFloor(x,z));
 const steps=createSelamusScenerySteps({parent,heightAt,colliders});let state,yields=0,longest=0;
 do{const began=performance.now();state=steps.next();longest=Math.max(longest,performance.now()-began);yields++;}while(!state.done);

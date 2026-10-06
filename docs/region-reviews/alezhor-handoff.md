@@ -21,17 +21,17 @@ Queue row 4 of the [completion ledger](../regional-completion-ledger.md), delive
 | Arrival (F8) | (-4100, 870) |
 | Landmarks on the chart | the falls of the gold river; the gold river's estuary; the flat at the gold river's mouth; the head of the bay; the tree line; the west stream's mouth; the western dunes; the southern cliffs; the bank of the Alezhor Water; the head of the gulf |
 
-**New files**: `src/alezhor-world.js`, `src/alezhor-scenery.js`, `src/alezhor-wildlife.js`, `tests/alezhor-world.test.js`, `tests/alezhor-life.test.js`, `docs/alezhor-brief.md`, `docs/region-reviews/routes/alezhor-trails.json`, this report.
+**New files**: `src/content/regions/alezhor/alezhor-world.js`, `src/content/regions/alezhor/alezhor-scenery.js`, `src/content/regions/alezhor/alezhor-wildlife.js`, `tests/alezhor-world.test.js`, `tests/alezhor-life.test.js`, `docs/alezhor-brief.md`, `docs/region-reviews/routes/alezhor-trails.json`, this report.
 
 **Registration and wiring** (small, line-ending-preserving edits). Registration:
 - `scripts/build-region-survey.mjs` (one more column, `WINDOW.minQ` -54) and the regenerated survey
-- `src/region-layout.js`, `src/region-world.js`
-- `src/developer-atlas.js`, `src/build-status.js` (`environment`), `src/languages.js` (`ibnael`, Forest Mittoli)
+- `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`
+- `src/dev/tools/developer-atlas.js`, `src/dev/tools/build-status.js` (`environment`), `src/gameplay/skills/languages.js` (`ibnael`, Forest Mittoli)
 - `tests/test-manifest.json`
 
 Wiring:
-- `src/map-fog.js` and `src/west-regions-life.js`.
-- `src/world-terrain.js`: the outermost layer, `groundBeforeAlezhor`, tint and shore-tint rows.
+- `src/ui/map/map-fog.js` and `src/content/regions/western-regions/west-regions-life.js`.
+- `src/world/terrain/world-terrain.js`: the outermost layer, `groundBeforeAlezhor`, tint and shore-tint rows.
 - `src/main.js`: views; the `-wildlife` view frames an otter.
 - `src/world.js`:
   - Alezhor's `regionBuild` step under its own label, "Alezhor".
@@ -121,7 +121,7 @@ Test knock-ons:
 | `ibenwood.md` | "past the latitude of Alezhor" | "as far as the latitude of Alezhor" | The forest's southernmost row is 116; Alezhor runs to 119. |
 | `azhoran_flora_distribution.md` | "the Ibenwood's western edge" | "western and southern edges" | Alezhor lies along the forest's southern edge. |
 
-**Language** (R6, not edited): Cape Heth's stand-in tongue could now become `ibnael`, the Alezhor coast's own; `cape_heth.md` ties the cape to this coast by language, and `src/languages.js` asks whoever builds Alezhor to revisit it.
+**Language** (R6, not edited): Cape Heth's stand-in tongue could now become `ibnael`, the Alezhor coast's own; `cape_heth.md` ties the cape to this coast by language, and `src/gameplay/skills/languages.js` asks whoever builds Alezhor to revisit it.
 
 ## Border contract
 

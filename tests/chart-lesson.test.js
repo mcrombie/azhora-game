@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHART_LESSON_STAGES, createChartLesson, validateChartLesson } from '../src/chart-lesson.js';
-import { lessonStage, instructorConversation } from '../src/instructor.js';
+import { CHART_LESSON_STAGES, createChartLesson, validateChartLesson } from '../src/ui/map/chart-lesson.js';
+import { lessonStage, instructorConversation } from '../src/gameplay/skills/instructor.js';
 
 test('combat completion issues the chart, opening it enables the return, and reporting alone finishes', () => {
   const lesson = createChartLesson();

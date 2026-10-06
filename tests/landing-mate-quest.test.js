@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLandingMateQuest, landingMatePartnership } from '../src/landing-mate-quest.js';
-import { createMercenaryCompany } from '../src/mercenaries.js';
+import { createLandingMateQuest, landingMatePartnership } from '../src/content/quests/roadside/landing-mate-quest.js';
+import { createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
 
 const geometry = {
   road: [{ x: 0, z: 0 }, { x: 0, z: -30 }, { x: -30, z: -30 }, { x: -30, z: -150 }],

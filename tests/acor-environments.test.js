@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
-import { ACOR_NAMES, ACOR_IDS, ACOR_CELLS, ACOR_WATERS, acorGround, acorOwns, acorCellAt } from '../src/acor-world.js';
-import { ACOR_WILDLIFE_ZONES } from '../src/acor-wildlife.js';
-import { runAcorChecks } from '../src/acor-checks.js';
-import { WOOD_SPECIES } from '../src/wood-species.js';
+import { ACOR_NAMES, ACOR_IDS, ACOR_CELLS, ACOR_WATERS, acorGround, acorOwns, acorCellAt } from '../src/content/regions/acor/acor-world.js';
+import { ACOR_WILDLIFE_ZONES } from '../src/content/regions/acor/acor-wildlife.js';
+import { runAcorChecks } from '../src/dev/checks/acor-checks.js';
+import { WOOD_SPECIES } from '../src/gameplay/skills/woodcutting/wood-species.js';
 const scene=new THREE.Scene(),world=await scopedWorld(scene,ACOR_IDS);
 test('all ten atlas countries build through the production fast loader with typed vegetation',()=>{
   assert.equal(ACOR_CELLS.length,332);
@@ -25,7 +25,7 @@ test('natural routes are walkable both ways and every mapped pool has a submerge
   for(const l of ACOR_WATERS)assert.ok(world.mapWaters.some(w=>w.id===l.id));
 });
 test('wildlife has persistent homes and visible footing throughout the ten countries',async()=>{
-  const {createWestLife}=await sourceModule('../src/west-regions-life.js');const life=createWestLife(scene,world,{zones:ACOR_WILDLIFE_ZONES});
+  const {createWestLife}=await sourceModule('../src/content/regions/western-regions/west-regions-life.js');const life=createWestLife(scene,world,{zones:ACOR_WILDLIFE_ZONES});
   for(const name of ACOR_NAMES){
     const animals=life.snapshot().creatures.filter(a=>a.region===name);assert.ok(animals.length>=8,name);
     const home=animals.find(a=>a.species!=='duck'&&!['plateau-hawk','harrier'].includes(a.species));assert.ok(home,name+' ground wildlife');

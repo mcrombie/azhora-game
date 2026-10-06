@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { WOODLOT_TREES } from '../src/woodcutting.js';
-import { forestSegmentHit } from '../src/forest-sightline.js';
+import { WOODLOT_TREES } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { forestSegmentHit } from '../src/gameplay/combat/forest-sightline.js';
 
-const { createDeveloperDestruction, DEVELOPER_DESTRUCTION } = await sourceModule('../src/developer-destruction.js');
-const { getTreeRegistry, registerWorldTree } = await sourceModule('../src/tree-registry.js');
-const { createSceneryBuilder } = await sourceModule('../src/scenery-builder.js');
+const { createDeveloperDestruction, DEVELOPER_DESTRUCTION } = await sourceModule('../src/dev/tools/developer-destruction.js');
+const { getTreeRegistry, registerWorldTree } = await sourceModule('../src/world/scenery/tree-registry.js');
+const { createSceneryBuilder } = await sourceModule('../src/world/scenery/scenery-builder.js');
 
 function fixture({ canReach } = {}) {
   const scene = new THREE.Scene(), root = new THREE.Group(); root.name = 'Drent and the road to the Moros'; scene.add(root);

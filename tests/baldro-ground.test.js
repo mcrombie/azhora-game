@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { refineBaldroGround } from '../src/baldro-ground.js';
-import { BALDRO_KINGDOMS, BALDRO_RIVERS, baldroSurfaceHeight, baldroWaterAt } from '../src/baldro-world.js';
+import { refineBaldroGround } from '../src/content/regions/baldro/baldro-ground.js';
+import { BALDRO_KINGDOMS, BALDRO_RIVERS, baldroSurfaceHeight, baldroWaterAt } from '../src/content/regions/baldro/baldro-world.js';
 
 test('Baldro forecourt refinement draws the same ground its foot sampler returns',()=>{
   for(const kingdom of BALDRO_KINGDOMS){

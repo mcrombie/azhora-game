@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { DRENT_SITES, DRENT_LOCAL_PATHS, DRENT_NPCS, DRENT_GUARD_PATROLS, DRENT_SNEAK_ROUTE } from '../src/drent-sites.js';
-import { AMBUSH } from '../src/road-ambush.js';
-import { villageToWorld } from '../src/region-world.js';
-import { buildLocalMapModel } from '../src/local-map-data.js';
-import { atlasLocalDetail } from '../src/world-map-detail.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { DRENT_SITES, DRENT_LOCAL_PATHS, DRENT_NPCS, DRENT_GUARD_PATROLS, DRENT_SNEAK_ROUTE } from '../src/content/regions/drent/drent-sites.js';
+import { AMBUSH } from '../src/content/quests/road-ambush/road-ambush.js';
+import { villageToWorld } from '../src/world/terrain/region-world.js';
+import { buildLocalMapModel } from '../src/ui/map/local-map-data.js';
+import { atlasLocalDetail } from '../src/ui/map/world-map-detail.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);

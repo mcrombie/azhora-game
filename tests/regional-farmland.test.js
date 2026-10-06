@@ -3,17 +3,17 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { FARMSTEADS, FARM_LANES, REGIONAL_FARM_ROWS, REGIONAL_SEED_STATIONS,
-  FARMLAND_WILDLIFE_EXCLUSIONS, regionalFarmlandClear, regionalFarmlandWorked, inFarmPolygon } from '../src/regional-farmland.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { hexOwnerAt, landDistance, WORLD_BOUNDS } from '../src/region-world.js';
-import { CARICAS_ROADS } from '../src/caricas-settlement.js';
-import { inWestWater } from '../src/west-regions.js';
-import { elagosWaterDistance, ELAGOS_ROADS } from '../src/elagos-world.js';
-import { ambronOutsideDistance } from '../src/ambron-city-layout.js';
-import { PASSES, passPoint, YARDS } from '../src/feradom-world.js';
-import { canStand } from '../src/game-state.js';
+  FARMLAND_WILDLIFE_EXCLUSIONS, regionalFarmlandClear, regionalFarmlandWorked, inFarmPolygon } from '../src/world/scenery/regional-farmland.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { hexOwnerAt, landDistance, WORLD_BOUNDS } from '../src/world/terrain/region-world.js';
+import { CARICAS_ROADS } from '../src/content/regions/minora-frontier/caricas-settlement.js';
+import { inWestWater } from '../src/content/regions/western-regions/west-regions.js';
+import { elagosWaterDistance, ELAGOS_ROADS } from '../src/content/regions/ambron/elagos-world.js';
+import { ambronOutsideDistance } from '../src/content/regions/ambron/ambron-city-layout.js';
+import { PASSES, passPoint, YARDS } from '../src/content/regions/feradom/feradom-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
-const { createRegionalFarmlandScenery } = await sourceModule('../src/regional-farmland-scenery.js');
+const { createRegionalFarmlandScenery } = await sourceModule('../src/world/scenery/regional-farmland-scenery.js');
 const grade = (x, z) => Math.hypot((groundWithRiver(x + 1, z) - groundWithRiver(x - 1, z)) / 2,
   (groundWithRiver(x, z + 1) - groundWithRiver(x, z - 1)) / 2);
 function lineSamples(a, b, step = 2) {

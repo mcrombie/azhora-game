@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import { EAST_PYROS, EAST_PYROS_CELLS, EAST_PYROS_OUTLINES, EAST_PYROS_POOLS,
   EAST_PYROS_LANDMARKS, EAST_PYROS_ARRIVAL, EAST_PYROS_ROUTES, EAST_PYROS_VIEWS,
-  eastPyrosGround, eastPyrosWaterAt, eastPyrosRiverClearance, eastPyrosTint } from '../src/east-pyros-world.js';
-import { EAST_PYROS_WILDLIFE_ZONES } from '../src/east-pyros-wildlife.js';
-import { hexOwnerAt, landDistance } from '../src/region-world.js';
-import { groundWithRiver as heightAt } from '../src/world-terrain.js';
-import { timberForSpecies } from '../src/wood-species.js';
+  eastPyrosGround, eastPyrosWaterAt, eastPyrosRiverClearance, eastPyrosTint } from '../src/content/regions/east-pyros/east-pyros-world.js';
+import { EAST_PYROS_WILDLIFE_ZONES } from '../src/content/regions/east-pyros/east-pyros-wildlife.js';
+import { hexOwnerAt, landDistance } from '../src/world/terrain/region-world.js';
+import { groundWithRiver as heightAt } from '../src/world/terrain/world-terrain.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
 
 const THREE=await import('three');
-const {createEastPyrosScenerySteps}=await sourceModule('../src/east-pyros-scenery.js');
-const {getTreeRegistry}=await sourceModule('../src/tree-registry.js');
+const {createEastPyrosScenerySteps}=await sourceModule('../src/content/regions/east-pyros/east-pyros-scenery.js');
+const {getTreeRegistry}=await sourceModule('../src/world/scenery/tree-registry.js');
 const gradient=(x,z)=>Math.hypot(heightAt(x+.5,z)-heightAt(x-.5,z),heightAt(x,z+.5)-heightAt(x,z-.5));
 let fixture;
 function scenery(){

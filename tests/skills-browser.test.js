@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SKILLS, SKILL_IDS, createSkills } from '../src/skills.js';
-import { SKILL_CATEGORIES, skillCategory, practicedSkill, filterSkills, schoolSpells } from '../src/skills-browser.js';
+import { SKILLS, SKILL_IDS, createSkills } from '../src/gameplay/skills/skills.js';
+import { SKILL_CATEGORIES, skillCategory, practicedSkill, filterSkills, schoolSpells } from '../src/ui/skills/skills-browser.js';
 
 test('the default skill view excludes available but untouched skills without changing them', () => {
   const skills = createSkills({ begins: SKILL_IDS });

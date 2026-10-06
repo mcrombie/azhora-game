@@ -119,20 +119,20 @@ with both gates unearned and remain loadable.
 
 | Module | Responsibility |
 |---|---|
-| `src/baldro-world.js` | Atlas ownership, climate, ridges, basins, two gates and arrivals, task sites, approaches, shared saddle route and mapped border drainage |
-| `src/baldro-ground.js` | Local refinement of displayed terrain and the final triangle-height sampler |
-| `src/baldro-scenery.js` | Closed mountain facades, exterior works and work shelters, repair visibility, registered trees, local ground-cover batches and water ribbons |
-| `src/baldro-wildlife.js` | Stable terrain-derived habitat homes and species limits |
-| `src/baldro-state.js` | Independent service acceptance, repair, report, admission, exactly-once reward and checkpoint validation |
-| `src/dwarf-model.js` | Articulated dwarf body, clothing and occupation variants |
-| `src/baldro-interiors.js` | Six-room plans, physical floor and wall rules, ramp, furnishings, lights and indoor camera |
-| `src/baldro-host.js` | Guards, civic roles, dialogue, repair markers, explicit entry/exit and scene visibility |
-| `src/world.js`, `src/world-terrain.js` | Ground/scenery composition, final footing, water and navigation integration |
-| `src/main.js`, `src/road-checkpoint.js` | Input, travel, interior floor ownership, rewards, save and restore |
-| `src/west-regions-life.js` | Shared instantiated wildlife rigs and distance culling |
-| `src/skills.js`, `src/skills-browser.js`, `src/skills-browser.css` | Lesson-gated Dwarven Smithing progress and its nested journal presentation under Smithing |
-| `src/skill-icons.js`, `src/skill-announcement.js` | The specialization's mark and first-technique announcement |
-| `src/region-world.js`, `src/build-status.js`, `src/map-fog.js` | Normal region registry, travel/build status and discovery coverage |
+| `src/content/regions/baldro/baldro-world.js` | Atlas ownership, climate, ridges, basins, two gates and arrivals, task sites, approaches, shared saddle route and mapped border drainage |
+| `src/content/regions/baldro/baldro-ground.js` | Local refinement of displayed terrain and the final triangle-height sampler |
+| `src/content/regions/baldro/baldro-scenery.js` | Closed mountain facades, exterior works and work shelters, repair visibility, registered trees, local ground-cover batches and water ribbons |
+| `src/content/regions/baldro/baldro-wildlife.js` | Stable terrain-derived habitat homes and species limits |
+| `src/content/regions/baldro/baldro-state.js` | Independent service acceptance, repair, report, admission, exactly-once reward and checkpoint validation |
+| `src/world/actors/dwarf-model.js` | Articulated dwarf body, clothing and occupation variants |
+| `src/content/regions/baldro/baldro-interiors.js` | Six-room plans, physical floor and wall rules, ramp, furnishings, lights and indoor camera |
+| `src/content/regions/baldro/baldro-host.js` | Guards, civic roles, dialogue, repair markers, explicit entry/exit and scene visibility |
+| `src/world.js`, `src/world/terrain/world-terrain.js` | Ground/scenery composition, final footing, water and navigation integration |
+| `src/main.js`, `src/app/saves/road-checkpoint.js` | Input, travel, interior floor ownership, rewards, save and restore |
+| `src/content/regions/western-regions/west-regions-life.js` | Shared instantiated wildlife rigs and distance culling |
+| `src/gameplay/skills/skills.js`, `src/ui/skills/skills-browser.js`, `src/ui/skills/skills-browser.css` | Lesson-gated Dwarven Smithing progress and its nested journal presentation under Smithing |
+| `src/ui/skills/skill-icons.js`, `src/ui/skills/skill-announcement.js` | The specialization's mark and first-technique announcement |
+| `src/world/terrain/region-world.js`, `src/dev/tools/build-status.js`, `src/ui/map/map-fog.js` | Normal region registry, travel/build status and discovery coverage |
 
 The scenery factory is `buildBaldroScenery(scene, {heightAt, treeGroundAt,
 colliders, isReserved})`. It returns `root`, registered `trees`, `stats`,

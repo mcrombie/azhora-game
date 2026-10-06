@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat, fightBox } from '../src/combat.js';
-import { createWeapons } from '../src/weapons.js';
-import { createInventoryState } from '../src/inventory.js';
-import { OGRE_ENCOUNTER } from '../src/amod-ogre.js';
-import { LUSCIA_WOLVES } from '../src/luscia-chapter.js';
-import { FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
-import { borderEncounter } from '../src/border-chapter.js';
-import { aftermathEncounter, AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
-import { AFTERMATH_ARENAS } from '../src/aftermath-sites.js';
+import { createCombat, fightBox } from '../src/gameplay/combat/combat.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { OGRE_ENCOUNTER } from '../src/content/regions/amod/amod-ogre.js';
+import { LUSCIA_WOLVES } from '../src/content/chapters/civil-war/luscia-chapter.js';
+import { FOREST_HIDEOUT_QUEST } from '../src/content/quests/forest/forest-hideout.js';
+import { borderEncounter } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { aftermathEncounter, AFTERMATH_VARIANTS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { AFTERMATH_ARENAS } from '../src/content/chapters/chapter-one/aftermath-sites.js';
 
 /**
  * `startEncounter` runs its config through `encounterConfig`, which refuses the whole encounter

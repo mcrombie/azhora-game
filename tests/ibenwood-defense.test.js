@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createIbenwoodDefense, validateIbenwoodDefenseSnapshot, IBENWOOD_DEFENSE as C } from '../src/ibenwood-defense.js';
+import { createIbenwoodDefense, validateIbenwoodDefenseSnapshot, IBENWOOD_DEFENSE as C } from '../src/content/regions/ibenwood/ibenwood-defense.js';
 
 const post = (extra = {}) => ({ id: 'ibenwood-ranger-0', x: 0, z: 0, yaw: 0, patrol: [], ...extra });
 const point = (x = 0, z = 12) => ({ x, y: 5, z });

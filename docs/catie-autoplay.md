@@ -12,7 +12,7 @@ The planner uses camera-independent movement directions to avoid steering feedba
 
 - `tests/catie-autopilot.test.js`: conversation choices, carried-flight ownership, pause and takeover, failure stops, and path resumption.
 - `tests/catie-autopilot-world.test.js`: samples the real road route outside East Suval and drives ordinary movement through the complete built world to the cave.
-- `src/catie-autoplay-checks.js`: drives the public F8 button and real rendered frames through the whole quest, verifies road and flight takeover/pause, 63 surveyed hexes, safe landing, normal-save preservation and repeatability. The native runner additionally checks actual keyboard takeover and P resumption.
+- `src/dev/checks/catie-autoplay-checks.js`: drives the public F8 button and real rendered frames through the whole quest, verifies road and flight takeover/pause, 63 surveyed hexes, safe landing, normal-save preservation and repeatability. The native runner additionally checks actual keyboard takeover and P resumption.
 
 Historical native validation on 27 September 2026, before the tour was shortened, passed all **27 checks**, with zero frame or renderer errors. That original long-route run took 831 real seconds, walked 1,609 metres, flew 8,395 horizontal metres, and surveyed all 63 hexes. These measurements describe the previous itinerary, not the current shorter tour. Road and air takeover/resume, menu pause, completion, a fresh repeat, actual native WASD/P input and normal-checkpoint preservation all passed. The test uses the usual isolated profile and in-memory saves.
 

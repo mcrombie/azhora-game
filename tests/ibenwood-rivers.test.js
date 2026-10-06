@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import { buildSource, readMap } from '../scripts/build-region-rivers.mjs';
-import { RIVER_SOURCE } from '../src/region-rivers.js';
+import { RIVER_SOURCE } from '../src/world/terrain/region-rivers.js';
 import { IBENWOOD_RIVER_EDGES, IBENWOOD_RIVERS, createIbenwoodRiverSystem, createIbenwoodRiverScenery,
-  refineIbenwoodRiverGround } from '../src/ibenwood-rivers.js';
+  refineIbenwoodRiverGround } from '../src/content/regions/ibenwood/ibenwood-rivers.js';
 
 const natural = (x, z) => 36 - z * .006 + Math.sin(x / 45) * 2 + Math.cos(z / 38) * 1.5;
 const rivers = createIbenwoodRiverSystem({ groundHeight: natural });
@@ -26,7 +26,7 @@ test('Ibenwood includes exactly the 18-edge Central/South course and three-edge 
 
 const source = readMap();
 test('the generated river source still exactly matches the read-only atlas export', { skip: !source }, () => {
-  assert.equal(readFileSync(new URL('../src/region-rivers.js', import.meta.url), 'utf8'), buildSource(source));
+  assert.equal(readFileSync(new URL('../src/world/terrain/region-rivers.js', import.meta.url), 'utf8'), buildSource(source));
   const mapEdges = Object.entries(source.map.rivers).filter(([key]) => key.split('|')
     .some(cell => source.map.hexes[cell]?.region?.endsWith(' Ibenwood'))).map(([key]) => key.split('|').sort().join('|')).sort();
   assert.deepEqual(IBENWOOD_RIVER_EDGES.map(edgeKey).sort(), mapEdges);

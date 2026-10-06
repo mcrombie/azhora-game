@@ -15,7 +15,7 @@ after the battle has its Solis ground; and the city visibly changes hands.
   `REGION_TERRAIN` and the region card (`REGION_TEXT`) follow; `terrainMix` now
   derives its weights from `REGION_ORDER` instead of naming four regions, which
   would have produced NaN weights for a fifth.
-- `scripts/build-region-survey.mjs` lists West Suval; `src/region-survey.js` is
+- `scripts/build-region-survey.mjs` lists West Suval; `src/dev/tools/region-survey.js` is
   regenerated. The hex window did not need to grow. Atlas facts are checked by
   test: 24 hexes (11 grassland, 8 plains, 5 hills), east-south-east of the Moros,
   west of East Suval, south of Luscia, the sea beyond Solis.
@@ -27,15 +27,15 @@ after the battle has its Solis ground; and the city visibly changes hands.
   all derive from the registry and needed no code. Two tests that counted to
   four now derive from `PLAYABLE_REGIONS` (`tests/regions-world.test.js`,
   `tests/local-map-data.test.js`), as does the developer atlas's local route
-  (`src/developer-atlas.js` spreads its stops evenly for however many regions;
-  `src/developer-mode.js` has a `west-suval` ghost-travel point).
+  (`src/dev/tools/developer-atlas.js` spreads its stops evenly for however many regions;
+  `src/dev/tools/developer-mode.js` has a `west-suval` ghost-travel point).
 - The charts get a `west-suval-water` polygon (`WEST_SUVAL_SEA`), traced row by
   row to West Suval's own shore; offshore islands are ignored, so it is an
   approximation south of Solis.
 
 ## Roads and the country
 
-- `SOLIS_ROAD` (`src/region-world.js`, same conventions as `SUVAL_ROAD`:
+- `SOLIS_ROAD` (`src/world/terrain/region-world.js`, same conventions as `SUVAL_ROAD`:
   authored vertices through `road()`, drawn with `addPath`, measured before
   scenery so nothing is planted on it, exposed as `world.solisRoute`). It leaves
   the border stockade, runs south-east over the downs and ends inside the Gate of
@@ -54,7 +54,7 @@ after the battle has its Solis ground; and the city visibly changes hands.
 
 ## Coordinates
 
-Authored (56 m frame) → world. New clusters in `src/world-scale.js`:
+Authored (56 m frame) → world. New clusters in `src/world/terrain/world-scale.js`:
 
 | Cluster | r | Authored | World | Holds |
 | --- | --- | --- | --- | --- |
@@ -72,13 +72,13 @@ a ±50, b ±42; the Gate of Sun Horses at (0, −42), the quay gate at (−50, �
   (−630.4, 704.9) · (−605.4, 764.7) · (−578.6, 820.1) · (−550.0, 862.0) · then in the
   city frame (−2, −78), (0, −56), (0, −42) the gate, (0, −34).
 - Border crossing (−636.2, 685.3); signpost (−640.5, 686.6).
-- `TERRAIN_PADS` (new, `src/region-world.js`, applied in `regionBase` in
-  `src/world-terrain.js`): Solis stands on a plane, level 6.5 m at the centre,
+- `TERRAIN_PADS` (new, `src/world/terrain/region-world.js`, applied in `regionBase` in
+  `src/world/terrain/world-terrain.js`): Solis stands on a plane, level 6.5 m at the centre,
   rising 0.05 per metre eastward (4 m at the quay wall, 9 m at the east wall),
   over the circuit plus 13 m, feathered to the natural ground across 28 m. The
   feather is soft enough that the 7 m terrain grid stays within 3 cm of the
   analytic ground, so roads (lifted 4.5 cm) never sink under it.
-- Aftermath sites (`src/aftermath-sites.js`, authored in the `solis` cluster):
+- Aftermath sites (`src/content/chapters/chapter-one/aftermath-sites.js`, authored in the `solis` cluster):
   `solis-gate` (−287.5, 497.5) → (−520.9, 907.6), city (9.5, −53.5), yaw π;
   `solis-hall` (−279.5, 553) → (−512.9, 963.1), city (17.5, 2), yaw −π/2, the
   steps of the Court of Oaths; `solis-square` (−317, 543) → (−550.4, 953.1), axis
@@ -88,7 +88,7 @@ a ±50, b ±42; the Gate of Sun Horses at (0, −42), the quay gate at (−50, �
 
 ## Solis
 
-Tables in `src/west-suval.js` (pure), scenery in `src/west-suval-world.js`
+Tables in `src/content/regions/solis/west-suval.js` (pure), scenery in `src/content/regions/solis/west-suval-world.js`
 (one call from `world.js`).
 
 **Fortifications, to the shared standard** (`FORT`):
@@ -136,7 +136,7 @@ map's holder of West Suval, except while the Legion is still clearing the square
 (`solis-sweep`, not cleared), when the Coalition's army has broken and the Legion
 is not yet in: `'routed'`.
 
-## People (`src/solis-town.js`)
+## People (`src/content/regions/solis/solis-town.js`)
 
 - **The Coalition's garrison** (`holds: 'coalition', region: 'West Suval'`):
   Sergeant Davo Kell and two spearmen on the Gate of Sun Horses, an island marine
@@ -151,11 +151,11 @@ is not yet in: `'routed'`.
   Aurel Mendo the oil and wine merchant, who grumbles about paper scrip; Nerea at
   the fountain; Bastian the quay porter; Old Ismer on the plaza; Keeper Ilaria at
   the temple; Dorotea of the Bronze Mare.
-- `src/west-suval-host.js` is main.js's single hook: it registers these people,
+- `src/content/regions/solis/west-suval-host.js` is main.js's single hook: it registers these people,
   answers their conversations, and each frame sets the holder on the ground, stands
   both garrisons down while routed, and walks the march (below).
 
-## The quest (`src/border-chapter.js`)
+## The quest (`src/content/chapters/chapter-one/border-chapter.js`)
 
 Stages: `take-orders` (the Legate's terms) → `pass-gate` (Sergeant Kell reads the
 seal at the Gate of Sun Horses: `enter-solis`) → `meet-envoy` (Envoy Telis Orren in
@@ -189,7 +189,7 @@ fight (`reach-line`) → `join-line` after a retreat (`sound-advance`) → compl
   `world.enclosures` (Solis, then its Court of Oaths) and `enclosureWaypoint` in
   `nextWaypoint`, so the autopilot enters and leaves walled places by their gates.
   Tested on the built world: road → envoy → road, and envoy → quay gate.
-- `src/autoplay-smoke.js` now asserts the traveler reached West Suval before the
+- `src/dev/checks/autoplay-smoke.js` now asserts the traveler reached West Suval before the
   fork and ends on the Moros or in West Suval.
 
 Envoy Telis Orren exists twice and is never out twice (tested for all four
@@ -198,19 +198,19 @@ Republic's side after the battle.
 
 ## Files
 
-New: `src/west-suval.js`, `src/west-suval-world.js`, `src/solis-town.js`,
-`src/west-suval-host.js`, `tests/west-suval.test.js`, `tests/solis-town.test.js`,
+New: `src/content/regions/solis/west-suval.js`, `src/content/regions/solis/west-suval-world.js`, `src/content/regions/solis/solis-town.js`,
+`src/content/regions/solis/west-suval-host.js`, `tests/west-suval.test.js`, `tests/solis-town.test.js`,
 this report.
 
-Changed: `scripts/build-region-survey.mjs`, `src/region-survey.js` (generated),
-`src/region-layout.js`, `src/region-world.js`, `src/world-terrain.js`,
-`src/world-scale.js`, `src/world.js` (imports, road measure/draw, one scenery
+Changed: `scripts/build-region-survey.mjs`, `src/dev/tools/region-survey.js` (generated),
+`src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`, `src/world/terrain/world-terrain.js`,
+`src/world/terrain/world-scale.js`, `src/world.js` (imports, road measure/draw, one scenery
 call, `solisRoute`/`setSolisHolder`/`enclosures`, landmarks, chart water),
-`src/world-regions.js` (clearings spread, no pines on the downs),
-`src/border-chapter.js`, `src/aftermath-sites.js`, `src/autopilot.js`,
-`src/autoplay-smoke.js`, `src/main.js` (7 lines: import, host creation,
+`src/world/terrain/world-regions.js` (clearings spread, no pines on the downs),
+`src/content/chapters/chapter-one/border-chapter.js`, `src/content/chapters/chapter-one/aftermath-sites.js`, `src/gameplay/autoplay/autopilot.js`,
+`src/dev/checks/autoplay-smoke.js`, `src/main.js` (7 lines: import, host creation,
 conversation hook, frame hook, reward, chapter toast, a comment),
-`src/developer-atlas.js`, `src/developer-mode.js`, `package.json`, and tests
+`src/dev/tools/developer-atlas.js`, `src/dev/tools/developer-mode.js`, `package.json`, and tests
 `border-chapter`, `story-stands`, `autopilot`, `developer-atlas`, `regions-world`,
 `local-map-data`.
 
@@ -233,7 +233,7 @@ conversation hook, frame hook, reward, chapter toast, a comment),
 - `npm run test:game`: the first run failed at **"quest HUD did not reflect
   return-courier-satchel; the banner reads What the Legion owes"**. Not from this
   branch: the riding commit (1cd38f6) puts the ostler's errand on the banner after
-  the satchel is returned, and `src/road-smoke.js` did not list it. Fixed by adding
+  the satchel is returned, and `src/dev/checks/road-smoke.js` did not list it. Fixed by adding
   `OSTLER_OBJECTIVE.title` to the banners the smoke accepts, and the smoke run once
   more, since the first stopped before anything else was exercised: **pass**
   (`smoke.json` `ok: true`, 2 358 frames, 34 ms average frame, 356 draw calls,
@@ -269,10 +269,10 @@ figure needs `npm run test:road` (not run; see below).
 
 ## Left as stubs, and what the lead must do on merge
 
-- **Regenerate `src/region-survey.js`** after merging this and the Pueth branch
+- **Regenerate `src/dev/tools/region-survey.js`** after merging this and the Pueth branch
   (`node scripts/build-region-survey.mjs`): both add a name to `PLAYABLE` in the
   script. `REGION_IDS`, `REGION_TERRAIN`, `REGION_TEXT`, `LOCAL_STOPS` in
-  `src/developer-atlas.js` and the travel points in `src/developer-mode.js` each
+  `src/dev/tools/developer-atlas.js` and the travel points in `src/dev/tools/developer-mode.js` each
   gain one entry per branch; `terrainMix`'s weights now derive from the registry.
 - `src/world.js` conflicts, if any, will be in the road-measure line, the
   `addPath` list, the return object and the signpost helper passed to the scenery

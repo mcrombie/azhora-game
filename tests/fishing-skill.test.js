@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills } from '../src/skills.js';
-import { FISH_SPECIES, FISH_IDS, SPOT_WATERS, waterOf, fishOf, fishFor, createFishing, validateFishingSnapshot } from '../src/fishing-skill.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { FISH_SPECIES, FISH_IDS, SPOT_WATERS, waterOf, fishOf, fishFor, createFishing, validateFishingSnapshot } from '../src/gameplay/skills/fishing/fishing-skill.js';
 
 const fixture = () => { const skills = createSkills(); return { skills, fishing: createFishing({ skills }) }; };
 const everything = (spot, steps = 500) => new Set(Array.from({ length: steps }, (_, i) => fishFor(waterOf(spot), i / steps).id));

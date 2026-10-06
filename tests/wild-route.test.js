@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
-import { ANCHORS } from '../src/regions.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { ANCHORS } from '../src/world/terrain/regions.js';
 import {
   ARRIVALS, MERCENARY_ROSTER, MUS_ARRIVAL, drawMusArrival, createMercenaryCompany, mercenaryById, roadLengths,
-} from '../src/mercenaries.js';
-import { WILD, MUS_ROUTE, MUS_BEACH, routeMetres, wildJourney } from '../src/wild-route.js';
+} from '../src/gameplay/company/mercenaries.js';
+import { WILD, MUS_ROUTE, MUS_BEACH, routeMetres, wildJourney } from '../src/content/quests/roadside/wild-route.js';
 
 /**
  * The user's ruling, 2026-09-20: Mus keeps his whole draw - he may well be ashore before the

@@ -2,21 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { canStand } from '../src/game-state.js';
-import { canWalkSlope } from '../src/climbing.js';
-import { REGION_IDS, hexOwnerAt } from '../src/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { REGION_IDS, hexOwnerAt } from '../src/world/terrain/region-world.js';
 import {
   TELEMONIA, KETHORN, KETHORN_WALL, TERRACES, INNER, kethornFrame, kethornPoint, onKethornTop, topOutside, kethornTopLevel,
   kethornLift, washAt, washWeight, passAt, onPassFloor, wayAt, onWayFloor, stairDistance, plainDistance, telemoniaPlace,
-} from '../src/telemonia-world.js';
+} from '../src/content/regions/telemonia/telemonia-world.js';
 import {
   KETHORN_BUILDINGS, KETHORN_STREET, ALONG, ACROSS, HAMLETS, HUTS, HUT, PENS, PEN, FIELDS, TELEMONIA_TOWN_SITES, TOWN_SITE_LIST,
   fieldAt, sownAt, vineCourseLine, buildingOutside, onKethornStreet, buildingColliders, hutColliders, penColliders, penOutside, hutOutside,
-} from '../src/telemonia-town.js';
+} from '../src/content/regions/telemonia/telemonia-town.js';
 
 /**
  * Telemonia, stage 2: Kethorn on its rock, the fields on the Galmeth, the vine on the terraces, the field
- * people's huts and the folds (src/telemonia-town.js, src/telemonia-town-scenery.js). The user: "their main
+ * people's huts and the folds (src/content/regions/telemonia/telemonia-town.js, src/content/regions/telemonia/telemonia-town-scenery.js). The user: "their main
  * city in the center should be well fortified naturally and by walls and there should be helot-like slave
  * worked farmland surrounding it".
  *

@@ -1,16 +1,16 @@
 import test from 'node:test';
-import { startingGear } from '../src/player-characters.js';
+import { startingGear } from '../src/content/characters/player-characters.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCombat, GUARD_ARC } from '../src/combat.js';
-import { ARMS, guardShare, guardCost, createCombatSkills, TOP_LEVEL } from '../src/combat-skills.js';
-import { createSkills } from '../src/skills.js';
+import { createCombat, GUARD_ARC } from '../src/gameplay/combat/combat.js';
+import { ARMS, guardShare, guardCost, createCombatSkills, TOP_LEVEL } from '../src/gameplay/combat/combat-skills.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-const { createCharacter, BUCKLER_NAME } = await sourceModule('../src/characters.js');
+const { createCharacter, BUCKLER_NAME } = await sourceModule('../src/content/characters/characters.js');
 
 /** Flat ground and nothing to walk into: the fight, and only the fight. */
 const world = { heightAt: () => 1.5, colliders: [], bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 } };
@@ -154,7 +154,7 @@ test('the shield is paid for what it stopped, and the host holds rather than pre
   assert.equal(input({ passenger: true, held: true }), false, 'a carried passenger cannot guard');
   assert.equal(input({ passenger: true, auto: true, autoGuard: true }), false, 'nor can autopilot guard as a passenger');
   assert.match(main, /combat\.guard\(guardKey,player\.group\.rotation\.y\);/);
-  assert.match(source('combat.js'), /guardHeld = !!held;/, 'and nothing in the module latches it');
+  assert.match(source('gameplay/combat/combat.js'), /guardHeld = !!held;/, 'and nothing in the module latches it');
   // The hand slot IS the shield, and what he is seen holding follows what he is wearing — or,
   // for the length of a lesson, what Glun or the shield's teacher has lent him.
   // Those temporary loans use the same availability rule for combat and the visible model.
@@ -165,7 +165,7 @@ test('the shield is paid for what it stopped, and the host holds rather than pre
   // a traveler with no shield before I stopped believing the camera and read the code.
   assert.match(main, /setShield:\(\.\.\.a\)=>playerBody\.setShield\(\.\.\.a\),/, 'the facade forwards it');
   assert.doesNotMatch(main, /player\.setShield\?\./, 'and it is never called optionally');
-  assert.match(source('characters.js'), /const setShield = value => \{/);
+  assert.match(source('content/characters/characters.js'), /const setShield = value => \{/);
 });
 
 test('the buckler is a thing on his arm, built once and shown or hidden', () => {
@@ -229,7 +229,7 @@ test('the arm follows the rules and not the key, and the footer follows the shie
   assert.match(main, /draw:combat\.drawn\}\);/, 'and so does the bow');
   assert.doesNotMatch(main, /guarding:\s*guardKey/, 'and never the key');
   // The module sets the flag and returns the same answer, so nothing can read one and draw the other.
-  const combat = source('combat.js');
+  const combat = source('gameplay/combat/combat.js');
   assert.match(combat, /player\.guarding = guarding\(\);\s*\r?\n\s*return player\.guarding;/);
   // The footer names the key only while there is a shield on the arm to use it with.
   assert.match(main, /document\.body\.classList\.toggle\('shielded',carried\);/);
@@ -255,7 +255,7 @@ test('the arm follows the rules and not the key, and the footer follows the shie
   }
   const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
   assert.match(html, /<span class="shield-control"><kbd>V<\/kbd> Guard<\/span>/);
-  const css = readFileSync(fileURLToPath(new URL('../src/adventure.css', import.meta.url)), 'utf8');
+  const css = readFileSync(fileURLToPath(new URL('../src/ui/styles/adventure.css', import.meta.url)), 'utf8');
   assert.match(css, /\.shield-control \{display:none;\}body\.shielded \.shield-control \{display:inline;\}/,
     'hidden until the body says he is carrying one');
   // It is its own class, not the combat one: being armed is not being shielded.
@@ -321,14 +321,14 @@ test('the guard is offered before the fight is stepped, and nothing is held whil
   // And outside play the latch is let go, on the same frame, before anything can read it.
   // The bow is the second held verb and comes down in the same breath - **down, not off**:
   // `combat.draw(false)` is the loose, so this line used to fire the bow at the pause menu
-  // (docs/known-issues.md, round 5). `lowerBow` keeps the arrow (src/archery.js).
+  // (docs/known-issues.md, round 5). `lowerBow` keeps the arrow (src/gameplay/combat/archery.js).
   assert.match(main, /if\(mode!=='playing'\)\{combat\.guard\(false,player\.group\.rotation\.y\);combat\.lowerBow\(\);\}/,
     'a mode that is not play holds no shield and holds no draw');
   assert.ok(main.indexOf("if(mode!=='playing'){combat.guard(false,player.group.rotation.y);combat.lowerBow();}") < from,
     'and both are let go before the playing branch can step anything');
   // The module still latches nothing of its own: the host is the only one who remembers a press.
-  assert.match(source('combat.js'), /let guardHeld = false, guardYaw = 0;/);
-  assert.match(source('combat.js'), /guardHeld = !!held;/);
+  assert.match(source('gameplay/combat/combat.js'), /let guardHeld = false, guardYaw = 0;/);
+  assert.match(source('gameplay/combat/combat.js'), /guardHeld = !!held;/);
 });
 
 test('the view reports what was drawn, not only what was decided', () => {
@@ -344,12 +344,12 @@ test('the view reports what was drawn, not only what was decided', () => {
   assert.match(main, /applyAxisAngle\(axis,turn\)/);
   assert.match(main, /const axis=new THREE\.Vector3\(0,1,0\),turn=-player\.group\.rotation\.y;/);
   // One name, shared, so the host and the model cannot drift apart over it.
-  assert.match(source('characters.js'), /export const BUCKLER_NAME = /);
-  assert.match(source('characters.js'), /buckler\.name = BUCKLER_NAME;/);
+  assert.match(source('content/characters/characters.js'), /export const BUCKLER_NAME = /);
+  assert.match(source('content/characters/characters.js'), /buckler\.name = BUCKLER_NAME;/);
 });
 
 test('the guard is offered before the fight is stepped, and a hand off the keyboard is a hand off the shield', async () => {
-  const { createCombat } = await import('../src/combat.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');

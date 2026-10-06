@@ -16,13 +16,13 @@ This does **not** change global allegiance, choose a prince, conquer Vastos, or 
 
 | File | Responsibility |
 | --- | --- |
-| `src/vastos-civil-war.js` | Pure quest state, gates, endings, reward and snapshot validation |
-| `src/vastos-dialogue.js` | NPC and site conversations; explicit route choice |
-| `src/vastos-camp.js` | Camp, site positions, cattle, local props and state visuals |
-| `src/vastos-host.js` | Dialogue, journal/HUD, markers, known locations and runtime boundary |
+| `src/content/chapters/civil-war/vastos-civil-war.js` | Pure quest state, gates, endings, reward and snapshot validation |
+| `src/content/chapters/civil-war/vastos-dialogue.js` | NPC and site conversations; explicit route choice |
+| `src/content/chapters/civil-war/vastos-camp.js` | Camp, site positions, cattle, local props and state visuals |
+| `src/content/chapters/civil-war/vastos-host.js` | Dialogue, journal/HUD, markers, known locations and runtime boundary |
 | `src/main.js` | Registers/binds/ticks host, interactions, journal, save/restore and test travel |
-| `src/road-checkpoint.js` | Validates and copies optional `vastos` save section |
-| `src/civil-war-quests.js` | Series and regional design registry |
+| `src/app/saves/road-checkpoint.js` | Validates and copies optional `vastos` save section |
+| `src/content/chapters/civil-war/civil-war-quests.js` | Series and regional design registry |
 | `docs/ambroni-civil-war.md` | Requirements, lore authority and proposed regional story details |
 
 The road checkpoint remains version 1. Its optional **`vastos`** section stores this quest's version-1 snapshot. Missing sections initialize an unmet quest; invalid sections are rejected before replacing a checkpoint. Restoration itself grants no food. Testing mode retains the game's existing rule that test travel does not replace a normal saved adventure.

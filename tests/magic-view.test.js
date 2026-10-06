@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createMagicView } = await sourceModule('../src/magic-view.js');
+const { createMagicView } = await sourceModule('../src/gameplay/magic/magic-view.js');
 const swarm = (id, x = 0) => ({ id, x, y: 2, z: 0, profile: { swarm: true } });
 const fixture = () => {
   const state = { projectiles: [], swarms: [swarm('bees')] }, scene = new THREE.Scene();

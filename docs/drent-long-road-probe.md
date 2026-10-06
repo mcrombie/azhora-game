@@ -21,18 +21,18 @@ is ample ground for the hedge and the orchard.
 Rules applied, each one the world's own: `canStand` at 0.45 m; inside Drent's outline; the ground
 opens out to 25 m (the check that found Ammi Tal sealed in); at least 3.3 m from anybody else's
 stand (talking range, so nobody contests F); a metre clear of anything solid; outside every bird's
-home ground (`src/rena.js`: a stand takes a bird's perches away; the birds themselves keep 1.6 m
+home ground (`src/content/quests/rena/rena.js`: a stand takes a bird's perches away; the birds themselves keep 1.6 m
 from a stand); and clear of the 4.6 m either side of the road's centreline that the company
 walks in.
 
 | | Where now | The design's spot | Verdict |
 |---|---|---|---|
-| **Odger Pell** | (−50, 25), set in `src/main.js:289`, not in `src/mycology.js` | beside the cairn, (−132.3, 34.6) | **Fails two rules.** |
+| **Odger Pell** | (−50, 25), set in `src/main.js:289`, not in `src/gameplay/skills/nature/mycology.js` | beside the cairn, (−132.3, 34.6) | **Fails two rules.** |
 | **Nell Harrow** | `BOTANIST_STAND` (−40, 44) | the Sunken Lane's centre, (−482.4, 38.3) | Passes all. |
 | **Silas Garrow** | `GEOLOGIST_STAND` (−5, 97) | the Toll House's centre, (−510.0, 101.4) | Passes all; the cart wants siting. |
 
 **Odger.** The cairn's collider is at (−133.9, 34.6), 5.9 m from Fernway Rest's centre. The
-pileated woodpecker's ground (`greenway-pileated`, `src/drent-birds.js:473`) is centred at
+pileated woodpecker's ground (`greenway-pileated`, `src/content/regions/drent/drent-birds.js:473`) is centred at
 (−138, 36) with an 8 m radius, and the cairn is 4.3 m from that centre: *anywhere* beside the
 cairn is inside it, the design's spot by 2.1 m. The same spot is 2.8 m from the road's centreline,
 inside the band the company walks in — Eliana passes one metre from it at minute 51.0. Everything
@@ -130,7 +130,7 @@ straight line on the ground crossed by solid things, not a rendered view.
 | 48 | Fernway Rest, with Odger | 153 m | Barely: one thing in the line, and about twelve pixels tall. |
 | 63 | the ruins of Rena | 430 m | **No: not drawn at that range.** |
 
-*Heard:* the bell is a synthesized effect with no position (`src/road-audio.js`), so it would
+*Heard:* the bell is a synthesized effect with no position (`src/world/environment/road-audio.js`), so it would
 carry across Drent as designed — but **sound does not exist until the player clicks the Sound
 button** (`src/main.js:2520`), and every `audio?.effect('bell')` before that is a no-op. For a
 player who never turns sound on, five bells announce nothing. The design's other means, Chris's
@@ -155,7 +155,7 @@ sees go by are the riders in the village street at 19.6.
 
 ## 4. Ground for the foods
 
-By the plant scatter's own rule (`src/drent-flora.js`: inside Drent's box, standable at 0.5 m,
+By the plant scatter's own rule (`src/content/regions/drent/drent-flora.js`: inside Drent's box, standable at 0.5 m,
 3 m from any stand or other site, 2.4 m from every road vertex):
 
 - **The Sunken Lane:** 474 of 613 one-metre cells within the lane's kept-clear disc would take a

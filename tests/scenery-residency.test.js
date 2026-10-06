@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { createSceneryResidency } from '../src/scenery-residency.js';
+import { createSceneryResidency } from '../src/world/loading/scenery-residency.js';
 const finish = iterator => { while (!iterator.next().done) {} };
 const boundsFor = () => ({minX:0,maxX:10,minZ:0,maxZ:10});
 

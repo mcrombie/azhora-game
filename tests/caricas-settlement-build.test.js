@@ -5,7 +5,7 @@ import * as THREE from '../vendor/three.module.js';
 import {sourceModule} from './module-loader.js';
 import {telemoniaGeometryHash} from './telemonia-geometry-hash.js';
 
-const {createCaricasSettlement,createCaricasSettlementSteps}=await sourceModule('../src/caricas-settlement-scenery.js');
+const {createCaricasSettlement,createCaricasSettlementSteps}=await sourceModule('../src/content/regions/minora-frontier/caricas-settlement-scenery.js');
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 function fixture(){

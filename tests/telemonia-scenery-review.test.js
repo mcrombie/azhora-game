@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { TELEMONIA_BOX } from '../src/telemonia-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { TELEMONIA_BOX } from '../src/content/regions/telemonia/telemonia-world.js';
 import { telemoniaGeometryHash } from './telemonia-geometry-hash.js';
 
-const { createTelemoniaScenerySteps } = await sourceModule('../src/telemonia-scenery.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { createTelemoniaScenerySteps } = await sourceModule('../src/content/regions/telemonia/telemonia-scenery.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 const scene = new THREE.Group(), colliders = [];
 const started = performance.now();
 const iterator = createTelemoniaScenerySteps({ root: scene, groundHeight: groundWithRiver, colliders,

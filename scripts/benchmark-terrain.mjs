@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 const started = performance.now();
-const { WORLD_BOUNDS, REGION_CELLS, terrainMix, seamlessTerrainMix } = await import('../src/region-world.js');
-const { groundWithRiver, groundTint } = await import('../src/world-terrain.js');
+const { WORLD_BOUNDS, REGION_CELLS, terrainMix, seamlessTerrainMix } = await import('../src/world/terrain/region-world.js');
+const { groundWithRiver, groundTint } = await import('../src/world/terrain/world-terrain.js');
 const importMs = performance.now() - started;
 const points = [];
 for (let j = 0; j < 80; j++) for (let i = 0; i < 80; i++) points.push({

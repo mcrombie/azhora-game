@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { IZOL_PATHS, IZOL_MOLES, izolDeckHeight } from '../src/izol-world.js';
-import { moveCharacter, canStand } from '../src/game-state.js';
-import { canWalkSlope } from '../src/climbing.js';
-import { bodyWorld, BODY } from '../src/bodies.js';
-import { canPushThrough } from '../src/undergrowth.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { SWIM } from '../src/swimming.js';
-import { createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
+import { IZOL_PATHS, IZOL_MOLES, izolDeckHeight } from '../src/content/regions/izol/izol-world.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { bodyWorld, BODY } from '../src/gameplay/combat/bodies.js';
+import { canPushThrough } from '../src/world/scenery/undergrowth.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { SWIM } from '../src/gameplay/movement/swimming.js';
+import { createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
 
 const scene = new THREE.Scene(), world = await scopedWorld(scene, [8]);
 

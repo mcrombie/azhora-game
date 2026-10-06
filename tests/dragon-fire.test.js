@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createDragonFire,dragonFireContact,traceDragonFire,DRAGON_FIRE} from '../src/dragon-fire.js';
+import {createDragonFire,dragonFireContact,traceDragonFire,DRAGON_FIRE} from '../src/gameplay/magic/dragon-fire.js';
 const origin={x:0,y:8,z:0},direction={x:0,y:0,z:1};
 const forward={origin,direction,range:72,radius:10};
 test('fire cone uses altitude, facing and range, not a two-dimensional area attack',()=>{

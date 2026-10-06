@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import {
   AUTHORED_METRES_PER_HEX, METRES_PER_HEX, WORLD_SCALE, SCALE_ANCHOR, CLUSTERS,
   clusterAt, clusterAtWorld, clusterShift, clusterTable, scalePoint, scaleLength,
   toWorld, toWorldRoad, toWorldIn, toAuthored,
-} from '../src/world-scale.js';
+} from '../src/world/terrain/world-scale.js';
 import {
   ANCHORS, MAIN_ROAD, SUVAL_ROAD, ONWARD_ROAD, CALOSS, WOOD_EDGE, CALOSS_BANK, FERNWAY_REST,
   AVREL_CLEARING, LUMBER_TOWN, STORY_SITES, VILLAGE, villageToWorld, regionNpcPositions, journeySites,
-} from '../src/regions.js';
+} from '../src/world/terrain/regions.js';
 
 const near = (a, b, tolerance = 1e-9) => Math.abs(a - b) <= tolerance;
 
@@ -84,10 +84,10 @@ test('Tidehaven does not move: the village, its trail and everything in its fram
 });
 
 test('village-local modules come out of the world untouched by the new scale', async () => {
-  const { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter } = await sourceModule('../src/forest-places.js');
-  const { FOREST_HIDEOUT } = await sourceModule('../src/forest-hideout-world.js');
-  const { PEDDLER } = await sourceModule('../src/economy.js');
-  const { VILLAGE_DOG } = await sourceModule('../src/village-dog.js');
+  const { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter } = await sourceModule('../src/content/quests/forest/forest-places.js');
+  const { FOREST_HIDEOUT } = await sourceModule('../src/content/quests/forest/forest-hideout-world.js');
+  const { PEDDLER } = await sourceModule('../src/gameplay/inventory/economy.js');
+  const { VILLAGE_DOG } = await sourceModule('../src/content/characters/village-dog.js');
   // These modules build in the village's own local metres and must not have
   // been rewritten: converted, every one of their points stays where it was.
   const local = [...forestPlaceDefinitions, ...forestPlacePaths.flat(), forestWoodcutter];
@@ -151,12 +151,12 @@ test('the roads and the places along them are consistent at the new scale', () =
 
 test('the built world keeps its roads clear of colliders and its arenas standable', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
-  const { FOREST_HIDEOUT_QUEST } = await sourceModule('../src/forest-hideout.js');
-  const { LUSCIA_WOLVES } = await sourceModule('../src/luscia-chapter.js');
-  const { BORDER_ARENA, borderEncounter } = await sourceModule('../src/border-chapter.js');
+  const { FOREST_HIDEOUT_QUEST } = await sourceModule('../src/content/quests/forest/forest-hideout.js');
+  const { LUSCIA_WOLVES } = await sourceModule('../src/content/chapters/civil-war/luscia-chapter.js');
+  const { BORDER_ARENA, borderEncounter } = await sourceModule('../src/content/chapters/chapter-one/border-chapter.js');
   const world = createWorld(new THREE.Scene());
   // **With the Caloss span down again.** Six paces of it are in the river until somebody mends it
-  // (src/world-regions.js), which is the one hole in the road that is there on purpose; the break
+  // (src/world/terrain/world-regions.js), which is the one hole in the road that is there on purpose; the break
   // has its own law in tests/road-ambush.test.js. This test is about roads scaled into buildings.
   world.setJourneySiteState('bridge-repair', true);
   // Walk each road at a metre a step: no vertex and no span between two
@@ -197,7 +197,7 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
   assert.ok(Math.hypot(regionNpcPositions['relay-clerk'].x - LUMBER_TOWN.square.x, regionNpcPositions['relay-clerk'].z - LUMBER_TOWN.square.z) < LUMBER_TOWN.radius,
     'Iven still keeps his desk on Nothom’s square');
   // The goblin camp moved to Pueth: its side trail leaves the road north of the Tessen and meets the camp's own trail.
-  const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/pueth-world.js');
+  const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/content/regions/pueth/pueth-world.js');
   const distanceToRoad = (point, road) => Math.min(...road.slice(1).map((b, i) => { const a = road[i], dx = b.x - a.x, dz = b.z - a.z;
     const t = Math.max(0, Math.min(1, ((point.x - a.x) * dx + (point.z - a.z) * dz) / (dx * dx + dz * dz))); return Math.hypot(point.x - a.x - dx * t, point.z - a.z - dz * t); }));
   assert.ok(distanceToRoad(HIDEOUT_APPROACH_TRAIL[0], world.puethRoute) < 1e-6, 'the camp\u2019s side trail is hinged on the road north');
@@ -207,11 +207,11 @@ test('the built world keeps its roads clear of colliders and its arenas standabl
 
 test('the only way over the Caloss is the bridge, and the road leads back to it', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
-  const { nextWaypoint, freeDirection } = await import('../src/autopilot.js');
-  const { moveCharacter } = await import('../src/game-state.js');
+  const { nextWaypoint, freeDirection } = await import('../src/gameplay/autoplay/autopilot.js');
+  const { moveCharacter } = await import('../src/gameplay/movement/game-state.js');
   const world = createWorld(new THREE.Scene());
   // The driftwood is all on the Drent bank now, with Chip, because the span is down and the man
-  // who mends it cannot stand on the far side of his own break (src/region-world.js). So this
+  // who mends it cannot stand on the far side of his own break (src/world/terrain/region-world.js). So this
   // walks the mended bridge, which is what it was always about: the road leads back to it.
   world.setJourneySiteState('bridge-repair', true);
   const road = world.paths[0];

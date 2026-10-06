@@ -18,7 +18,7 @@ a six-sided root footprint.
 
 ## Bounded correction
 
-`src/southwest-scenery.js` now accepts a species selector in its tree helper.
+`src/content/regions/southwest/southwest-scenery.js` now accepts a species selector in its tree helper.
 The R4 pass enables it for existing northern-country instances (the later
 Meroshe extension is recorded in the R5 report):
 

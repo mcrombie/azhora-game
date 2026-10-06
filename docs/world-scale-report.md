@@ -23,13 +23,13 @@ This is the build report for `docs/world-scale-brief.md`.
 | Suval branch | 422 m | **754 m** |
 | Tidehaven's coast hex | (0, 29) | **(0, 29)** — the fixed point |
 
-`src/region-survey.js` did not need regenerating: it bakes atlas hex coordinates,
+`src/dev/tools/region-survey.js` did not need regenerating: it bakes atlas hex coordinates,
 which have no scale in them. `scripts/build-region-survey.mjs` never mentions
 metres.
 
 ## How the conversion works
 
-`src/world-scale.js` is the whole of it: pure, no three, no DOM.
+`src/world/terrain/world-scale.js` is the whole of it: pure, no three, no DOM.
 
 ```
 AUTHORED_METRES_PER_HEX = 56      the frame every literal in the tree is written in
@@ -287,7 +287,7 @@ What is left, in the order it bites:
 the fights, the saves and the whole story walkthrough are covered; what is not
 covered is the computer playing them unattended.
 
-`src/forest-hideout-smoke.js` is **not** rewritten. It describes the goblin camp
+`src/dev/checks/forest-hideout-smoke.js` is **not** rewritten. It describes the goblin camp
 as a Drent errand of Tamsin's at quest stage 5 paid in pawpaws; the camp moved to
 north Luscia as a Nothom garrison side quest before this branch, and
 `npm run test:hideout` has been failing since. Its coordinates all come from the
@@ -301,7 +301,7 @@ the Greenway).
 
 `main` moved to `df0cf71` mid-branch and was merged in. It brought the mercenary
 looks (no coordinates) and the chapter after the border battle.
-`src/aftermath-sites.js` is now converted like every other literal table: its
+`src/content/chapters/chapter-one/aftermath-sites.js` is now converted like every other literal table: its
 authored numbers stay and `toWorld` moves them, so `camp-gate` and
 `camp-approach` are rigid with the Legion camp and the two stockade entries with
 the stockade. The camp arena's ground lies outside the camp's own radius, so it
@@ -358,14 +358,14 @@ but the place named on the board is now half again as far away.
   vertices would remove the corner for good, and is the right job for whoever
   touches the crossing next.
 - **The three working places have no scenery where their people stand.**
-  `createRegionalPlaces` in `src/regional-places.js` still draws its mill yard,
+  `createRegionalPlaces` in `src/world/life/regional-places.js` still draws its mill yard,
   boat yard and shelter at pre-rebuild coordinates - `(-38, -273)`, `(-30, -451)`,
   `(-34, -581)` - which were outside the world before this branch and are outside
   it still. The Mill Commons, the Landing Workshop and the Waystation Shelter
   have their metadata, their NPCs, their activity sites and their reserved ground
   in the right places; only the geometry is somewhere else. Nothing to do with
   the scale, and it deserves its own fix.
-- **`src/forest-hideout-smoke.js`** describes the old Tidehaven flow; see above.
+- **`src/dev/checks/forest-hideout-smoke.js`** describes the old Tidehaven flow; see above.
 - **Terrain relief keeps its own wavelengths.** Drent's hills are still 90 m
   across and East Suval's 120 m, so the bigger regions have more hills rather
   than bigger ones. That reads well on foot, but it is a choice, and a region

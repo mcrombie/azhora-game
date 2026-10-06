@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { AEVIS, AEVIS_AREA, AEVIS_OUTLINE, AEVIS_WALL_EDGES, AEVIS_GATES,
   AEVIS_BUILDINGS, AEVIS_PATHS, AEVIS_QUAYS, AEVIS_BOATS, AEVIS_SOLDIERS,
   AEVIS_LANDMARKS, AEVIS_COASTAL_DEFENSE_ENDS, inAevis, aevisGround, aevisReserved, aevisDeckHeight,
-  aevisSegmentDistance } from '../src/aevis-city.js';
-import { NYLON_AREA } from '../src/nylon-city.js';
-import { hexCentre, hexAt, hexOwnerAt, landDistance, SOLIS } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+  aevisSegmentDistance } from '../src/content/regions/aevis/aevis-city.js';
+import { NYLON_AREA } from '../src/content/regions/nylon/nylon-city.js';
+import { hexCentre, hexAt, hexOwnerAt, landDistance, SOLIS } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
 const samples = b => [-1,0,1].flatMap(a => [-1,0,1].map(c => ({x:b.x+a*b.width/2,z:b.z+c*b.depth/2})));
 const inside = (p,b,margin=0) => Math.abs(p.x-b.x)<b.width/2+margin && Math.abs(p.z-b.z)<b.depth/2+margin;

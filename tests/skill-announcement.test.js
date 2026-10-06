@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills, SKILL_IDS } from '../src/skills.js';
-import { createSkillAnnouncementQueue, skillIntroduction } from '../src/skill-announcement.js';
+import { createSkills, SKILL_IDS } from '../src/gameplay/skills/skills.js';
+import { createSkillAnnouncementQueue, skillIntroduction } from '../src/ui/skills/skill-announcement.js';
 
 test('real first lessons announce; seeded skills and restored lessons do not', () => {
   const queue = createSkillAnnouncementQueue();

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { REGION_IDS } from '../src/region-world.js';
-import { REGIONAL_LIFE_SITES } from '../src/regional-life.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
+import { REGIONAL_LIFE_SITES } from '../src/world/life/regional-life.js';
 
 /**
  * A place that carries a region says which country it belongs to. `world.regionAt`
@@ -13,7 +13,7 @@ import { REGIONAL_LIFE_SITES } from '../src/regional-life.js';
  * agree with.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { REGIONAL_PLACES, REGIONAL_ACTIVITY_SITES } = await sourceModule('../src/regional-places.js');
+const { REGIONAL_PLACES, REGIONAL_ACTIVITY_SITES } = await sourceModule('../src/world/life/regional-places.js');
 const world = createWorld(new THREE.Scene());
 const REGION_NAMES = Object.fromEntries(Object.entries(REGION_IDS).map(([name, id]) => [id, name]));
 const disagreements = places => places.filter(place => Number.isFinite(place.x) && place.region !== undefined)
@@ -26,7 +26,7 @@ test('every landmark that names a region names the region its coordinates are in
 });
 
 test('the three workyards agree with the ground under them in both the scenery layer and the story layer', () => {
-  // The header of src/regional-places.js names them in prose: the Avrel clearing mill in
+  // The header of src/world/life/regional-places.js names them in prose: the Avrel clearing mill in
   // Drent, the reedcutters' landing on the Luscia bank, the roofless waystation in East Suval.
   assert.deepEqual(disagreements([...REGIONAL_PLACES, ...Object.values(REGIONAL_ACTIVITY_SITES), ...REGIONAL_LIFE_SITES]), []);
   const byId = new Map([...REGIONAL_PLACES, ...Object.values(REGIONAL_ACTIVITY_SITES)].map(place => [place.id, place]));

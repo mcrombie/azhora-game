@@ -6,6 +6,6 @@ The surrounding border now alternates lower rock shoulders, tall needles, expose
 
 Four narrow, winding cuts invite investigation from outside East Suval. Two end in collapsed rock; two reveal old iron-barred posterns after their final bend. They have no new NPCs or signs. Each has an open route back out, and its dead end is physically collidable before the region-entry restriction is reached. Ordinary trees and rocks are excluded from these approaches.
 
-`SUVAL_FALSE_PASSES` in `src/frontier-ridges.js` is the shared authored route/obstruction plan. `src/frontier-ridge-works.js` draws that same plan. The original smugglers' door face and standing positions retain their established dimensions.
+`SUVAL_FALSE_PASSES` in `src/content/regions/minora-frontier/frontier-ridges.js` is the shared authored route/obstruction plan. `src/content/regions/minora-frontier/frontier-ridge-works.js` draws that same plan. The original smugglers' door face and standing positions retain their established dimensions.
 
 Validation in `tests/closed-border.test.js` samples every half metre of exposed land boundary, walks both player and horse widths into the existing gates, traverses every new approach in the built world, checks the false ends stop movement, and keeps the existing quest approach clear. The South Suval world checks also retain the old pass road and the new highland/cave routes.

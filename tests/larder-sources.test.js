@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
-import { FOODS as HEALING } from '../src/consumables.js';
-import { PEDDLER_STOCK } from '../src/economy.js';
-import { RECIPES } from '../src/cooking.js';
-import { PLANT_SPECIES } from '../src/botany.js';
-import { CROPS, ORCHARD_ITEM } from '../src/farming.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { FOODS as HEALING } from '../src/gameplay/inventory/consumables.js';
+import { PEDDLER_STOCK } from '../src/gameplay/inventory/economy.js';
+import { RECIPES } from '../src/gameplay/skills/crafting/cooking.js';
+import { PLANT_SPECIES } from '../src/gameplay/skills/nature/botany.js';
+import { CROPS, ORCHARD_ITEM } from '../src/gameplay/skills/farming/farming.js';
 
 /**
  * Six foods healed and could not be got.
  *
  * `docs/known-issues.md` carried the entry for months, and the reason it could carry it is that
- * nothing checked: a food is a row in `src/inventory.js` and a number in `src/consumables.js`,
+ * nothing checked: a food is a row in `src/gameplay/inventory/inventory.js` and a number in `src/gameplay/inventory/consumables.js`,
  * and neither of those knows whether anybody in Azhora will ever hand you one. This is the check
  * that was missing. It reads `src/` as text, the way `tests/tills.test.js` reads the shops, so a
  * food added tomorrow with nowhere to come from fails here rather than in a player's satchel.
  */
 const SRC = fileURLToPath(new URL('../src/', import.meta.url));
-const SOURCES = readdirSync(SRC).filter(name => name.endsWith('.js'))
+const SOURCES = readdirSync(SRC, { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js'))
   .map(name => ({ name, text: readFileSync(SRC + name, 'utf8') }));
 
 /** The ways a thing can reach the satchel, each of them a real mechanism somewhere in src/. */
@@ -32,7 +32,7 @@ const farmed = new Set([...Object.values(CROPS).map(entry => entry.item), ORCHAR
  * a shop's stock, a recipe's output, an `inventory.add`. A food that appears nowhere outside
  * `inventory.js` and `consumables.js` is a food nobody in Azhora has ever been written holding.
  */
-const DESCRIBERS = new Set(['inventory.js', 'consumables.js', 'foods.js']);
+const DESCRIBERS = new Set(['gameplay/inventory/inventory.js', 'gameplay/inventory/consumables.js', 'foods.js']);
 const handedOver = id => SOURCES.some(file => !DESCRIBERS.has(file.name) && file.text.includes(`'${id}'`));
 
 /** Where a food comes from, or null if the answer is nowhere. */
@@ -43,7 +43,7 @@ const FOODS = Object.keys(HEALING).filter(id => Object.hasOwn(INVENTORY_ITEMS, i
 
 /**
  * Eight wines are written down and poured nowhere: they belong to countries that are recorded
- * on the atlas and not built, the way `src/economy.js` records silver and gold before either
+ * on the atlas and not built, the way `src/gameplay/inventory/economy.js` records silver and gold before either
  * exists. They are the only things in the larder with nowhere to come from, they are named here
  * so that the list cannot quietly grow, and the day somebody builds Ostel's white it comes off.
  */

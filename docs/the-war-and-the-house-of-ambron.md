@@ -7,14 +7,60 @@ taken as given: Ambron between the four lakes (`geography/regions/elagos.md`), I
 no capital (`izol.md`), Nylon at the mouth of the Lizeem (`nylon.md`) with **Eer** as its
 farming hinterland, which foreign powers take in order to starve the city (`eer.md`).
 
-## Current frontier ruling (30 September 2026)
+## Current frontier ruling (5 October 2026)
 
-The latest user brief supersedes the older draft in which Cedric was murdered,
-Minora was razed and Wilhelm was trapped in Nylon. **None of those events has
-happened at the start of this build.** Minora is the living holy frontier city at
-the Isa-Lizeem fork, near the meeting of Isareos, Caricas and Nethereum. Its great
-temple shelters Cedric; its western muster ground holds Wilhelm and his army.
-The main-story consequences are reserved for later Chapter 3/4 design.
+The latest opening design is in [Campaign opening design](campaign-opening-design.md).
+It supersedes the older drafts in which Cedric was murdered, Minora was razed,
+Wilhelm was trapped in Nylon, or Cedric merely took sanctuary in a politically
+stable Minora. **None of those is the opening situation.**
+
+Minora is the living holy frontier city at the Isa-Lizeem fork, near the meeting
+of Isareos, Caricas and Nethereum. The **Minoran League** declared independence
+less than a year before the game and has barely established a military. After
+the old king's death, Cedric ruled Ambron poorly; the republicans replaced him
+with his younger half-brother Willard as constitutional monarch. Cedric fled
+with his elite guard and **captured Minora through infiltration and surprise**,
+seizing the League's government. He remains alive and claims the Ambroni crown.
+His presence at Minora's great temple belongs to that captured capital, rather
+than to a refuge offered by an undisturbed League government.
+
+**Wilhelm, the Blood Prince, and his army have just arrived as apparent
+reinforcements for Cedric at the start of the game.** Minora is physically
+intact. The League is politically fractured: **Caricas, Nethereum, Ovesos and
+Nesdor each rebel for their own
+independence**, coordinating loosely with one another. Capturing the League's
+government does not give Cedric effective control of those four provinces.
+The intervals between the succession, Cedric's expulsion and capture of Minora,
+and Wilhelm's arrival remain unspecified; no exact day is assigned to them.
+
+## Wilhelm's secret and the early Minora coup
+
+The hidden opening design is developed in
+[Thalmagar crisis design](thalmagar-crisis-design.md). **Wilhelm is secretly
+undead**, able to present a convincing mortal disguise with indications that
+something is wrong. Whether he is a zombie, vampire or another undead subtype,
+and the specific indications of his nature, remain open. His existing public
+appearance is the mortal guise. This revelation does not establish when he
+became undead or change the earlier war chronology.
+
+The troops he brings as reinforcements are **disguised undead infiltrators**.
+They can appear as soldiers or civilians. They are distinct from the elite
+guard with which Cedric previously seized Minora; Cedric's guard is not thereby
+established as undead.
+
+During the first few campaign cycles, the planned Minora opening features an
+**internal undead coup**. This is a second seizure of power, distinct from
+Cedric's earlier capture of the League government. At the initial snapshot,
+Cedric has captured the League and Wilhelm has just arrived; the undead coup
+has not already happened. Its exact cycle, outcome, preventability and Cedric's
+fate remain unresolved.
+
+**Wilhelm is a secret vassal of Thalmagar.** Ordinary diplomacy conceals this
+allegiance until the hero investigates and exposes it. Eshtor's undead duke at
+the Forsaken Citadel is another secret Thalmagar vassal; this does not establish
+the duke as Wilhelm's commander. Full geographic access in developer tools is
+separate from the hidden allegiance and must not reveal it in ordinary
+player-facing diplomacy by default.
 
 ## The house of Ambron
 
@@ -24,9 +70,9 @@ The main-story consequences are reserved for later Chapter 3/4 design.
 | **Valdemar the younger** | The eldest son. Died before his father. |
 | **Ruzo** | Valdemar the younger's son — christened Valdemar too, and goes by **Ruzo**, the name he took when he renounced his family. The old king thought him the ablest of them. He did not believe in the Empire's mission and would not take the throne he arguably had the first claim to. He is friendly with Willard and backs the constitutional monarchy. In the game he is already named, unwitting, in the Coalition's roster: "the prince who renounced his family". |
 | **Valroy** | Second son, and the eldest living. Abroad across the eastern sea on a colonial crusade when his father died, and claimed the throne from there. **Has just landed in the east with his army** — the news that opens Chapter 3 on both branches. Determined, independent, and deaf to argument. |
-| **Cedric** | Third son; half-brother to Willard. Took the throne while Valroy was away. Driven out of Ambron by the revolution, he remains alive in Minora's grand temple in Isareos and still claims the crown. Long dirty-blonde hair. His later story is undecided. |
-| **Wilhelm** | Younger than Cedric, older than Willard. **The Blood Prince.** Worships Nanvir, the taboo blood god. Devastated Suval and the Iscare islands. He and his army are now present at intact Minora. Short very pale blonde, almost silver hair; a twisted, maniacal expression. |
-| **Willard** | The youngest. Installed as **constitutional monarch in Ambron** by the republicans, one day before the traveler arrives. |
+| **Cedric** | Third son; half-brother to Willard. Took the throne while Valroy was away and ruled poorly. Driven out of Ambron by the republicans, he fled with his elite guard and captured Minora through infiltration and surprise, seizing the League government. He remains alive in Minora's grand temple in Isareos and still claims the crown. The League's four other provinces are rebelling for their own independence. Long dirty-blonde hair. His later story is undecided. |
+| **Wilhelm** | Younger than Cedric, older than Willard. **The Blood Prince.** Worships Nanvir, the taboo blood god. Devastated Suval and the Iscare islands. Secretly undead, subtype unresolved; he can pass convincingly as mortal, with indications of his nature. His public guise retains short very pale blonde, almost silver hair and a twisted, maniacal expression. He has just arrived at intact Minora with disguised undead infiltrators presenting as reinforcements for Cedric. The planned internal coup follows during the first few campaign cycles. He is a **secret vassal of Thalmagar**; ordinary diplomacy hides the tie until the hero investigates and exposes it. |
+| **Willard** | The youngest; Cedric's younger half-brother. Installed as **constitutional monarch in Ambron** by the republicans after they removed Cedric. The interval before the traveler arrives is not fixed. |
 
 ## King, or emperor?
 
@@ -76,22 +122,32 @@ the kit. (Decided 2026-09-19; the game used Legion, Legate, Tribune and Latin na
   archipelago and burns Zecron and smaller settlements.
 - **978** - The Blood Prince sails south with his army. Little is heard from him for
   two years.
-- **980, before the game** - The revolution in Ambron drives Cedric out. He takes
-  refuge at Minora's great temple in Isareos and continues to claim the crown. The
-  rebels install his half-brother Willard. Wilhelm and his army are also now at
-  Minora, which remains intact, stable and exceptionally well defended. The date
-  and route of Wilhelm's return, and the princes' later dealings, are still open.
+- **980, before the game** - Following the old king's death, Cedric takes the
+  throne and rules poorly. The republicans remove him and install his younger
+  half-brother Willard as constitutional monarch. Cedric flees with his elite
+  guard, infiltrates Minora and captures it by surprise, seizing the government
+  of a League that declared independence less than a year before the game and
+  barely has a military. Caricas, Nethereum, Ovesos and Nesdor each rebel for
+  their own independence, coordinating loosely. Minora remains physically
+  intact; Cedric does not effectively control the whole League. Wilhelm and his
+  disguised undead army have just arrived as apparent reinforcements when the
+  game begins. The intervals between these events, Wilhelm's route and the
+  princes' later dealings remain open.
 - **980, the game** — The traveler lands at Tidehaven. Chapter 2 ends at the border battle
-  and their own side's ground. Chapter 3 opens in Ambron a day after the revolution, and
+  and their own side's ground. Chapter 3 opens in Ambron after the revolution, and
   with the news that **Valroy has landed in the east**.
+- **980, first few campaign cycles** — The planned internal undead coup in
+  Minora follows Wilhelm's arrival. It is distinct from Cedric's prior seizure
+  of the League government. The exact cycle, outcome and relationship to the
+  traveler's chapter progression remain open.
 
 ## What this means for what is already built
 
 1. **Solis must show its scars.** The city in the game is whole and prosperous; three years
    ago it was stormed and burned. It wants burnt quarters, patched walls, a rebuilt gate,
    roofless houses kept as they fell, and people who talk about the fire as the thing that
-   happened to them. This is a content pass on `src/west-suval-world.js` and `src/solis-town.js`.
-   **Built 2026-09-19** (`src/solis-sack.js`): the walls are only partly repaired (new stone
+   happened to them. This is a content pass on `src/content/regions/solis/west-suval-world.js` and `src/content/regions/solis/solis-town.js`.
+   **Built 2026-09-19** (`src/content/regions/solis/solis-sack.js`): the walls are only partly repaired (new stone
    by the gate, burnt stretches with broken merlons, scaffolding, three breaches shut with
    palisades), towers roofless or broken, the Gate of Sun Horses rebuilt with one bronze horse
    left, eight houses burnt out or fallen and the rest re-roofed over smoke stains, and each of
@@ -106,50 +162,71 @@ the kit. (Decided 2026-09-19; the game used Legion, Legate, Tribune and Latin na
 The Republic's own half of this history — Izol's war on Selemis, and the three generals who hold
 the island between them — is in `izol-and-the-triumvirate.md`, and is its equal in authority.
 
-## The high kingship, and the steward at Stonefist
+## The high kingship, and Ambron's nominal oath
 
-Added 2026-09-21 from the user's brief on the Crefs (the lore is in
+The 5 October 2026 design supersedes the earlier premise of an Ambroni high king
+ruling Stonefist through an appointed steward. **The High King of the Stonefist
+at Lond is a separate ruler.** His identity and the details of his succession
+are unresolved; this design adds no named king or ancestor.
+
+- **The Crefs** are the ruling people whose conquests established the northern
+  kingdoms and their sworn relationship with Stonefist. The earlier history
+  places their taking of the rock about three centuries ago. The sworn fealty
+  is the **Cref Alliance**, also called the High Kingdom of Tolgufeld. The
+  current faction boundaries and relationships follow
+  [Campaign opening design](campaign-opening-design.md), rather than the older
+  seventeen-crown roll.
+- **Mithala, Celder and Ambron are technically vassals of the High King.** His
+  practical influence over these distant southern states is negligible. Their
+  formal relationship does not mean he commands their governments or armies.
+- **Ambron is more powerful than Lond.** Its royal house maintains the nominal
+  oath out of respect for its Cref origins even though it has become culturally
+  southern. Cref ancestry and southern acculturation coexist; neither makes
+  Ambron an administered province of Lond.
+- **The House of Ambron remains a Cref line.** Its existing dynastic history
+  traces a cadet branch through Amod and the Lotharn to Ambron in Elagos. That
+  ancestry does not make the Ambroni crown the current high kingship. The older
+  statements that Valdemar the elder was High King and that an Ambroni-appointed
+  steward still holds Stonefist are superseded for this opening.
+- **The oath's consequences remain to be designed.** Recognition, reciprocal
+  obligations and responses to a summons may matter without giving Stonefist
+  the power to compel these southern vassals. No precise service, tribute or
+  intervention obligation is established here.
+
+The older world-builder accounts in
 `../world-builder/azhora_lore/peoples/the_crefs.md` and
-`../world-builder/azhora_lore/history/the_cref_alliance.md`; Lond, Amod and the kingdom files
-carry short paragraphs).
-
-- **The Crefs** are a small ruling people who took Stonefist, the rock in the middle of the Lond
-  plateau, about three centuries ago and never lost it. A Cref king sits over every kingdom of
-  Northern Azhora — Lond, Endevor, Ganun, Nonoth, Witherst, Thoth, Orse, Sav (Riesov), Inseld,
-  the Acorwood, Cold Stones, Olo — and over five in the south taken afterwards: Mithala, Celder,
-  **Amod**, Feradom, Blizard. Each swore at the rock to the **high king**. The sworn fealty is the
-  **Cref Alliance**; the south calls it the High Kingdom of Tolgufeld (the novella's congress
-  guest). Seventeen crowns and the high king's above them.
-- **Stone Town** lies on the river south of the rock: the most populous town in the Alliance's
-  lands. The **king of Lond** sits there, under the high king, always a close kinsman of his.
-- **The House of Ambron is a Cref line.** A cadet branch of the high kings was given Amod, sat
-  lightly over the Terrace Compact for two centuries, then went down the Lotharn passes and took
-  the throne of Ambron in Elagos. Two reigns ago the last high king to sit in the rock died
-  without a son of his house, and the Amod-Ambron line claimed the high kingship by descent.
-  It never went north to be confirmed. **Valdemar the elder was high king** in the sense that
-  nobody in the north said otherwise in his hearing, and he held Stonefist through a **steward**,
-  a Cref of the rock appointed from Ambron. The steward still holds it.
-- **The legitimacy crisis.** The oath was sworn to a man in the rock, not a house on a lake. With
-  the old king dead and his sons at war - Valroy claiming from abroad, Cedric still
-  claiming from Minora, Wilhelm and his army there too, Willard a king by a republic's
-  leave, Ruzo having renounced the family -
-  the kings of the north are asking whether the oath has an object at all. This is the major
-  issue the traveler meets on going north into the Alliance's country.
-
-Rulings taken from the user: Tolgufeld and the Cref high kingdom are the same; the House of
-Ambron claims by Cref descent, not by marriage; Sav is Riesov. The user's tentative placings of
-Olo (Orsa) and Blizard (Witherst) collide with kingdoms already on the roll, so both are on the
-roll with no ground yet.
+`../world-builder/azhora_lore/history/the_cref_alliance.md` still contain the
+superseded steward premise. They are background sources, not authority for this
+opening's current sovereignty. Stone Town remains the town below the rock;
+whether Lond also has a separate lesser crown beneath the High King is not
+settled by the latest brief. The older Sav/Riesov name identification and the
+unplaced Olo and Blizard names do not establish additional starting factions.
 
 ## Still open
 
-- **Who would the kings of the north recognise?** Valroy by descent, Willard by possession, Ruzo
-  by the old king's own judgment of him, none of them and a Cref of the north — or does the
-  steward simply hold and wait? The game turns on this when it goes north. Not decided.
-- **The steward's name**, and the name of the last high king who sat in the rock (Cref register:
-  Krefar, Stornul, Grethal, Fordun, Vrakel, Harsk, Vralketh, Skordun).
-- **Olo and Blizard**: which ground on the atlas.
-
-- What role do Cedric, Wilhelm and Minora play in Chapter 3 or Chapter 4? The city is intact and stable; no betrayal or destruction is predetermined.
+- **Who is the separate High King at Stonefist?** His name, succession and
+  response to the Ambroni succession conflict remain open. The Ambroni princes
+  are not automatically claimants to his office.
+- **What does the nominal southern oath require?** The practical obligations of
+  Ambron, Mithala and Celder, and the political consequences of invoking or
+  refusing them, remain open.
+- **The phrase "Valdemar's father" in the latest brief is ambiguous.** This
+  record already distinguishes Valdemar the elder, his deceased eldest son
+  Valdemar the younger, and the grandson who now calls himself Ruzo. Keep those
+  relationships until the intended referent is clarified; do not add an
+  ancestor or rename the old king to resolve the phrase by assumption.
+- **Olo and Blizard**: whether these older unplaced crown names have any role in
+  the current start, and which atlas ground they would occupy if retained.
+- What later roles do Cedric, Wilhelm and Minora play in Chapter 3 or Chapter 4?
+  Cedric's seizure and Wilhelm's arrival as apparent reinforcements are fixed
+  opening facts. The city's physical fabric is intact at that snapshot and the
+  four provincial rebellions are active. The internal undead coup is planned
+  for the first few campaign cycles; its outcome, preventability and Cedric's
+  fate remain open.
+- Wilhelm's undead subtype, the means and indications of his mortal disguise,
+  when he became undead, and the investigation that exposes his secret
+  vassalage to Thalmagar remain unresolved. The vassalage itself is confirmed;
+  no command relationship between Wilhelm and the undead duke is established.
+  See [Thalmagar crisis design](thalmagar-crisis-design.md).
 - Nanvir is new: he wants a place in `../world-builder/azhora_lore/culture/azhoran_religions.md`.
 - Is Prince Maro alive in 980, and where?

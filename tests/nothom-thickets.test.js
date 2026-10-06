@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { hexAt } from '../src/region-world.js';
-import { NOTHOM_THICKET_HEXES, nothomThicketSites } from '../src/nothom-thickets.js';
+import { hexAt } from '../src/world/terrain/region-world.js';
+import { NOTHOM_THICKET_HEXES, nothomThicketSites } from '../src/world/terrain/nothom-thickets.js';
 
 test('natural brambles cover the exact west and northwest Nothom hexes with varied patches', () => {
   assert.deepEqual(NOTHOM_THICKET_HEXES.map(({q,r})=>[q,r]),[[4,110],[5,109]]);
@@ -18,7 +18,7 @@ test('natural brambles cover the exact west and northwest Nothom hexes with vari
 });
 
 test('batched thicket geometry respects exact hex edges and leaves a clear road verge', async()=>{
-  const {createNothomThicketScenery}=await sourceModule('../src/spider-den-scenery.js');
+  const {createNothomThicketScenery}=await sourceModule('../src/content/quests/spider/spider-den-scenery.js');
   const roadDistance=(x,z)=>Math.abs(x+775)-3;
   const root=new THREE.Group(),thickets=createNothomThicketScenery({root,groundHeight:(x,z)=>Math.sin(x*.03)*.8,roadDistance});
   assert.equal(thickets.children.length,2,'one merged mesh per authored hex');

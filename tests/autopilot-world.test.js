@@ -1,11 +1,11 @@
-import { QUEST_DONE } from '../src/game-state.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { planGoal } from '../src/autopilot.js';
+import { planGoal } from '../src/gameplay/autoplay/autopilot.js';
 
 /**
  * The autopilot is not given the world. `src/main.js` hands it a small object with
@@ -16,7 +16,7 @@ import { planGoal } from '../src/autopilot.js';
  * to be.
  */
 const read = path => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
-const autopilotSource = read('../src/autopilot.js');
+const autopilotSource = read('../src/gameplay/autoplay/autopilot.js');
 const mainSource = read('../src/main.js');
 
 /** The names `autopilot.js` reads off the object it is handed. */
@@ -47,7 +47,7 @@ test('the last subquest is walked to the boundary, and the ambush clearing is wa
   const encounter = { x: -54, z: 29, radius: 8 };
   const world = { npcPositions: {}, paths: [[{ x: 0, z: 0 }]], encounter, training: { x: 3, z: -12 }, northTrail: { x: -5, z: -108 }, border: { x: 0, z: -156 } };
   // Chapter 1's third subquest is the road west, and the goblins at the bell are off the slate
-  // (src/quest-slate.js): the planner walks past them to the edge of the wood and into the journey.
+  // (src/gameplay/quests/quest-slate.js): the planner walks past them to the edge of the wood and into the journey.
   const goal = planGoal(snapshot({ questStage: QUEST_DONE }), world);
   assert.equal(goal.kind, 'walk');
   assert.deepEqual(goal.target, world.border, 'the boundary, not the bell');

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { findBird } from '../src/bird-finder.js';
-const { createBirdPointer } = await sourceModule('../src/bird-pointer.js');
+import { findBird } from '../src/gameplay/skills/birding/bird-finder.js';
+const { createBirdPointer } = await sourceModule('../src/gameplay/skills/birding/bird-pointer.js');
 
 const bird = { id: 'wren', species: 'wren', x: 0, y: 1, z: 0, visible: true, action: 'look' };
 const camera = new THREE.PerspectiveCamera(54, 16 / 9, .1, 1000);

@@ -1,8 +1,8 @@
 # Cartography and exploration
 
-`src/cartography.js` records country knowledge and skill experience.
-`src/map-fog.js` records the actual hexes visited and their immediate neighbors.
-`src/world-map.js` combines these independent sources on the authored atlas.
+`src/ui/map/cartography.js` records country knowledge and skill experience.
+`src/ui/map/map-fog.js` records the actual hexes visited and their immediate neighbors.
+`src/ui/map/world-map.js` combines these independent sources on the authored atlas.
 
 ## What becomes visible
 

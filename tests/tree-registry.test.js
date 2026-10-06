@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { getTreeRegistry, registerWorldTree } = await sourceModule('../src/tree-registry.js');
+const { getTreeRegistry, registerWorldTree } = await sourceModule('../src/world/scenery/tree-registry.js');
 
 test('cutting one batched tree removes its trunk and crown together, preserves its neighbor, and restores the original transforms and blocker', () => {
   const root = new THREE.Group(), parent = new THREE.Group(), colliders = [];

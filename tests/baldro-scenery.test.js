@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BALDRO_KINGDOMS, BALDRO_PATHS, baldroCellAt, baldroSurfaceHeight, baldroWaterAt } from '../src/baldro-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BALDRO_KINGDOMS, BALDRO_PATHS, baldroCellAt, baldroSurfaceHeight, baldroWaterAt } from '../src/content/regions/baldro/baldro-world.js';
 
-const { buildBaldroScenery } = await sourceModule('../src/baldro-scenery.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { buildBaldroScenery } = await sourceModule('../src/content/regions/baldro/baldro-scenery.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 const scene = new THREE.Scene(), colliders = [];
 // A deliberately distinct drawn surface proves that grounding uses the supplied
 // rendered terrain callback rather than the analytic terrain by coincidence.

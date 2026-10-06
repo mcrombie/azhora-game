@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBrandyHome, validateBrandyHome, brandyRoutineAt, createJonHomeVisit, validateJonHomeVisit,
-  BRANDY_HOME_PACE, JON_HOME_DELAY, JON_HOME_STAY } from '../src/brandy-home.js';
-import { createSaltSultan, JOHN, STAY, johnConversation } from '../src/salt-sultan.js';
+  BRANDY_HOME_PACE, JON_HOME_DELAY, JON_HOME_STAY } from '../src/content/quests/brandy/brandy-home.js';
+import { createSaltSultan, JOHN, STAY, johnConversation } from '../src/content/quests/salt/salt-sultan.js';
 
 const home = { door: { x: 0, z: 0 }, porch: { x: 2, z: 0 }, yaw: Math.PI / 2 };
 const yard = { x: 10, z: 5, yaw: 0 }, pier = { x: 80, z: 0, yaw: -Math.PI / 2 };

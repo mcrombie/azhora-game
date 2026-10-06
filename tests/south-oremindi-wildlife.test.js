@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, canSwim } from '../src/game-state.js';
-import { SOUTH_OREMINDI_WILDLIFE_ZONES as zones } from '../src/south-oremindi-wildlife.js';
+import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
+import { SOUTH_OREMINDI_WILDLIFE_ZONES as zones } from '../src/content/regions/south-oremindi/south-oremindi-wildlife.js';
 import { SOUTH_OREMINDI, SOUTH_OREMINDI_CELLS, LAKES, southOremindiCellAt,
-  southOremindiGround, southOremindiWaterAt, southOremindiOwns, southOremindiFeatures } from '../src/south-oremindi-world.js';
+  southOremindiGround, southOremindiWaterAt, southOremindiOwns, southOremindiFeatures } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
 
-const { createWestLife, WEST_LIFE_ZONES, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, WEST_LIFE_ZONES, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const ground = zones.filter(z => !z.air && !z.float);
 const centre = z => ({ x: (z.minX + z.maxX) / 2, z: (z.minZ + z.maxZ) / 2 });
 const terrainWorld = () => ({ bounds: { minX: -10000, maxX: 10000, minZ: -10000, maxZ: 10000 },
@@ -68,7 +68,7 @@ test('persistent fauna covers every hill and the real lakes, with alpine hares a
 });
 
 test('atlas-derived identities, body sizes and bounded ranges are stable', async () => {
-  const again = await import('../src/south-oremindi-wildlife.js?stable=1');
+  const again = await import('../src/content/regions/south-oremindi/south-oremindi-wildlife.js?stable=1');
   assert.deepEqual(again.SOUTH_OREMINDI_WILDLIFE_ZONES, zones);
   assert.equal(new Set(zones.map(z => z.id)).size, zones.length);
   for (const zone of zones) {

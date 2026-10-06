@@ -114,16 +114,16 @@ These are source-navigation hints, not guaranteed current line numbers:
 
 | Concern | Current locations and traps |
 | --- | --- |
-| Jojo, instructor, Eren and training | `src/main.js`: `jojoOnTheLanding`, `chrisOnTheLanding`, NPC conversation dispatch, practice counters/events; `src/legion-posts.js`; `src/world.js` training/NPC stands. |
-| Ordered tutorial | `src/game-state.js`: `questSteps`, `advanceQuest`; `src/main.js`: objective destinations, refresh/HUD, triggers. Add explicit instruction/completion state instead of relying only on post hits. |
-| First fight | `src/opening-fights.js`: `GREENWAY_RAID`, `OPENING_FIGHT_GROUND`; `main.js`: `startAmbush`, `TEACHING_FIGHTS`, bystanders, defeat/retry; world clearance and independent trigger coordinates. |
-| Skill lesson | `src/skills.js`, `combat-skills.js`, current `teachers.js`/archery support, player starting skills; remove the hardcoded assumption that any straw hit first teaches Blades. |
-| Road continuity | `src/journey.js`, `journey-content.js`, `region-world.js`, `world-scale.js`; Corvan is `meadow-courier`. Current scale is 100 m per atlas hex. |
-| Human opponent | `src/combat.js`, `combat-view.js`, `characters.js`; add supported kind/model/name handling, not a fallback goblin or relabeled soldier. |
-| Connected Luscia fight | `src/luscia-chapter.js`: `LUSCIA_WOLVES`, `clearWolves`, strict snapshot validator; `main.js` encounter toasts, callbacks and labels. |
-| Saves and replay | `src/road-checkpoint.js`, `woodland-progress.js`, `story-starts.js`, tutorial F8 helpers; old numeric quest stages and `wolvesCleared` carry historical semantics. |
-| Navigation and automation | `src/autopilot.js`, `autoplay-smoke.js`, local-map/quest-marker code, `road-smoke.js`, deterministic review views. |
-| Story and opening copy | `src/story-chapters.js`, `opening-sequence.js`, `index.html`, quest/journal text and any opening narration referring to three goblins. |
+| Jojo, instructor, Eren and training | `src/main.js`: `jojoOnTheLanding`, `chrisOnTheLanding`, NPC conversation dispatch, practice counters/events; `src/content/regions/drent/legion-posts.js`; `src/world.js` training/NPC stands. |
+| Ordered tutorial | `src/gameplay/movement/game-state.js`: `questSteps`, `advanceQuest`; `src/main.js`: objective destinations, refresh/HUD, triggers. Add explicit instruction/completion state instead of relying only on post hits. |
+| First fight | `src/app/startup/opening-fights.js`: `GREENWAY_RAID`, `OPENING_FIGHT_GROUND`; `main.js`: `startAmbush`, `TEACHING_FIGHTS`, bystanders, defeat/retry; world clearance and independent trigger coordinates. |
+| Skill lesson | `src/gameplay/skills/skills.js`, `combat-skills.js`, current `teachers.js`/archery support, player starting skills; remove the hardcoded assumption that any straw hit first teaches Blades. |
+| Road continuity | `src/content/chapters/journey/journey.js`, `journey-content.js`, `region-world.js`, `world-scale.js`; Corvan is `meadow-courier`. Current scale is 100 m per atlas hex. |
+| Human opponent | `src/gameplay/combat/combat.js`, `combat-view.js`, `characters.js`; add supported kind/model/name handling, not a fallback goblin or relabeled soldier. |
+| Connected Luscia fight | `src/content/chapters/civil-war/luscia-chapter.js`: `LUSCIA_WOLVES`, `clearWolves`, strict snapshot validator; `main.js` encounter toasts, callbacks and labels. |
+| Saves and replay | `src/app/saves/road-checkpoint.js`, `woodland-progress.js`, `story-starts.js`, tutorial F8 helpers; old numeric quest stages and `wolvesCleared` carry historical semantics. |
+| Navigation and automation | `src/gameplay/autoplay/autopilot.js`, `autoplay-smoke.js`, local-map/quest-marker code, `road-smoke.js`, deterministic review views. |
+| Story and opening copy | `src/content/chapters/journey/story-chapters.js`, `opening-sequence.js`, `index.html`, quest/journal text and any opening narration referring to three goblins. |
 
 The tree has moved since earlier catch-up notes: normal/hard mode, archery and battle balancing have active changes. Re-read current code and `docs/design-answers.md`; do not restore older implementations or resolve unrelated bugs as part of this brief.
 

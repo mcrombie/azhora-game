@@ -3,27 +3,27 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sampleLattice, leastFall, reachedByCountry, shutGate, travel, caveLinks, LETHAL_FALL } from './lattice-flood.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { createClimbing, climbForbidden, sampleClimbSurface, canWalkSlope, CLIMBING } from '../src/climbing.js';
-import { hexOwnerAt, hexAt, hexCentre, insideRegion, regions } from '../src/region-world.js';
-import { groundWithRiver, groundBeforeVarn } from '../src/world-terrain.js';
-import { longestTowerGap } from '../src/fortification.js';
-import { AMBRON_STANDARD } from '../src/ambron.js';
-import { PASS_ROAD, PASS_ROAD_LINE, RAMPS, BANDS, peakUplift } from '../src/east-lotharn-world.js';
-import { CAVE_LINES } from '../src/east-lotharn-caves.js';
-import { belowFirstLedge, onPeakWay, RAMPS_KEEP_THEIR_HOLD } from '../src/lotharn-first-course.js';
-import { AMOD_ROAD, KELMOD_ROAD_END } from '../src/amod-world.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { SETTLEMENTS, describeRegion } from '../src/campaign-world.js';
-import { BUILD_STATUS } from '../src/build-status.js';
-import { NO_CLIMB_ZONES, unclimbableAt } from '../src/no-climb-zones.js';
-import { CLOSED_PLACES, CLOSED_BORDERS, closedRegionEntered, createBorderWatch } from '../src/closed-border.js';
-import { maxWind, maxHealth } from '../src/combat-skills.js';
-import { TERRAIN_FALL } from '../src/terrain-fall.js';
-import { WALL_FIGURES, createWallWatch, patrolAt } from '../src/town-life.js';
-import { SOLDIER_ROLES } from '../src/cast.js';
-import { VARN_GARRISON, FORT_GARRISONS, LOTHARN_GARRISON_FIGURES, garrisonSummary, PATROL_PACE } from '../src/varn-garrison.js';
-import { LOTHARN_FORTS } from '../src/lotharn-forts.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { createClimbing, climbForbidden, sampleClimbSurface, canWalkSlope, CLIMBING } from '../src/gameplay/movement/climbing.js';
+import { hexOwnerAt, hexAt, hexCentre, insideRegion, regions } from '../src/world/terrain/region-world.js';
+import { groundWithRiver, groundBeforeVarn } from '../src/world/terrain/world-terrain.js';
+import { longestTowerGap } from '../src/world/scenery/fortification.js';
+import { AMBRON_STANDARD } from '../src/content/regions/ambron/ambron.js';
+import { PASS_ROAD, PASS_ROAD_LINE, RAMPS, BANDS, peakUplift } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { CAVE_LINES } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { belowFirstLedge, onPeakWay, RAMPS_KEEP_THEIR_HOLD } from '../src/content/regions/west-lotharn/lotharn-first-course.js';
+import { AMOD_ROAD, KELMOD_ROAD_END } from '../src/content/regions/amod/amod-world.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { SETTLEMENTS, describeRegion } from '../src/content/chapters/civil-war/campaign-world.js';
+import { BUILD_STATUS } from '../src/dev/tools/build-status.js';
+import { NO_CLIMB_ZONES, unclimbableAt } from '../src/gameplay/movement/no-climb-zones.js';
+import { CLOSED_PLACES, CLOSED_BORDERS, closedRegionEntered, createBorderWatch } from '../src/world/travel/closed-border.js';
+import { maxWind, maxHealth } from '../src/gameplay/combat/combat-skills.js';
+import { TERRAIN_FALL } from '../src/gameplay/movement/terrain-fall.js';
+import { WALL_FIGURES, createWallWatch, patrolAt } from '../src/world/life/town-life.js';
+import { SOLDIER_ROLES } from '../src/content/characters/cast.js';
+import { VARN_GARRISON, FORT_GARRISONS, LOTHARN_GARRISON_FIGURES, garrisonSummary, PATROL_PACE } from '../src/content/regions/varn/varn-garrison.js';
+import { LOTHARN_FORTS } from '../src/content/regions/west-lotharn/lotharn-forts.js';
 import {
   VARN, VARN_STANDARD, VARN_CIRCUIT, VARN_CORNERS, VARN_PASS_GATE, VARN_AMOD_GATE, VARN_JAMBS, JAMB, LANDING, VARN_PARAPETS, PARAPET, VARN_WATCHES, VARN_FLOOR, VARN_WARD, VARN_WARD_WALL,
   VARN_KEEP, VARN_BUILDINGS, VARN_SQUARE, VARN_ROAD, VARN_ROAD_HEAD, VARN_STREET, VARN_DESCENT, VARN_DESCENT_PROFILE, VARN_LANDMARKS,
@@ -31,7 +31,7 @@ import {
   LOTHARN_PASSES_SHUT, varnGateShut, varnWicket, varnFloor, varnJambRise, jambTop, onLanding, varnGround, varnDitchCut, varnKeepsClear, varnUnclimbable, varnSurface,
   onSlab, slabFoot, lipRib, lipRuleApplies, onLip, onWayShoulder, inVarnRock, inVarnNeighbourhood, LIP_STOPS, stopRib, varnBeforeLips,
   CAVE_WAY, CAVE_RAILS, RAIL, onCaveWay, railRib,
-} from '../src/varn-world.js';
+} from '../src/content/regions/varn/varn-world.js';
 
 /**
  * Varn (the user, 2 October 2026): "a heavily and beautifully fortified city called Varn that has walls
@@ -284,7 +284,7 @@ test('the slabs: the one way over, two planes of rock sixty-four metres high aga
     assert.ok(varnKeepsClear(foot.x, foot.z) && varnKeepsClear(foot.x, slab.lipZ + slab.dir * 4) && varnKeepsClear(-1088, -760), 'the way and the landing are kept clear of the scatter');
     assert.equal(hexOwnerAt(foot.x, foot.z), EAST_LOTHARN, 'the apron is the mountain’s, not Amod’s');
   }
-  // The numbers, in the system's own terms (src/climbing.js, src/combat-skills.js): no wind comes back on a slab, so one pitch is one
+  // The numbers, in the system's own terms (src/gameplay/movement/climbing.js, src/gameplay/combat/combat-skills.js): no wind comes back on a slab, so one pitch is one
   // pool of it. At the base wind of 100, up a grade of seven and a half, a climber of level 17 reaches 66 m and one of 16 reaches 62.
   const eff = L => Math.max(.6, 1 - (Math.min(20, L) - 1) * .025), speed = L => CLIMBING.speed * Math.min(1.6, 1 + (Math.min(20, L) - 1) * .035);
   const reach = (L, wind, slope = 7.5) => wind / (CLIMBING.movingDrain * eff(L)) * speed(L) * slope / Math.hypot(1, slope);
@@ -317,7 +317,7 @@ test('the lips: a rim on the brink of every edge within Varn’s reach that a wa
     assert.ok(unclimbableAt(x, rim), 'and no hold on it');
     assert.ok(groundWithRiver(x, rim) - groundBeforeVarn(x, rim) > 2, 'built into the ground');
     // A ridge, not a shelf: from half a metre outside its crest to the brink nothing is ground a falling body comes to rest on
-    // (the game's own test, src/terrain-fall.js), so nothing dropping onto it from above stops on it and steps off the far side.
+    // (the game's own test, src/gameplay/movement/terrain-fall.js), so nothing dropping onto it from above stops on it and steps off the far side.
     // The crest itself, read eighty centimetres across, is gentle for the half-metre of its apex: a body dropped onto that
     // line from a ledge above can stand there (docs/varn-report.md, not held).
     for (let z = rim + .5; z <= rim + 1.5; z += .25) if (lipRib(x, z) > tallest * .3) { const s = .4, gx = (groundWithRiver(x + s, z) - groundWithRiver(x - s, z)) / (2 * s), gz = (groundWithRiver(x, z + s) - groundWithRiver(x, z - s)) / (2 * s); assert.ok(Math.hypot(gx, gz) > CLIMBING.grabSlope, `a body rests on the rim at ${x}, ${z} (slope ${Math.hypot(gx, gz).toFixed(2)})`); }
@@ -791,7 +791,7 @@ test('nobody steps off a jamb’s top: the west jamb and the east shelf are walk
 });
 
 test('the game’s own step and the game’s own fall: nobody slides off the south-west peak’s ledge, nobody mounts a rim, and without the stop he went over', t => {
-  // The walking and running paces at their caps (src/locomotion-skills.js), thirty frames a second.
+  // The walking and running paces at their caps (src/gameplay/movement/locomotion-skills.js), thirty frames a second.
   const [stop] = LIP_STOPS, south = 0, walk = 6.6, run = 10.5, FRAME = 1 / 30;
   // At the stop, from both dead ends of the ledge, walking and running, straight at it and slantwise: no fall that costs a
   // point of health, never past its line, still on the ledge - and from where he fetched up he walks away again.

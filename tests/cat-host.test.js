@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CAT, createCatQuest } from '../src/cat-quest.js';
-import { createCrime, LAW } from '../src/crime.js';
-import { createCrimeHost } from '../src/crime-host.js';
+import { CAT, createCatQuest } from '../src/content/quests/roadside/cat-quest.js';
+import { createCrime, LAW } from '../src/gameplay/law/crime.js';
+import { createCrimeHost } from '../src/gameplay/law/crime-host.js';
 
 // Exercise the actual checkpoint boundary. The cleaned-corpse path deliberately
 // emits no death event, so model-only quest tests cannot catch this regression.

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createInventoryState, INVENTORY_ITEMS,inventoryEquipmentItems,inventoryMatchesFilter,ICON_KINDS} from '../src/inventory.js';
-import {createWeapons} from '../src/weapons.js';
-import {createGear} from '../src/gear.js';
+import {createInventoryState, INVENTORY_ITEMS,inventoryEquipmentItems,inventoryMatchesFilter,ICON_KINDS} from '../src/gameplay/inventory/inventory.js';
+import {createWeapons} from '../src/gameplay/combat/weapons.js';
+import {createGear} from '../src/gameplay/inventory/gear.js';
 
 test('A new traveler carries nothing and cannot inspect an item they have not received', () => {
   const satchel = createInventoryState();

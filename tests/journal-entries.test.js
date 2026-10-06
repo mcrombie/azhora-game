@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildJournalEntries } from '../src/journal-entries.js';
-import { createQuestTracker, activeOptionalQuests } from '../src/quest-tracker.js';
-import { createDrentCivilWar } from '../src/drent-civil-war.js';
+import { buildJournalEntries } from '../src/ui/journal/journal-entries.js';
+import { createQuestTracker, activeOptionalQuests } from '../src/gameplay/quests/quest-tracker.js';
+import { createDrentCivilWar } from '../src/content/chapters/civil-war/drent-civil-war.js';
 
 const main = { title: 'Report to Nothom', detail: 'Take the letter to Iven.', kicker: 'Chapter 1' };
 const tracker = source => createQuestTracker().update({ main, ...source });

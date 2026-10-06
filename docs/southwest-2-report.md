@@ -93,7 +93,7 @@ change over seven hundred metres.
 | level (`region-levels.js`) | 3 | 4 | 4 | 4 |
 
 Every number was read off the survey and `tests/southwest-world.test.js` re-derives them.
-`src/region-levels.js` and `src/campaign-world.js` already carried all four and were not touched.
+`src/world/terrain/region-levels.js` and `src/content/chapters/civil-war/campaign-world.js` already carried all four and were not touched.
 
 **Ninety-five hexes and not one odd one.** Job 1's block had three — a `forest` hex and two
 `grassland` — and made features of all three. Here there is nothing to make a feature of: no `hills`,
@@ -104,7 +104,7 @@ no `grassland`, no `coast`, no `lake`, no river edge. The atlas says the same th
 ## The climate read
 
 Read per hex from `world-builder/map/resources/examples/azhora.wwmap` (`hexes[key].climate`,
-`koppen-v1` — **not** `azhora.cmap.json`). `MEROSHE_CLIMATE` in `src/southwest-world.js` records all
+`koppen-v1` — **not** `azhora.cmap.json`). `MEROSHE_CLIMATE` in `src/content/regions/southwest/southwest-world.js` records all
 ninety-five and the test holds them to the map hex for hex whenever the map is on the machine.
 
 **`BWh` × 95.** With job 1's eighty-one that makes **a hundred and seventy-six of this block's two
@@ -416,7 +416,7 @@ moving they would have been **open water in the middle of a playable country**.
 
 ## What grows
 
-`src/southwest-scenery.js`, extended with **a second pass of its own** rather than four more branches
+`src/content/regions/southwest/southwest-scenery.js`, extended with **a second pass of its own** rather than four more branches
 in job 1's loop, and the reason is the climate read: job 1's loop sorts by how dry the air is and
 where the wind has left sediment, and on these ninety-five hexes aridity is 1.00 and there is no wind
 field. Keeping the two passes apart also keeps job 1's loop at exactly a hundred and seven cells, so
@@ -455,7 +455,7 @@ channels and the damp reach are unchanged to the object.
 ### The bug the four surfaces found
 
 **`southwestTint` has never reached the screen, and this job is why anybody noticed.**
-`groundTint` in `src/world-terrain.js` computes it:
+`groundTint` in `src/world/terrain/world-terrain.js` computes it:
 
 ```js
 const southwest = oves === null && mithala === null ? southwestTint(x, z, ground) : null;
@@ -505,7 +505,7 @@ ground and the tops of the pebbles catch what light there is.
 ## What lives there, and why
 
 **Seven ranges over ninety-five hexes, and five of them are birds in the air.**
-`src/southwest-wildlife.js`, spread into `src/west-regions-life.js` with job 1's seventeen.
+`src/content/regions/southwest/southwest-wildlife.js`, spread into `src/content/regions/western-regions/west-regions-life.js` with job 1's seventeen.
 
 | zone | species | where | why |
 |---|---|---|---|
@@ -568,7 +568,7 @@ range's half-diagonal is between **88 and 120 m** against `LIFE_REACH`'s 130.
 
 **One name is taken and nothing is coined.** The `moreshi` profile exists in
 `world-builder/azhoran_language_profiles.py`, so coining was available; it was not used. The salt pan
-is **the Malhat**, which is `maroshi.roots.salt` in `src/languages.js` — the tongue's own word for
+is **the Malhat**, which is `maroshi.roots.salt` in `src/gameplay/skills/languages.js` — the tongue's own word for
 salt, used as a name the way job 1 used *vaellir*, the Pyrosi for river, for the river. Everything
 else is the lore's own technical word (hamada, erg, reg, the sand sea, the fan skirt) or plain
 English (the stone steps, the thorn ground, the dust line, the green shoulder, the corridors, the
@@ -591,7 +591,7 @@ where *more* haze is the dry reading.
 **Plain Maroshi, and no dialect, and that is a decision rather than a gap.** `moroshe_desert.md` is
 emphatic that the desert peoples' speech is the centre of this family and not a margin of it — "the
 desert languages… represent a completely separate linguistic lineage that predates any contact with
-the western continent" — and `src/languages.js`'s own `maroshi` entry already says which end of the
+the western continent" — and `src/gameplay/skills/languages.js`'s own `maroshi` entry already says which end of the
 language that is: "the court form is a dialect of Coastal Trade Moreshi; the deep-desert forms are the
 conservative ones." A dialect in that file marks a deviation from a centre, and both Maroshi dialects
 available are margins: the coastal court form the base tongue carries, and `ganesh`, the northern
@@ -649,28 +649,28 @@ lines and no such file exists — the file is `moroshe_desert.md`. Renaming it i
 
 `scripts/build-region-survey.mjs` PLAYABLE + `WINDOW.minQ` −41 → −45 and `maxR` 135 → 144 →
 `node scripts/build-region-survey.mjs` (LAND_HEXES 1,935 → 2,078) ·
-`src/region-layout.js` PLAYABLE_REGIONS + four REGION_BIOMES ·
-`src/region-world.js` REGION_IDS 36–39, four REGION_TERRAIN, four REGION_TEXT (subtitle, spawn,
+`src/world/terrain/region-layout.js` PLAYABLE_REGIONS + four REGION_BIOMES ·
+`src/world/terrain/region-world.js` REGION_IDS 36–39, four REGION_TERRAIN, four REGION_TEXT (subtitle, spawn,
 description, palette with the three skies, `npcIds: []`, seventeen landmarks between them) ·
-`src/southwest-world.js` (`MEROSHE_REGIONS`, the four climates, `merosheShare`, the benches, the
+`src/content/regions/southwest/southwest-world.js` (`MEROSHE_REGIONS`, the four climates, `merosheShare`, the benches, the
 skirt, the fans, the salt, the sink, the dunes, the fog, the varnish, four ground colours,
 seventeen landmarks) ·
-`src/southwest-scenery.js` (the second pass) ·
-`src/southwest-wildlife.js` (seven zones) ·
-`src/languages.js` (four `spoken` entries, no new dialect) ·
-`src/developer-atlas.js` (four anchors, one middle hex each) ·
-`src/map-fog.js` (seventeen areas) ·
-`src/build-status.js` (four `early` entries) ·
-`src/west-regions.js` (`WEST_REGION_NAMES`) ·
+`src/content/regions/southwest/southwest-scenery.js` (the second pass) ·
+`src/content/regions/southwest/southwest-wildlife.js` (seven zones) ·
+`src/gameplay/skills/languages.js` (four `spoken` entries, no new dialect) ·
+`src/dev/tools/developer-atlas.js` (four anchors, one middle hex each) ·
+`src/ui/map/map-fog.js` (seventeen areas) ·
+`src/dev/tools/build-status.js` (four `early` entries) ·
+`src/content/regions/western-regions/west-regions.js` (`WEST_REGION_NAMES`) ·
 `src/main.js` (seven review views) ·
-**`src/world-terrain.js` (the one missing `else if` that makes `southwestTint` reach the screen)** ·
+**`src/world/terrain/world-terrain.js` (the one missing `else if` that makes `southwestTint` reach the screen)** ·
 `tests/southwest-world.test.js` · the ten stale-guard files above · this report ·
 `docs/design-answers.md`.
 
-`src/region-levels.js` already carried all four (3, 4, 4, 4) and was not touched.
-`src/campaign-world.js` already had their one-line designs and was not touched.
+`src/world/terrain/region-levels.js` already carried all four (3, 4, 4, 4) and was not touched.
+`src/content/chapters/civil-war/campaign-world.js` already had their one-line designs and was not touched.
 `package.json` already lists `tests/southwest-world.test.js` and was not touched.
-`src/west-ground.js` and `src/west-regions.js`'s river list needed nothing: the new landforms go
+`src/content/regions/western-regions/west-ground.js` and `src/content/regions/western-regions/west-regions.js`'s river list needed nothing: the new landforms go
 through `southwestGround`, which job 1 had already hooked into the western ground chain.
 
 ---

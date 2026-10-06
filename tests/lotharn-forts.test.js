@@ -3,22 +3,22 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sampleLattice, leastFall, caveLinks, reachedByCountry, shutGate, LETHAL_FALL } from './lattice-flood.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { canWalkSlope } from '../src/climbing.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { TERRAIN_FALL } from '../src/terrain-fall.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { longestTowerGap } from '../src/fortification.js';
-import { PASS_ROAD_LINE, RAMPS as EAST_RAMPS } from '../src/east-lotharn-world.js';
-import { RAMPS as WEST_RAMPS } from '../src/west-lotharn-world.js';
-import { belowFirstLedge, onPeakWay, firstCliff, RAMPS_KEEP_THEIR_HOLD } from '../src/lotharn-first-course.js';
-import { BUILD_STATUS } from '../src/build-status.js';
-import { NO_CLIMB_ZONES, unclimbableAt } from '../src/no-climb-zones.js';
-import { LOTHARN_PASSES_SHUT, VARN, VARN_PASS_GATE, VARN_STANDARD, VARN_ROCK, VARN_CIRCUIT, lipRib, inVarnRock, onSlab, varnWicket } from '../src/varn-world.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { TERRAIN_FALL } from '../src/gameplay/movement/terrain-fall.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { longestTowerGap } from '../src/world/scenery/fortification.js';
+import { PASS_ROAD_LINE, RAMPS as EAST_RAMPS } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { RAMPS as WEST_RAMPS } from '../src/content/regions/west-lotharn/west-lotharn-world.js';
+import { belowFirstLedge, onPeakWay, firstCliff, RAMPS_KEEP_THEIR_HOLD } from '../src/content/regions/west-lotharn/lotharn-first-course.js';
+import { BUILD_STATUS } from '../src/dev/tools/build-status.js';
+import { NO_CLIMB_ZONES, unclimbableAt } from '../src/gameplay/movement/no-climb-zones.js';
+import { LOTHARN_PASSES_SHUT, VARN, VARN_PASS_GATE, VARN_STANDARD, VARN_ROCK, VARN_CIRCUIT, lipRib, inVarnRock, onSlab, varnWicket } from '../src/content/regions/varn/varn-world.js';
 import {
   LOTHARN_FORTS, PASS_FORT_STANDARD, LOTHARN_FORT_LANDMARKS, NO_CLIMB_REACH, fortById, fortGateShut, fortUnclimbable, fortKeepsClear,
-} from '../src/lotharn-forts.js';
+} from '../src/content/regions/west-lotharn/lotharn-forts.js';
 
 /**
  * The Empire's forts on the Lotharn passes (the user, 2 October 2026): "Let's also add Ambron fortresses of
@@ -172,7 +172,7 @@ const L = (() => {
 const links = caveLinks(L, [...world.lotharnCaves, ...world.westLotharnCaves]);
 /**
  * **The wicket.** Varn's Amod Gate is shut like the others, with a door a man wide in one leaf that opens from
- * inside and from nowhere else (src/varn-world.js, `VARN_WICKET`). A lattice a metre and a half apart has no
+ * inside and from nowhere else (src/content/regions/varn/varn-world.js, `VARN_WICKET`). A lattice a metre and a half apart has no
  * point in a gap of 1.2 m - a body has half a metre of it to stand in - so this file's flood could not find it,
  * and said a fall where there is a door. It is walked here with the traveler's own step (`moveCharacter`,
  * `canWalkSlope` and the closed-place rule, as tests/varn-world.test.js walks it), both ways; and what the step
@@ -266,7 +266,7 @@ test('with the gates as built a walker out of the mountains reaches no lowland b
 });
 
 test('Varn’s reach: from the valleys, nothing of the Empire’s ground by any fall at all, nor by a climber who never tires - but by the slabs', { skip: !LOTHARN_PASSES_SHUT }, t => {
-  // The reach is where Varn's no-hold rock and its rims are (src/varn-world.js, `VARN_ROCK`): from fifty metres beyond the
+  // The reach is where Varn's no-hold rock and its rims are (src/content/regions/varn/varn-world.js, `VARN_ROCK`): from fifty metres beyond the
   // Vastos Gate's eastern end to the eastern massif's far end - both massifs either side of the city, whole. A flood kept
   // to it knows nothing of the mountains west of it, which are as they always were and are the forts' business (above).
   const inReach = (x, z) => x >= VARN_ROCK.minX, forecourt = (x, z) => z < -783 && Math.abs(x - VARN.x) < 60;
@@ -295,7 +295,7 @@ test('Varn’s reach: from the valleys, nothing of the Empire’s ground by any 
   const bySlabs = flood(here, { within: inReach, climber: true, forbidden: world.unclimbableAt });
   assert.ok(bySlabs[LOWLAND[0].k] < TERRAIN_FALL.safeDrop, `by the slabs a climber is in Amod below Varn by ${fall(bySlabs[LOWLAND[0].k])}`);
   // The three doors over the Empire's ground. The eastern peak's high chimney and its eastern chamber open on shelves no wider
-  // than the rim, and the rim stops two metres short of a cave's mouth (src/varn-world.js, `DOOR`), so the brink before each
+  // than the rim, and the rim stops two metres short of a cave's mouth (src/content/regions/varn/varn-world.js, `DOOR`), so the brink before each
   // was open, and a body that stepped off there came to the Empire's ground by falls (docs/varn-report.md). Since the user's
   // decision of 3 October each carries a rail beyond the door (`CAVE_RAILS`), and the high chimney has a way again: a climber
   // comes to both its doors along the fourth ledge (`CAVE_WAY`). That ledge is narrower than this lattice resolves - held a

@@ -38,7 +38,7 @@ The exact summit drawn-cell mask has centres in South Mithala (167), Vastos (234
 
 ### Ground-only extraction
 
-- `src/west-lotharn-ground.js` owns the unchanged summit and cave-mouth mesh generation and the existing beck refinement. Shared job `westLotharnGround` belongs to `[11,12,16,20,27,28,38]`, with coarse terrain dependencies for these owners. West Lotharn's coarse apron already covers all four beck corridors.
+- `src/content/regions/west-lotharn/west-lotharn-ground.js` owns the unchanged summit and cave-mouth mesh generation and the existing beck refinement. Shared job `westLotharnGround` belongs to `[11,12,16,20,27,28,38]`, with coarse terrain dependencies for these owners. West Lotharn's coarse apron already covers all four beck corridors.
 - Mesh names remain `West Lotharn summits ground`, `Ground at the mouth of …`, and `West Lotharn beck ground: …`. The shared group is `West Lotharn fine ground`.
 - The original candidate and tree-footing samplers remain separate to preserve West Lotharn's seeded forest exactly. Neighboring scenery uses a cached sampler over retained Float32 faces, including cave cutouts; no runtime scene traversal or raycast is introduced.
 - Beside refined becks, the composed callback uses the retained/replacement surface. Taking the maximum with the old removed coarse face would cover the water again.
@@ -61,7 +61,7 @@ Production Mithala-first then West-Lotharn-later regression passes **2/2** in 11
 
 The separately owned Mithala prop fixture passes 4/4 with the new surface, including 3,187 forb clumps and 43 stones. Native F8/departure/return and clean-relaunch save journey remain separate gates. These are scoped correctness runtimes, not startup benchmark claims.
 
-Files in this extraction packet: new `src/west-lotharn-ground.js`; `src/west-lotharn-scenery.js`; narrow shared `src/world.js` import/job/callback changes; two appended checks in `tests/west-lotharn-river-ground.test.js`; new `tests/west-lotharn-ground-loading.test.js`; only ground-group selectors in `tests/west-lotharn-scenery.test.js`; this report. The broad legacy scenery fixture has not been rerun.
+Files in this extraction packet: new `src/content/regions/west-lotharn/west-lotharn-ground.js`; `src/content/regions/west-lotharn/west-lotharn-scenery.js`; narrow shared `src/world.js` import/job/callback changes; two appended checks in `tests/west-lotharn-river-ground.test.js`; new `tests/west-lotharn-ground-loading.test.js`; only ground-group selectors in `tests/west-lotharn-scenery.test.js`; this report. The broad legacy scenery fixture has not been rerun.
 
 ## Bounded physical correction and preservation
 
@@ -110,8 +110,8 @@ outside the corrected core. Those outer hills were not flattened to pass a test.
 Ignored evidence: `r10-western-seam-controller-focused-baseline.json` and
 `r10-western-seam-controller-composed-final.json`.
 
-The final physical packet adds `src/western-dry-seams.js` and
-`src/western-legacy-ground.js`; updates the bounded base/ridge composition in
+The final physical packet adds `src/content/regions/western-regions/western-dry-seams.js` and
+`src/content/regions/western-regions/western-legacy-ground.js`; updates the bounded base/ridge composition in
 `world-terrain.js`, `west-ground.js`, and `west-lotharn-world.js`; and adds legacy
 eligibility to `world-regions.js`, `west-lotharn-ground.js`, and
 `west-lotharn-scenery.js`. World integration consists only of the legacy imports,

@@ -19,7 +19,7 @@ The working waterfront has a 64-by-10-metre stone provision quay, three long fin
 - The journal map gives Nylon the same castle badge and nameplate as other built cities, labeled **City-state**. Its outline follows the actual walls; ordinary exploration and fog still apply.
 - The city is part of Eer's scenery, so both Full loading and Fast mode's region loader include it.
 
-The pure layout is in `src/nylon-city.js`; the shared coordinates govern masonry, collision, streets, terrain preparation, map detail and travel landmarks. Existing Eer scenery is excluded from the city and its approaches so wild trees do not appear in the streets when the region streams in.
+The pure layout is in `src/content/regions/nylon/nylon-city.js`; the shared coordinates govern masonry, collision, streets, terrain preparation, map detail and travel landmarks. Existing Eer scenery is excluded from the city and its approaches so wild trees do not appear in the streets when the region streams in.
 
 ## Scope left open
 

@@ -5,9 +5,9 @@ import {createHash} from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import {scopedWorld} from './scoped-world.js';
 import {sourceModule} from './module-loader.js';
-import {westStream} from '../src/alezhor-world.js';
-import {ALEZHOR_WILDLIFE_ZONES} from '../src/alezhor-wildlife.js';
-import {canStand,canSwim} from '../src/game-state.js';
+import {westStream} from '../src/content/regions/alezhor/alezhor-world.js';
+import {ALEZHOR_WILDLIFE_ZONES} from '../src/content/regions/alezhor/alezhor-wildlife.js';
+import {canStand,canSwim} from '../src/gameplay/movement/game-state.js';
 import {createCelderRouteController} from './celder-route-controller.js';
 
 // Alezhor was not shipped before composition. Approved neighbor repairs change
@@ -49,7 +49,7 @@ root.traverse(mesh=>{
   }
   report.contact.push({name:mesh.name,instances:mesh.count,vertices:feet.length,worst,missing,wrong,hidden,problems});
 });
-const {createWestLife}=await sourceModule('../src/west-regions-life.js');
+const {createWestLife}=await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const animalScene=new THREE.Scene(),life=createWestLife(animalScene,world,{zones:ALEZHOR_WILDLIFE_ZONES});
 try{
  for(const zone of ALEZHOR_WILDLIFE_ZONES){life.setObserver({x:(zone.minX+zone.maxX)/2,z:(zone.minZ+zone.maxZ)/2});animalScene.updateMatrixWorld(true);const animals=life.state().creatures.filter(a=>a.id.startsWith(zone.id+'-')),body=animalScene.getObjectByName(zone.id)?.getObjectByName(zone.species+' bodies');

@@ -4,15 +4,15 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
-import { RIDE } from '../src/riding.js';
-import { LUMBER_TOWN_STABLE } from '../src/region-world.js';
-import { COMPANION_REACH } from '../src/long-road.js';
-import { createMercenaryCompany, MERCENARY_ROSTER } from '../src/mercenaries.js';
-import { RIDE_FILE, FILE_RETREAT, fileSpotFor, companyHorses, picketSpots } from '../src/company-horses.js';
-import { dismountSpot } from '../src/riding.js';
-import { COMPANION_IDS } from '../src/companions.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { RIDE } from '../src/gameplay/movement/riding.js';
+import { LUMBER_TOWN_STABLE } from '../src/world/terrain/region-world.js';
+import { COMPANION_REACH } from '../src/content/chapters/journey/long-road.js';
+import { createMercenaryCompany, MERCENARY_ROSTER } from '../src/gameplay/company/mercenaries.js';
+import { RIDE_FILE, FILE_RETREAT, fileSpotFor, companyHorses, picketSpots } from '../src/gameplay/company/company-horses.js';
+import { dismountSpot } from '../src/gameplay/movement/riding.js';
+import { COMPANION_IDS } from '../src/gameplay/company/companions.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const { createWorld } = await sourceModule('../src/world.js');
@@ -114,7 +114,7 @@ test('Chris rides: the long road’s own man is in the file, and the file is wha
   assert.match(main, /fileOrder=company\.companionIds/, 'and the file is the company’s, mate included');
   // And the company is remade off the plan, which carries the mate, rather than off the
   // companions list, which never does. Since the peninsula tutorial it is also remade when the
-  // tutorial's own Chris changes hands (src/peninsula-company.js, `peninsulaCompanyStamp`).
+  // tutorial's own Chris changes hands (src/content/chapters/prologue/peninsula-company.js, `peninsulaCompanyStamp`).
   assert.match(main, /const companySignature=\(\)=>JSON\.stringify\(\[companionPlan\(\)\?\?null,companyDead\(\),peninsulaHost\?\.chosen\?peninsulaCompanyStamp\(peninsulaHost\.view\(\),roster\[0\]\.id\):null\]\);/,
     'the signature is the plan, the dead and the peninsula tutorial’s stamp');
   assert.match(main, /companyBuiltWith=companySignature\(\);/, 'and rebuilding records what it built with');

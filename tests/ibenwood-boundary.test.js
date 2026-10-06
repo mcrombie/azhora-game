@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IBENWOOD_BOUNDARY as boundary, boundaryDepth, ibenwoodTerritoryAt } from '../src/ibenwood-boundary.js';
-import { IBENWOOD_NAMES, IBENWOOD_PILOT, IBENWOOD_GROVES, IBENWOOD_ARRIVALS, ibenwoodProtected } from '../src/ibenwood-environment.js';
-import { REGION_CELLS, hexOwnerAt } from '../src/region-world.js';
-import { IBENWOOD_DEFENSE } from '../src/ibenwood-defense.js';
+import { IBENWOOD_BOUNDARY as boundary, boundaryDepth, ibenwoodTerritoryAt } from '../src/content/regions/ibenwood/ibenwood-boundary.js';
+import { IBENWOOD_NAMES, IBENWOOD_PILOT, IBENWOOD_GROVES, IBENWOOD_ARRIVALS, ibenwoodProtected } from '../src/content/regions/ibenwood/ibenwood-environment.js';
+import { REGION_CELLS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { IBENWOOD_DEFENSE } from '../src/content/regions/ibenwood/ibenwood-defense.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const depth = p => boundaryDepth(p.x, p.z);
@@ -108,7 +108,7 @@ test('representative approaches walk from unguarded outer forest through warning
 });
 
 test('boundary geometry and stable IDs are deterministic and immutable', async () => {
-  const second = await import('../src/ibenwood-boundary.js?determinism-check');
+  const second = await import('../src/content/regions/ibenwood/ibenwood-boundary.js?determinism-check');
   assert.deepEqual(second.IBENWOOD_BOUNDARY, boundary);
   const entries = [...boundary.markers, ...boundary.rangerPosts, ...boundary.crossings, ...boundary.approaches];
   assert.equal(new Set(entries.map(e => e.id)).size, entries.length);

@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import { BABON, BABON_CELLS, BABON_BOUNDS, BABON_ARRIVAL, BABON_LANDMARKS, BABON_TRAILS, BABON_VIEWS,
   BABON_RIVERS, BABON_RIVER_EDGES, BABON_TATHILIUM_RESERVE, babonOwns, babonGround, babonHabitat,
-  babonWaterAt, babonRiverAt, babonTrailDistance, babonSlope, babonTint, babonShoreTint } from '../src/babon-world.js';
-import { groundWithRiver as heightAt } from '../src/world-terrain.js';
-import { REGION_CELLS, landDistance, hexOwnerAt, SEA_LEVEL } from '../src/region-world.js';
-import { moveCharacter, canStand } from '../src/game-state.js';
-import { canWalkSlope, sampleClimbSurface, isClimbTerrain } from '../src/climbing.js';
+  babonWaterAt, babonRiverAt, babonTrailDistance, babonSlope, babonTint, babonShoreTint } from '../src/content/regions/babon/babon-world.js';
+import { groundWithRiver as heightAt } from '../src/world/terrain/world-terrain.js';
+import { REGION_CELLS, landDistance, hexOwnerAt, SEA_LEVEL } from '../src/world/terrain/region-world.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope, sampleClimbSurface, isClimbTerrain } from '../src/gameplay/movement/climbing.js';
 
 const world={bounds:BABON_BOUNDS,colliders:[],heightAt,waterAt:(x,z)=>Math.max(.45,babonWaterAt(x,z)??.45),regionAt:()=>60};
 
@@ -115,7 +115,7 @@ test('steep jungle faces use climbing while ordinary regions retain their existi
 });
 
 const THREE=await sourceModule('../vendor/three.module.js');
-const {refineBabonGround}=await sourceModule('../src/babon-ground.js');
+const {refineBabonGround}=await sourceModule('../src/content/regions/babon/babon-ground.js');
 test('bounded refinement resolves narrow water beds without adding a second ground layer or a seam',()=>{
   const p=BABON_RIVERS[0].samples[45],root=new THREE.Group(),positions=[],indices=[],N=16,size=8;
   for(let row=0;row<=N;row++)for(let col=0;col<=N;col++){

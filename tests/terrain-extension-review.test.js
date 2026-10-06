@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
-import {WORLD_BOUNDS,AVREL_CLEARING,worldToVillage} from '../src/region-world.js';
-import {TESSEN_BRIDGE} from '../src/pueth-world.js';
-import {villageWeight} from '../src/world-terrain.js';
-import {appendWesternTerrainSamples,preservedTerrainTileRanges,extensionTerrainSeed} from '../src/terrain-extension.js';
-import {createStreamedTerrain} from '../src/streamed-terrain.js';
-import {finishBuild} from '../src/build-steps.js';
+import {WORLD_BOUNDS,AVREL_CLEARING,worldToVillage} from '../src/world/terrain/region-world.js';
+import {TESSEN_BRIDGE} from '../src/content/regions/pueth/pueth-world.js';
+import {villageWeight} from '../src/world/terrain/world-terrain.js';
+import {appendWesternTerrainSamples,preservedTerrainTileRanges,extensionTerrainSeed} from '../src/world/terrain/terrain-extension.js';
+import {createStreamedTerrain} from '../src/world/loading/streamed-terrain.js';
+import {finishBuild} from '../src/world/loading/build-steps.js';
 
 const source=readFileSync(new URL('../src/world.js',import.meta.url),'utf8');
 const original=JSON.parse(readFileSync(new URL('./fixtures/terrain-before-alezhor.json',import.meta.url)));

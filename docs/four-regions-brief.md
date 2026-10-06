@@ -13,7 +13,7 @@ Where those are silent this document says so and says what was chosen instead.
 ## Where they are, and what the atlas already says
 
 All four are authored regions of the World Builder map, and all four fall inside the
-survey window the game already bakes into `src/region-survey.js`. They form one
+survey window the game already bakes into `src/dev/tools/region-survey.js`. They form one
 contiguous belt on the western side of the playable world, joining it at Elagos in the
 north-east and the Moros Plain in the south-east:
 
@@ -74,7 +74,7 @@ Three bearings do not match, and are recorded rather than reconciled:
    file mentions the other's river. A river cannot stop in the middle of a country, so
    Nesdor's drainage takes the water on to the Lizeem.
 
-`src/campaign-world.js` already carries one-line designs for all four (Vastos "flat,
+`src/content/chapters/civil-war/campaign-world.js` already carries one-line designs for all four (Vastos "flat,
 frost-heaved upland pasture", Meneth "route-junction valleys", Caricas "open grassland
 southwest of Meneth", Nesdor "plains giving way to the western deserts"). Those are older
 and thinner than the region files; Caricas is not open grassland and Nesdor is not desert
@@ -225,7 +225,7 @@ whole of the Lake Lands past Ambron, crosses the head of the Flats and stops at
 westernmost built region, and is inside Nesdor now. Neither region's lore mentions the
 other's river. A river cannot stop in the middle of a country, so the **Ela-South Reach**
 picks the water up at exactly that point, at exactly that level, and carries it across the
-Flats to the Lizeem. Nothing in `src/elagos-world.js` was touched to do it.
+Flats to the Lizeem. Nothing in `src/content/regions/ambron/elagos-world.js` was touched to do it.
 
 **What grows.** Open grassland on the flats, shading toward the Moros's own; in the
 western head, "woodland on the slopes" with "the nut crop (primarily hazel, some oak)".
@@ -247,7 +247,7 @@ herons and stilt-legged waders are the ones it names.
 * Every settlement, road, fence, field wall, terrace, mine, orchard wall, bridge, ford and
   person in all four lore files. The Vastos crossings, the *vel-caric-hass* keeper
   families, the Southern Lotharn Road, the Nesdor Way, the water councils: none of it.
-* The Moros's western rope fence (`FRONTIER`, `src/frontier.js`) is left standing where it
+* The Moros's western rope fence (`FRONTIER`, `src/content/regions/minora-frontier/frontier.js`) is left standing where it
   is, even though Nesdor is now real country beyond it. It is chapter furniture for the
   Moros, not a map edge, and moving it is a story decision.
 * Caricas's terraced slopes, valley-margin grain and eastern iron workings: farming and
@@ -255,16 +255,16 @@ herons and stilt-legged waders are the ones it names.
 
 ## How it is built
 
-* `src/region-layout.js` — four biome profiles (ground colour, canopy, per-hex counts).
-* `src/region-world.js` — ids 11-14, four terrain profiles, region text, natural landmarks.
-* `src/west-regions.js` — pure: the water of all four (atlas courses plus derived streams
+* `src/world/terrain/region-layout.js` — four biome profiles (ground colour, canopy, per-hex counts).
+* `src/world/terrain/region-world.js` — ids 11-14, four terrain profiles, region text, natural landmarks.
+* `src/content/regions/western-regions/west-regions.js` — pure: the water of all four (atlas courses plus derived streams
   and braids), Meneth's ridge field, Vastos's pans and sinter, Caricas's shelf and
   corridor, Nesdor's flats.
-* `src/west-ground.js` — pure: the landform as a function, on the `amod-terraces.js` model.
+* `src/content/regions/western-regions/west-ground.js` — pure: the landform as a function, on the `amod-terraces.js` model.
   It reshapes the relief it is handed and leaves everything outside its own ground alone.
-* `src/west-regions-scenery.js` — the water surfaces, gravel bars, reeds, steam, sinter,
+* `src/content/regions/western-regions/west-regions-scenery.js` — the water surfaces, gravel bars, reeds, steam, sinter,
   boulders and the three regions that scatter their own vegetation.
-* `src/west-regions-life.js` — seven animals, on the `road-life.js` model: the longhorn,
+* `src/content/regions/western-regions/west-regions-life.js` — seven animals, on the `road-life.js` model: the longhorn,
   the hill sheep, the river fox, the otter, the upland hare, the plateau hawk and the
   wading bird.
 * Tests: one file per region in `tests/`.

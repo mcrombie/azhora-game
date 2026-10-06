@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createKaylaRace, validateKaylaRaceSnapshot, KAYLA_RACE, KAYLA_RACE_LANE, ED_RACE_LANE } from '../src/kayla-race.js';
-import { createKaylaRaceHost } from '../src/kayla-race-host.js';
-import { createKaylaRaceAutopilot } from '../src/kayla-race-autopilot.js';
+import { createKaylaRace, validateKaylaRaceSnapshot, KAYLA_RACE, KAYLA_RACE_LANE, ED_RACE_LANE } from '../src/content/quests/kayla/kayla-race.js';
+import { createKaylaRaceHost } from '../src/content/quests/kayla/kayla-race-host.js';
+import { createKaylaRaceAutopilot } from '../src/gameplay/autoplay/kayla-race-autopilot.js';
 
 const world = { bounds: { minX: -2000, maxX: 500, minZ: -1000, maxZ: 1000 }, colliders: [], heightAt: () => 2 };
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);

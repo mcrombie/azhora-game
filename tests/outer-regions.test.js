@@ -1,17 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { OUTER_PROFILES } from '../src/outer-regions-data.js';
-import { OUTER_NAMES, OUTER_CELLS, OUTER_RIVERS, OUTER_LAKES, outerGround, outerProfile, outerFeatures, outerWaterAt } from '../src/outer-regions-world.js';
-import { OUTER_WILDLIFE_ZONES } from '../src/outer-regions-wildlife.js';
-import { REGION_IDS, regions, landDistance, insideRegion } from '../src/region-world.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { GAME_REGION_RENAMES, applyGameAtlasAdjustments } from '../src/game-atlas-adjustments.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { WOOD_SPECIES } from '../src/wood-species.js';
-import { TREE_KINDS } from '../src/woodcutting.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { isClimbTerrain } from '../src/climbing.js';
+import { OUTER_PROFILES } from '../src/content/regions/outer-regions/outer-regions-data.js';
+import { OUTER_NAMES, OUTER_CELLS, OUTER_RIVERS, OUTER_LAKES, outerGround, outerProfile, outerFeatures, outerWaterAt } from '../src/content/regions/outer-regions/outer-regions-world.js';
+import { OUTER_WILDLIFE_ZONES } from '../src/content/regions/outer-regions/outer-regions-wildlife.js';
+import { REGION_IDS, regions, landDistance, insideRegion } from '../src/world/terrain/region-world.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { GAME_REGION_RENAMES, applyGameAtlasAdjustments } from '../src/world/terrain/game-atlas-adjustments.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { WOOD_SPECIES } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { TREE_KINDS } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { isClimbTerrain } from '../src/gameplay/movement/climbing.js';
 
 test('all requested regions retain atlas footprints, append stable IDs and have usable arrivals',()=>{
   assert.equal(OUTER_NAMES.length,34);assert.equal(OUTER_CELLS.length,1052);assert.equal(REGION_IDS['East Endevor'],79);

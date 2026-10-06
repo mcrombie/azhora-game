@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
-import { outerProfile, outerFeatures, OUTER_LAKES } from '../src/outer-regions-world.js';
-import { OUTER_WILDLIFE_ZONES } from '../src/outer-regions-wildlife.js';
-import { eshtorLandform } from '../src/eshtor-landform.js';
-import { runOuterChecks } from '../src/outer-regions-checks.js';
+import { outerProfile, outerFeatures, OUTER_LAKES } from '../src/content/regions/outer-regions/outer-regions-world.js';
+import { OUTER_WILDLIFE_ZONES } from '../src/content/regions/outer-regions/outer-regions-wildlife.js';
+import { eshtorLandform } from '../src/content/regions/eshtor/eshtor-landform.js';
+import { runOuterChecks } from '../src/dev/checks/outer-regions-checks.js';
 
 const p = outerProfile('Eshtor Plateau');
 test('Eshtor keeps a broad high table with low ribs, north-facing snow and southern lee hollows', () => {
@@ -42,7 +42,7 @@ test('Eshtor builds grounded dwarf groves and usable wildlife through the produc
   for (const z of zones.filter(z => z.species === 'thalmagar-long-back')) {
     const [x, y] = z.sites[0]; assert.ok(outerFeatures(x, y).shelter > .58);
   }
-  const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+  const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
   const life = createWestLife(scene, world, { zones });
   for (const z of zones) { const [x, y] = z.sites[0]; life.update(.1, { x, z: y }, true); }
   const animals = life.snapshot().creatures;

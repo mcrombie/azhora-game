@@ -1,25 +1,25 @@
 import test from 'node:test';
-import { nearestOnPath, roadRoute } from '../src/autopilot.js';
+import { nearestOnPath, roadRoute } from '../src/gameplay/autoplay/autopilot.js';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
 import {
   REGION_IDS, REGION_TERRAIN, REGION_OUTLINES, WORLD_BOUNDS, AMBRON, ambronPoint, hexCentre,
   hexOwnerAt, insideRegion, MAIN_ROAD, CALOSS_ROAD_FORK, CALOSS, LUMBER_TOWN,
-} from '../src/region-world.js';
-import { groundWithRiver, regionBase } from '../src/world-terrain.js';
+} from '../src/world/terrain/region-world.js';
+import { groundWithRiver, regionBase } from '../src/world/terrain/world-terrain.js';
 import {
   ELAGOS_BASINS, ELAGOS_REACHES, LAKE_ELA, LAKE_BRUL, LAKE_OSSEN, THELAS_BASINS, ELA_SOUTH, THELAS_LINK,
   AMBRON_ROAD, LAKE_ROAD, ELAGOS_ROADS, CALOSS_ELAGOS_ROAD, CALOSS_PROPHET_STAND, OSSEN_TRACK, AMBRON_JUNCTION, LINK_BRIDGE, ELAGOS_LANDMARKS, ELAGOS_PLACES,
   ELAGOS_CHART_WATERS, ELAGOS_CLEARINGS, NEMMEL, elagosWater, elagosWaterDistance, WATER_FLOOR, WATER_FIELD_BOUNDS,
-} from '../src/elagos-world.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { BUILD_STATUS, regionBuildStatus } from '../src/build-status.js';
-import { RIDE } from '../src/riding.js';
-import {cityGatePoint,inAmbronOutline} from '../src/ambron-city-layout.js';
+} from '../src/content/regions/ambron/elagos-world.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { BUILD_STATUS, regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { RIDE } from '../src/gameplay/movement/riding.js';
+import {cityGatePoint,inAmbronOutline} from '../src/content/regions/ambron/ambron-city-layout.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene();

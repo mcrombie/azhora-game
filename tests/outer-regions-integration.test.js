@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
-import { OUTER_IDS, OUTER_NAMES, outerProfile } from '../src/outer-regions-world.js';
-import { OUTER_WILDLIFE_ZONES } from '../src/outer-regions-wildlife.js';
-import { runOuterChecks } from '../src/outer-regions-checks.js';
-import { WOOD_SPECIES } from '../src/wood-species.js';
+import { OUTER_IDS, OUTER_NAMES, outerProfile } from '../src/content/regions/outer-regions/outer-regions-world.js';
+import { OUTER_WILDLIFE_ZONES } from '../src/content/regions/outer-regions/outer-regions-wildlife.js';
+import { runOuterChecks } from '../src/dev/checks/outer-regions-checks.js';
+import { WOOD_SPECIES } from '../src/gameplay/skills/woodcutting/wood-species.js';
 const scene=new THREE.Scene(),world=await scopedWorld(scene,OUTER_IDS);
 test('all 34 environments build through the production loader and their passes can be walked both ways',()=>{
   for(const id of OUTER_IDS)assert.ok(world.loading.isReady(id),id);
@@ -24,7 +24,7 @@ test('new regional scenery has grounded species-bearing trees, surface detail an
   }
 });
 test('the production wildlife system creates ground populations and updates them in every new region',async()=>{
-  const {createWestLife}=await sourceModule('../src/west-regions-life.js');
+  const {createWestLife}=await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
   const life=createWestLife(scene,world,{zones:OUTER_WILDLIFE_ZONES});
   for(const zone of OUTER_WILDLIFE_ZONES.filter(z=>z.sea)){const [x,z]=zone.sites[0];life.update(.1,{x,z},true);assert.ok(life.snapshot().creatures.some(a=>a.id.startsWith(zone.id)&&Number.isFinite(a.y)),zone.id);}
   for(const n of OUTER_NAMES){

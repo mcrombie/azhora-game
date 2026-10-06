@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { bodyWorld, stepToward } from '../src/bodies.js';
-import { canStand, canSwim } from '../src/game-state.js';
-import { createKayla, KAYLA_RADIUS, KAYLA_SPEED, KAYLA_ROUTE, kaylaMaySwim, kaylaNavigationWorld } from '../src/kayla.js';
+import { bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
+import { createKayla, KAYLA_RADIUS, KAYLA_SPEED, KAYLA_ROUTE, kaylaMaySwim, kaylaNavigationWorld } from '../src/content/quests/kayla/kayla.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

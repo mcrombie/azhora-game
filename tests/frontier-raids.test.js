@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFrontierRaids,validateFrontierRaids} from '../src/frontier-raids.js';
-import {FRONTIER_NPCS,CENTAUR_RAIDER_IDS,FRONTIER_PRINCES} from '../src/frontier-people.js';
-import {YUNETHRE_RAID_ROUTE,YUNETHRE_TOWN} from '../src/yunethre-world.js';
+import {createFrontierRaids,validateFrontierRaids} from '../src/content/regions/minora-frontier/frontier-raids.js';
+import {FRONTIER_NPCS,CENTAUR_RAIDER_IDS,FRONTIER_PRINCES} from '../src/content/regions/minora-frontier/frontier-people.js';
+import {YUNETHRE_RAID_ROUTE,YUNETHRE_TOWN} from '../src/content/regions/minora-frontier/yunethre-world.js';
 function fixture(){
  const npcById=new Map(FRONTIER_NPCS.map(p=>[p.id,{...p,actor:{group:{position:{set(x,y,z){Object.assign(this,{x,y,z});}},rotation:{y:0}}}}]));
  const hp=new Map(CENTAUR_RAIDER_IDS.map(id=>[id,230])),position={x:0,z:0};

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { REGION_CELLS, TRANSFORM, hexAtlasCorners, REGION_OUTLINES } from '../src/region-world.js';
-import { regionBase, legacyIzolGroundHeight, groundWithRiver } from '../src/world-terrain.js';
-import { WEST_PROFILES, WEST_POOL_LEVELS } from '../src/west-ground.js';
-import { izolSeamWeight } from '../src/izol-ground.js';
-import { closedRegionEntered } from '../src/closed-border.js';
+import { REGION_CELLS, TRANSFORM, hexAtlasCorners, REGION_OUTLINES } from '../src/world/terrain/region-world.js';
+import { regionBase, legacyIzolGroundHeight, groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { WEST_PROFILES, WEST_POOL_LEVELS } from '../src/content/regions/western-regions/west-ground.js';
+import { izolSeamWeight } from '../src/content/regions/izol/izol-ground.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
 
 const edges = [], seen = new Set();
 for (const c of REGION_CELLS['West Izol']) {

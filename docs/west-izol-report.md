@@ -11,7 +11,7 @@ ropewalk and a meeting house that is plainly not a palace.
 ## The region
 
 - `PLAYABLE_REGIONS` and `PLAYABLE` in `scripts/build-region-survey.mjs` gain
-  `'West Izol'`; **region id 8**. `src/region-survey.js` is regenerated.
+  `'West Izol'`; **region id 8**. `src/dev/tools/region-survey.js` is regenerated.
 - The atlas gives **21 hexes**, axial q 3–8, r 125–130: **11 grassland, 5 hills,
   5 plains**. East Izol shares its eastern edge; everything else round it is sea.
 - The survey window's `maxR` grows **124 → 133**, so the coast round the island is
@@ -68,7 +68,7 @@ home without a command), Tavren Doreth (prisoner of Selemis), Hesk Marech (the s
 of Nylon, where the city is on the besiegers' side). The islanders are afraid of
 their generals, and the fear is religious.
 
-**From `src/campaign-world.js`:** Izolveth as the port that shelters the Coalition
+**From `src/content/chapters/civil-war/campaign-world.js`:** Izolveth as the port that shelters the Coalition
 army; West Izol level 0, control `izoli`, no threats; `COALITION_MEMBERS`.
 
 **Invented, in the lore's voice — each needs the user's eye:**
@@ -175,7 +175,7 @@ commissary, the ropewalk's cable, the fish price, the boatyard that cannot rig a
 
 ## The people
 
-Twenty-five (`src/izol-people.js`), all ambient, none with a quest; one of them
+Twenty-five (`src/content/regions/izol/izol-people.js`), all ambient, none with a quest; one of them
 conditional. Nobody wears Legion armour; there is no Legion on this island.
 Soldiers are men; the model is `suvali-guard` for all of them.
 
@@ -196,9 +196,9 @@ steps outside her").
 
 ### Kellveth, and Chapter 2's outcome
 
-`generalsStance(control)` in `src/izol-world.js` reads the occupation map: if
+`generalsStance(control)` in `src/content/regions/izol/izol-world.js` reads the occupation map: if
 `control['West Suval'] === 'empire'` (the Empire won the border battle and took Solis
-back) Kellveth is home; otherwise he holds Solis. `src/izol-host.js` shows or hides him
+back) Kellveth is home; otherwise he holds Solis. `src/content/regions/izol/izol-host.js` shows or hides him
 each frame and allocates nothing when it has not changed. **Four people say their last
 line differently** under the two outcomes (`IZOL_ALTERNATES`): the Speaker, the keeper,
 the harbourmaster and Kellveth's quartermaster. This is wired to the flag the game
@@ -226,7 +226,7 @@ the camp spur (84 m), the coast path to Ardveth (97 m), the path up the headland
 the Sea Gate (84 m), the track to Kelvath Cove (168 m). Four fingerposts; five new
 labels in `SIGN_LABELS`.
 
-**Scatter** (`src/izol-scenery.js`, batched three hexes at a time): 3 052 tufts of
+**Scatter** (`src/content/regions/izol/izol-scenery.js`, batched three hexes at a time): 3 052 tufts of
 sea turf, 615 gorse and 182 thorn in one batch per block, 733 rocks (iron-brown at the
 water, slate-grey above 17 m), 120 wind-bent pines on high ground only. Nothing grows
 in the town, the harbour, the camp, a place or on a path.
@@ -257,19 +257,19 @@ in the town, the harbour, the camp, a place or on a path.
 
 ## Files
 
-**New:** `src/izol-world.js` (pure tables: the triumvirate, the town, the harbour, the
-camp, the country, stands, landmarks, the chart's sea), `src/izol-scenery.js` (three),
-`src/izol-people.js` (the 25 and their lines), `src/izol-host.js` (main.js's one hook),
+**New:** `src/content/regions/izol/izol-world.js` (pure tables: the triumvirate, the town, the harbour, the
+camp, the country, stands, landmarks, the chart's sea), `src/content/regions/izol/izol-scenery.js` (three),
+`src/content/regions/izol/izol-people.js` (the 25 and their lines), `src/content/regions/izol/izol-host.js` (main.js's one hook),
 `tests/izol-world.test.js`, `tests/izol-people.test.js`, this report.
 
 **Changed (shared registries, one entry each where possible):**
-`scripts/build-region-survey.mjs` (PLAYABLE, WINDOW.maxR), `src/region-survey.js`
-(regenerated), `src/region-layout.js` (PLAYABLE_REGIONS, REGION_BIOMES),
-`src/region-world.js` (REGION_IDS, REGION_TERRAIN, REGION_TEXT, four terrain pads in
-TERRAIN_PADS), `src/signs.js` (five labels), `src/map-fog.js` (seven areas),
-`src/build-status.js`, `src/developer-atlas.js`, `src/developer-mode.js`,
+`scripts/build-region-survey.mjs` (PLAYABLE, WINDOW.maxR), `src/dev/tools/region-survey.js`
+(regenerated), `src/world/terrain/region-layout.js` (PLAYABLE_REGIONS, REGION_BIOMES),
+`src/world/terrain/region-world.js` (REGION_IDS, REGION_TERRAIN, REGION_TEXT, four terrain pads in
+TERRAIN_PADS), `src/world/scenery/signs.js` (five labels), `src/ui/map/map-fog.js` (seven areas),
+`src/dev/tools/build-status.js`, `src/dev/tools/developer-atlas.js`, `src/dev/tools/developer-mode.js`,
 `package.json` (two test files), `index.html` (one testing button),
-`src/west-suval-world.js` (**one word**: `mergeByColour` is now exported, so Izolveth
+`src/content/regions/solis/west-suval-world.js` (**one word**: `mergeByColour` is now exported, so Izolveth
 merges exactly as Solis does).
 
 **`src/world.js`** (CRLF, patched by exact anchors): two imports under Peblos's, the
@@ -422,7 +422,7 @@ knob with two Presences in the haze behind it. What the shots changed:
 
 ## For the lead, on merge
 
-- **Regenerate `src/region-survey.js`** after merging with the Elagos branch
+- **Regenerate `src/dev/tools/region-survey.js`** after merging with the Elagos branch
   (`node scripts/build-region-survey.mjs`). Both branches touch `PLAYABLE` *and*
   `WINDOW` in the survey script: this branch raises `maxR` to 133; Elagos will likely
   lower `minR`. Keep both.
@@ -443,12 +443,12 @@ knob with two Presences in the haze behind it. What the shots changed:
   Izol); two keys in the returned object; the NPC positions and landmarks spreads.
 - **`src/main.js`**: see Files. The `continueRoad` clause and the frame hook are the two
   lines most likely to meet other work.
-- **`src/west-suval-world.js`** exports `mergeByColour` now. If the Solis scars pass
-  moves or renames it, `src/izol-scenery.js` imports it by that name.
+- **`src/content/regions/solis/west-suval-world.js`** exports `mergeByColour` now. If the Solis scars pass
+  moves or renames it, `src/content/regions/izol/izol-scenery.js` imports it by that name.
 - **Kellveth's flag.** He reads `control['West Suval']` from the occupation map, which
   is `'coalition'` by default and `'empire'` once the Empire has taken Solis back.
   If Chapter 2's outcome is to be read another way — a campaign flag rather than the
-  map — `generalsStance` in `src/izol-world.js` is the one function to change.
+  map — `generalsStance` in `src/content/regions/izol/izol-world.js` is the one function to change.
 - **Names to approve**: the three generals (the user's doc flags them as invented), the
   25 people, Ardveth, Kelvath Cove, the Sea Gate, the Stone of Izol, the Sightstone,
   the Long Pasture, the Hearth Road, and the answer to how the confederation raised its

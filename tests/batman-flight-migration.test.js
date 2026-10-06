@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSuvalFlightRoute, createBatmanFlight, SUVAL_FLIGHT_REGIONS } from '../src/batman-flight.js';
-import { REGION_CELLS } from '../src/region-world.js';
-import { BAT_CAVE, BAT_LANDING } from '../src/suval-highlands.js';
-import { BATMAN_HISTORY } from '../src/batman-quest.js';
+import { buildSuvalFlightRoute, createBatmanFlight, SUVAL_FLIGHT_REGIONS } from '../src/content/quests/batman/batman-flight.js';
+import { REGION_CELLS } from '../src/world/terrain/region-world.js';
+import { BAT_CAVE, BAT_LANDING } from '../src/content/regions/suval-highlands/suval-highlands.js';
+import { BATMAN_HISTORY } from '../src/content/quests/batman/batman-quest.js';
 const routes = buildSuvalFlightRoute({ cells: SUVAL_FLIGHT_REGIONS.flatMap(region =>
   REGION_CELLS[region].map(cell => ({ ...cell, region }))), cave: BAT_CAVE.perch,
   apron: BAT_CAVE.apron, landing: BAT_LANDING, heightAt: () => 2 });

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { terrainRoadHeight } from '../src/terrain-road.js';
-import { MOUNTAIN_PATCH, onRamp } from '../src/west-lotharn-world.js';
+import { terrainRoadHeight } from '../src/world/terrain/terrain-road.js';
+import { MOUNTAIN_PATCH, onRamp } from '../src/content/regions/west-lotharn/west-lotharn-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
@@ -76,7 +76,7 @@ test('West Lotharn tree roots meet the rendered ground on their whole footprint'
     const vertices = trunks.geometry.attributes.position;
     for (let i = 0; i < trunks.count; i++) {
       trunks.getMatrixAt(i, matrix);
-      // A tree lifted off ground a fort was built on afterwards (src/scenery-clearing.js) is an instance scaled to
+      // A tree lifted off ground a fort was built on afterwards (src/world/scenery/scenery-clearing.js) is an instance scaled to
       // nothing, and is struck off the register too: it is not there, so it has no roots to check.
       if (matrix.elements[0] === 0 && matrix.elements[5] === 0 && matrix.elements[10] === 0) continue;
       matrix.premultiply(trunks.matrixWorld);

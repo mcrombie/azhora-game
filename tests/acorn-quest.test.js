@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createInventoryState} from '../src/inventory.js';
-import {createAcornQuest} from '../src/acorn-quest.js';
+import {createInventoryState} from '../src/gameplay/inventory/inventory.js';
+import {createAcornQuest} from '../src/content/quests/forest/acorn-quest.js';
 
 test('Lysa only accepts a complete batch after the player accepts her request', () => {
   const quest = createAcornQuest();

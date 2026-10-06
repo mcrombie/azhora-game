@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createBaldroHost } = await sourceModule('../src/baldro-host.js');
-const { BALDRO_KINGDOMS } = await sourceModule('../src/baldro-world.js');
+const { createBaldroHost } = await sourceModule('../src/content/regions/baldro/baldro-host.js');
+const { BALDRO_KINGDOMS } = await sourceModule('../src/content/regions/baldro/baldro-world.js');
 
 function fixture() {
   const scene = new THREE.Scene(), player = { group: new THREE.Group() }, rewards = [], dialogues = [], toasts = [], focused = [];

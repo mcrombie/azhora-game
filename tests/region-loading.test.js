@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRegionLoading } from '../src/region-loading.js';
+import { createRegionLoading } from '../src/world/loading/region-loading.js';
 
 function fixture(options = {}) {
   let clock = 0, serial = 0;

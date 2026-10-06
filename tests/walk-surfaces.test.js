@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWalkSurfaces, restoreWalkPosition } from '../src/walk-surfaces.js';
-import { bodyWorld } from '../src/bodies.js';
-import { canStand, canSwim, moveCharacter } from '../src/game-state.js';
-import { createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
+import { createWalkSurfaces, restoreWalkPosition } from '../src/world/collision/walk-surfaces.js';
+import { bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { canStand, canSwim, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
 
 const surfaces = [
   { id: 'canopy-stair', kind: 'ramp', a: { x: -10, y: 1, z: 0 }, b: { x: 0, y: 8, z: 0 }, width: 3 },

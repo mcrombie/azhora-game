@@ -7,17 +7,17 @@ import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
 
 /**
- * Henborth's ground (src/henborth-world.js): the atlas's twenty-seven hexes, the plain laid on them and its rise toward
+ * Henborth's ground (src/content/regions/henborth/henborth-world.js): the atlas's twenty-seven hexes, the plain laid on them and its rise toward
  * the mountains, the three ways up to the passes, the damp hollows and dry knolls, every line met - North Celder's held
  * as handed, so North Celder's own seam meets it - the colour, and the places. Pure functions first; one world scoped
  * to Henborth and its three built neighbours at the end.
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_IDS, REGION_TERRAIN, hexOwnerAt, hexAt, terrainMix } = await sourceModule('../src/region-world.js');
-const { groundWithRiver: ground, groundBeforeHenborth: before, groundTint, GROUND_TINT_FAMILIES } = await sourceModule('../src/world-terrain.js');
-const { canStand, moveCharacter } = await sourceModule('../src/game-state.js');
-const { regionBuildStatus } = await sourceModule('../src/build-status.js');
-const Hb = await sourceModule('../src/henborth-world.js');
+const { REGION_IDS, REGION_TERRAIN, hexOwnerAt, hexAt, terrainMix } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver: ground, groundBeforeHenborth: before, groundTint, GROUND_TINT_FAMILIES } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canStand, moveCharacter } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { regionBuildStatus } = await sourceModule('../src/dev/tools/build-status.js');
+const Hb = await sourceModule('../src/content/regions/henborth/henborth-world.js');
 const { HENBORTH, HENBORTH_CELLS, HENBORTH_CLIMATE, HENBORTH_BOX, HENBORTH_EDGES, HENBORTH_UNBUILT, HENBORTH_SEAM, HENBORTH_APPROACHES,
   HENBORTH_HOLLOWS, HENBORTH_KNOLLS, HENBORTH_RESERVED, HENBORTH_GROUND, HENBORTH_ARRIVAL, HENBORTH_LANDMARKS, HENBORTH_TRAILS, HENBORTH_VIEWS,
   henborthGround, henborthTint, henborthOwns, henborthWrites, henborthCover, henborthDamp, henborthNorthness, henborthDesign } = Hb;
@@ -143,7 +143,7 @@ test('North Celder’s line is held exactly as handed and North Celder meets it:
     import { pathToFileURL } from 'node:url';
     const url = p => pathToFileURL(${JSON.stringify(ROOT)} + p).href;
     await import(url('tests/module-loader.js'));
-    const T = await import(url('src/world-terrain.js'));
+    const T = await import(url('src/world/terrain/world-terrain.js'));
     const points = ${JSON.stringify(points)};
     if (${JSON.stringify(order)} === 'without-first') for (const [x, z] of points) T.groundBeforeHenborth(x, z);
     process.stdout.write(JSON.stringify(points.map(([x, z]) => T.groundWithRiver(x, z))));`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 24 });

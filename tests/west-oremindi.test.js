@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sourceModule} from './module-loader.js';
-import {WEST_OREMINDI_CELLS as cells,WEST_OREMINDI_PATHS as paths,WEST_OREMINDI_PEAKS as peaks,westOremindiGround as ground,westOremindiOwns as owns,westOremindiCellAt,SEVRON_ENTRANCES as entrances} from '../src/west-oremindi-world.js';
-import {WEST_OREMINDI_WILDLIFE_ZONES as zones} from '../src/west-oremindi-wildlife.js';
-import {canWalkSlope,createClimbing,sampleClimbSurface} from '../src/climbing.js';
-import {moveCharacter} from '../src/game-state.js';
-import {createSevronState} from '../src/sevron-state.js';
+import {WEST_OREMINDI_CELLS as cells,WEST_OREMINDI_PATHS as paths,WEST_OREMINDI_PEAKS as peaks,westOremindiGround as ground,westOremindiOwns as owns,westOremindiCellAt,SEVRON_ENTRANCES as entrances} from '../src/content/regions/west-oremindi/west-oremindi-world.js';
+import {WEST_OREMINDI_WILDLIFE_ZONES as zones} from '../src/content/regions/west-oremindi/west-oremindi-wildlife.js';
+import {canWalkSlope,createClimbing,sampleClimbSurface} from '../src/gameplay/movement/climbing.js';
+import {moveCharacter} from '../src/gameplay/movement/game-state.js';
+import {createSevronState} from '../src/content/regions/sevron/sevron-state.js';
 const THREE=await import('../vendor/three.module.js');
-const {createWestOremindiScenery}=await sourceModule('../src/west-oremindi-scenery.js',import.meta.url);
-const {createSevronWalk,buildSevronInterior}=await sourceModule('../src/sevron-interiors.js',import.meta.url);
-const {createSevronHost,WEST_OREMINDI_ENCOUNTERS}=await sourceModule('../src/sevron-host.js',import.meta.url);
+const {createWestOremindiScenery}=await sourceModule('../src/content/regions/west-oremindi/west-oremindi-scenery.js',import.meta.url);
+const {createSevronWalk,buildSevronInterior}=await sourceModule('../src/content/regions/sevron/sevron-interiors.js',import.meta.url);
+const {createSevronHost,WEST_OREMINDI_ENCOUNTERS}=await sourceModule('../src/content/regions/sevron/sevron-host.js',import.meta.url);
 
 test('West Oremindi builds its exact 38 authored hexes and leaves neighbouring heights unchanged',()=>{
  assert.equal(cells.length,38);assert.equal(cells.filter(c=>c.terrain==='high_mountain').length,28);

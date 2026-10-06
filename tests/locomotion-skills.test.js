@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LOCOMOTION, locomotionStats, createLocomotionSkills } from '../src/locomotion-skills.js';
-import { createSkills, MAX_XP, validateSkillsSnapshot } from '../src/skills.js';
+import { LOCOMOTION, locomotionStats, createLocomotionSkills } from '../src/gameplay/movement/locomotion-skills.js';
+import { createSkills, MAX_XP, validateSkillsSnapshot } from '../src/gameplay/skills/skills.js';
 
 test('walking and running improve independently with walking always below beginner running', () => {
   assert.deepEqual(locomotionStats(), { walkSpeed: 6, runSpeed: 9.5, runDrain: 4 });

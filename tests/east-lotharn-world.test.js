@@ -3,23 +3,23 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
-import { REGION_CELLS, hexOwnerAt, regionAt, regions, landDistance } from '../src/region-world.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { REGION_LANGUAGE } from '../src/languages.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
+import { REGION_CELLS, hexOwnerAt, regionAt, regions, landDistance } from '../src/world/terrain/region-world.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { REGION_LANGUAGE } from '../src/gameplay/skills/languages.js';
 import {
   LOTHARN, KEMRATH, COL, STONEGATE, PASS_ROAD_LINE, PASS_INN, IRON_WORKINGS, BALDS, OLVETH_PASTURE,
   EAST_LOTHARN_LANDMARKS, lotharnGround, lotharnOpen, kemrathFloorAt, nearestOn, pointOn, colLevel, peakLiftAt,
-} from '../src/east-lotharn-world.js';
-import { LOTHARN_WATERS, LOTHARN_BORDER_WATER, KEMRATH_WATER, STONEGATE_WATER, OLVETH_BECK, courseDistance } from '../src/west-regions.js';
-import { WEST_PROFILES, westWaterSurface } from '../src/west-ground.js';
-import { EAST_LOTHARN_WILDLIFE_ZONES } from '../src/east-lotharn-wildlife.js';
-import { varnJambRise, VARN_LANDMARKS } from '../src/varn-world.js';
+} from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { LOTHARN_WATERS, LOTHARN_BORDER_WATER, KEMRATH_WATER, STONEGATE_WATER, OLVETH_BECK, courseDistance } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { EAST_LOTHARN_WILDLIFE_ZONES } from '../src/content/regions/east-lotharn/east-lotharn-wildlife.js';
+import { varnJambRise, VARN_LANDMARKS } from '../src/content/regions/varn/varn-world.js';
 
 /**
  * The East Lotharn: the old range north of Amod, built on the user's word of 26 September 2026 -
@@ -67,7 +67,7 @@ test('the peaks stand far over everything else, and the valleys and hills betwee
     const h = world.heightAt(x, z);
     highest = Math.max(highest, h);
     if (peakLiftAt(x, z) > 0 || peakLiftAt(x + .25, z) > 0 || peakLiftAt(x, z + .25) > 0) continue;
-    // The two jambs Varn is built between (src/varn-world.js) are cliffs on purpose, stood on this country's edge
+    // The two jambs Varn is built between (src/content/regions/varn/varn-world.js) are cliffs on purpose, stood on this country's edge
     // on 2 October 2026: their faces are not the hex blend's seams, which is what this law is about.
     if (varnJambRise(x, z) > 0) continue;
     if (Math.abs(world.heightAt(x + .25, z) - h) > .6 || Math.abs(world.heightAt(x, z + .25) - h) > .6) steps++;
@@ -205,7 +205,7 @@ test('nobody lives here yet: no people, and the chart says what is built', () =>
   for (const [id, stand] of Object.entries(world.npcPositions)) assert.ok(!own(stand.x, stand.z), `${id} stands in the East Lotharn`);
   for (const id of region.landmarks) {
     // The range's own places, and the one of Varn's that stands on the range's ground: the Slabs, the climbers' way past
-    // the city (src/varn-world.js), which the chart lists for the country they are in.
+    // the city (src/content/regions/varn/varn-world.js), which the chart lists for the country they are in.
     const place = EAST_LOTHARN_LANDMARKS.find(entry => entry.id === id) ?? VARN_LANDMARKS.find(entry => entry.id === id);
     assert.ok(place, `${id} is not a place`);
     assert.ok(own(place.x, place.z) || id === 'border-water', `${id} is not in the East Lotharn`);

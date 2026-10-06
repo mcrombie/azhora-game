@@ -11,8 +11,8 @@ with its garrison.
 ## What the map gave, and how it was used
 
 **The region.** `assets/azhora-dev-regions.json` already carried Pueth; adding
-`'Pueth'` to `PLAYABLE_REGIONS` (`src/region-layout.js`) and to `PLAYABLE` in
-`scripts/build-region-survey.mjs`, then regenerating `src/region-survey.js`, gave
+`'Pueth'` to `PLAYABLE_REGIONS` (`src/world/terrain/region-layout.js`) and to `PLAYABLE` in
+`scripts/build-region-survey.mjs`, then regenerating `src/dev/tools/region-survey.js`, gave
 the game its 27 hexes: 15 grassland, 7 hills, 5 plains, in axial q 10–17, r
 100–105. The survey window already reached far enough north, so `LAND_HEXES` did
 not change. At 100 m per hex Pueth spans x −700 … 150 and z −548 … −8 in world
@@ -36,9 +36,9 @@ is a river on the map, so nothing else is water.
   (100, −375), 289 m, reaching the coast where Pueth, Feradom and the sea meet.
 
 The edges are baked by a new generator, `scripts/build-region-rivers.mjs`, into
-`src/region-rivers.js` (the raw hex pairs and sizes, with the map's SHA-256); it
+`src/world/terrain/region-rivers.js` (the raw hex pairs and sizes, with the map's SHA-256); it
 reads the map the way `scripts/export-world-map.mjs` does. Chaining and softening
-are geometry and live in `riverCourses()` in `src/region-layout.js`: edges that
+are geometry and live in `riverCourses()` in `src/world/terrain/region-layout.js`: edges that
 share a hex corner join, three-way corners break a chain, and two Chaikin passes
 soften each course, as the journal chart draws it. `tests/pueth-world.test.js`
 re-derives the generated file from the map when the World Builder repo is beside
@@ -51,7 +51,7 @@ woodland (its trees, acorns and squirrels are tested down to the index), and the
 brief holds it rigid, so the built Tessen follows the map to the corner at
 (0, −86.5), the last one outside that ground, and then meets the Stills by the
 shortest way east: (0, −86.5) → (60, −92) → (135, −96), `TESSEN_MOUTH_REACH` in
-`src/pueth-world.js`. The mouth is about 130 m north-east of the map's; everything
+`src/content/regions/pueth/pueth-world.js`. The mouth is about 130 m north-east of the map's; everything
 upstream is on the map's line (the test checks every authored edge lies within
 16 m of the built river, and that the built river never enters Tidehaven's
 ground). The constant `TIDEHAVEN_GROUND_REACH` (124 m) is checked against
@@ -59,7 +59,7 @@ ground). The constant `TIDEHAVEN_GROUND_REACH` (124 m) is checked against
 
 **Brought in like the Caloss.** Each river is a ribbon of water on the Caloss's
 shader material, a channel cut into the terrain (`groundWithRiver` in
-`src/world-terrain.js`), water blockers everywhere but the bridge lane, reeds and
+`src/world/terrain/world-terrain.js`), water blockers everywhere but the bridge lane, reeds and
 bank stones, and a chart polygon (`tessen-water`, `ordel-water` in
 `world.mapWaters`) that the trail charts and the minimap read. Pueth's rivers
 cross hills the Caloss never meets, so their surface is sampled along the course
@@ -137,14 +137,14 @@ bridge head and the north road.
 lintels where the road passes, nine buildings (the Legion's garrison house with
 its standard, the Birch Bench inn, the reeve's hall, five houses and a store), a
 well, a timber yard shed with three stacks of pale cold-birch, a loaded birch
-cart and fences, and six people (`src/pueth-people.js`): Asa Dunmore the reeve,
+cart and fences, and six people (`src/content/regions/pueth/pueth-people.js`): Asa Dunmore the reeve,
 Wenna of the Birch Bench, Joss the yard foreman, Dagny the carter, Old Harl the
 trapper, and Legionary Otho, a sentry at the garrison house who speaks in orders.
 The east is rumour in their mouths (fires in the east hills, "the east's
 business"); the hill goblins are the trapper's story.
 
 **The biome** (`REGION_BIOMES.Pueth`, `ownScatter`) is built by
-`src/pueth-scenery.js` in blocks of two hexes like the other regions, sharing the
+`src/content/regions/pueth/pueth-scenery.js` in blocks of two hexes like the other regions, sharing the
 toolkit, materials and instancing: trees thick by the Tessen and thinning
 northward (birch on open ground, fir on the colder slopes, Drent's broadleaf
 reaching over the river in the south), fewer on the coastal plains, almost none
@@ -164,8 +164,8 @@ Ordel Mouth marker; the Tessen Shallows, where the goblins wade.
 ## The goblin camp moves to Pueth
 
 - **The site.** `HIDEOUT_SITE`, `hideoutToWorld` and `HIDEOUT_CLEARINGS` moved
-  from `src/region-world.js` to `src/pueth-world.js`. The camp keeps its authored
-  local layout (`src/forest-hideout-world.js` is untouched) and is turned a
+  from `src/world/terrain/region-world.js` to `src/content/regions/pueth/pueth-world.js`. The camp keeps its authored
+  local layout (`src/content/quests/forest/forest-hideout-world.js` is untouched) and is turned a
   quarter turn (`hideoutToWorld` now handles any yaw), so its own trail runs north
   into the camp and the way out of the fight is south, back down the trail: the
   retreat axis is `z` (+z), the retreat line z = −167, 8 m past the approach.
@@ -174,7 +174,7 @@ Ordel Mouth marker; the Tessen Shallows, where the goblins wade.
   camp). A side trail of 184 m leaves the road just north of the bridge, round the
   river's bend, marked by four scraps of the same blue cloth, and joins the camp's
   own 59 m trail. Everything the quest uses is derived from the site:
-  `FOREST_HIDEOUT_QUEST` in `src/forest-hideout.js` no longer holds a single
+  `FOREST_HIDEOUT_QUEST` in `src/content/quests/forest/forest-hideout.js` no longer holds a single
   56 m literal.
 - **The garrison** stands at the post (`GARRISON_STANDS`), with the same ids,
   names and kinds, and each faces the way he watches. Casso tells of the camp and
@@ -198,9 +198,9 @@ Ordel Mouth marker; the Tessen Shallows, where the goblins wade.
 - **Luscia keeps no trace.** The three `garrison-*` stands are gone from Lumber
   Town's square, the camp's clearing and trail from north Luscia's scatter, and the
   camp trail from Luscia's chart (the chart test now asserts its absence and its
-  presence on Pueth's). `src/luscia-town.js` and `src/luscia-chapter.js` never
+  presence on Pueth's). `src/content/regions/luscia/luscia-town.js` and `src/content/chapters/civil-war/luscia-chapter.js` never
   mentioned the camp or the garrison, so nothing in them changed. The
-  `goblin-camp` cluster stays in `src/world-scale.js`, its note rewritten: it holds
+  `goblin-camp` cluster stays in `src/world/terrain/world-scale.js`, its note rewritten: it holds
   no place now, but it keeps 56 m checkpoints taken on that ground resuming exactly
   where they were taken.
 - **Old saves.** Quest snapshots hold no positions, so a checkpoint with the camp
@@ -232,17 +232,17 @@ branch.
 
 ## Files touched
 
-New: `src/pueth-world.js`, `src/pueth-scenery.js`, `src/pueth-people.js`,
-`src/region-rivers.js` (generated), `scripts/build-region-rivers.mjs`,
+New: `src/content/regions/pueth/pueth-world.js`, `src/content/regions/pueth/pueth-scenery.js`, `src/content/regions/pueth/pueth-people.js`,
+`src/world/terrain/region-rivers.js` (generated), `scripts/build-region-rivers.mjs`,
 `tests/pueth-world.test.js`, `docs/pueth-report.md`.
 
-Changed: `scripts/build-region-survey.mjs`, `src/region-survey.js` (regenerated),
-`src/region-layout.js`, `src/region-world.js`, `src/world-terrain.js`,
-`src/world-regions.js`, `src/world.js`, `src/world-scale.js` (a note),
-`src/forest-hideout.js`, `src/forest-hideout-watch.js`, `src/forest-hideout-smoke.js`
-(rewritten), `src/road-checkpoint.js` (a message), `src/main.js`, `src/developer-atlas.js`,
-`src/developer-mode.js`, `src/developer-smoke.js`, `src/local-map-smoke.js`,
-`src/road-traversal.js`, `src/road-smoke.js`, `package.json`, and the tests
+Changed: `scripts/build-region-survey.mjs`, `src/dev/tools/region-survey.js` (regenerated),
+`src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`, `src/world/terrain/world-terrain.js`,
+`src/world/terrain/world-regions.js`, `src/world.js`, `src/world/terrain/world-scale.js` (a note),
+`src/content/quests/forest/forest-hideout.js`, `src/content/quests/forest/forest-hideout-watch.js`, `src/dev/checks/forest-hideout-smoke.js`
+(rewritten), `src/app/saves/road-checkpoint.js` (a message), `src/main.js`, `src/dev/tools/developer-atlas.js`,
+`src/dev/tools/developer-mode.js`, `src/dev/checks/developer-smoke.js`, `src/dev/checks/local-map-smoke.js`,
+`src/world/travel/road-traversal.js`, `src/dev/checks/road-smoke.js`, `package.json`, and the tests
 `developer-atlas`, `forest-hideout`, `forest-hideout-world`, `local-map-data`,
 `regions-world`, `story-stands`, `world-scale`.
 
@@ -273,7 +273,7 @@ the story.
 
 | Smoke | Result | What it found |
 | --- | --- | --- |
-| `npm run test:game` | first run failed; after the fix, **pass** (`smoke.json` `ok: true`, 30 ms average frame, 476 draw calls) | The story smoke's quest-HUD check did not know the ostler's banner ("What the Legion owes"), which the riding merge put on the HUD once Iven pays with the horse token; it failed at `return-courier-satchel`. Not Pueth's doing. `src/road-smoke.js` now counts `OSTLER_OBJECTIVE.title` as the quest having moved on. |
+| `npm run test:game` | first run failed; after the fix, **pass** (`smoke.json` `ok: true`, 30 ms average frame, 476 draw calls) | The story smoke's quest-HUD check did not know the ostler's banner ("What the Legion owes"), which the riding merge put on the HUD once Iven pays with the horse token; it failed at `return-courier-satchel`. Not Pueth's doing. `src/dev/checks/road-smoke.js` now counts `OSTLER_OBJECTIVE.title` as the quest having moved on. |
 | `npm run test:hideout` | **pass** (`hideout-smoke.json` `ok: true`), 2 023 assertions, 25 more on reload | The rewritten flow ran end to end: the Captain sends you to Casso, Casso's account marks the camp, the Captain marches, the garrison follows along 271 m of trail, the fight starts with **3 allies**, falling back south ends it and keeps the errand, a deliberate defeat and Retry, a win in 6 swings, the stores lifted once, 30 copper paid once, the journal, 5 autosaves that never moved the main quest, and all of it restored in a fresh renderer. One finding, recorded rather than fixed: after falling back from the allied fight, pressing F for the Captain did not open his conversation within about ten seconds (the report field `standDownByConversation` is `false`), so the smoke stood the men down through the quest action. The same regrouping simulated in Node puts the Captain 2.9 m from the traveler, inside the 3.3 m talk range, so the likeliest cause is the soldiers being left somewhere awkward when the combat view hands them back; worth a look by whoever next touches the escort. |
 | `npm run test:road` | **pass** (`road-traversal.json` `ok: true`) | Nothing. The traversal now walks the road north as a branch: out over the Tessen bridge to the Feradom barrier and back, then the whole main road and the Suval branch as before, 9 190 m in 1 289 s, every region entered on foot, the frontier rope holding. |
 
@@ -326,7 +326,7 @@ Town 211 / 184 k → 210 / 187 k; the Moros 66 / 77 k → 71 / 87 k; East Suval
 
 ## For the lead, on merge
 
-- **Regenerate `src/region-survey.js`** once both this branch and West Suval are
+- **Regenerate `src/dev/tools/region-survey.js`** once both this branch and West Suval are
   in: both add a name to `PLAYABLE` in `scripts/build-region-survey.mjs`
   (`node scripts/build-region-survey.mjs`; `tests/region-survey.test.js` catches a
   stale file).
@@ -334,11 +334,11 @@ Town 211 / 184 k → 210 / 187 k; the Moros 66 / 77 k → 71 / 87 k; East Suval
   Nothing in this branch assumes Pueth is 5 except that entry.
 - **Signs.** Two labels (`The Tessen Bridge`, `Rimeholt`) were appended to
   `roadSignLabels` in `world.js`; the atlas holds 27 rows and now uses 25. The
-  signs agent's restyle should pick up `PUETH_SIGNS` in `src/pueth-world.js`.
+  signs agent's restyle should pick up `PUETH_SIGNS` in `src/content/regions/pueth/pueth-world.js`.
 - **Shared lines likely to conflict:** `PLAYABLE_REGIONS`, `PLAYABLE`, `REGION_IDS`,
   `REGION_TERRAIN`, `REGION_TEXT`, `REGION_BIOMES`, the developer atlas's
   `LOCALS`, and `main.js`'s npc push. Each is a one-entry addition.
-- **`src/region-rivers.js`** is generated: if the World Builder map's rivers
+- **`src/world/terrain/region-rivers.js`** is generated: if the World Builder map's rivers
   change, run `node scripts/build-region-rivers.mjs` (to add another region's map
   rivers, add it to `RIVER_REGIONS` there).
 - **`test:autoplay`** was not run, as instructed. A rendered autoplay run would

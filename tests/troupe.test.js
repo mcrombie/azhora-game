@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
 import { TROUPE_STOPS, TROUPE_PEOPLE, TROUPE_STAY, TROUPE_UNSEEN, TROUPE_HEAR, PLAYBILL_ITEM, REGULAR_AFTER, TWIST_IDS, SUGGESTIONS,
-  wagonPoint, wagonBodies, createTroupe, improvScene, suggestionChoices, twistChoices, troupeConversation, troupeThanks, validateTroupeSnapshot } from '../src/troupe.js';
+  wagonPoint, wagonBodies, createTroupe, improvScene, suggestionChoices, twistChoices, troupeConversation, troupeThanks, validateTroupeSnapshot } from '../src/content/quests/troupe/troupe.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

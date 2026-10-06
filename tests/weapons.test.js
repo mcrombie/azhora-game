@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createWeapons, WEAPON_WEAR, WEAPON_TYPES } from '../src/weapons.js';
+import { createWeapons, WEAPON_WEAR, WEAPON_TYPES } from '../src/gameplay/combat/weapons.js';
 
 function fixture(items = { 'simple-sword': 1 }) {
   const stock = new Map(Object.entries(items));

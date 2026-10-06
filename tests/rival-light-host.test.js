@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRivalLightHost } from '../src/rival-light-host.js';
+import { createRivalLightHost } from '../src/content/quests/rival-light/rival-light-host.js';
 import { createHeist, SMUGGLERS_DOOR, LIGHT_GUARDS, TOWER_STEP, SUBTRACTIDAUGHTER, SOVIK, SOVIK_ITEM, KEY_ITEM, PASSPORT_ITEM,
-  LIGHT_FIGHT_ID, RIVAL_YIELDS } from '../src/rival-light.js';
+  LIGHT_FIGHT_ID, RIVAL_YIELDS } from '../src/content/quests/rival-light/rival-light.js';
 
 function fixture({ key = false, stage = 'asked', at = { x: SMUGGLERS_DOOR.west.x, z: SMUGGLERS_DOOR.west.z } } = {}) {
   const heist = createHeist(), items = new Map(), placed = [], started = [], toasts = [], dialogues = [], shown = [];

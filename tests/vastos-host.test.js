@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createInventoryState } from '../src/inventory.js';
-import { VASTOS_NPCS } from '../src/vastos-civil-war.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { VASTOS_NPCS } from '../src/content/chapters/civil-war/vastos-civil-war.js';
 
-const { createVastosHost } = await sourceModule('../src/vastos-host.js');
-const { VASTOS_CAMP, VASTOS_POSITIONS } = await sourceModule('../src/vastos-camp.js');
+const { createVastosHost } = await sourceModule('../src/content/chapters/civil-war/vastos-host.js');
+const { VASTOS_CAMP, VASTOS_POSITIONS } = await sourceModule('../src/content/chapters/civil-war/vastos-camp.js');
 
 // Only the DOM tree operations used by the host. Quest rules, conversations,
 // registration, geometry, markers and their updates are the real game modules.

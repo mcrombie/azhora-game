@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { INSTRUCTOR, INSTRUCTOR_STAND, LESSON, lessonStage, instructorLines, instructorConversation } from '../src/instructor.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { INSTRUCTOR, INSTRUCTOR_STAND, LESSON, lessonStage, instructorLines, instructorConversation } from '../src/gameplay/skills/instructor.js';
 
 /**
  * Officer Glun, who teaches the sword and then hands over the chart (the user, 22 September 2026).

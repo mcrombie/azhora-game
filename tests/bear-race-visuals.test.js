@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createKaylaBear, createBearCub } = await sourceModule('../src/kayla-character.js');
-const { createEdModel, createEdView } = await sourceModule('../src/chameleon-model.js');
-const { createCorpseActor } = await sourceModule('../src/corpse-view.js');
+const { createKaylaBear, createBearCub } = await sourceModule('../src/content/quests/kayla/kayla-character.js');
+const { createEdModel, createEdView } = await sourceModule('../src/content/quests/chameleon/chameleon-model.js');
+const { createCorpseActor } = await sourceModule('../src/gameplay/combat/corpse-view.js');
 const size = group => new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
 
 test('the cub is a grounded young bear while Kayla provides a world-space rider anchor on her back', () => {

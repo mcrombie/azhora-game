@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
 import { sourceModule } from './module-loader.js';
-import { toWorld, WORLD_SCALE } from '../src/world-scale.js';
+import { toWorld, WORLD_SCALE } from '../src/world/terrain/world-scale.js';
 
 /** Authored metres, converted the way the content itself is. */
 const at = (x, z) => toWorld(x, z);
 
 const { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS,
-  regionalFeatureClear, createRegionalPlaces, YARD_FRAMES, place } = await sourceModule('../src/regional-places.js');
+  regionalFeatureClear, createRegionalPlaces, YARD_FRAMES, place } = await sourceModule('../src/world/life/regional-places.js');
 /** Standing beside the boatyard, where the float lines stir in the air. */
 const WORKSHOP = YARD_FRAMES.workshop.world;
 const targets = [...REGIONAL_PLACES, ...Object.values(REGIONAL_NPC_POSITIONS), ...Object.values(REGIONAL_ACTIVITY_SITES),
@@ -55,16 +55,16 @@ test('Regional clearance protects only the three new workyards and approaches', 
 
 test('Actual regional roads connect every new activity without removing existing journey resources', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
-  const { journeySites, regionNpcPositions, regionFirePits, regionRepairBenches, northernRoad } = await sourceModule('../src/regions.js');
+  const { journeySites, regionNpcPositions, regionFirePits, regionRepairBenches, northernRoad } = await sourceModule('../src/world/terrain/regions.js');
   const scene = new THREE.Scene(), world = createWorld(scene);
   assert.equal(world.regionalPlaces.length, 3); assertRoutes(world);
-  const { DRENT_SITES } = await import('../src/drent-sites.js');
+  const { DRENT_SITES } = await import('../src/content/regions/drent/drent-sites.js');
   assert.deepEqual(world.journeySites, { ...journeySites,
     'drent-rebel-evidence': DRENT_SITES.evidence, 'drent-armory-supplies': DRENT_SITES.supplies });
   /**
    * **Reachable, which is not the same as standable on.** Every destination used to be a place
    * you stand; the Caloss bridge repair is the one that is not, because six paces of the span are
-   * in the river and the repair is made from the last sound plank (src/world-regions.js). F reaches
+   * in the river and the repair is made from the last sound plank (src/world/terrain/world-regions.js). F reaches
    * 2.7 m, so what the game actually requires is footing within that - which is what this asks.
    */
   const reachable = target => {

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { FOODS, createConsumables } from '../src/consumables.js';
-import { ICON_KINDS, INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { FOODS, createConsumables } from '../src/gameplay/inventory/consumables.js';
+import { ICON_KINDS, INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
 const foodIds = Object.keys(FOODS);
 const foodItems = Object.keys(INVENTORY_ITEMS).filter(id => INVENTORY_ITEMS[id].type === 'Food');

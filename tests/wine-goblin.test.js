@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { SOLIS_ENCLOSURE } from '../src/west-suval.js';
-import { ATTIC_WINES } from '../src/attic-wines.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { SOLIS_ENCLOSURE } from '../src/content/regions/solis/west-suval.js';
+import { ATTIC_WINES } from '../src/content/quests/wine/attic-wines.js';
 import { PUCK, PUCK_HAUNTS, SEA_WALL_NICHE, SECRETARY, SECRETARY_STAND, SOBER_SIGNS, SOBERING, KEEP_REWARD, PRIME_MINISTER,
-  createPuck, puckConversation, secretaryConversation, validatePuckSnapshot } from '../src/wine-goblin.js';
+  createPuck, puckConversation, secretaryConversation, validatePuckSnapshot } from '../src/content/quests/wine/wine-goblin.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -113,7 +113,7 @@ test('Tancredi Vel tells the truth only to someone who has seen the seal', () =>
 });
 
 test('Ed’s figure survives any frame step, even the odd first frame’s (it once crashed the game at load)', async () => {
-  const { createEdModel } = await sourceModule('../src/chameleon-model.js');
+  const { createEdModel } = await sourceModule('../src/content/quests/chameleon/chameleon-model.js');
   const ed = createEdModel();
   for (const dt of [NaN, -5, -.01, 0, undefined, 1 / 60, 3]) ed.animate(1, dt);
   for (let k = 0; k < 500; k++) ed.animate(k * .1, -1);
@@ -121,7 +121,7 @@ test('Ed’s figure survives any frame step, even the odd first frame’s (it on
 });
 
 test('Ed smokes a long clay pipe: it smokes while he is drunk and goes out when he is sober', async () => {
-  const { createEdModel } = await sourceModule('../src/chameleon-model.js');
+  const { createEdModel } = await sourceModule('../src/content/quests/chameleon/chameleon-model.js');
   const ed = createEdModel();
   assert.ok(ed.group.getObjectByName('Ed’s pipe'), 'a pipe');
   for (let k = 0; k < 120; k++) ed.animate(k / 30, 1 / 30);

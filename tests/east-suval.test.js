@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
 import {
   REGION_CELLS, REGION_OUTLINES, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, SEA_LEVEL, TERRAIN_PADS, ELOD_TERRACE,
   regionAt, insideRegion, landDistance,
-} from '../src/region-world.js';
-import { bedrockHeight } from '../src/world-terrain.js';
-import { CLOSED_REGIONS, closedRegionEntered } from '../src/closed-border.js';
+} from '../src/world/terrain/region-world.js';
+import { bedrockHeight } from '../src/world/terrain/world-terrain.js';
+import { CLOSED_REGIONS, closedRegionEntered } from '../src/world/travel/closed-border.js';
 import {
   ELOD, PRECINCT, SEA_ROAD_GATE, INNER_GATE, THRESHOLD, SEA_GATE, ELOD_QUAY, BREAKWATER, ELOD_LANDING,
   ELOD_SEA_ROUTE, ELOD_ADMISSION, ELOD_BUILDINGS, ELOD_STANDS, ELOD_CISTERNS, ELOD_STREETS,
   EAST_SUVAL_STANDS, EAST_SUVAL_PLACES, EAST_SUVAL_CELLS, NORTH_LIGHT, SORROW_BEACH, SEVENWALLS,
   quayHeight, eastSuvalClear,
-} from '../src/east-suval.js';
-import { ELOD_NPCS, EAST_SUVAL_NPCS, EAST_SUVAL_PEOPLE, EAST_SUVAL_AMBIENT, elodConversation } from '../src/elod-people.js';
-import { SUBREGIONS, subregionsAt } from '../src/map-fog.js';
-import { BUILD_STATUS, regionBuildStatus } from '../src/build-status.js';
-import { buildLocalMapModel } from '../src/local-map-data.js';
+} from '../src/content/regions/east-suval/east-suval.js';
+import { ELOD_NPCS, EAST_SUVAL_NPCS, EAST_SUVAL_PEOPLE, EAST_SUVAL_AMBIENT, elodConversation } from '../src/content/characters/elod-people.js';
+import { SUBREGIONS, subregionsAt } from '../src/ui/map/map-fog.js';
+import { BUILD_STATUS, regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { buildLocalMapModel } from '../src/ui/map/local-map-data.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

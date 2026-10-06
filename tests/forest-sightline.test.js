@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { forestLineClear, forestSegmentHit } from '../src/forest-sightline.js';
-import { createColliderGrid } from '../src/collider-grid.js';
+import { forestLineClear, forestSegmentHit } from '../src/gameplay/combat/forest-sightline.js';
+import { createColliderGrid } from '../src/world/collision/collider-grid.js';
 
 const point = (x, y = 2, z = 0) => ({ x, y, z });
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-5, `${actual} != ${expected}`);

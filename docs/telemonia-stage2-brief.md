@@ -62,14 +62,14 @@ end. Everything is inside the unclimbable line and reached only by the gate.
 Barley and pulses on the Galmeth, the dry-country vine on the terraces, as planted ground with rows that
 read from the rim. **Nothing in a wash.** Where the field people live the lore does not say: they are
 bound to the land and allotted to the band halls, not to households. Derive it (the game has farmland
-precedents: `src/regional-farmland.js`, `src/regional-farmland-scenery.js`), keep it poor and low, and
+precedents: `src/world/scenery/regional-farmland.js`, `src/world/scenery/regional-farmland-scenery.js`), keep it poor and low, and
 label it yours. Cattle and the compact Telemon horse are the kingdom's: a modest number, on ground a
 body can reach (the rim is not walked onto except by the one way).
 
 ### 3. The people
 
 - **Telemon men**: compact, dark-complexioned; every one a warrior, **long spear, shield, and a knife in
-  a scabbard at the belt**. New character builds in `src/characters.js`, in the manner of the existing
+  a scabbard at the belt**. New character builds in `src/content/characters/characters.js`, in the manner of the existing
   soldier builds, plain and unadorned — the Avites do display, the Telemon do not.
 - **Telemon women**: the same people, **a knife at the belt**, at ordinary work (a water jar, a
   terrace wall, the gate). They fight; they are not the equal of the men.
@@ -84,16 +84,16 @@ body can reach (the rim is not walked onto except by the one way).
 - **No king as a character, no quest, no trade, no hiring.** The border markets stand on other
   countries' ground and are not this job.
 - Keep the numbers modest and honest about cost: people who can challenge are real NPCs; people far
-  off or on the rock's edge can be figures (`src/town-life.js`). Say how many of each and where.
+  off or on the rock's edge can be figures (`src/world/life/town-life.js`). Say how many of each and where.
   They load through the step-wise build like everything else (`regionBuild` in `src/world.js`).
 
 ### 4. Challenged on sight — the new behaviour
 
 This is the part with no precedent as a whole, and it must be built from the pieces the game already
-has rather than beside them: `src/stealth.js` (who notices whom: range, cone, sneaking, line of sight),
-`src/forest-sightline.js` (cover), `src/crime.js` and `src/crime-host.js` (somebody walks up to the
-traveler, a standing that is saved, a fight when it is refused), `src/closed-border.js` (turned back at
-a border), `src/escort-autopilot-follow.js`, `src/harbour-alarm.js`, and the combat host.
+has rather than beside them: `src/gameplay/law/stealth.js` (who notices whom: range, cone, sneaking, line of sight),
+`src/gameplay/combat/forest-sightline.js` (cover), `src/gameplay/law/crime.js` and `src/gameplay/law/crime-host.js` (somebody walks up to the
+traveler, a standing that is saved, a fight when it is refused), `src/world/travel/closed-border.js` (turned back at
+a border), `src/gameplay/autoplay/escort-autopilot-follow.js`, `src/content/quests/roadside/harbour-alarm.js`, and the combat host.
 
 The rule, in the user's words above. Made exact:
 

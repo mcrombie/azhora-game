@@ -1,12 +1,12 @@
 // Scratch: open, fairly level ground at the edge of the wood outside Tidehaven for the woodcutter's lot, clear of everyone and everything.
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { TROUPE_STOPS } from '../src/troupe.js';
-import { BRANDY_YARD } from '../src/brandy.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { TROUPE_STOPS } from '../src/content/quests/troupe/troupe.js';
+import { BRANDY_YARD } from '../src/content/quests/brandy/brandy.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { SPECIMEN_TREES } = await sourceModule('../src/drent-trees.js');
+const { SPECIMEN_TREES } = await sourceModule('../src/content/regions/drent/drent-trees.js');
 const world = createWorld(new THREE.Scene());
 const segs = world.paths.flatMap(path => path.slice(1).map((b, i) => [path[i], b]));
 const road = (x, z) => { let m = Infinity; for (const [a, b] of segs) { const dx = b.x - a.x, dz = b.z - a.z, l = dx * dx + dz * dz || 1, t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / l)); m = Math.min(m, Math.hypot(x - a.x - dx * t, z - a.z - dz * t)); } return m - 2.2; };

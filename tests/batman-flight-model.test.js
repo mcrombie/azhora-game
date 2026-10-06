@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-const { createBatman } = await sourceModule('../src/batman-model.js');
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createBatman } = await sourceModule('../src/content/quests/batman/batman-model.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 test('The real bat model has a stable passenger anchor, beating wings and the combat animation interface', () => {
   const actor = createBatman();

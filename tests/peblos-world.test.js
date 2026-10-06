@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
 import {
   REGION_CELLS, REGION_OUTLINES, REGION_IDS, WORLD_BOUNDS, SEA_LEVEL, TERRAIN_PADS, COBBLE_TERRACE,
   regionAt, insideRegion, landDistance, hexAt,
-} from '../src/region-world.js';
-import { bedrockHeight } from '../src/world-terrain.js';
+} from '../src/world/terrain/region-world.js';
+import { bedrockHeight } from '../src/world/terrain/world-terrain.js';
 import {
   PEBLOS_ISLANDS, MAIN_ISLAND, OUTER_ISLANDS, COBBLE, COBBLE_QUAY, COBBLE_BUILDINGS, COBBLE_STANDS, COBBLE_WORKING,
   PEBLOS_LANDMARKS, PEBLOS_CLEARINGS, PEBLOS_NPC_POSITIONS, SEA_SHRINE, HEADLAND_LIGHT, SEAL_COVE, DROWNED_FIELD,
   COBBLE_GULL_ROCKS, FERRY_MOORINGS, islandAt, inCobble, quayHeight,
-} from '../src/peblos-world.js';
-import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT, peblosConversation } from '../src/peblos-people.js';
-import { FERRY_LANDINGS } from '../src/ferry.js';
-import { SUBREGIONS, subregionsAt } from '../src/map-fog.js';
-import { BUILD_STATUS, regionBuildStatus } from '../src/build-status.js';
-import { buildLocalMapModel } from '../src/local-map-data.js';
-import { REGION_DESIGN } from '../src/campaign-world.js';
+} from '../src/content/regions/peblos/peblos-world.js';
+import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT, peblosConversation } from '../src/content/regions/peblos/peblos-people.js';
+import { FERRY_LANDINGS } from '../src/world/travel/ferry.js';
+import { SUBREGIONS, subregionsAt } from '../src/ui/map/map-fog.js';
+import { BUILD_STATUS, regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { buildLocalMapModel } from '../src/ui/map/local-map-data.js';
+import { REGION_DESIGN } from '../src/content/chapters/civil-war/campaign-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -245,7 +245,7 @@ test('The islands carry their own scatter, and none of it stands in the village 
 test('Peblos is level one: fishing people, a bored garrison, and nothing that can kill the first hour', () => {
   assert.equal(REGION_DESIGN.find(entry => entry.id === 'Peblos').level, 1);
   // Four islanders and four soldiers: the six who stood with Bregga Sell went with her when the
-  // murder took her out of the world (the user, 22 September 2026; src/murder-quest.js).
+  // murder took her out of the world (the user, 22 September 2026; src/content/quests/roadside/murder-quest.js).
   assert.equal(PEBLOS_NPCS.length, 8);
   assert.equal(PEBLOS_NPCS.filter(npc => npc.modelRole?.startsWith('legion')).length, 4, 'a lieutenant and three soldiers');
   assert.equal(PEBLOS_NPCS.every(npc => !npc.armed), true, 'nobody on the quay has a blade out');

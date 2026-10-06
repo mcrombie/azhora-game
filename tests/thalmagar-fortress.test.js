@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { THALMAGAR_FORTRESS as site, thalmagarFortressReserved } from '../src/thalmagar-fortress-site.js';
-import { ACOR_WILDLIFE_ZONES } from '../src/acor-wildlife.js';
-import { hexOwnerAt, landDistance } from '../src/region-world.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { SUBREGIONS } from '../src/map-fog.js';
+import { THALMAGAR_FORTRESS as site, thalmagarFortressReserved } from '../src/content/regions/thalmagar/thalmagar-fortress-site.js';
+import { ACOR_WILDLIFE_ZONES } from '../src/content/regions/acor/acor-wildlife.js';
+import { hexOwnerAt, landDistance } from '../src/world/terrain/region-world.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
 
 const scene=new THREE.Scene(),world=await scopedWorld(scene,[70]);
 scene.updateMatrixWorld(true);

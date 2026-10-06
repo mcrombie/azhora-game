@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CHAPTERS } from '../src/campaign.js';
+import { CHAPTERS } from '../src/content/chapters/civil-war/campaign.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { AFTERMATH_VARIANTS, AFTERMATH_IDS, AFTERMATH_NPCS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, AFTERMATH_LEGATE_ID, aftermathFor, aftermathEncounter,
-  createAftermathChapter, validateAftermathSnapshot, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES, CAP_LINES } from '../src/aftermath-chapter.js';
-import { armourOf, tierSoldAt, tiernamed, validPiece, WEIGHTS, NAMED_TIERS, TIERS } from '../src/gear.js';
-import { SELLER_TIERS } from '../src/smith.js';
-import { regionLevel } from '../src/region-levels.js';
+  createAftermathChapter, validateAftermathSnapshot, aftermathConversation, SIDE_GIFT, sideGiftOwed, GIFT_LINES, CAP_LINES } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { armourOf, tierSoldAt, tiernamed, validPiece, WEIGHTS, NAMED_TIERS, TIERS } from '../src/gameplay/inventory/gear.js';
+import { SELLER_TIERS } from '../src/content/quests/roadside/smith.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
 
 const ARENA_Z = { center: { x: -392, z: 308 }, retreatAxis: 'z' };
 const ARENA_X = { center: { x: 120, z: 640 }, retreatAxis: 'x' };
@@ -249,9 +249,9 @@ test('the host gives the fine steel at the two moments the side has him, and not
 });
 
 test('every assault after the battle forms up inside its own ground, wherever its commander stands', async () => {
-  const { createCombat } = await import('../src/combat.js');
-  const { AFTERMATH_VARIANTS, aftermathEncounter } = await import('../src/aftermath-chapter.js');
-  const { aftermathArena, aftermathSite } = await import('../src/aftermath-sites.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
+  const { AFTERMATH_VARIANTS, aftermathEncounter } = await import('../src/content/chapters/chapter-one/aftermath-chapter.js');
+  const { aftermathArena, aftermathSite } = await import('../src/content/chapters/chapter-one/aftermath-sites.js');
   const world = { bounds: { minX: -3000, maxX: 3000, minZ: -3000, maxZ: 3000 }, colliders: [], heightAt: () => 5 };
   for (const [id, spec] of Object.entries(AFTERMATH_VARIANTS)) {
     const fight = aftermathEncounter(id, aftermathArena(spec.arena));
@@ -279,7 +279,7 @@ test('a fallback chapter saved from a won-but-rolled border battle starts over, 
 });
 
 test('the Empire storms the Gate of Sun Horses from the road outside it, and the Coalition holds it', async () => {
-  const { aftermathArena, aftermathSite } = await import('../src/aftermath-sites.js');
+  const { aftermathArena, aftermathSite } = await import('../src/content/chapters/chapter-one/aftermath-sites.js');
   const spec = AFTERMATH_VARIANTS['solis-sweep'], arena = aftermathArena(spec.arena), fight = aftermathEncounter('solis-sweep', arena);
   const gate = aftermathSite('solis-gate'), rally = aftermathSite(spec.rallySite);
   assert.equal(fight.retreatSign, -1, 'the way out runs north, up the road');

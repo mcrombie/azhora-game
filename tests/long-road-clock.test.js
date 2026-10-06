@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAIN_ROAD, regionNpcPositions, STORY_SITES } from '../src/region-world.js';
-import { ARRIVALS, MUS_ARRIVAL, MERCENARY_ROSTER, drawMusArrival, createMercenaryCompany } from '../src/mercenaries.js';
+import { MAIN_ROAD, regionNpcPositions, STORY_SITES } from '../src/world/terrain/region-world.js';
+import { ARRIVALS, MUS_ARRIVAL, MERCENARY_ROSTER, drawMusArrival, createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
 
 /**
  * The long road through Drent is exactly as long as the company takes to come in, because the
- * Marshal does not march until the eleventh has reported. Nothing in `src/long-road.js` states
+ * Marshal does not march until the eleventh has reported. Nothing in `src/content/chapters/journey/long-road.js` states
  * that length: it is a consequence of `ARRIVALS`, each man's `departs` and `pace`, the three
  * stops the host gives the company and where the camp stands. So it is pinned here, against the
  * real road and the real stands, and the failure message sends whoever moved a number to the
@@ -82,7 +82,7 @@ test('Ed takes the road soon after the guard hears him out', () => {
 test('Mus is pinned as a range, because his hour is drawn and his road is not the road', () => {
   // He is the one man whose arrival is not written down, and he does not walk this road at all:
   // `route: 'wild'` takes him through the country, off the main road the whole way, and he passes
-  // none of its stops (src/wild-route.js). On a late draw he is the last of the eleven in, after
+  // none of its stops (src/content/quests/roadside/wild-route.js). On a late draw he is the last of the eleven in, after
   // the 2,234.5 s above - so the long road's length is the nine who use the road, and Mus is a
   // range beside it and never a number it is cut to.
   assert.deepEqual([MUS_ARRIVAL.from, MUS_ARRIVAL.to], [-30, ARRIVALS.princes + 30], 'half a minute either side of the whole company');
@@ -115,6 +115,6 @@ test('the road, the three stops and the camp are where the clock was measured', 
   assert.ok(Math.abs(c.roadLength - 1676.6) < 1, 'the main road is 1,677 m end to end');
   assert.deepEqual(c.stops.map(stop => [stop.id, Math.round(stop.distance), stop.dwell]),
     // Chip stands on the Drent bank now, at the near end of his own broken span rather than past
-    // it (src/region-world.js, 22 September 2026), which moves his stop 31 m back down the road.
+    // it (src/world/terrain/region-world.js, 22 September 2026), which moves his stop 31 m back down the road.
     [['induction', 432, 90], ['crossing', 650, 60], ['relay', 946, 120]], 'Corvan, Chip and Iven, and how long each of them keeps a man. ' + WHY);
 });

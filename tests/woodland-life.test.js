@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
 import * as THREE from '../vendor/three.module.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
+const { createWoodlandLife } = await sourceModule('../src/world/life/woodland-life.js');
 const scene = new THREE.Scene(), world = createWorld(scene), life = createWoodlandLife(scene, world);
 
 test('Woodland pickups, NPCs, repair, cooking, and fishing are reachable from the village', () => {

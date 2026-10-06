@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CROPS, CROP_IDS, FARM_ROWS, FARM_ROW_IDS, ORCHARD_TREES, ORCHARD_ITEM, ORCHARD_XP, ORCHARD_REGROW,
-  FARMING_SKILL, FARMING_LESSON, FARMER, FARM_FIRE, farmRow, crop, createFarming, validateFarmingSnapshot } from '../src/farming.js';
-import { SKILLS, createSkills, skillLevel } from '../src/skills.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createCooking, RECIPES } from '../src/cooking.js';
-import { createConsumables } from '../src/consumables.js';
-import { farmingConversation, farmRowConversation } from '../src/farming-conversation.js';
-import { APPLEGARTH_WORKS } from '../src/rena.js';
-import { regionAt } from '../src/region-world.js';
-import { canStand } from '../src/game-state.js';
+  FARMING_SKILL, FARMING_LESSON, FARMER, FARM_FIRE, farmRow, crop, createFarming, validateFarmingSnapshot } from '../src/gameplay/skills/farming/farming.js';
+import { SKILLS, createSkills, skillLevel } from '../src/gameplay/skills/skills.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createCooking, RECIPES } from '../src/gameplay/skills/crafting/cooking.js';
+import { createConsumables } from '../src/gameplay/inventory/consumables.js';
+import { farmingConversation, farmRowConversation } from '../src/gameplay/skills/farming/farming-conversation.js';
+import { APPLEGARTH_WORKS } from '../src/content/quests/rena/rena.js';
+import { regionAt } from '../src/world/terrain/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import { sourceModule } from './module-loader.js';
 
 let world = null;

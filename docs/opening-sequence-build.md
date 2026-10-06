@@ -1,7 +1,7 @@
 # Build brief: wiring the opening sequence
 
 For a builder who has not seen this game. The design is `docs/opening-sequence.md`; read it first,
-it is short. The data is `src/opening-sequence.js` and its test `tests/opening-sequence.test.js`,
+it is short. The data is `src/app/startup/opening-sequence.js` and its test `tests/opening-sequence.test.js`,
 both already committed and passing. This brief says exactly which host pieces to touch, in what
 order, with what tests, and what must not change. Every design decision is made; if something
 here contradicts the world as you find it, stop and say so rather than deciding.
@@ -79,7 +79,7 @@ returned API object, beside `ringBell` (line 1721):
 
 ```js
     /**
-     * The arrival boat, for the opening sequence (src/opening-sequence.js): world metres and a world
+     * The arrival boat, for the opening sequence (src/app/startup/opening-sequence.js): world metres and a world
      * heading in. It is a child of the village root, so its own frame is the village's.
      */
     placeArrivalBoat(x, z, yaw) { const local = worldToVillage(x, z); arrivalBoat.position.x = local.x; arrivalBoat.position.z = local.z; arrivalBoat.rotation.y = yaw - VILLAGE.yaw; },
@@ -104,7 +104,7 @@ test('the world lets the host move the arrival boat and put it back', () => {
 });
 ```
 
-### Step 2 — `index.html` and `src/adventure.css`: the caption layer and the Skip button
+### Step 2 — `index.html` and `src/ui/styles/adventure.css`: the caption layer and the Skip button
 
 In `index.html`, directly after the `#crossing` div (line 13), add:
 
@@ -112,10 +112,10 @@ In `index.html`, directly after the `#crossing` div (line 13), add:
   <div id="cutscene" class="hidden" aria-live="polite"><div class="cutscene-caption"><span class="eyebrow" id="cutscene-eyebrow"></span><p id="cutscene-text"></p></div><button id="skip-cutscene" class="secondary">Skip cutscene <kbd>Esc</kbd></button></div>
 ```
 
-In `src/adventure.css`, after the `#crossing` rules, add verbatim:
+In `src/ui/styles/adventure.css`, after the `#crossing` rules, add verbatim:
 
 ```css
-/* The opening sequence: the boat comes in, the traveler watches, the captions say what they know (src/opening-sequence.js, docs/opening-sequence.md). */
+/* The opening sequence: the boat comes in, the traveler watches, the captions say what they know (src/app/startup/opening-sequence.js, docs/opening-sequence.md). */
 #cutscene {position:fixed;inset:0;z-index:12;pointer-events:none;display:grid;place-items:end center;padding-bottom:18vh;}
 #cutscene .cutscene-caption {max-width:640px;padding:0 24px;text-align:center;text-shadow:0 3px 30px #102c37ab;opacity:0;}
 #cutscene .eyebrow {display:block;color:#f8df9f;margin-bottom:10px;}
@@ -127,7 +127,7 @@ body.cutscene #location,body.cutscene #compass,body.cutscene #map-wrap,body.cuts
 
 Nothing else in the stylesheet changes. `z-index` 12 sits above the HUD and under the modal
 backdrop (20) and the ferry veil (30). The `.eyebrow` and `.secondary` rules and `kbd` styling
-already exist in `src/style.css`.
+already exist in `src/ui/styles/style.css`.
 
 ### Step 3 — `src/main.js`: drive the sequence
 
@@ -170,7 +170,7 @@ the chosen traveler from the playable-characters module when that lands; until t
 **3d. Landing and skipping.** Add beside `begin()`:
 
 ```js
-  /** The end of the opening, reached or skipped: the landing, exactly as src/opening-sequence.js says it. */
+  /** The end of the opening, reached or skipped: the landing, exactly as src/app/startup/opening-sequence.js says it. */
   function landOpening() {
     if(mode!=='arriving'||!opening)return;
     for(const e of eventsBetween(openingFired,Infinity,opening.id))if(e.type==='bell'){world.ringBell?.(elapsed);audio?.effect('bell');}
@@ -310,7 +310,7 @@ for Ed the Word and Mus are already in the data and end in the same `LANDED` sta
 - **The `?test=1` harness starts** the same way: `$('begin').click()` still begins the game, and
   every review view (`view=...`) and `prepare*` hook still reaches `mode='playing'` with the
   world as built. Use `leaveOpening()` in each; do not fork them.
-- **`mode === 'arriving'`** keeps its name and meaning: `src/autopilot.js` answers `wait` for it
+- **`mode === 'arriving'`** keeps its name and meaning: `src/gameplay/autoplay/autopilot.js` answers `wait` for it
   and `tests/autopilot.test.js` asserts that; `updateHUD` hides the vitals for it; `walkTime`
   advances for it. No new mode string.
 - **Saves.** Nothing new is written to a checkpoint; `saveRoad` is untouched; the sequence never
@@ -322,7 +322,7 @@ for Ed the Word and Mus are already in the data and end in the same `LANDED` sta
   file in `src/` for phrasings that send the player up the pier to Lakota; the new markup and code
   must not mention Lakota at the pier at all. The data module does not.
 - **The bell rings once per start**, from the sequence, not from `begin()`.
-- **Nothing in `src/opening-sequence.js`** needs to change to wire it; if you find you must,
+- **Nothing in `src/app/startup/opening-sequence.js`** needs to change to wire it; if you find you must,
   the test file says what it guarantees, and the design note says why.
 
 ## Acceptance

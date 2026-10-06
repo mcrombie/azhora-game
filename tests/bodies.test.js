@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BODY, bodyWorld, stepAround, lendFacing } from '../src/bodies.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { BODY, bodyWorld, stepAround, lendFacing } from '../src/gameplay/combat/bodies.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 const open = () => ({ bounds: { minX: -50, maxX: 50, minZ: -50, maxZ: 50 }, colliders: [], heightAt: () => 1 });
 

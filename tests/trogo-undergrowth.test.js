@@ -3,19 +3,19 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { REGION_CELLS, REGION_IDS, hexOwnerAt, regionAt } from '../src/region-world.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { canWalkSlope, isClimbTerrain } from '../src/climbing.js';
+import { REGION_CELLS, REGION_IDS, hexOwnerAt, regionAt } from '../src/world/terrain/region-world.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope, isClimbTerrain } from '../src/gameplay/movement/climbing.js';
 import {
   UNDERGROWTH, UNDERGROWTH_REGIONS, canPushThrough, isThicketTerrain, onWayThrough, thicketAt, undergrowthOpen,
-} from '../src/undergrowth.js';
+} from '../src/world/scenery/undergrowth.js';
 import {
   SOUTHWEST_BOXES, TROGO_CREST, TROGO_GULLIES, TROGO_PATHS, TROGO_CLEARINGS, TROGO_WAY,
   trogoThicket, trogoWay, inTrogoClearing,
-} from '../src/southwest-world.js';
-import { TROGORETH, courseDistance } from '../src/west-regions.js';
-import { regions } from '../src/region-world.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
+} from '../src/content/regions/southwest/southwest-world.js';
+import { TROGORETH, courseDistance } from '../src/content/regions/western-regions/west-regions.js';
+import { regions } from '../src/world/terrain/region-world.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
 
 /**
  * **What a deep forest is in Azhora**, and this file is half of the answer.
@@ -23,7 +23,7 @@ import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
  * Asked directly on 30 September 2026 what a deep forest should be, the user chose: *a country you
  * cannot see far in **and** cannot go straight through*. The first half is the haze - Trogo's
  * `palette.hazeDensity` is `.0144`, two and three quarter times the game's own default, and the last
- * test below holds it to the sight distances it buys. The second half is `src/undergrowth.js`, and
+ * test below holds it to the sight distances it buys. The second half is `src/world/scenery/undergrowth.js`, and
  * everything above that test is about it.
  *
  * **The hazard, which is the reason this file is long.** A movement gate can strand the autopilot, a
@@ -329,10 +329,10 @@ test('the haze: .0144, which hides a traveler at a hundred and twenty paces', ()
 
 test('the rule is written to be reused, and the Ibenwoods are one row of it', () => {
   // The whole of what a forest country hands over is a region set and a field. The table in
-  // `src/undergrowth.js` holds nothing else - no polyline, no clearing, no watercourse - so the five
+  // `src/world/scenery/undergrowth.js` holds nothing else - no polyline, no clearing, no watercourse - so the five
   // Ibenwood regions and their hundred and fifty-odd hexes of `forest` and `deep_forest` are one row
   // there and one field in their own world module.
-  const source = readFileSync(new URL('../src/undergrowth.js', import.meta.url), 'utf8');
+  const source = readFileSync(new URL('../src/world/scenery/undergrowth.js', import.meta.url), 'utf8');
   assert.match(source, /const THICKETS = Object\.freeze\(\[/);
   assert.match(source, /regions: new Set\(\[51, 'Trogo'\]\), open: trogoWay/);
   assert.equal(source.includes('TROGO_GULLIES'), false, 'the rule must not know one country’s geometry');

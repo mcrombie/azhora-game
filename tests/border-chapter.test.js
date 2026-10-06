@@ -1,16 +1,38 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 import {
   BORDER_ENCOUNTER_ID, BORDER_LEGATE_ID, BORDER_GATE_ID, BORDER_NPCS, BORDER_MARCHERS, BORDER_LINE, COALITION_SIGNING, MARCH,
   borderConversation, borderEncounter, borderMusterEncounter, borderLine, borderLineSaid, createBorderChapter, validateBorderSnapshot, marchSlot,
-} from '../src/border-chapter.js';
-import { FILE_FLOOR } from '../src/file-fill.js';
-import { MERCENARY_COMPANY_SIZE } from '../src/mercenaries.js';
-import { MOROS_PAY } from '../src/moros-chapter.js';
-import { hexOwnerAt } from '../src/region-world.js';
+} from '../src/content/chapters/chapter-one/border-chapter.js';
+import { FILE_FLOOR } from '../src/gameplay/combat/file-fill.js';
+import { MERCENARY_COMPANY_SIZE } from '../src/gameplay/company/mercenaries.js';
+import { MOROS_PAY } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
 
 const HALL_DELEGATION = ['coalition-envoy', 'envoy-guard-north', 'envoy-guard-south'];
+
+test('an independent army victory records only a matching marched campaign, including after Continue', () => {
+  for (const side of ['empire', 'coalition']) {
+    const border = createBorderChapter();
+    assert.equal(border.recordArmyVictory(side).ok, false);
+    border.start();
+    for (const action of ['take-legate-terms', 'enter-solis', `side-${side}`, 'march-out']) border.act(action);
+    assert.equal(border.recordArmyVictory(side).ok, false, 'readiness alone is not a fought battle');
+    border.act('reach-line');
+    const resumed = createBorderChapter();
+    assert.equal(resumed.restore(border.snapshot()), true);
+    assert.equal(resumed.state.fighting, false, 'Continue does not restore an active local encounter');
+    assert.equal(resumed.recordArmyVictory(side === 'empire' ? 'coalition' : 'empire').ok, false);
+    assert.equal(resumed.recordArmyVictory(side).ok, true);
+    assert.equal(resumed.state.complete, true);
+    assert.equal(resumed.state.outcome, 'victory');
+    const recorded = resumed.snapshot();
+    assert.equal(validateBorderSnapshot(recorded, { allowMissing: false }), true);
+    assert.equal(resumed.recordArmyVictory(side).ok, false, 'reporting twice cannot duplicate progress');
+    assert.deepEqual(resumed.snapshot(), recorded);
+  }
+});
 
 test('signing either contract keeps the envoy and her guards present, with a useful response and no repeated signing reward', () => {
   for (const side of ['coalition', 'empire']) {

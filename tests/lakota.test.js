@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { createSkills } from '../src/skills.js';
-import { RENA } from '../src/rena.js';
-import { RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED, createArchaeology, validateArchaeologySnapshot } from '../src/archaeology.js';
-import { WINES, WINE_IDS, createWine, validateWineSnapshot, vintnerConversation } from '../src/wine.js';
-import { WINERY, WINERY_CELL, WINERY_LAYOUT, WINERY_STANDS, WINEMAKER, VARIETIES, VARIETY_IDS } from '../src/winery.js';
-import { BIRD_WATCHER, LAKOTA_TOPICS, LAKOTA_ARCHAEOLOGY_PITCH, LAKOTA_WINE_PITCH, birdWatcherConversation } from '../src/birding.js';
-import { createLakota, validateLakotaSnapshot } from '../src/lakota.js';
-import { MERCENARY_ROSTER, mercenaryWeapon } from '../src/mercenaries.js';
-import { hexAt } from '../src/region-world.js';
-import { PORT_CALOS_TOWN_CELL, PORT_CALOS_PATHS } from '../src/port-calos-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { RENA } from '../src/content/quests/rena/rena.js';
+import { RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED, createArchaeology, validateArchaeologySnapshot } from '../src/gameplay/skills/nature/archaeology.js';
+import { WINES, WINE_IDS, createWine, validateWineSnapshot, vintnerConversation } from '../src/content/quests/wine/wine.js';
+import { WINERY, WINERY_CELL, WINERY_LAYOUT, WINERY_STANDS, WINEMAKER, VARIETIES, VARIETY_IDS } from '../src/content/regions/winery/winery.js';
+import { BIRD_WATCHER, LAKOTA_TOPICS, LAKOTA_ARCHAEOLOGY_PITCH, LAKOTA_WINE_PITCH, birdWatcherConversation } from '../src/gameplay/skills/birding/birding.js';
+import { createLakota, validateLakotaSnapshot } from '../src/content/quests/lakota/lakota.js';
+import { MERCENARY_ROSTER, mercenaryWeapon } from '../src/gameplay/company/mercenaries.js';
+import { hexAt } from '../src/world/terrain/region-world.js';
+import { PORT_CALOS_TOWN_CELL, PORT_CALOS_PATHS } from '../src/content/regions/port-calos/port-calos-world.js';
 
 test('Lakota is the seventh hired sword, and carries the dinosaurs, the chocolate, the machines and his doubts about the world', () => {
   assert.equal(BIRD_WATCHER.name, 'Lakota');

@@ -91,8 +91,8 @@ These results are a preparation snapshot, not an instruction to apply stale hunk
 
 The seven directly selectable leaves are:
 
-- `src/east-izol-world.js`, `src/east-izol-scenery.js`,
-  `src/east-izol-wildlife.js`;
+- `src/content/regions/east-izol/east-izol-world.js`, `src/content/regions/east-izol/east-izol-scenery.js`,
+  `src/content/regions/east-izol/east-izol-wildlife.js`;
 - `tests/east-izol-world.test.js`, `tests/east-izol-life.test.js`;
 - `docs/east-izol-brief.md`, `docs/region-reviews/east-izol-handoff.md`.
 

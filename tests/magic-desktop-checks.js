@@ -1,7 +1,7 @@
-import { BEN, SPIDER_DEN } from '../src/spider-quest.js';
-import { BEN_ROUTE } from '../src/ben-guide.js';
-import { CAT, LIZ, LIZ_STAND } from '../src/cat-quest.js';
-import { TROY, WITNESS_IDS, MURDERER, TESTIMONY } from '../src/murder-quest.js';
+import { BEN, SPIDER_DEN } from '../src/content/quests/spider/spider-quest.js';
+import { BEN_ROUTE } from '../src/content/quests/roadside/ben-guide.js';
+import { CAT, LIZ, LIZ_STAND } from '../src/content/quests/roadside/cat-quest.js';
+import { TROY, WITNESS_IDS, MURDERER, TESTIMONY } from '../src/content/quests/roadside/murder-quest.js';
 
 /** Real host dialogue, quest frame triggers, combat, rewards, input and persisted spells.
  * Warps keep this bounded; the Node test separately walks Olive all the way back to Liz.

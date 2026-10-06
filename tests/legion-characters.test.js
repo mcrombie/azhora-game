@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 const joints = ['Weight and hips', 'Chest', 'Head', 'Left Shoulder', 'Right Shoulder', 'Left Elbow', 'Right Elbow',
   'Left Wrist', 'Right Wrist', 'Left Hip', 'Right Hip', 'Left Knee', 'Right Knee', 'Left Ankle', 'Right Ankle'];
 const SOLDIERS = ['legion-soldier', 'legion-officer', 'suvali-guard'];

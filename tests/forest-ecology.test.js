@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
-const { createForestEcology } = await sourceModule('../src/forest-ecology.js');
+const { createForestEcology } = await sourceModule('../src/world/life/forest-ecology.js');
 function fixture(colliders = []) {
   const scene = new THREE.Scene(), world = {
     bounds: { minX: -700, maxX: 28, minZ: -65, maxZ: 123 }, heightAt: () => 2, colliders,
@@ -169,7 +169,7 @@ test('moving models keep finite, positive transforms; disposal removes all owned
 
 test('the real Drent woodland supports the full ecology and keeps original deterministic trees unchanged', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
-  const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
+  const { createWoodlandLife } = await sourceModule('../src/world/life/woodland-life.js');
   const scene = new THREE.Scene(), world = createWorld(scene), trees = JSON.stringify(world.broadleafTrees);
   const pickups = createWoodlandLife(scene, world).state();
   const colliders = JSON.stringify(world.colliders);

@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCampaign, settleBorderBattle } from '../src/campaign.js';
-import { createBorderChapter, BORDER_ENCOUNTER_ID } from '../src/border-chapter.js';
-import { createAftermathChapter, aftermathConversation, AFTERMATH_VARIANTS, SIDE_GIFT, SIDE_CAP, SIDE_GIFTS, sideGiftOwed, giftOwed, GIFT_LINES, CAP_LINES, AFTERMATH_LEGATE_ID } from '../src/aftermath-chapter.js';
-import { aftermathBuilt, aftermathSite } from '../src/aftermath-sites.js';
-import { createGear, validateGearSnapshot, WEIGHTS, smithStock, tierScale, MOST_TURNED, armourOf } from '../src/gear.js';
+import { createCampaign, settleBorderBattle } from '../src/content/chapters/civil-war/campaign.js';
+import { createBorderChapter, BORDER_ENCOUNTER_ID } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { createAftermathChapter, aftermathConversation, AFTERMATH_VARIANTS, SIDE_GIFT, SIDE_CAP, SIDE_GIFTS, sideGiftOwed, giftOwed, GIFT_LINES, CAP_LINES, AFTERMATH_LEGATE_ID } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { aftermathBuilt, aftermathSite } from '../src/content/chapters/chapter-one/aftermath-sites.js';
+import { createGear, validateGearSnapshot, WEIGHTS, smithStock, tierScale, MOST_TURNED, armourOf } from '../src/gameplay/inventory/gear.js';
 
 const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
 

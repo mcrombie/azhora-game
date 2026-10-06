@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import {
   REGION_DESIGN, NAME_ALIASES, UNRESOLVED_ALIASES, LEVELS, FACTIONS, THREATS, SETTLEMENTS, LEVEL_ONE_PROVINCES,
   canonicalRegionName, describeRegion, computeAdjacency, regionsByLevel, provisionalLevel, climateSummary, terrainCounts, levelInfo,
-} from '../src/campaign-world.js';
+} from '../src/content/chapters/civil-war/campaign-world.js';
 
 const survey = JSON.parse(readFileSync(new URL('../assets/azhora-dev-regions.json', import.meta.url), 'utf8'));
 const atlasNames = new Set(survey.regions.map(region => region.name));
@@ -87,7 +87,7 @@ test('design objects are frozen and cannot be edited by callers', () => {
 });
 
 test('the Coalition roster names real regions and Pyros is one empire across East and West Pyros', async () => {
-  const { COALITION_MEMBERS } = await import('../src/campaign-world.js');
+  const { COALITION_MEMBERS } = await import('../src/content/chapters/civil-war/campaign-world.js');
   for (const member of COALITION_MEMBERS) for (const id of member.regions) assert.ok(atlasNames.has(id), `${member.name} names unknown region ${id}`);
   assert.deepEqual(COALITION_MEMBERS.map(member => member.id), ['izoli', 'suval', 'ambroni-rebels', 'pyros', 'selemis', 'marosh', 'island-cities']);
   assert.equal(FACTIONS.pyrosi.name, 'Pyros');

@@ -14,7 +14,7 @@ plus one active assignment; the Celder pair counts as two regions.
 - `assets/azhora-dev-regions.json`; read-only `../world-builder/map/resources/examples/azhora.wwmap`.
 - Read-only `../world-builder/azhora_lore/geography/regions/izol.md`.
 - [Izoli history](../izol-and-the-triumvirate.md), including the later Wilhelm-at-Minora correction.
-- [West Izol report](../west-izol-report.md), `src/izol-world.js`, `src/izol-scenery.js`, and current campaign rules.
+- [West Izol report](../west-izol-report.md), `src/content/regions/izol/izol-world.js`, `src/content/regions/izol/izol-scenery.js`, and current campaign rules.
 
 ## Verified footprint and constraints
 

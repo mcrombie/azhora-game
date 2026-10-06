@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCorpses, corpseId, corpseLoot, CORPSE_TIMING, validateCorpsesSnapshot } from '../src/corpses.js';
-import { createInventoryState, INVENTORY_ITEMS, ICON_KINDS } from '../src/inventory.js';
+import { createCorpses, corpseId, corpseLoot, CORPSE_TIMING, validateCorpsesSnapshot } from '../src/gameplay/combat/corpses.js';
+import { createInventoryState, INVENTORY_ITEMS, ICON_KINDS } from '../src/gameplay/inventory/inventory.js';
 import { sourceModule } from './module-loader.js';
-const { createCorpseHost } = await sourceModule('../src/corpse-host.js');
+const { createCorpseHost } = await sourceModule('../src/gameplay/combat/corpse-host.js');
 const body = overrides => ({ id: 'enemy:road-ambush:rebel-one', sourceId: 'rebel-one', name: 'Rebel ambusher', kind: 'rebel', x: 8, z: 12, yaw: .8, ...overrides });
 
 test('body identity is stable across event replay and scoped between encounters', () => {

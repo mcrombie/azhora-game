@@ -2,8 +2,8 @@
 
 Branch `telemonia-stage2`, worktree `../azhora-game-telemonia`, cut from main `470cfcc`. **Nothing is committed,
 pushed or stashed.** Three agents built it in this worktree by file ownership (the coordinator's split): the
-**town** (`src/telemonia-town.js`, `src/telemonia-town-scenery.js`, `tests/telemonia-town.test.js` - its own
-numbers and choices are in those files' headers), the **rule** (`src/telemon-watch.js`,
+**town** (`src/content/regions/telemonia/telemonia-town.js`, `src/content/regions/telemonia/telemonia-town-scenery.js`, `tests/telemonia-town.test.js` - its own
+numbers and choices are in those files' headers), the **rule** (`src/content/regions/telemonia/telemon-watch.js`,
 `tests/telemon-watch.test.js`), and this report's author: the people, the stock, the wiring, the save, the
 registers and the integration. The brief is `docs/telemonia-stage2-brief.md`.
 
@@ -14,29 +14,29 @@ registers and the integration. The brief is `docs/telemonia-stage2-brief.md`.
 | Kethorn (town agent) | six halls of the bands down the two long sides of the top, the hall at the end of the one street (the king's: a band hall's size, turned across the street's head on the highest ground), six round corbelled granaries, two cisterns, a paved street from the gate; 931 colliders | telemonia.md: "the halls of the bands ... the granaries and the cisterns; and the hall of the king, which is said to be distinguishable from the others mainly by where it stands"; no inn, market, temple or gatehouse |
 | the fields (town agent) | 102 blocks on the rock's grain, 88 sown: 5,173 rows of barley and 2,934 of pulses (18,670 m of row); fallow by the south pass; the vine along every tread, 2,995 stocks over 5,397 m; nothing in a wash, on a pass floor, a stair or its 10 m lane, the way or the apron | "the plain is farmed to its edges, and where the plain ends the terraces begin" |
 | the field people's huts (town agent) | 12 low dry-stone huts with brush-and-earth roofs in four rows of three at the terraces' foot, between stairs; a cattle fold and a horse fold with open gateways | **builder's choice** (the lore says only "allotted to the band halls") |
-| **the people** (`src/telemonia-people.js`) | **13 Telemon men** (3 by the pass heads - back off the desert road at the Tarnel, with the horses by the east pass, with the cattle by the south pass; 2 sparring in the yard inside the gate; 4 at band-hall doors; 1 at the king's hall door; 3 overseeing the field people), **10 Telemon women** (2 inside the gate, 2 at the cisterns, 1 at a granary, 1 on the spur with a water jar, 3 dressing terrace walls, 1 bringing water to the south huts), **12 field hands** (2 in the rows and 1 at the vines by each row of huts), all real NPCs; **12 field-hand figures** in the far fields (src/town-life.js, drawn within 95 m, never spoken to). Placed at the town's own sites | the user's paragraph; the lore's "a woman with a knife at her belt and a water jar on her shoulder", "how to hold a gate, a terrace wall, a cistern, a stair" |
-| **the builds** (`src/characters.js`) | `telemon-man`: undyed wool, a short cloak pinned at the right shoulder, a close beard, cropped hair, a slightly compact build, **a 2.95 m spear planted (held in a fight), a big plain round shield of hide, iron-rimmed, and a knife in a leather scabbard at the left hip**. `telemon-woman`: the slighter build, a dress to the calf, long hair, **a knife in a scabbard**, a clay water jar on the shoulder for some; a long knife in hand in a fight. `toreth`: rough undyed cloth, rolled sleeves, a rope belt, nothing in hand ever. Telemon skins dark, field people's lowland | the user: "long spears and shield and knives in scabbards"; "compact, dark-complexioned"; "They carry no weapons" |
-| **the stock** (`src/telemonia-ways.js`) | **5 Telemon horses** (createHorse at 0.9 scale): 3 loose by the east pass's head, 2 in their fold; **6 cattle** as a western wildlife range (`nethrani-cattle`, the compact short-legged beast) on the fallow by the south pass | "the hill pastures carry cattle and horses" - the rim is not walked onto, so the Galmeth's margins |
+| **the people** (`src/content/regions/telemonia/telemonia-people.js`) | **13 Telemon men** (3 by the pass heads - back off the desert road at the Tarnel, with the horses by the east pass, with the cattle by the south pass; 2 sparring in the yard inside the gate; 4 at band-hall doors; 1 at the king's hall door; 3 overseeing the field people), **10 Telemon women** (2 inside the gate, 2 at the cisterns, 1 at a granary, 1 on the spur with a water jar, 3 dressing terrace walls, 1 bringing water to the south huts), **12 field hands** (2 in the rows and 1 at the vines by each row of huts), all real NPCs; **12 field-hand figures** in the far fields (src/world/life/town-life.js, drawn within 95 m, never spoken to). Placed at the town's own sites | the user's paragraph; the lore's "a woman with a knife at her belt and a water jar on her shoulder", "how to hold a gate, a terrace wall, a cistern, a stair" |
+| **the builds** (`src/content/characters/characters.js`) | `telemon-man`: undyed wool, a short cloak pinned at the right shoulder, a close beard, cropped hair, a slightly compact build, **a 2.95 m spear planted (held in a fight), a big plain round shield of hide, iron-rimmed, and a knife in a leather scabbard at the left hip**. `telemon-woman`: the slighter build, a dress to the calf, long hair, **a knife in a scabbard**, a clay water jar on the shoulder for some; a long knife in hand in a fight. `toreth`: rough undyed cloth, rolled sleeves, a rope belt, nothing in hand ever. Telemon skins dark, field people's lowland | the user: "long spears and shield and knives in scabbards"; "compact, dark-complexioned"; "They carry no weapons" |
+| **the stock** (`src/content/regions/telemonia/telemonia-ways.js`) | **5 Telemon horses** (createHorse at 0.9 scale): 3 loose by the east pass's head, 2 in their fold; **6 cattle** as a western wildlife range (`nethrani-cattle`, the compact short-legged beast) on the fallow by the south pass | "the hill pastures carry cattle and horses" - the rim is not walked onto, so the Galmeth's margins |
 | registers | build status (still `early`: no markets, ceremonies, king, quest), the campaign's Kethorn and region text, the chart's Galmeth and Kethorn areas, three landmarks (the halls of the bands, the hall of the king, the field people's huts), Telemonia's region text, eight review views | |
 
 **Nobody has a name** ("Telemon warrior", "Telemon woman", "Field hand"). **No child**: the lore's boys on a
 training run are left out so that a fight "with everyone in earshot" can never include one. **No king as a
 character, no quest, no trade, no hiring.** Nothing is named Crom. Every Telemon is stood up after the trimmed
-cast (src/cast.js), since each is a watcher in the country's rule and not a town's atmosphere.
+cast (src/content/characters/cast.js), since each is a watcher in the country's rule and not a town's atmosphere.
 
 ## Challenged on sight
 
-**The rule kept is the rule agent's `src/telemon-watch.js`**, and mine (`src/telemonia-challenge.js`, written
+**The rule kept is the rule agent's `src/content/regions/telemonia/telemon-watch.js`**, and mine (`src/telemonia-challenge.js`, written
 before the split) is deleted: by the time both existed my host had been rewired to it, its test was green, and it
 already met the coordinator's list (stealth.js awareness per watcher, never past the border, a bad or missing
-standing is clean, numbers in one frozen table with precedents). `src/telemonia-host.js` binds it to the world.
+standing is clean, numbers in one frozen table with precedents). `src/content/regions/telemonia/telemonia-host.js` binds it to the world.
 
-- **Every Telemon is a watcher**; the field people are not. Noticing is src/stealth.js's model (range, 100° cone,
-  sneaking, suspicion), one meter per watcher, with the sightline from **src/forest-sightline.js** (the ground, every
+- **Every Telemon is a watcher**; the field people are not. Noticing is src/gameplay/law/stealth.js's model (range, 100° cone,
+  sneaking, suspicion), one meter per watcher, with the sightline from **src/gameplay/combat/forest-sightline.js** (the ground, every
   solid with its height, the trees): eye 1.6 m to the traveler's chest, 1.3 m standing, 0.7 m crouched to sneak.
 - **Seen**: the nearest who noticed walks up (3.2 m/s), says a few words, turns the traveler round and **walks
   behind him to the nearest pass mouth**; at the mouth he stops 2.2 m inside the border and the traveler walks out
-  alone (`walkedOut` + 1). The escort goes off the rock by the gate and off a terrace by a stair (src/telemonia-ways.js).
+  alone (`walkedOut` + 1). The escort goes off the rock by the gate and off a terrace by a stair (src/content/regions/telemonia/telemonia-ways.js).
 - **Resisting** - going 12 m further from the mouth than his best, 8 s without a metre's progress, a blow swung or a
   bow drawn on the walk, or striking any Telemon anywhere in the country - **or being seen inside again after a walk
   out or a fight**: hostile. Everyone within 65 m joins, and anyone who comes within 65 m while it lasts; those
@@ -45,12 +45,12 @@ standing is clean, numbers in one frozen table with precedents). `src/telemonia-
   `rebel` (70), at level 3. A Telemon killed is a body that stays (the corpse host).
 - **Out of the country nobody follows**: leaving ends a walk, an approach or a fight (`combat.disengage`), and
   everybody goes home. Losing is the game's own defeat.
-- **The standing** `{ version: 1, walkedOut, fights }` is saved under `telemon` (src/road-checkpoint.js), absent in
+- **The standing** `{ version: 1, walkedOut, fights }` is saved under `telemon` (src/app/saves/road-checkpoint.js), absent in
   old saves, and a bad one is dropped (clean) rather than costing the save; reset with the other standings on a new
   game and in the testing and living-scenario preparations.
 
-**Numbers.** The rule's, `WATCH` in src/telemon-watch.js: earshot 65 (the crime host's notice radius), talk 3.2,
-escort gap 2.2, pace 3.2, dawdle 8 s, stray 12 m, calm 10 s. The wiring's, `TELEMON_FIGHT` in src/telemonia-host.js,
+**Numbers.** The rule's, `WATCH` in src/content/regions/telemonia/telemon-watch.js: earshot 65 (the crime host's notice radius), talk 3.2,
+escort gap 2.2, pace 3.2, dawdle 8 s, stray 12 m, calm 10 s. The wiring's, `TELEMON_FIGHT` in src/content/regions/telemonia/telemonia-host.js,
 **all builder's choices**: vision **40 m** (stealth's 12 m is a guard in a yard; this is open highland), the eye and
 chest heights above, the men's and women's fight kinds and health, start 14 m, run 3.6 m/s.
 
@@ -127,14 +127,14 @@ were left to the coordinator's registration run.
 
 ## After the user's look, 2026-10-03
 
-- **The shield hangs upright on the forearm** (`src/characters.js`): a Telemon man now carries it as the Feradom and
+- **The shield hangs upright on the forearm** (`src/content/characters/characters.js`): a Telemon man now carries it as the Feradom and
   Ambroni soldiers do theirs - forearm forward, board upright, face out (measured: its face points 0.97 forward,
   0.24 up; the Feradom kite's 0.99 and 0.16) - at rest, walking and in a fight; the spear stays planted at rest.
 - **The views**: every one now looks at a point in the open, because the review camera backs off from what it looks
   at until something stops it. `telemonia-town` is the town from the plain; the old picture is `telemonia-street`
   (from the king's end to the gate); `telemonia-town-gate`, `telemonia-band-hall` and `telemonia-huts` are reframed.
 - **The challenge, played in the running game**: `node scripts/launch.cjs --smoke-test --telemonia-checks`
-  (`src/telemonia-smoke.js`; 25 checks, 176 s of play, 4 min 47 s with the world's load; pictures
+  (`src/dev/checks/telemonia-smoke.js`; 25 checks, 176 s of play, 4 min 47 s with the world's load; pictures
   `tests/artifacts/telemonia-play-escort.png` and `-fight.png`). Set down outside the east pass and run in: noticed
   by the man with the horses, "You. Stop.", turned round ("Turn round. Walk."), walked to the east pass's mouth
   with him behind, released ("Go. Do not come back."), walked out once, and he never left the country. Back in:
@@ -145,6 +145,6 @@ were left to the coordinator's registration run.
   everything else is the game's own frame loop.
 - **What the play-through found and was fixed**: (1) a traveler noticed at the head of the east pass was to be walked
   to the Tarnel, nearer as the crow flies over eighty metres of cliff: the rule now takes the nearest mouth by the
-  walked way (`mouthFor` in `src/telemon-watch.js`, given by the host). (2) The second Telemon called to the fight
+  walked way (`mouthFor` in `src/content/regions/telemonia/telemon-watch.js`, given by the host). (2) The second Telemon called to the fight
   stood off at 26 m and never joined it, because the game's villagers back away from fights: Telemon men and women
   now count as fighters there (`SOLDIERLY` in `src/main.js`); the field people still back away.

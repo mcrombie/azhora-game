@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { moveCharacter } from '../src/game-state.js';
-import { BEN, SPIDER, SPIDER_DEN, createSpiderQuest, validateSpiderQuestSnapshot } from '../src/spider-quest.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { BEN, SPIDER, SPIDER_DEN, createSpiderQuest, validateSpiderQuestSnapshot } from '../src/content/quests/spider/spider-quest.js';
 
 function fixture({level=0}={}) {
   const world={bounds:{minX:-900,maxX:-700,minZ:200,maxZ:350},colliders:[],heightAt:()=>1.5};

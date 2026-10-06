@@ -4,8 +4,8 @@ import { readFileSync } from 'node:fs';
 import {
   createAtlasTransform, LEGACY_ROAD_TRANSFORM, HEX_WORLD_TRANSFORM, TIDEHAVEN_ATLAS, METRES_PER_HEX, ATLAS_HEX_WIDTH, PLAYABLE_REGIONS, REGION_BIOMES,
   regionCells, regionOutline, pointInPolygon, regionAtWorld, cellAtWorld, worldBoundsFor, borderMidpoint, routeAnchors, compassHeading, findRegion,
-} from '../src/region-layout.js';
-import { REGION_IDS } from '../src/region-world.js';
+} from '../src/world/terrain/region-layout.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
 import { PLAYABLE } from '../scripts/build-region-survey.mjs';
 
 const survey = JSON.parse(readFileSync(new URL('../assets/azhora-dev-regions.json', import.meta.url), 'utf8'));

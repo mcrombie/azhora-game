@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/world/terrain/region-world.js';
 import {
   LIZEEM, CARICA, CARICA_CORRIDOR, CARICAS_SHELF, WEST_REGION_LANDMARKS,
   caricaCorridorDistance, courseDistance, westBareGround,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, caricasShelf, westGroundAt, westWaterSurface } from '../src/west-ground.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { menoraReserved } from '../src/menora-city.js';
-import { caricasSettlementReserved } from '../src/caricas-settlement.js';
-import { CARICAS_SOLDIERS } from '../src/frontier-people.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, caricasShelf, westGroundAt, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { menoraReserved } from '../src/content/regions/minora-frontier/menora-city.js';
+import { caricasSettlementReserved } from '../src/content/regions/minora-frontier/caricas-settlement.js';
+import { CARICAS_SOLDIERS } from '../src/content/regions/minora-frontier/frontier-people.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 // west-regions-life.js imports three by its bare name, so it has to come through the loader.
-const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = createWorld(scene);
 const cells = REGION_CELLS.Caricas;
@@ -143,7 +143,7 @@ test('Every hex of the corridor country is honest ground', () => {
 test('The river fox watches; everything else in the west runs', () => {
   const life = createWestLife(scene, world);
   // The corridor's foxes. South Suval's road foxes are drawn with the same rig and live on a road,
-  // not a river bank (src/south-suval-wildlife.js), so the corridor's law is not theirs.
+  // not a river bank (src/content/regions/south-suval/south-suval-wildlife.js), so the corridor's law is not theirs.
   const foxZones = WEST_LIFE_ZONES.filter(zone => zone.species === 'river-fox' && zone.region === 'Caricas');
   assert.ok(foxZones.length >= 2, 'the corridor carries foxes along its length');
   for (const zone of foxZones) for (const site of zone.sites) {

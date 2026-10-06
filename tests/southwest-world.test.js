@@ -1,19 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/region-layout.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES, METRES_PER_HEX } from '../src/world/terrain/region-layout.js';
 import { PLAYABLE, WINDOW } from '../scripts/build-region-survey.mjs';
-import { LAND_HEXES } from '../src/region-survey.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
+import { LAND_HEXES } from '../src/dev/tools/region-survey.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, hexOwnerAt, regionAt,
   regions, terrainMix, landDistance,
-} from '../src/region-world.js';
+} from '../src/world/terrain/region-world.js';
 import {
   VAELLIR, ALEZHOR_WATER, MAROSH_NAHR, TROGORETH, SOUTHWEST_RIVERS, WEST_RIVERS, WEST_REGION_NAMES, courseDistance,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/west-ground.js';
-import { groundWithRiver, groundTint, GROUND_TINT_FAMILIES } from '../src/world-terrain.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver, groundTint, GROUND_TINT_FAMILIES } from '../src/world/terrain/world-terrain.js';
 import * as THREE from '../vendor/three.module.js';
 import {
   SOUTHWEST_REGIONS, SOUTHWEST_NORTH_REGIONS, MEROSHE_REGIONS,
@@ -38,14 +38,14 @@ import {
   TROGO_CREST, TROGO_GULLIES, TROGO_PATHS, TROGO_CLEARINGS, TROGO_WAY,
   trogoCrestAt, trogoThicket, trogoWay, trogoBand, trogoFogForest, inTrogoClearing, onTrogoGullyFloor,
   SOUTHWEST_SWALE_RIVERS, SOUTHWEST_TINT_ROWS, SOUTHWEST_TINT_REGIONS, southwestTint, southwestTintRow,
-} from '../src/southwest-world.js';
-import { SOUTHWEST_WILDLIFE_ZONES } from '../src/southwest-wildlife.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { regionLevel } from '../src/region-levels.js';
-import { REGION_LANGUAGE, DIALECTS } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
+} from '../src/content/regions/southwest/southwest-world.js';
+import { SOUTHWEST_WILDLIFE_ZONES } from '../src/content/regions/southwest/southwest-wildlife.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { REGION_LANGUAGE, DIALECTS } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
 
 /**
  * The southwestern block, in two halves and two jobs.
@@ -366,7 +366,7 @@ test('the block is one island of ground, and nine hex edges of the Ibenwood now 
   // Ibenwood on three, and West Pyros meets East Ibenwood on one. Nine edges, all on the north side,
   // and East Pyros (20 edges) and the Nether Desert (1) are now built too; Alezhor (8) remains unbuilt.
   // Nobody has yet walked through that door or looked at the ground on either side of it.
-  // Alezhor was built on 4 October 2026 (src/alezhor-world.js): its eight edges are the Alezhor Water's, five
+  // Alezhor was built on 4 October 2026 (src/content/regions/alezhor/alezhor-world.js): its eight edges are the Alezhor Water's, five
   // with Navarth and three with the Ganesh Desert, and its bank meets the water at the water's own level.
   const builtOutside = Object.fromEntries(Object.entries(neighbours).filter(([other]) => built.has(other)));
   assert.deepEqual(builtOutside, { 'South Ibenwood': 5, 'East Ibenwood': 4, 'East Pyros': 20, 'Nether Desert': 1, Alezhor: 8 },
@@ -520,7 +520,7 @@ test('four courses now, two on a border and two inside a country, and every one 
     'and every one has the same country on both banks');
   assert.deepEqual([...new Set(inside.map(edge => edge.size))], ['small'], 'all seven are small on the atlas');
   // **Both are waded anywhere, and that is deliberate.** Trogo already carries one movement rule
-  // (`src/undergrowth.js`) and a walled river inside it would be a second barrier crossing the first.
+  // (`src/world/scenery/undergrowth.js`) and a walled river inside it would be a second barrier crossing the first.
   for (const course of [MAROSH_NAHR, TROGORETH]) assert.equal(course.fordUntil, 1, `${course.id} is walled somewhere`);
   // The swale is for the two courses drawn on an unbuilt border and for nothing else. **Leaving job 4's
   // two in that list flattened the ridges they run off**: measured, the Trogoreth's bank comes within
@@ -1998,7 +1998,7 @@ test('every row of the southwest’s own tint table paints, and every one of the
   /**
    * **The guard one level down, which is where job 3 met the same failure mode.** `southwestTint` was a
    * chain of three boxes with a nested branch per country inside each; it is now one table of rows walked
-   * in order (`SOUTHWEST_TINTS`, src/southwest-world.js). Two things are held here, and between them a
+   * in order (`SOUTHWEST_TINTS`, src/content/regions/southwest/southwest-world.js). Two things are held here, and between them a
    * missing row cannot be silent: **every row must move the colour somewhere on its own country's hexes**,
    * and **every one of the thirteen countries must come out tinted somewhere in it**. A row added without
    * a line here turns the first assertion red with its own id; a country built without a row turns the
@@ -2119,7 +2119,7 @@ test('seventeen ranges over forty-seven hexes, and the rainforest is the densest
   assert.ok(species.has('forest-cat') && species.has('albatross'));
   // Proved against the file that holds the west's own ranges: the two new species have no zone anywhere
   // but here, and everything else job 4 uses already had one.
-  const life = readFileSync(new URL('../src/west-regions-life.js', import.meta.url), 'utf8');
+  const life = readFileSync(new URL('../src/content/regions/western-regions/west-regions-life.js', import.meta.url), 'utf8');
   const older = new Set(SOUTHWEST_WILDLIFE_ZONES.filter(zone => !EAST.includes(zone.region)).map(zone => zone.species));
   for (const name of species) {
     const existed = older.has(name) || life.includes(`species: '${name}'`);

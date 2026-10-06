@@ -3,29 +3,29 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, canSwim } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
+import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexAt, hexOwnerAt, regionAt, regions, landDistance, insideRegion, terrainMix, SEA_LEVEL,
-} from '../src/region-world.js';
+} from '../src/world/terrain/region-world.js';
 import {
   LIZEEM, LIZEEM_REACH, WEST_BRAIDS, WEST_RIVERS, GALA_RIVERS, GALA_CHANNEL, GALA_DESERT_STREAM, GALA_TELEMONIA_STREAM, GALA_TELEMONIA_MOUTH, OVETH_REACH,
   courseDistance, inWestWater,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westNaturalGround, westWaterSurface, braidThreadOffset, courseSample } from '../src/west-ground.js';
-import { groundWithRiver, bedrockHeight } from '../src/world-terrain.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westNaturalGround, westWaterSurface, braidThreadOffset, courseSample } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver, bedrockHeight } from '../src/world/terrain/world-terrain.js';
 import {
   GALA_CLIMATE, GALA_SEAM, GALA_SEAM_EDGES, GALA_SEAM_LINE, GALA_RISE, GALA_WASH, GALA_LANDMARKS, GALA_GROUND,
   seamDistance, galaRise, galaWash, galaClimate, galaGroundColour, onWashFloor, washPlace,
-} from '../src/gala-world.js';
-import { GALA_WILDLIFE_ZONES } from '../src/gala-wildlife.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { regionLevel } from '../src/region-levels.js';
-import { REGION_LANGUAGE, DIALECTS } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
+} from '../src/content/regions/gala/gala-world.js';
+import { GALA_WILDLIFE_ZONES } from '../src/content/regions/gala/gala-wildlife.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { REGION_LANGUAGE, DIALECTS } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
 
 /**
  * Gala: the western bank of the Lizeem near its mouth, built as terrain, climate, water and wildlife
@@ -37,7 +37,7 @@ import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
  * with a country being built beside it at the same time: the seam with Northern Ascarth.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = createWorld(scene);
 const gala = regions.find(region => region.name === 'Gala');

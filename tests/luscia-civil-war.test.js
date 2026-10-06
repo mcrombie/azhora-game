@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLusciaCivilWar,validateLusciaCivilWarSnapshot,LUSCIA_OPERATIVE_ID,LUSCIA_LOYALISTS} from '../src/luscia-civil-war.js';
-import {createLusciaCivilWarHost,LUSCIA_RECRUIT_NPCS,LUSCIA_RECRUIT_POSITIONS,LUSCIA_REPUBLICAN_FIGHT_ID} from '../src/luscia-civil-war-host.js';
-import {createLivingStory} from '../src/living-story.js';
-import {createCampaign} from '../src/campaign.js';
-import {createBorderChapter,BORDER_ENCOUNTER_ID} from '../src/border-chapter.js';
-import {createLusciaChapter} from '../src/luscia-chapter.js';
-import {createInventoryState} from '../src/inventory.js';
-import {chooseReply} from '../src/autopilot.js';
-import {createCombat} from '../src/combat.js';
+import {createLusciaCivilWar,validateLusciaCivilWarSnapshot,LUSCIA_OPERATIVE_ID,LUSCIA_LOYALISTS} from '../src/content/chapters/civil-war/luscia-civil-war.js';
+import {createLusciaCivilWarHost,LUSCIA_RECRUIT_NPCS,LUSCIA_RECRUIT_POSITIONS,LUSCIA_REPUBLICAN_FIGHT_ID} from '../src/content/chapters/civil-war/luscia-civil-war-host.js';
+import {createLivingStory} from '../src/gameplay/company/living-story.js';
+import {createCampaign} from '../src/content/chapters/civil-war/campaign.js';
+import {createBorderChapter,BORDER_ENCOUNTER_ID} from '../src/content/chapters/chapter-one/border-chapter.js';
+import {createLusciaChapter} from '../src/content/chapters/civil-war/luscia-chapter.js';
+import {createInventoryState} from '../src/gameplay/inventory/inventory.js';
+import {chooseReply} from '../src/gameplay/autoplay/autopilot.js';
+import {createCombat} from '../src/gameplay/combat/combat.js';
 
 test('provisional agreement is not allegiance and Mind Read reopens killed or betrayed introductions',()=>{
   const q=createLusciaCivilWar();q.meetSoldier();q.agreeSoldier();

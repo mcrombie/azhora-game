@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SELAMUS, SELAMUS_BUILDINGS, SELAMUS_CANALS, SELAMUS_BRIDGES, selamusPoint, selamusGround, selamusUrban, selamusCanalAt } from '../src/selamus-city.js';
-import { hexOwnerAt, landDistance, SEA_LEVEL } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { ATLAS_CITY_DESIGNATIONS } from '../src/world-map-detail.js';
-import { travelPlaces } from '../src/testing-travel.js';
+import { SELAMUS, SELAMUS_BUILDINGS, SELAMUS_CANALS, SELAMUS_BRIDGES, selamusPoint, selamusGround, selamusUrban, selamusCanalAt } from '../src/content/regions/selamus/selamus-city.js';
+import { hexOwnerAt, landDistance, SEA_LEVEL } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { ATLAS_CITY_DESIGNATIONS } from '../src/ui/map/world-map-detail.js';
+import { travelPlaces } from '../src/dev/tools/testing-travel.js';
 
 test('Selemis fills most of its crescent with safe island foundations and a maritime city designation',()=>{
   assert.ok(SELAMUS_BUILDINGS.length>=70);

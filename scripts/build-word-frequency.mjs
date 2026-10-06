@@ -1,5 +1,5 @@
 /**
- * Builds src/word-frequency.js: how often each English word is actually spoken
+ * Builds src/gameplay/skills/word-frequency.js: how often each English word is actually spoken
  * in this game.
  *
  * The linguist learns a tongue the way anybody does — the commonest words
@@ -7,7 +7,7 @@
  * not in some general corpus. This walks every string literal in src/ that
  * looks like prose (a space in it, long enough to be a sentence rather than an
  * id or a colour), counts the words, and writes the ranked list out as a
- * module. src/linguist.js turns the counts into running-text coverage: the
+ * module. src/gameplay/skills/language/linguist.js turns the counts into running-text coverage: the
  * fraction of what you hear that a given rank accounts for.
  *
  *   node scripts/build-word-frequency.mjs
@@ -67,7 +67,7 @@ const body = `/**
  * Every English word spoken in this game, commonest first: ${ranked.length.toLocaleString('en-GB')} of the
  * ${counts.size.toLocaleString('en-GB')} distinct words in ${total.toLocaleString('en-GB')} spoken words across ${files.length} modules.
  * These ${ranked.length.toLocaleString('en-GB')} account for ${(100 * kept / total).toFixed(1)}% of everything said; the rest are said once or
- * twice and are the last words a traveler picks up. src/linguist.js reads this
+ * twice and are the last words a traveler picks up. src/gameplay/skills/language/linguist.js reads this
  * as running-text coverage, so a word's rank is how soon you learn it.
  */
 export const FREQUENT_WORDS = ${JSON.stringify(words)}.split(' ');

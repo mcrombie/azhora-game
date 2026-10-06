@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { SOLIS } from '../src/region-world.js';
-import { SOLIS_BUILDINGS, SOLIS_ENCLOSURES } from '../src/west-suval.js';
-import { ATTIC_WINES, ATTIC_WINE_IDS, ATTIC_BOTTLES } from '../src/attic-wines.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { SOLIS } from '../src/world/terrain/region-world.js';
+import { SOLIS_BUILDINGS, SOLIS_ENCLOSURES } from '../src/content/regions/solis/west-suval.js';
+import { ATTIC_WINES, ATTIC_WINE_IDS, ATTIC_BOTTLES } from '../src/content/quests/wine/attic-wines.js';
 import { WINE_ATTIC, ATTIC_STANDS, ATTIC_FOOT, ATTIC_HEAD, JUAN, NIKA, NIKA_LIFE, NIKA_SCARY, JUAN_WELCOME, atticOffers,
-  createWineAttic, juanConversation, nikaConversation, validateWineAtticSnapshot } from '../src/wine-attic.js';
-import { WINE_IDS, createWine, validateWineSnapshot, CELLAR_WINE_IDS } from '../src/wine.js';
-import { createSkills } from '../src/skills.js';
-import { INVENTORY_ITEMS, ICON_KINDS } from '../src/inventory.js';
-import { FOODS } from '../src/consumables.js';
+  createWineAttic, juanConversation, nikaConversation, validateWineAtticSnapshot } from '../src/content/quests/wine/wine-attic.js';
+import { WINE_IDS, createWine, validateWineSnapshot, CELLAR_WINE_IDS } from '../src/content/quests/wine/wine.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { INVENTORY_ITEMS, ICON_KINDS } from '../src/gameplay/inventory/inventory.js';
+import { FOODS } from '../src/gameplay/inventory/consumables.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { SIGN_LABELS } = await sourceModule('../src/signs.js');
+const { SIGN_LABELS } = await sourceModule('../src/world/scenery/signs.js');
 const world = createWorld(new THREE.Scene());
 const P = (a, b) => ({ x: SOLIS.centre.x + a, z: SOLIS.centre.z + b });
 const talker = () => {
@@ -137,7 +137,7 @@ test('Nika says almost nothing, until you ask what she is reading', () => {
 });
 
 test('Juan is enormous and Nika is small, and neither wears a hat', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const height = actor => new THREE.Box3().setFromObject(actor.group).getSize(new THREE.Vector3()).y;
   const juan = createCharacter({ role: 'wine-seller', tunic: JUAN.color, skin: JUAN.skin }), nika = createCharacter({ role: 'wine-clerk', tunic: NIKA.color, skin: NIKA.skin });
   const ordinary = createCharacter({ role: 'commons-miller' });

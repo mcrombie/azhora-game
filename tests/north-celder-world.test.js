@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import './module-loader.js';
-import { REGION_IDS, REGION_TERRAIN, hexOwnerAt } from '../src/region-world.js';
-import { groundWithRiver as ground, groundBeforeCelder as before } from '../src/world-terrain.js';
-import { westWaterSurface, WEST_PROFILES } from '../src/west-ground.js';
-import { MITHALA_WEST_ARM, MITHALA_CELDER_WATER } from '../src/west-regions.js';
-import { CELDER_EDGES, CELDER_BOX, celderStreamField } from '../src/south-celder-world.js';
+import { REGION_IDS, REGION_TERRAIN, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { groundWithRiver as ground, groundBeforeCelder as before } from '../src/world/terrain/world-terrain.js';
+import { westWaterSurface, WEST_PROFILES } from '../src/content/regions/western-regions/west-ground.js';
+import { MITHALA_WEST_ARM, MITHALA_CELDER_WATER } from '../src/content/regions/western-regions/west-regions.js';
+import { CELDER_EDGES, CELDER_BOX, celderStreamField } from '../src/content/regions/south-celder/south-celder-world.js';
 import { NORTH_CELDER, NORTH_CELDER_CELLS, NORTH_CELDER_CLIMATE, NORTH_CELDER_KOPPEN, NORTH_CELDER_ARRIVAL,
-  NORTH_CELDER_LANDMARKS, NORTH_CELDER_TRAILS, NORTH_CELDER_VIEWS, northCelderGround, northCelderTint, northCelderOwns } from '../src/north-celder-world.js';
+  NORTH_CELDER_LANDMARKS, NORTH_CELDER_TRAILS, NORTH_CELDER_VIEWS, northCelderGround, northCelderTint, northCelderOwns } from '../src/content/regions/canerd/north-celder-world.js';
 
 const WWMAP = new URL('../../world-builder/map/resources/examples/azhora.wwmap', import.meta.url);
 const OWN = CELDER_EDGES.filter(e => e.country === NORTH_CELDER);

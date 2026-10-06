@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { createKaylaRace, KAYLA_RACE, KAYLA_RACE_LANE, ED_RACE_LANE } from '../src/kayla-race.js';
-import { createKaylaRaceHost } from '../src/kayla-race-host.js';
-import { createKaylaRaceAutopilot } from '../src/kayla-race-autopilot.js';
-import { CALOSS_PROPHET_STAND } from '../src/elagos-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createKaylaRace, KAYLA_RACE, KAYLA_RACE_LANE, ED_RACE_LANE } from '../src/content/quests/kayla/kayla-race.js';
+import { createKaylaRaceHost } from '../src/content/quests/kayla/kayla-race-host.js';
+import { createKaylaRaceAutopilot } from '../src/gameplay/autoplay/kayla-race-autopilot.js';
+import { CALOSS_PROPHET_STAND } from '../src/content/regions/ambron/elagos-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

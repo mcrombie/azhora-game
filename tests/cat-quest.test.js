@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 import { LIZ, LIZ_STAND, LIZ_LINES, LIZ_ASKING, CAT, MOP, PURSE, STAGES, REWARDS,
-  createCatQuest, createMopWalk, lizConversation, validateCatQuestSnapshot, validateMopSnapshot } from '../src/cat-quest.js';
-import { LIZ_CLEARING, PUETH_NPC_POSITIONS, PUETH_CLEARINGS } from '../src/pueth-world.js';
-import { FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
-import { BEE_LINES, HONEYCOMB } from '../src/beekeeper.js';
-import { SKILLS } from '../src/skills.js';
-import { SPELLS } from '../src/sorcery.js';
+  createCatQuest, createMopWalk, lizConversation, validateCatQuestSnapshot, validateMopSnapshot } from '../src/content/quests/roadside/cat-quest.js';
+import { LIZ_CLEARING, PUETH_NPC_POSITIONS, PUETH_CLEARINGS } from '../src/content/regions/pueth/pueth-world.js';
+import { FOREST_HIDEOUT_QUEST } from '../src/content/quests/forest/forest-hideout.js';
+import { BEE_LINES, HONEYCOMB } from '../src/content/quests/bear-family/beekeeper.js';
+import { SKILLS } from '../src/gameplay/skills/skills.js';
+import { SPELLS } from '../src/gameplay/magic/sorcery.js';
 
 function stage() {
   const opened = [];
@@ -304,7 +304,7 @@ test('her clearing is a walk from the camp, and the cat is on the edge of it', a
 });
 
 test('she wears the trade and none of the man: a smock, a smoker, and her own head', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const actor = createCharacter({ role: LIZ.modelRole, tunic: LIZ.color, skin: LIZ.skin, look: LIZ.look });
   assert.ok(actor.group.getObjectByName('Liz’s bee smoker'), 'she works without a smoker');
   assert.equal(actor.group.getObjectByName('Troy’s spectacles'), undefined, 'she is wearing his glasses');

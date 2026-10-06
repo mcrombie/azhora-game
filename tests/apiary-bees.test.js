@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { APIARY_BEES, createApiaryBees } from '../src/apiary-bees.js';
+import { APIARY_BEES, createApiaryBees } from '../src/content/quests/bear-family/apiary-bees.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createApiaryBeesView } = await sourceModule('../src/apiary-bees-view.js');
+const { createApiaryBeesView } = await sourceModule('../src/content/quests/bear-family/apiary-bees-view.js');
 const player = { x: 0, y: 0, z: 1, hp: 100 };
 const fixture = options => { const hits = [], events = [], bees = createApiaryBees({ onDamage: e => hits.push(e), onEvent: e => events.push(e), ...options }); return { bees, hits, events }; };
 

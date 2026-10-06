@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
-import { CENTRAL_NORTH_PILOT as box } from '../src/east-lotharn-north-shoulder.js';
-import { lotharnCentralNorthDelta as addition } from '../src/east-lotharn-world.js';
-import { RAMPS, peakUplift, onBald, OLVETH, KEMRATH, STONEGATE, PASS_ROAD, WORKINGS_TRACK } from '../src/east-lotharn-world.js';
-import { CAVE_LINES, createCaves } from '../src/east-lotharn-caves.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+import { CENTRAL_NORTH_PILOT as box } from '../src/content/regions/east-lotharn/east-lotharn-north-shoulder.js';
+import { lotharnCentralNorthDelta as addition } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { RAMPS, peakUplift, onBald, OLVETH, KEMRATH, STONEGATE, PASS_ROAD, WORKINGS_TRACK } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { CAVE_LINES, createCaves } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 test('the central north shoulder preserves complete approaches, cave floor ownership and the Varn apron', t => {
 const checks=[], rows=[], reservations={routes:0,caves:0,fortApron:0,lowlands:0,edges:0,lowCourse:0,bald:0};
 function unchanged(p,label){assert.equal(addition(p.x,p.z),0,`${label} ${p.x},${p.z}`);reservations[label]++;}
@@ -51,7 +51,7 @@ const summary={checks,reservations,changed:changed.length,above2m:significant.le
   originalCliffSamples:cliffs.length,cliffsBefore:statistics(cliffs.map(p=>p.oldSlope)),cliffsAfter:statistics(cliffs.map(p=>p.newSlope)),
   cliffSamplesLessSteep:cliffs.filter(p=>p.newSlope<p.oldSlope).length,
   newSteepest:changed.reduce((a,b)=>a.newSlope>b.newSlope?a:b),
-  sourceSha256:Object.fromEntries(['src/east-lotharn-world.js','src/varn-world.js','src/world-terrain.js','src/east-lotharn-north-shoulder.js'].map(file=>[file,createHash('sha256').update(fs.readFileSync(new URL('../'+file,import.meta.url))).digest('hex')]))};
+  sourceSha256:Object.fromEntries(['src/content/regions/east-lotharn/east-lotharn-world.js','src/content/regions/varn/varn-world.js','src/world/terrain/world-terrain.js','src/content/regions/east-lotharn/east-lotharn-north-shoulder.js'].map(file=>[file,createHash('sha256').update(fs.readFileSync(new URL('../'+file,import.meta.url))).digest('hex')]))};
 fs.mkdirSync(new URL('./artifacts/', import.meta.url), {recursive:true});
 fs.writeFileSync(new URL('./artifacts/r1-central-north-candidate-checks.json',import.meta.url),JSON.stringify({summary,rows},null,2)+'\n');
 assert.ok(summary.cliffSamplesLessSteep >= 36);

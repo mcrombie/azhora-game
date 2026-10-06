@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import {sourceModule} from './module-loader.js';
-const {canonicalAlezhorDriftwood,measureAlezhorNativeLayout}=await sourceModule('../src/alezhor-checks.js');
+const {canonicalAlezhorDriftwood,measureAlezhorNativeLayout}=await sourceModule('../src/dev/checks/alezhor-checks.js');
 const captured=JSON.parse(readFileSync(new URL('./fixtures/alezhor-driftwood-native-roundoff.json',import.meta.url)));
 const nonY=rows=>{const copy=new Float32Array(rows);for(let i=13;i<copy.length;i+=16)copy[i]=0;return copy;};
 const original=nonY(captured.node.rawMatrix),native=nonY(captured.native.rawMatrix);

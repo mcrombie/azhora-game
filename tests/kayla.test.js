@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createKayla, validateKaylaSnapshot, KAYLA, KAYLA_ROUTE, KAYLA_SPEED, KAYLA_LINES, kaylaConversation } from '../src/kayla.js';
+import { createKayla, validateKaylaSnapshot, KAYLA, KAYLA_ROUTE, KAYLA_SPEED, KAYLA_LINES, kaylaConversation } from '../src/content/quests/kayla/kayla.js';
 
 const direct = (position, target, maximum) => {
   const distance = Math.hypot(target.x - position.x, target.z - position.z);

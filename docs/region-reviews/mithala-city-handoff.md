@@ -14,7 +14,7 @@ answers are in `docs/design-answers.md` ("2026-10-04: The city of Mithala").
 
 ## Scope
 
-**The trade** is a third game atlas correction, `mithala-city-quarters-v1` in `src/game-atlas-adjustments.js`: North
+**The trade** is a third game atlas correction, `mithala-city-quarters-v1` in `src/world/terrain/game-atlas-adjustments.js`: North
 Mithala's 9,86 and 10,86 go to East Mithala, East Mithala's 5,88 and 6,88 go to North Mithala. It is not a World Builder
 edit, because `tests/developer-atlas.test.js` holds every checkout's export to the authored map's sha256, and editing the
 map would turn every game checkout red until each re-exported. If the user wants the World Builder map itself to show
@@ -32,18 +32,18 @@ there (the "Under the Alliance" section already in that file is another author's
 
 ## What is built
 
-**Files**: `src/mithala-city.js` (the pure layout and the made ground, the single source of truth), `src/mithala-city-parts.js`
-(palette and drawing helpers), `src/mithala-city-scenery.js` (streets, curtain, gates, bridges, ford, quay, barges, gauge),
-`src/mithala-city-buildings.js` (the 22 buildings and the sky tower), and tests `mithala-city`, `mithala-city-scenery`,
+**Files**: `src/content/regions/mithala/mithala-city.js` (the pure layout and the made ground, the single source of truth), `src/content/regions/mithala/mithala-city-parts.js`
+(palette and drawing helpers), `src/content/regions/mithala/mithala-city-scenery.js` (streets, curtain, gates, bridges, ford, quay, barges, gauge),
+`src/content/regions/mithala/mithala-city-buildings.js` (the 22 buildings and the sky tower), and tests `mithala-city`, `mithala-city-scenery`,
 `mithala-city-buildings`, `mithala-city-world`, with routes `tests/routes/mithala-*.json` for `scripts/walk-route.mjs`.
 
-**Wiring** (line-ending-preserving edits): the made ground is the `mithalaCityLayer` in `src/world-terrain.js`, with
+**Wiring** (line-ending-preserving edits): the made ground is the `mithalaCityLayer` in `src/world/terrain/world-terrain.js`, with
 `groundBeforeMithalaCity` for measuring; the `'Mithala city'` build step in `src/world.js` after the Mithala's own, which
 lifts the countryside's scatter off the city and hands on the walking surfaces, streets, landmarks and metrics; the
-Mithala wildlife kept off reserved ground in `src/west-regions-life.js`; the chart's four district outlines and its
-"Royal seat" badge in `src/world-map-detail.js`; a chart area at the Ford (`src/map-fog.js`) that is also the travel
-destination; texts that said the meeting was empty rewritten (`src/mithala-world.js`, `src/map-fog.js`,
-`src/build-status.js`, `src/region-world.js`); five review views in `src/main.js`; the campaign's river-city named.
+Mithala wildlife kept off reserved ground in `src/content/regions/western-regions/west-regions-life.js`; the chart's four district outlines and its
+"Royal seat" badge in `src/ui/map/world-map-detail.js`; a chart area at the Ford (`src/ui/map/map-fog.js`) that is also the travel
+destination; texts that said the meeting was empty rewritten (`src/content/regions/mithala/mithala-world.js`, `src/ui/map/map-fog.js`,
+`src/dev/tools/build-status.js`, `src/world/terrain/region-world.js`); five review views in `src/main.js`; the campaign's river-city named.
 
 **The city**: four platforms at 14.5 m on a plain at about 12 m, behind 1.5 m earth flood banks with ten timber gates;
 the Fork inside the Cref curtain (13 runs of grey ashlar, ten drum towers, five gates: the Horizon Gate's gatehouse,

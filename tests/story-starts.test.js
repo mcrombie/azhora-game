@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STORY_STARTS, newestStart, storyStart } from '../src/story-starts.js';
-import { CHAPTERS, createCampaign } from '../src/campaign.js';
-import { LEGION_POST_IDS } from '../src/legion-posts.js';
+import { STORY_STARTS, newestStart, storyStart } from '../src/app/startup/story-starts.js';
+import { CHAPTERS, createCampaign } from '../src/content/chapters/civil-war/campaign.js';
+import { LEGION_POST_IDS } from '../src/content/regions/drent/legion-posts.js';
 
 test('the opening screen can start at the newest built chapter, with the right road behind it', () => {
   const newest = newestStart();

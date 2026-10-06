@@ -34,7 +34,7 @@ The warning and pursuit provide a chance to flee. Solid cover blocks movement an
 
 After the race reward is collected, Kayla physically travels from the crossroads to her cub in Drent. She waits there if the cub's lesson is unfinished. The player may complete the two quests in either order.
 
-**Since 26 September 2026 the family is a circus** (see the design answers of that date and src/bear-circus.js): Kayla's husband Michael and their daughters Ava and Elle wait in camp beside the cub, then walk behind Kayla with it and perform at her stops. The rules below still hold for the whole family.
+**Since 26 September 2026 the family is a circus** (see the design answers of that date and src/content/quests/bear-family/bear-circus.js): Kayla's husband Michael and their daughters Ava and Elle wait in camp beside the cub, then walk behind Kayla with it and perform at her stops. The rules below still hold for the whole family.
 
 **Only after both quests are complete and Kayla has reached her cub do they begin roaming together.** Kayla resumes the original honey circuit through Drent, Pueth, and Luscia, including occasional visits to Liz. The cub follows, and Kayla waits if it falls behind. Use the real bridge and the existing bounded Caloss swimming crossing. Do not teleport either bear to catch up or create duplicate actors. Injuries and deaths remain persistent; a dead mother or cub cannot take part in the reunion.
 

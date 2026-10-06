@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHomeResidents, validateHomeResidents, HOME_PACE, HOME_FERRY_SECONDS } from '../src/home-residents.js';
-import { createHomeResidentHost } from '../src/home-resident-host.js';
-import { QUEST_HOMES, BEN_HOME, TROY_HOME, CAGNEY_RESIDENCE } from '../src/quest-homes.js';
-import { FERRY_LANDINGS } from '../src/ferry.js';
+import { createHomeResidents, validateHomeResidents, HOME_PACE, HOME_FERRY_SECONDS } from '../src/content/quests/homes/home-residents.js';
+import { createHomeResidentHost } from '../src/content/quests/homes/home-resident-host.js';
+import { QUEST_HOMES, BEN_HOME, TROY_HOME, CAGNEY_RESIDENCE } from '../src/content/quests/homes/quest-homes.js';
+import { FERRY_LANDINGS } from '../src/world/travel/ferry.js';
 
 const copy = value => JSON.parse(JSON.stringify(value));
 const gap = (a,b) => Math.hypot(a.x-b.x,a.z-b.z);

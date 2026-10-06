@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { createStreamedTerrain } from '../src/streamed-terrain.js';
-import { finishBuild } from '../src/build-steps.js';
-import { drapeRoadOnTerrain, terrainRoadHeight } from '../src/terrain-road.js';
+import { createStreamedTerrain } from '../src/world/loading/streamed-terrain.js';
+import { finishBuild } from '../src/world/loading/build-steps.js';
+import { drapeRoadOnTerrain, terrainRoadHeight } from '../src/world/terrain/terrain-road.js';
 
 function fixture({ cached = false, xs = Array.from({ length: 65 }, (_, i) => i * 10), zs = Array.from({ length: 41 }, (_, i) => i * 10) } = {}) {
   const positions = new Float32Array(xs.length * zs.length * 3), colors = new Float32Array(positions.length);
@@ -94,4 +94,44 @@ test('cached terrain remains unchanged and edge queries safely sample the final 
   const cols = live.xs.length, rows = live.zs.length;
   for (const j of [rows - 2, rows - 1]) for (const i of [cols - 2, cols - 1]) assert.equal(live.sampled[j * cols + i], 1);
   assert.equal(live.sampled.reduce((a, b) => a + b, 0), 4);
+});
+
+
+test('horizon tiles cover unbuilt country cheaply without marking it ready, then yield to exact terrain', () => {
+  const f=fixture(),bounds={minX:0,maxX:640,minZ:0,maxZ:400};
+  finishBuild(f.stream.buildBackdrop(bounds));
+  const backdrops=f.stream.backdropCount();
+  assert.ok(backdrops>0);assert.equal(f.stream.tileCount(),0);
+  assert.ok(f.sampled.some(value=>value===0),'the horizon does not sample all detailed terrain');
+  let disposed=0;for(const mesh of f.root.children)mesh.geometry.addEventListener('dispose',()=>disposed++);
+  finishBuild(f.stream.buildRegion(1));
+  assert.ok(f.stream.tileCount()>0);assert.ok(f.stream.backdropCount()<backdrops);
+  assert.equal(disposed,backdrops-f.stream.backdropCount(),'replaced geometry is released');
+  const names=f.root.children.map(mesh=>mesh.name.replace('Terrain backdrop ','').replace('Terrain ',''));
+  assert.equal(new Set(names).size,names.length,'no overlapping full and backdrop tiles');
+  const count=f.root.children.length;finishBuild(f.stream.buildBackdrop(bounds));
+  assert.equal(f.root.children.length,count,'drawing the horizon again does not overwrite detailed country');
+  assert.ok(f.calls.every(count=>count<=1));
+  const exact=fixture();finishBuild(exact.stream.buildRegion(1));
+  for(const mesh of exact.root.children){const actual=f.root.getObjectByName(mesh.name);assert.ok(actual);
+    for(const key of ['position','color','normal'])assert.deepEqual(actual.geometry.attributes[key].array,mesh.geometry.attributes[key].array);
+  }
+});
+
+
+test('distant horizon skirts stay outside the surface root consumed by river refiners', () => {
+  const root=new THREE.Group(),horizon=new THREE.Group(),axis=[0,10,20,30,40,50,60,70,80];
+  const positions=new Float32Array(axis.length**2*3),colors=new Float32Array(positions.length),sampled=new Uint8Array(axis.length**2);
+  const sample=(i,j)=>{const k=(j*axis.length+i)*3;positions.set([axis[i],15,axis[j]],k);colors.set([.4,.5,.2],k);};
+  const stream=createStreamedTerrain({THREE,xs:axis,zs:axis,positions,colors,sampled,sample,root,backdropRoot:horizon,
+    material:new THREE.MeshStandardMaterial(),cells:{First:[{x:40,z:40}]},ids:{First:1},tileSize:4});
+  finishBuild(stream.buildBackdrop({minX:0,maxX:80,minZ:0,maxZ:80}));
+  assert.ok(horizon.children.length>0);assert.equal(root.children.length,0);
+  finishBuild(stream.buildRegion(1));assert.equal(horizon.children.length,0);
+  for(const mesh of root.children){const p=mesh.geometry.attributes.position,indices=mesh.geometry.index.array;
+    for(let i=0;i<indices.length;i+=3){const [a,b,c]=indices.slice(i,i+3);
+      const area=(p.getX(b)-p.getX(a))*(p.getZ(c)-p.getZ(a))-(p.getZ(b)-p.getZ(a))*(p.getX(c)-p.getX(a));
+      assert.ok(Number.isFinite(area)&&Math.abs(area)>0,'river-plane interpolation never receives a vertical skirt');
+    }
+  }
 });

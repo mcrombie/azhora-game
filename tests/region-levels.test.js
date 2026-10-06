@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { REGION_LEVELS, LEVEL_WORDS, LEVEL_COUNTS, regionLevel, levelWords } from '../src/region-levels.js';
+import { REGION_LEVELS, LEVEL_WORDS, LEVEL_COUNTS, regionLevel, levelWords } from '../src/world/terrain/region-levels.js';
 
 const atlas = JSON.parse(readFileSync(fileURLToPath(new URL('../assets/azhora-dev-regions.json', import.meta.url)), 'utf8'))
   .regions.map(region => region.name);

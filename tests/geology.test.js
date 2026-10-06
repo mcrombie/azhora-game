@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { createSkills } from '../src/skills.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import { ROCK_SPECIES, ROCK_IDS, ROCK_SETTINGS, GEOLOGIST, GEOLOGIST_STAND, GEOLOGY_LESSON, SPECIMEN_ITEM,
-  rock, createGeology, validateGeologySnapshot, geologistConversation } from '../src/geology.js';
+  rock, createGeology, validateGeologySnapshot, geologistConversation } from '../src/gameplay/skills/nature/geology.js';
 
 const fixture = () => { const skills = createSkills(); return { skills, geology: createGeology({ skills }) }; };
 const satchel = () => { const bag = {}; return { bag, add: (id, n = 1) => { bag[id] = (bag[id] ?? 0) + n; return true; } }; };
@@ -14,7 +14,7 @@ let built = null;
 async function coast() {
   built ??= (async () => {
     const { createWorld } = await sourceModule('../src/world.js');
-    const stones = await sourceModule('../src/drent-stones.js');
+    const stones = await sourceModule('../src/content/regions/drent/drent-stones.js');
     const world = createWorld(new THREE.Scene());
     return { world, ...stones, placed: stones.createDrentStones(new THREE.Scene(), world, { avoid: Object.values(world.npcPositions) }) };
   })();

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { createConsumables } from '../src/consumables.js';
-import { createInventoryState } from '../src/inventory.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createConsumables } from '../src/gameplay/inventory/consumables.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
 function fixture({ hp = 50, quantity = 3, food = 'pawpaw' } = {}) {
   const inventory = createInventoryState();

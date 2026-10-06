@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {chooseLoadingMode} from '../src/loading-choice.js';
+import {chooseLoadingMode} from '../src/app/startup/loading-choice.js';
 
 function harness(){
   let time=0,nextId=0,paint;

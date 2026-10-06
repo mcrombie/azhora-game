@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PORT_CALOS_NPCS, PORT_CALOS_NPC_IDS, PORT_CALOS_PLACEHOLDER, portCalosConversation } from '../src/port-calos-people.js';
-import { PORT_CALOS_NPC_POSITIONS, inPortCalos } from '../src/port-calos-world.js';
-import { PEBLOS_NPCS } from '../src/peblos-people.js';
-import { COBBLE_STANDS } from '../src/peblos-world.js';
-import { FERRY_HOSTS } from '../src/ferry.js';
-import { KATY, KATY_STAND } from '../src/katy.js';
+import { PORT_CALOS_NPCS, PORT_CALOS_NPC_IDS, PORT_CALOS_PLACEHOLDER, portCalosConversation } from '../src/content/regions/port-calos/port-calos-people.js';
+import { PORT_CALOS_NPC_POSITIONS, inPortCalos } from '../src/content/regions/port-calos/port-calos-world.js';
+import { PEBLOS_NPCS } from '../src/content/regions/peblos/peblos-people.js';
+import { COBBLE_STANDS } from '../src/content/regions/peblos/peblos-world.js';
+import { FERRY_HOSTS } from '../src/world/travel/ferry.js';
+import { KATY, KATY_STAND } from '../src/content/quests/roadside/katy.js';
 import { sourceModule } from './module-loader.js';
 
 const requested = ['Kendall', 'Jay', 'Robert', 'Vic', 'Madi', 'Madison', 'Sierra', 'Franz', 'Marissa', 'Sean',
@@ -54,7 +54,7 @@ test('Hallie is at Port Calos, Maddie at Cobble, and all three ferry hosts retai
   assert.deepEqual(Object.values(FERRY_HOSTS).map(npc => npc.name), ['Jess', 'Maddie', 'Hallie']);
   assert.equal(FERRY_HOSTS.peblos.look.hair, 0x61412d);
   assert.equal(FERRY_HOSTS['port-calos'].look.hair, 0xdcc16e);
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   for (const npc of Object.values(FERRY_HOSTS)) {
     assert.equal(npc.look.hat, false);
     assert.equal(npc.look.nautical, true);
@@ -75,9 +75,9 @@ test('Port Calos keeps personal space and leaves the ferry arrival and Catie app
 
 
 test('residents without user-authored appearances are identical featureless gray mannequins at every distance', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
-  const { BLANK_SLATE_COLOUR, standInLook } = await sourceModule('../src/figure-lod.js');
-  const { createStandIn } = await sourceModule('../src/figure-stand-in.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
+  const { BLANK_SLATE_COLOUR, standInLook } = await sourceModule('../src/world/actors/figure-lod.js');
+  const { createStandIn } = await sourceModule('../src/world/actors/figure-stand-in.js');
   const THREE = await sourceModule('../vendor/three.module.js');
   const gray = new THREE.Color(BLANK_SLATE_COLOUR);
   const placeholders = PORT_CALOS_NPCS.filter(npc => npc.look.blankSlate);
@@ -118,7 +118,7 @@ test('residents without user-authored appearances are identical featureless gray
 });
 
 test('blank residents retain ordinary walking and a grounded fallen pose', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const THREE = await sourceModule('../vendor/three.module.js');
   const actor = createCharacter({ look: { blankSlate: true } });
   const hip = actor.group.getObjectByName('Left Hip');

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLotharnCaveWalk, validLotharnCaveSave } from '../src/east-lotharn-cave-walk.js';
-import { moveCharacter } from '../src/game-state.js';
+import { createLotharnCaveWalk, validLotharnCaveSave } from '../src/content/regions/east-lotharn/east-lotharn-cave-walk.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const surface = (_x, z) => z > 3 && z < 17 ? 25 : 10;

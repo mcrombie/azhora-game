@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
-import { BATMAN_COMBAT } from '../src/batman-quest.js';
-import { BODY } from '../src/bodies.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
+import { BATMAN_COMBAT } from '../src/content/quests/batman/batman-quest.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 import { sourceModule } from './module-loader.js';
-const { createCombatView } = await sourceModule('../src/combat-view.js');
-const { createBatman } = await sourceModule('../src/batman-model.js');
+const { createCombatView } = await sourceModule('../src/gameplay/combat/combat-view.js');
+const { createBatman } = await sourceModule('../src/content/quests/batman/batman-model.js');
 const world = { bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, colliders: [], heightAt: () => 0 };
 const enemySpec = { id: 'batman', npcId: 'batman', name: 'Batman', kind: 'batman', x: 0, z: 0, hp: BATMAN_COMBAT.hp };
 

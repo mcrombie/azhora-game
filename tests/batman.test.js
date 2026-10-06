@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BATMAN, BATMAN_PERCH, HANDOVER, VELAETH, CARTEL, EVIDENCE, EVIDENCE_IDS, LEDGER_ITEM,
   ENDINGS, ENDING_IDS, BATMAN_FIRST, BATMAN_CASE, BUST_SCENE, createBatmanHunt, batmanConversation,
-  validateHuntSnapshot } from '../src/batman.js';
-import { wallStateAt } from '../src/solis-sack.js';
-import { SOLIS } from '../src/region-world.js';
-import { WINERY_LAYOUT } from '../src/winery.js';
-import { KATY, createKaty, katyConversation } from '../src/katy.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
+  validateHuntSnapshot } from '../src/content/quests/batman/batman.js';
+import { wallStateAt } from '../src/content/regions/solis/solis-sack.js';
+import { SOLIS } from '../src/world/terrain/region-world.js';
+import { WINERY_LAYOUT } from '../src/content/regions/winery/winery.js';
+import { KATY, createKaty, katyConversation } from '../src/content/quests/roadside/katy.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
 
 function talk(conversation, npc, context) {
   const screens = [], acted = [];
@@ -170,11 +170,11 @@ test('the case survives a save, and nonsense is refused', () => {
 
 // The three people who already have a piece of it, each in their own place and their own voice.
 test('Kat, Juan and John each hand over their piece, and only when it is wanted', async () => {
-  const { WINEMAKER } = await import('../src/winery.js');
-  const { winemakerConversation } = await import('../src/wine.js');
-  const { JUAN } = await import('../src/wine-attic.js');
-  const { juanConversation } = await import('../src/wine-attic.js');
-  const { JOHN, johnConversation } = await import('../src/salt-sultan.js');
+  const { WINEMAKER } = await import('../src/content/regions/winery/winery.js');
+  const { winemakerConversation } = await import('../src/content/quests/wine/wine.js');
+  const { JUAN } = await import('../src/content/quests/wine/wine-attic.js');
+  const { juanConversation } = await import('../src/content/quests/wine/wine-attic.js');
+  const { JOHN, johnConversation } = await import('../src/content/quests/salt/salt-sultan.js');
 
   // Kat will not raise the barrel until Katy has the traveler looking for him.
   const katy = createKaty(), hunt = createBatmanHunt();

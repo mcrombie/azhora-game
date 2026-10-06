@@ -1,19 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
-import {groundWithRiver as height,legacyWesternGroundHeight as legacy} from '../src/world-terrain.js';
-import {WESTERN_DRY_SEAMS,westernDrySeamWeight} from '../src/western-dry-seams.js';
-import {WEST_PROFILES,WEST_POOL_LEVELS} from '../src/west-ground.js';
+import {groundWithRiver as height,legacyWesternGroundHeight as legacy} from '../src/world/terrain/world-terrain.js';
+import {WESTERN_DRY_SEAMS,westernDrySeamWeight} from '../src/content/regions/western-regions/western-dry-seams.js';
+import {WEST_PROFILES,WEST_POOL_LEVELS} from '../src/content/regions/western-regions/west-ground.js';
 import {readFileSync} from 'node:fs';
-import {createLegacyWesternGround,createLegacyWesternGrid} from '../src/western-legacy-ground.js';
-import {terrainRoadHeight} from '../src/terrain-road.js';
-import {villageBase,villageWeight,smooth,lerp} from '../src/world-terrain.js';
-import {villageToWorld,worldToVillage} from '../src/region-world.js';
-import {AVREL_POND,avrelPondGround} from '../src/avrel-pond.js';
-import {PORT_CALOS,portCalosGround} from '../src/port-calos-world.js';
-import {groveGround} from '../src/ibenwood-pilot.js';
-import {brandyHomeGround} from '../src/brandy-home-world.js';
-import {createIbenwoodRiverSystem} from '../src/ibenwood-rivers.js';
+import {createLegacyWesternGround,createLegacyWesternGrid} from '../src/content/regions/western-regions/western-legacy-ground.js';
+import {terrainRoadHeight} from '../src/world/terrain/terrain-road.js';
+import {villageBase,villageWeight,smooth,lerp} from '../src/world/terrain/world-terrain.js';
+import {villageToWorld,worldToVillage} from '../src/world/terrain/region-world.js';
+import {AVREL_POND,avrelPondGround} from '../src/content/regions/drent/avrel-pond.js';
+import {PORT_CALOS,portCalosGround} from '../src/content/regions/port-calos/port-calos-world.js';
+import {groveGround} from '../src/content/regions/ibenwood/ibenwood-pilot.js';
+import {brandyHomeGround} from '../src/content/quests/brandy/brandy-home-world.js';
+import {createIbenwoodRiverSystem} from '../src/content/regions/ibenwood/ibenwood-rivers.js';
 
 const sites=[
   {x:-2300.4349406410192,z:-201.6901076758503,nx:.4999999999999998,nz:.8660254037844387,before:10.475881078212495},

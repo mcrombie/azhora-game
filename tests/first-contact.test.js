@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { questSteps } from '../src/game-state.js';
+import { questSteps } from '../src/gameplay/movement/game-state.js';
 
 const root = new URL('../', import.meta.url);
 const file = rel => readFileSync(fileURLToPath(new URL(rel, root)), 'utf8');
@@ -17,10 +17,10 @@ test('the first person the traveler speaks to is Jojo, the harbourmaster at the 
   assert.match(main, /world\.npcPositions\[HARBOURMASTER\]=\{x:pierHead\.x,z:pierHead\.z\}/, 'she stands at the head of the pier');
   assert.match(main, /if\(npc\.id===HARBOURMASTER\)\{jojoOnTheLanding\(npc\);return;\}/, 'speaking to her is her own scene');
   assert.match(main, /questStage===1\)return\{\.\.\.npcById\.get\(HARBOURMASTER\)/, 'the arrow on the ground points at her');
-  assert.match(main, /ids:\{harbourmaster:HARBOURMASTER,/, 'and so does the gold over her head (src/quest-markers.js)');
+  assert.match(main, /ids:\{harbourmaster:HARBOURMASTER,/, 'and so does the gold over her head (src/gameplay/quests/quest-markers.js)');
   // The toast the moment the boat ties up. It moved into the arrival sequence's data when the
   // cutscene was built (LANDED.toast); main.js shows whatever that says, and shows nothing else.
-  assert.match(file('src/opening-sequence.js'), /'SPEAK TO JOJO AT THE HEAD OF THE PIER'/, 'and the toast the moment the boat ties up');
+  assert.match(file('src/app/startup/opening-sequence.js'), /'SPEAK TO JOJO AT THE HEAD OF THE PIER'/, 'and the toast the moment the boat ties up');
   assert.match(main, /toast\(landed\.toast\.title,landed\.toast\.kicker\)/, 'which main.js puts on the screen at the landing');
   assert.doesNotMatch(main, /SPEAK TO CHRIS ON THE LANDING/);
   // The letter is hers to give, and the quest only moves when she gives it.
@@ -34,7 +34,7 @@ test('the first person the traveler speaks to is Jojo, the harbourmaster at the 
   assert.match(hers, /updateQuest\('ashore'\)/);
   assert.match(hers, /'accept-letter','Take the letter'/);
   // The letter is addressed to Iven at Nothom now: Corvan's field register is off the slate with
-  // the rest of the middle of Chapter 1 (src/quest-slate.js, the user, 22 September 2026).
+  // the rest of the middle of Chapter 1 (src/gameplay/quests/quest-slate.js, the user, 22 September 2026).
   assert.match(hers, /letter of introduction, for Iven/);
   assert.match(hers, /Officer Glun first/, 'and she sends him to the post before anything else');
   // Chris follows the same opening independently; his dialogue never gives the player's letter.
@@ -58,7 +58,7 @@ test('nothing in the game still sends the player up the pier to Lakota', () => {
     /Lakota’s message/,
     /Lakota's message/,
   ];
-  const names = ['index.html', ...readdirSync(fileURLToPath(new URL('src/', root))).filter(name => name.endsWith('.js')).map(name => `src/${name}`)];
+  const names = ['index.html', ...readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js')).map(name => `src/${name}`)];
   assert.ok(names.length > 40, 'the source was found');
   for (const name of names) {
     const text = file(name);
@@ -72,10 +72,10 @@ test('nobody on the road still thinks Lakota is whoever gave you the letter', ()
   // is any line in the story's own files that means "the man who sent you" and says Lakota.
   // Corvan's was the last: he told a traveler who had not started to finish their business
   // with Lakota and Eren.
-  const storyFile = name => /^(journey.*|.*-chapter|campaign.*|story-.*)\.js$/.test(name);
-  const names = readdirSync(fileURLToPath(new URL('src/', root))).filter(storyFile).map(name => `src/${name}`);
+  const storyFile = name => /^(journey.*|.*-chapter|campaign.*|story-.*)\.js$/.test(name.split('/').at(-1));
+  const names = readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(storyFile).map(name => `src/${name}`);
   assert.ok(names.length >= 8, `only ${names.length} story files were found: ${names.join(', ')}`);
-  for (const wanted of ['src/journey-content.js', 'src/journey.js', 'src/luscia-chapter.js', 'src/campaign.js', 'src/story-chapters.js'])
+  for (const wanted of ['src/content/chapters/journey/journey-content.js', 'src/content/chapters/journey/journey.js', 'src/content/chapters/civil-war/luscia-chapter.js', 'src/content/chapters/civil-war/campaign.js', 'src/content/chapters/journey/story-chapters.js'])
     assert.ok(names.includes(wanted), `${wanted} is not among the story files this reads`);
   const stale = [
     /business with Lakota/,
@@ -89,5 +89,5 @@ test('nobody on the road still thinks Lakota is whoever gave you the letter', ()
     const text = file(name);
     for (const pattern of stale) assert.doesNotMatch(text, pattern, `${name} still takes Lakota for whoever gave the traveler the letter`);
   }
-  assert.match(file('src/journey-content.js'), /finish your business with Jojo and Eren/, 'Corvan sends an unstarted traveler back to Jojo, who has the letter');
+  assert.match(file('src/content/chapters/journey/journey-content.js'), /finish your business with Jojo and Eren/, 'Corvan sends an unstarted traveler back to Jojo, who has the letter');
 });

@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { deferredScenery } from '../src/deferred-scenery.js';
+import { deferredScenery } from '../src/world/loading/deferred-scenery.js';
 
-const { createFerryBoat } = await sourceModule('../src/ferry-boat.js');
-const { FERRY_MOORINGS } = await sourceModule('../src/peblos-world.js');
+const { createFerryBoat } = await sourceModule('../src/world/travel/ferry-boat.js');
+const { FERRY_MOORINGS } = await sourceModule('../src/content/regions/peblos/peblos-world.js');
 function toolkit() {
   const root = new THREE.Group(), movingGroups = new Set(), cube = new THREE.BoxGeometry(1, 1, 1);
   const cylinder = new THREE.CylinderGeometry(1, 1, 1, 7);

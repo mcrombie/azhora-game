@@ -21,10 +21,18 @@ const root = path.dirname(fileURLToPath(new URL('../package.json', import.meta.u
 const outArg = process.argv.indexOf('--out');
 const out = path.resolve(root, outArg > 0 ? process.argv[outArg + 1] : 'public');
 
+// Never allow a build output to overwrite the project or its private reference.
+const relativeOut = path.relative(root, out);
+if (!relativeOut || relativeOut.startsWith('..') || path.isAbsolute(relativeOut)
+    || relativeOut.split(/[\\/]/).some(part => part.toLowerCase() === 'reference-private')
+    || ['src','assets','vendor','scripts','tests'].includes(relativeOut.toLowerCase())) {
+  throw new Error('Choose a dedicated build output directory inside the project.');
+}
+
 /** What a browser asks for, and nothing else. */
 const PUBLISHED = ['index.html', 'src', 'vendor', 'assets'];
 /** Test files live beside the code they test; they are not part of the game. */
-const skip = entry => entry.endsWith('.test.js');
+const skip = entry => entry.endsWith('.test.js') || entry.split(/[\\/]/).some(part => part.toLowerCase() === 'reference-private');
 
 const bytes = async dir => {
   let total = 0;

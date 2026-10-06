@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { REGION_CELLS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, terrainMix, seamlessTerrainMix } from '../src/region-world.js';
-import { METRES_PER_HEX } from '../src/region-layout.js';
-import { groundWithRiver, groundTint } from '../src/world-terrain.js';
+import { REGION_CELLS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, terrainMix, seamlessTerrainMix } from '../src/world/terrain/region-world.js';
+import { METRES_PER_HEX } from '../src/world/terrain/region-layout.js';
+import { groundWithRiver, groundTint } from '../src/world/terrain/world-terrain.js';
 
 const clamp = x => Math.max(0, Math.min(1, x));
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };

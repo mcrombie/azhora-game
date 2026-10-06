@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { INVENTORY_ITEMS, ICON_KINDS } from '../src/inventory.js';
-const { createCharacter } = await sourceModule('../src/characters.js');
+import { INVENTORY_ITEMS, ICON_KINDS } from '../src/gameplay/inventory/inventory.js';
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 const meshCount = group => { let count = 0; group.traverse(node => { if (node.isMesh) count++; }); return count; };
 
 test('the plain wand and oak staff are lazy, inexpensive wooden models that replace the sword', () => {

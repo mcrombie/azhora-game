@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCagneyHost } from '../src/cagney-host.js';
-import { createCagneyQuest, CAGNEY, CAGNEY_AMBUSH, CAGNAPPERS, CAGNEY_WAVES, CAGNEY_HEALTH } from '../src/cagney-quest.js';
-import { createCombat } from '../src/combat.js';
+import { createCagneyHost } from '../src/content/quests/cagney/cagney-host.js';
+import { createCagneyQuest, CAGNEY, CAGNEY_AMBUSH, CAGNAPPERS, CAGNEY_WAVES, CAGNEY_HEALTH } from '../src/content/quests/cagney/cagney-quest.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 
 function fixture({realCombat=false,region='Drent',wave=1}={}){
   const quest=createCagneyQuest(),at={...CAGNEY_WAVES[wave].center};

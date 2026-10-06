@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 const SRC = fileURLToPath(new URL('../src/', import.meta.url));
 const rangerPosts = Object.freeze([Object.freeze({ id: 'fixture-ranger', x: 0, z: 0 })]);
 const modules = [];
-for (const file of readdirSync(SRC).filter(name => name.endsWith('.js'))) {
+for (const file of readdirSync(SRC, { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js'))) {
   const text = readFileSync(SRC + file, 'utf8');
   if (!/export function validate\w*Snapshot/.test(text)) continue;
   if (/from 'three'/.test(text)) continue;   // scene modules need the renderer; they carry no save section

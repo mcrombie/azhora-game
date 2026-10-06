@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {toWorld} from '../src/world-scale.js';
-import {createRoadAudio,roadAudioProfile} from '../src/road-audio.js';
+import {toWorld} from '../src/world/terrain/world-scale.js';
+import {createRoadAudio,roadAudioProfile} from '../src/world/environment/road-audio.js';
 
 class FakeParam {
   constructor(){this.value=0;this.events=[];}

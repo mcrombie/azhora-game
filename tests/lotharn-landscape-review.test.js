@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lotharnLandscapeDelta, RAMPS, PEAKS, peakUplift } from '../src/east-lotharn-world.js';
-import { CAVE_LINES } from '../src/east-lotharn-caves.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { varnBeforeLips, lipRib, varnCaveAccessDelta, varnLandscapeSceneryDelta } from '../src/varn-world.js';
+import { lotharnLandscapeDelta, RAMPS, PEAKS, peakUplift } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { CAVE_LINES } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { varnBeforeLips, lipRib, varnCaveAccessDelta, varnLandscapeSceneryDelta } from '../src/content/regions/varn/varn-world.js';
 
 test('weathered northern faces have unequal relief without lowering cave roofs', () => {
   let changed = 0, largest = 0;

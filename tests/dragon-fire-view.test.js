@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import {sourceModule} from './module-loader.js';
-const {createDragonFireView,DRAGON_FIRE_LIMITS:LIMITS}=await sourceModule('../src/dragon-fire-view.js');
+const {createDragonFireView,DRAGON_FIRE_LIMITS:LIMITS}=await sourceModule('../src/gameplay/magic/dragon-fire-view.js');
 
 const fire={active:true,origin:{x:20,y:80,z:-30},direction:{x:3,y:-2,z:4},range:90,intensity:1,
   impacts:[{x:74,y:44,z:42,radius:3,id:1,left:6}]};

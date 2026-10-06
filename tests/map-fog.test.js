@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { regionAt } from '../src/regions.js';
-import { hexAt, hexCentre, insideRegion } from '../src/region-world.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { SUBREGIONS, createMapFog, chartKnowsPoint, subregionsAt, validateMapFogSnapshot } from '../src/map-fog.js';
-import { BUILD_STATES, buildStatusList, regionBuildStatus } from '../src/build-status.js';
+import { regionAt } from '../src/world/terrain/regions.js';
+import { hexAt, hexCentre, insideRegion } from '../src/world/terrain/region-world.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { SUBREGIONS, createMapFog, chartKnowsPoint, subregionsAt, validateMapFogSnapshot } from '../src/ui/map/map-fog.js';
+import { BUILD_STATES, buildStatusList, regionBuildStatus } from '../src/dev/tools/build-status.js';
 
 const TIDEHAVEN = { x: -6, z: 29 }, LUMBER_TOWN = { x: -729, z: 384 };
 

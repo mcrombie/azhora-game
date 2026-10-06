@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { PYRA, PYRA_LANDMARKS, pyraPoint, pyraGround } from '../src/pyra-world.js';
-import { runPyraChecks } from '../src/pyra-checks.js';
-import { travelPlaces } from '../src/testing-travel.js';
-import { canStand } from '../src/game-state.js';
-import { regionAt } from '../src/region-world.js';
+import { PYRA, PYRA_LANDMARKS, pyraPoint, pyraGround } from '../src/content/regions/pyra/pyra-world.js';
+import { runPyraChecks } from '../src/dev/checks/pyra-checks.js';
+import { travelPlaces } from '../src/dev/tools/testing-travel.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { regionAt } from '../src/world/terrain/region-world.js';
 const scene=new THREE.Scene();
 const world=await scopedWorld(scene,PYRA.regions);
 test('Pyra spans two regions and preserves the original river channel',()=>{

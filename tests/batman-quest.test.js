@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBatmanQuest, validateBatmanQuestSnapshot, migrateBatmanQuest, BATMAN_QUEST, BATMAN_HISTORY } from '../src/batman-quest.js';
+import { createBatmanQuest, validateBatmanQuestSnapshot, migrateBatmanQuest, BATMAN_QUEST, BATMAN_HISTORY } from '../src/content/quests/batman/batman-quest.js';
 
 test('Catie opens a search that can finish peacefully even after accepting the bounty', () => {
   const events = [], quest = createBatmanQuest({ onEvent: event => events.push(event) });

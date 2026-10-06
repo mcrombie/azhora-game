@@ -23,7 +23,7 @@ uncommitted, as the brief asks.
 **Chosen where the atlas is silent:**
 
 - **Relief.** Both of Gala's profiles are the seam contract's (base 4.0, amp .6, wave 320). The
-  north stands higher by a landform, `galaRise` (src/gala-world.js): 4.2 m across the steppe rows,
+  north stands higher by a landform, `galaRise` (src/content/regions/gala/gala-world.js): 4.2 m across the steppe rows,
   gone by the Mediterranean ones, leaning a little west (the dry country is north and north-west),
   gated by the region's own blend and by the seam. Measured on the built ground: the steppe rows
   average **7.5 m** (4.4–10.0), the `Csb` rows **4.9 m**, the coastal hexes **5.7 m** (the last two
@@ -35,7 +35,7 @@ uncommitted, as the brief asks.
 - **The dry wash** (`GALA_WASH`): 170 m of gravel floor between cut banks, 1.25 m deep, 6.4 m of
   flat floor, running south-east off the north-western shoulder and fanning out where the `Csb`
   rows begin. No water in it; nothing grows on its floor.
-- **The distributary** (`GALA_CHANNEL`, src/west-regions.js): the lore's "Lizeem's distributaries"
+- **The distributary** (`GALA_CHANNEL`, src/content/regions/western-regions/west-regions.js): the lore's "Lizeem's distributaries"
   and "network of small rivers". The Lizeem's actual mouth is Gala's south-eastern tip, inside the
   seam's 100 m, so nothing is shaped there; the plain's own water rises 75 m off the Lizeem's
   western bank in hex (-7,118) and runs 434 m south-west to Gala's short shore at the south-western
@@ -95,7 +95,7 @@ a dump of the whole world taken before any change:
   for; it will change when Telemonia, the Oves Desert, Ovesos and Northern Ascarth are built. Listed
   under open questions.
 
-## What grows (src/gala-scenery.js, its own seeded stream)
+## What grows (src/content/regions/gala/gala-scenery.js, its own seeded stream)
 
 Read off the climate at each point (`galaClimate`, blended over Gala's own hexes), so the steppe
 gives way to the Mediterranean over about a hundred metres and nothing draws a line; the ground
@@ -116,7 +116,7 @@ colour does the same (`galaGroundColour`, hooked into `groundTint` for Gala's pl
   (the Reed Bank); **tamarisk and oleander** in galleries on every watercourse, thicker to the south;
   sand on the braid bars; rock in the Oveth's ford; gravel in the desert stream.
 
-## The animals (src/gala-wildlife.js), every site measured on the built ground
+## The animals (src/content/regions/gala/gala-wildlife.js), every site measured on the built ground
 
 | zone | species | why |
 |---|---|---|
@@ -236,7 +236,7 @@ still holds, and the test says so.
    Braided Mouths" in plain words. Yours to name.
    **Answered 2026-10-01** (docs/southwest-finish-report.md): the two border streams are named from the
    Mittoli lexicon, which is `mittoli` in `world-builder/azhoran_language_profiles.py` and
-   `LANGUAGES.mittoli.roots` in `src/languages.js`. The Telemonia border stream is **the Treloss** -
+   `LANGUAGES.mittoli.roots` in `src/gameplay/skills/languages.js`. The Telemonia border stream is **the Treloss** -
    the profile's own border root *trel-* with the *-oss* ending this tongue puts on a watercourse
    (*caeloss* is "river"), a form the profile's own `candidate_pool` emits. The desert border stream is
    **the Caelin**, *mittoli.roots.flow*, "the flow" - and it is the same name as the Oves Desert's

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { COPPER_ITEM, CURRENCIES, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, peddlerOffers, purchase } from '../src/economy.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
+import { COPPER_ITEM, CURRENCIES, PEDDLER, PEDDLER_STOCK, STARTING_PURSE, describeSum, peddlerOffers, purchase } from '../src/gameplay/inventory/economy.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
 
 test('the Empire’s coin runs ten to one and only copper is built yet; the rebels’ paper has no copper value', () => {
   assert.equal(CURRENCIES.silver.inCopper, 10 * CURRENCIES.copper.inCopper);

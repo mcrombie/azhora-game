@@ -2,26 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter, QUEST_DONE } from '../src/game-state.js';
-import { createCombat } from '../src/combat.js';
-import { RIDE } from '../src/riding.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES, riverCourses } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { RIVER_EDGES, RIVER_SOURCE } from '../src/region-rivers.js';
-import { REGION_CELLS, REGION_OUTLINES, WORLD_BOUNDS, MAIN_ROAD, regionAt, insideRegion, landDistance, worldToVillage } from '../src/region-world.js';
-import { villageWeight } from '../src/world-terrain.js';
-import { toWorld, toAuthored } from '../src/world-scale.js';
+import { canStand, moveCharacter, QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { RIDE } from '../src/gameplay/movement/riding.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES, riverCourses } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { RIVER_EDGES, RIVER_SOURCE } from '../src/world/terrain/region-rivers.js';
+import { REGION_CELLS, REGION_OUTLINES, WORLD_BOUNDS, MAIN_ROAD, regionAt, insideRegion, landDistance, worldToVillage } from '../src/world/terrain/region-world.js';
+import { villageWeight } from '../src/world/terrain/world-terrain.js';
+import { toWorld, toAuthored } from '../src/world/terrain/world-scale.js';
 import {
   TESSEN, ORDEL, PUETH_RIVERS, TESSEN_BRIDGE, TIDEHAVEN_GROUND_REACH, PUETH_ROAD, PUETH_JUNCTION,
   TESSEN_POST, GARRISON_STANDS, RIMEHOLT, RIMEHOLT_STANDS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, HIDEOUT_APPROACH_TRAIL,
   FERADOM_BARRIER, riverLineDistance,
-} from '../src/pueth-world.js';
-import { FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON, createForestHideoutQuest } from '../src/forest-hideout.js';
-import { PUETH_NPCS, puethConversation } from '../src/pueth-people.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
+} from '../src/content/regions/pueth/pueth-world.js';
+import { FOREST_HIDEOUT_QUEST, HIDEOUT_GARRISON, createForestHideoutQuest } from '../src/content/quests/forest/forest-hideout.js';
+import { PUETH_NPCS, puethConversation } from '../src/content/regions/pueth/pueth-people.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -296,11 +296,11 @@ test('old saves keep the camp as they left it: scouted, accepted or cleared in L
   assert.deepEqual(toAuthored(oldCampWorld.x, oldCampWorld.z), oldCamp, 'the old camp ground still converts both ways');
 });
 
-test('src/region-rivers.js is the World Builder map\u2019s river edges plus documented game corrections, regenerated and never edited by hand', async t => {
+test('src/world/terrain/region-rivers.js is the World Builder map\u2019s river edges plus documented game corrections, regenerated and never edited by hand', async t => {
   const { readFileSync } = await import('node:fs');
   const { readMap, buildSource } = await import('../scripts/build-region-rivers.mjs');
   const source = readMap();
   if (!source) { t.skip('the World Builder map is not checked out beside this repository'); return; }
-  const shipped = readFileSync(new URL('../src/region-rivers.js', import.meta.url), 'utf8');
-  assert.equal(shipped, buildSource(source), 'src/region-rivers.js is stale: run `node scripts/build-region-rivers.mjs`');
+  const shipped = readFileSync(new URL('../src/world/terrain/region-rivers.js', import.meta.url), 'utf8');
+  assert.equal(shipped, buildSource(source), 'src/world/terrain/region-rivers.js is stale: run `node scripts/build-region-rivers.mjs`');
 });

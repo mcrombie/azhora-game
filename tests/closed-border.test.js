@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { CLOSED_REGIONS, CLOSED_BORDER_LINES, CLOSED_BORDER_COOLDOWN, closedRegionEntered, createBorderWatch } from '../src/closed-border.js';
-import { REGION_OUTLINES, SUVAL_ROAD, insideRegion, isLandHex } from '../src/region-world.js';
-import { FRONTIER_ROUTE, FRONTIER_GATE, BORDER_CROSSING } from '../src/frontier.js';
-import { SUVAL_RIDGE_EDGES, SUVAL_RIDGE_ROCKS, SUVAL_RIDGE_COLLIDERS, SUVAL_HILL_PASSES, SUVAL_HILL_GUARDS, SUVAL_FALSE_PASSES, hillPassPoint } from '../src/frontier-ridges.js';
-import { SMUGGLERS_DOOR, ROUTE_TO_DOOR } from '../src/rival-light.js';
-import { TOWN_LIFE_NPCS } from '../src/town-life.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { CLOSED_REGIONS, CLOSED_BORDER_LINES, CLOSED_BORDER_COOLDOWN, closedRegionEntered, createBorderWatch } from '../src/world/travel/closed-border.js';
+import { REGION_OUTLINES, SUVAL_ROAD, insideRegion, isLandHex } from '../src/world/terrain/region-world.js';
+import { FRONTIER_ROUTE, FRONTIER_GATE, BORDER_CROSSING } from '../src/content/regions/minora-frontier/frontier.js';
+import { SUVAL_RIDGE_EDGES, SUVAL_RIDGE_ROCKS, SUVAL_RIDGE_COLLIDERS, SUVAL_HILL_PASSES, SUVAL_HILL_GUARDS, SUVAL_FALSE_PASSES, hillPassPoint } from '../src/content/regions/minora-frontier/frontier-ridges.js';
+import { SMUGGLERS_DOOR, ROUTE_TO_DOOR } from '../src/content/quests/rival-light/rival-light.js';
+import { TOWN_LIFE_NPCS } from '../src/world/life/town-life.js';
 
 const flat = (inside) => (name, x) => name === 'Closed' && inside(x);
 
@@ -69,7 +69,7 @@ test('the branch road now ends before Elod’s shut gate, and walking on into Ea
 });
 
 test('the exposed land boundary has continuous solid limestone and every hill pass is visibly locked', async () => {
-  const { buildFrontierRidges } = await sourceModule('../src/frontier-ridge-works.js');
+  const { buildFrontierRidges } = await sourceModule('../src/content/regions/minora-frontier/frontier-ridge-works.js');
   const scene = new THREE.Scene(), colliders = [];
   buildFrontierRidges({ parent: scene, heightAt: () => 10, colliders });
   const world = { bounds: { minX: -1000, maxX: 1000, minZ: 0, maxZ: 1400 }, heightAt: () => 10, colliders };

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advanceTerrainSeed,createTerrainSeedLookup } from '../src/terrain-seeds.js';
+import { advanceTerrainSeed,createTerrainSeedLookup } from '../src/world/terrain/terrain-seeds.js';
 
 test('terrain seed jumps exactly match the sequential random stream',()=>{
   for(const seed of [0,1,0xffffffff,0x5a2f11b7]) {

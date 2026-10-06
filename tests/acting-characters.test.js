@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 const posed = id => {
   const actor = createCharacter();
   for (let frame = 0; frame < 60; frame++) actor.animate(frame / 60, 0, true,

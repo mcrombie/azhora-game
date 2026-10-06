@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import {
   RENA, APPLEGARTH, RENA_ROAD, RENA_RUINS, RENA_JUNCTION, RENA_EAST_GATE, RENA_WEST_GATE,
   APPLEGARTH_BUILDINGS, APPLEGARTH_WORKS, APPLEGARTH_EAST, APPLEGARTH_WEST,
   RENA_LANDMARKS, RENA_CLEARINGS, RENA_STANDS, RENA_SIGNS, DRENT_DEEP_PLACES, EAST_RENA_STONE,
   renaPoint, applePoint, OLD_ROAD_WEST, OLD_ROAD_ACROSS,
-} from '../src/rena.js';
-import { RENA_NPCS } from '../src/rena-people.js';
-import { LORN_ID, HESTA_ID } from '../src/rena-letters.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
-import { JOURNEY_NPCS } from '../src/journey-content.js';
-import { TOWN_LIFE_NPCS } from '../src/town-life.js';
-import { SUBREGIONS, subregion, subregionsAt } from '../src/map-fog.js';
-import { hexOwnerAt, insideRegion, landDistance, MAIN_ROAD, VILLAGE, worldToVillage } from '../src/region-world.js';
-import { validateWoodlandProgress } from '../src/woodland-progress.js';
+} from '../src/content/quests/rena/rena.js';
+import { RENA_NPCS } from '../src/content/quests/rena/rena-people.js';
+import { LORN_ID, HESTA_ID } from '../src/content/quests/rena/rena-letters.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
+import { JOURNEY_NPCS } from '../src/content/chapters/journey/journey-content.js';
+import { TOWN_LIFE_NPCS } from '../src/world/life/town-life.js';
+import { SUBREGIONS, subregion, subregionsAt } from '../src/ui/map/map-fog.js';
+import { hexOwnerAt, insideRegion, landDistance, MAIN_ROAD, VILLAGE, worldToVillage } from '../src/world/terrain/region-world.js';
+import { validateWoodlandProgress } from '../src/content/chapters/journey/woodland-progress.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { SIGN_LABELS } = await sourceModule('../src/signs.js');
+const { SIGN_LABELS } = await sourceModule('../src/world/scenery/signs.js');
 const world = createWorld(new THREE.Scene());
 
 const NEW_KINDS = /^(rena-|applegarth-|drove-|tollhouse|pedlars-stone|lorn-)/;
@@ -174,12 +174,12 @@ test('the ten new people stand on walkable ground in Drent, clear of everyone wh
 test('nothing this pass puts in Tidehaven stands in a bird’s home ground or in front of an army post', async () => {
   // What this rule is for: a bird's home ground is where the birding skill sends the player to
   // stand and look at that bird, so somebody standing in it is in the way of the thing they came
-  // for. It is *not* that a stand takes perches away — `habitatSpots` (src/drent-birds.js) maps a
+  // for. It is *not* that a stand takes perches away — `habitatSpots` (src/content/regions/drent/drent-birds.js) maps a
   // habitat's perches through untouched, and `avoid` thins only its ground foraging spots, within
   // 1.6 m; swept over the built world with every stand in the game, no habitat loses even one.
   // The comment here used to say the perches, and that cost a reader an afternoon.
   // The second half is plainer: the traveler cannot talk to a post he cannot walk up to.
-  const { BIRD_HABITATS, habitatSpots } = await sourceModule('../src/drent-birds.js');
+  const { BIRD_HABITATS, habitatSpots } = await sourceModule('../src/content/regions/drent/drent-birds.js');
   for (const npc of RENA_NPCS) {
     const stand = RENA_STANDS[npc.id];
     for (const habitat of BIRD_HABITATS) {

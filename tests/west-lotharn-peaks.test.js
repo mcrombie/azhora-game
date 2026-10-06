@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { moveCharacter, canStand } from '../src/game-state.js';
-import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/climbing.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
+import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/gameplay/movement/climbing.js';
 import {
   WEST_LOTHARN, WEST_LOTHARN_BOX, PEAKS, PEAK_TOPS, RAMPS, RAMP, BANDS, BALD,
   LONG_VALLEY, NORTH_VALLEY, NOTCH, COL, onRamp, peakUplift, pointOn, westLotharnShare,
-} from '../src/west-lotharn-world.js';
-import { WEST_CAVE_LINES, createWestLotharnCaves, CAVE, nearestPlain } from '../src/west-lotharn-caves.js';
-import { createCaveWalk, caveOutside } from '../src/east-lotharn-caves.js';
-import { createLotharnCaveWalk } from '../src/east-lotharn-cave-walk.js';
+} from '../src/content/regions/west-lotharn/west-lotharn-world.js';
+import { WEST_CAVE_LINES, createWestLotharnCaves, CAVE, nearestPlain } from '../src/content/regions/west-lotharn/west-lotharn-caves.js';
+import { createCaveWalk, caveOutside } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { createLotharnCaveWalk } from '../src/content/regions/east-lotharn/east-lotharn-cave-walk.js';
 
 /**
  * The West Lotharn's summits and caves. The user's two settled decisions of 29 September 2026: the

@@ -1,14 +1,14 @@
-import { QUEST_DONE } from '../src/game-state.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { STORY_STARTS } from '../src/story-starts.js';
-import { STORY_CHAPTERS, chapterProgress, chapterTitle, chapterGoal, chapterLabel, chapterCount, sideSeat, atSideSeat, SIDE_SEATS, CONQUESTS } from '../src/story-chapters.js';
-import { createLusciaChapter } from '../src/luscia-chapter.js';
-import { createMorosChapter } from '../src/moros-chapter.js';
-import { createAftermathChapter } from '../src/aftermath-chapter.js';
-import { createCampaign, CHAPTERS } from '../src/campaign.js';
+import { STORY_STARTS } from '../src/app/startup/story-starts.js';
+import { STORY_CHAPTERS, chapterProgress, chapterTitle, chapterGoal, chapterLabel, chapterCount, sideSeat, atSideSeat, SIDE_SEATS, CONQUESTS } from '../src/content/chapters/journey/story-chapters.js';
+import { createLusciaChapter } from '../src/content/chapters/civil-war/luscia-chapter.js';
+import { createMorosChapter } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { createAftermathChapter } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { createCampaign, CHAPTERS } from '../src/content/chapters/civil-war/campaign.js';
 
 /**
  * `chapterProgress` walks the chapters in order and stops at the first whose `done` is false, so

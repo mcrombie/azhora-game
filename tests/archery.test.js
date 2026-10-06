@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCombat } from '../src/combat.js';
-import { createWeapons, WEAPON_TYPES, feelOf } from '../src/weapons.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
-import { createCombatSkills, ARMS_SKILLS, familyOf, marginsFor, drawTime } from '../src/combat-skills.js';
-import { smithOffers, buyFromSmith, ARROWS } from '../src/smith.js';
-import { borderEncounter } from '../src/border-chapter.js';
-import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
-import { BOW, JERRYS_BOW, drawnBy, shotAt, solidAt, survives, recoveredOf, flightOf, inTheLine, groundAt } from '../src/archery.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createWeapons, WEAPON_TYPES, feelOf } from '../src/gameplay/combat/weapons.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createCombatSkills, ARMS_SKILLS, familyOf, marginsFor, drawTime } from '../src/gameplay/combat/combat-skills.js';
+import { smithOffers, buyFromSmith, ARROWS } from '../src/content/quests/roadside/smith.js';
+import { borderEncounter } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { COPPER_ITEM, STARTING_PURSE } from '../src/gameplay/inventory/economy.js';
+import { BOW, JERRYS_BOW, drawnBy, shotAt, solidAt, survives, recoveredOf, flightOf, inTheLine, groundAt } from '../src/gameplay/combat/archery.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -278,7 +278,7 @@ test('every arrow loosed leaves the quiver, and the host is the one who empties 
   const main = source('main.js');
   // The module never touches the satchel: it asks how many there are, exactly as it asks who
   // walks with the traveler and how hard the country is.
-  assert.match(source('combat.js'), /const arrowsLeft = \(\) => Math\.max\(0, Math\.floor\(Number\(getArrows\?\.\(\)\) \|\| 0\)\);/);
+  assert.match(source('gameplay/combat/combat.js'), /const arrowsLeft = \(\) => Math\.max\(0, Math\.floor\(Number\(getArrows\?\.\(\)\) \|\| 0\)\);/);
   assert.match(main, /getArrows:\(\)=>inventory\.count\(BOW\.arrow\)/, 'and the host answers from the satchel');
   assert.match(main, /if\(e\.type==='loose'\)\{inventory\.remove\(BOW\.arrow,1\)/, 'a loosed arrow is gone from it');
   // Held, not pressed, offered before the fight is stepped - the same rule the guard follows.
@@ -304,7 +304,7 @@ test('every arrow loosed leaves the quiver, and the host is the one who empties 
 test('the drawn bow is a drawn bow, measured rather than admired', async () => {
   const { sourceModule } = await import('./module-loader.js');
   const THREE = await sourceModule('../vendor/three.module.js');
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   /** Where something is in the figure's own frame: +x his right, +y up, **-z the way he faces**. */
   const own = (actor, node, local = [0, 0, 0]) => {
     node.updateWorldMatrix(true, true);
@@ -401,7 +401,7 @@ test('an archer ally stands off and looses, and his arrows are his own', () => {
   assert.equal(landed.recovered, false, 'and it is his, not something the traveler walks the field for');
   assert.ok(events.some(e => e.type === 'hit' && e.targetId === 'goblin' && e.damage > 0), 'it hurt the goblin');
   // No enemy archer exists to answer him.
-  const combatSource = source('combat.js');
+  const combatSource = source('gameplay/combat/combat.js');
   const kinds = combatSource.slice(combatSource.indexOf('const ENEMY_KINDS'), combatSource.indexOf('const SOLDIER_LOOKS'));
   assert.ok(kinds.length > 200, 'the enemy kinds are still where they were');
   assert.ok(!kinds.includes('bow:'), 'no enemy kind carries a bow — there are no enemy archers yet');
@@ -736,7 +736,7 @@ test('a man shooting from where they cannot reach is come after, and the standof
   }
   // **And there is one outer limit, not two.** The leash the chase stops at is the leash a
   // traveler retreats over, spelled once so nobody can tune them apart.
-  const combatSource = source('combat.js');
+  const combatSource = source('gameplay/combat/combat.js');
   assert.match(combatSource, /^const LEASH = 45;$/m, 'the fight’s outer limit has a name');
   assert.equal(combatSource.match(/distance\([^)]*lastEncounter\.center\) > \d/g), null,
     'and nobody writes a radius of their own beside it');

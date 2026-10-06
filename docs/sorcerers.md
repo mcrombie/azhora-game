@@ -22,7 +22,7 @@ only person in Azhora who teaches it.
 Frost and Wards stay named and unteachable, the way the Arms table names weapons that do not
 exist yet (the user's ruling: keep them).
 
-**The four decisions** (`src/sorcery.js`): focus is its own pool, not wind and not health; a wand
+**The four decisions** (`src/gameplay/magic/sorcery.js`): focus is its own pool, not wind and not health; a wand
 or staff **is** the weapon, so a sword casts nothing; damage dealt is the only thing that pays a
 school; and the numbers run from level 1 to 99 on a straight line, the way `ARMS` does.
 
@@ -31,7 +31,7 @@ only door in the game that teaches that school.
 
 ## Ben — Fire — Nothom
 
-`src/spider-quest.js`. Light brown, bald under a hat, round spectacles, a wand and nothing else.
+`src/content/quests/spider/spider-quest.js`. Light brown, bald under a hat, round spectacles, a wand and nothing else.
 Of the sorcerer's guild, sent to kill a giant spider north-west of the town, and not sure he can
 do it alone. Agree and he walks you to the den; the fight is hard and his fireballs are why it is
 winnable. Kill it with him alive and he pays: **35 copper or the first lesson in fire**. Stand
@@ -39,8 +39,8 @@ back and the spider kills him — `abandoned` is a real ending, and fire stays u
 
 ## Troy — Mind — Cobble, in Peblos
 
-`src/murder-quest.js`. He was the beekeeper at the Bee Fold in Drent; **the skeps and the
-honeycomb went to Liz** (the user's ruling), and `src/beekeeper.js` is now the comb trade rather
+`src/content/quests/roadside/murder-quest.js`. He was the beekeeper at the Bee Fold in Drent; **the skeps and the
+honeycomb went to Liz** (the user's ruling), and `src/content/quests/bear-family/beekeeper.js` is now the comb trade rather
 than the man. Half his hair is dirty blonde and the other half is the red he came with
 (`look.hairSplit`); he does not explain it.
 
@@ -70,7 +70,7 @@ usable where it was learned. **Nowhere else in the game answers it yet** (see be
 
 ## Liz — Beast — the woods of Pueth
 
-`src/cat-quest.js`. Straight black hair, tan skin, a canvas smock and a smoker: her own build
+`src/content/quests/roadside/cat-quest.js`. Straight black hair, tan skin, a canvas smock and a smoker: her own build
 (`skep-keeper`), because `bee-keeper` is Troy's red beard and grin. She keeps three skeps in a
 clearing 93 m from the goblin camp and 26 m off its trail, and she is **the game's only source of
 honeycomb** now.
@@ -84,8 +84,8 @@ for. Reward for getting him home alive: **30 copper or beast sorcery**.
 
 ## What is unsettled
 
-- **No spell is castable yet.** Fireball and summon-bees exist as numbers in `src/sorcery.js` and
-  as skills on the sheet; nothing in `src/combat.js` throws them. That is one piece of work for all
+- **No spell is castable yet.** Fireball and summon-bees exist as numbers in `src/gameplay/magic/sorcery.js` and
+  as skills on the sheet; nothing in `src/gameplay/combat/combat.js` throws them. That is one piece of work for all
   three schools, and it is the next one.
 - **Mindread speaks only in Cobble.** Every other conversation in the game has no reading written
   for it. Either each person gets a line, or there is a general answer for people who have nothing

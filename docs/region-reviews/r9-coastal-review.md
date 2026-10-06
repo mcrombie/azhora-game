@@ -111,15 +111,15 @@ Native visual journeys and clean-relaunch save checks remain separate gates.
 
 ## Frozen integration manifest
 
-- `src/ascarth-scenery.js`, `src/gala-scenery.js`, `src/oves-scenery.js`,
-  `src/selemis-scenery.js`: bounded rooting and actual stump height.
-- `src/telemonia-ground.js` (new), `src/telemonia-scenery.js`: shared existing
+- `src/content/regions/ascarth/ascarth-scenery.js`, `src/content/regions/gala/gala-scenery.js`, `src/content/regions/oves/oves-scenery.js`,
+  `src/content/regions/selemis/selemis-scenery.js`: bounded rooting and actual stump height.
+- `src/content/regions/telemonia/telemonia-ground.js` (new), `src/content/regions/telemonia/telemonia-scenery.js`: shared existing
   ground generator; reuse in the standalone/full scenery builder.
 - `src/world.js`: four R9 rendered-ground kit callbacks, shared-ground import/job
   and neighbour support function, Telemonia's `fineGround` input, displayed-ground
   maximum with Gala's retained patch. Preserve unrelated shared-file changes.
-- `src/west-regions-life.js`: append only the six R9 names to visual footing.
-- `src/oves-wildlife.js`: the two approved bone-bird substitutions and rationale.
+- `src/content/regions/western-regions/west-regions-life.js`: append only the six R9 names to visual footing.
+- `src/content/regions/oves/oves-wildlife.js`: the two approved bone-bird substitutions and rationale.
 - `tests/r9-coastal-grounding-review.test.js` (new, register in manifest),
   `tests/telemonia-geometry-hash.js` (new helper),
   `tests/telemonia-scenery-review.test.js` (append exact extraction test),

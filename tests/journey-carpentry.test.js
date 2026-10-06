@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createJourney, BRIDGE_CARPENTRY } from '../src/journey.js';
-import { journeyConversation, JOURNEY_NPCS } from '../src/journey-content.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createSkills, SKILLS } from '../src/skills.js';
+import { createJourney, BRIDGE_CARPENTRY } from '../src/content/chapters/journey/journey.js';
+import { journeyConversation, JOURNEY_NPCS } from '../src/content/chapters/journey/journey-content.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createSkills, SKILLS } from '../src/gameplay/skills/skills.js';
 
 function fixture({ sticks = 3, previousXP = 0 } = {}) {
   const inventory = createInventoryState();

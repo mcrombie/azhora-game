@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
-import { refineSouthOremindiGround, refineSouthOremindiGroundSteps } from '../src/south-oremindi-ground.js';
-import { refineBaldroGround, refineBaldroGroundSteps } from '../src/baldro-ground.js';
-import { BALDRO_KINGDOMS } from '../src/baldro-world.js';
-import { ibenwoodForestTrees, ibenwoodForestTreesSteps } from '../src/ibenwood-environment.js';
+import { refineSouthOremindiGround, refineSouthOremindiGroundSteps } from '../src/content/regions/south-oremindi/south-oremindi-ground.js';
+import { refineBaldroGround, refineBaldroGroundSteps } from '../src/content/regions/baldro/baldro-ground.js';
+import { BALDRO_KINGDOMS } from '../src/content/regions/baldro/baldro-world.js';
+import { ibenwoodForestTrees, ibenwoodForestTreesSteps } from '../src/content/regions/ibenwood/ibenwood-environment.js';
 
 const plane = (x, z) => 32 + x * .003 + z * .002;
 const mountain = (x, z) => plane(x, z) + 12 + Math.sin(x * .05) * 8;

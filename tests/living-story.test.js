@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLivingStory, validateLivingStorySnapshot, worldCalendar, bridgeChoice,
-  SATCHEL_DEADLINE, MUSTER_GRACE, BRIDGE_WORK } from '../src/living-story.js';
-import { MERCENARY_ROSTER, CROMB } from '../src/mercenaries.js';
+  SATCHEL_DEADLINE, MUSTER_GRACE, BRIDGE_WORK } from '../src/gameplay/company/living-story.js';
+import { MERCENARY_ROSTER, CROMB } from '../src/gameplay/company/mercenaries.js';
 
 const roster = ids => MERCENARY_ROSTER.filter(a => ids.includes(a.id));
 const few = (...ids) => createLivingStory({ roster: roster(ids) });

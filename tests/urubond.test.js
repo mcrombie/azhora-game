@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {sourceModule} from './module-loader.js';
 import {scopedWorld} from './scoped-world.js';
-import {URUBOND,URUBOND_ROUTE,urubondOwns} from '../src/urubond-world.js';
-import {regions,landDistance} from '../src/region-world.js';
-import {createCartography} from '../src/cartography.js';
-import {createBarrettGeography} from '../src/barrett-geography.js';
-import {canStand,moveCharacter} from '../src/game-state.js';
-import {BODY,bodyWorld} from '../src/bodies.js';
+import {URUBOND,URUBOND_ROUTE,urubondOwns} from '../src/content/regions/urubond/urubond-world.js';
+import {regions,landDistance} from '../src/world/terrain/region-world.js';
+import {createCartography} from '../src/ui/map/cartography.js';
+import {createBarrettGeography} from '../src/content/quests/skill-lessons/barrett-geography.js';
+import {canStand,moveCharacter} from '../src/gameplay/movement/game-state.js';
+import {BODY,bodyWorld} from '../src/gameplay/combat/bodies.js';
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createUrubondWalk,URUBOND_ROOMS,URUBOND_WALLS}=await sourceModule('../src/urubond-interiors.js');
-const {createUrubondHost}=await sourceModule('../src/urubond-host.js');
+const {createUrubondWalk,URUBOND_ROOMS,URUBOND_WALLS}=await sourceModule('../src/content/regions/urubond/urubond-interiors.js');
+const {createUrubondHost}=await sourceModule('../src/content/regions/urubond/urubond-host.js');
 const scene=new THREE.Scene(),world=await scopedWorld(scene,[117]);
 
 test('Urubond is an irregular offshore country shared by chart, developer travel and real terrain',()=>{

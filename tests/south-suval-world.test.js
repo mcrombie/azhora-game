@@ -3,26 +3,26 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, canSwim, waterAt } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
-import { REGION_CELLS, hexAt, hexCentre, hexOwnerAt, regionAt, regions, landDistance } from '../src/region-world.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { regionLevel } from '../src/region-levels.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { SUBREGIONS } from '../src/map-fog.js';
+import { canStand, canSwim, waterAt } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
+import { REGION_CELLS, hexAt, hexCentre, hexOwnerAt, regionAt, regions, landDistance } from '../src/world/terrain/region-world.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
 import { ENCLOSED_HEXES } from '../scripts/build-region-survey.mjs';
 import {
   STILLWATER, STILLWATER_HEX, IMLAMDRIS_HEX, STILLWATER_SURFACE, STILLWATER_SHORE, SOUTH_SUVAL_CLIMATE,
   stillwaterDistance, TERRACES, STAIRS, cityPoint, cityLocal, cityLevel, hexInset, FACING_LAKE, CITY_FEATHER,
   IMLAMDRIS_HOUSES, STILLWATER_TEMPLE, STAR_TERRACE, LANDWARD_GATE, PASS_ROAD_LINE, passRoadAt,
   COVES, SOUTH_SUVAL_LANDMARKS, SOUTH_SUVAL_CHART_WATERS, southSuvalClear, IMLAMDRIS_PATCH, ELOD_SOUTH_GATE,
-} from '../src/south-suval-world.js';
-import { hillPassPoint } from '../src/frontier-ridges.js';
-import { SOUTH_SUVAL_WILDLIFE_ZONES } from '../src/south-suval-wildlife.js';
-import { BAT_CAVE, BAT_LANDING, SUVAL_HIGHLAND_TRAILS, IMLAMDRIS_REBUILD } from '../src/suval-highlands.js';
-import { ISCARE_ISLANDS, ISCARE_WILDLIFE_ZONES } from '../src/iscare-world.js';
+} from '../src/content/regions/south-suval/south-suval-world.js';
+import { hillPassPoint } from '../src/content/regions/minora-frontier/frontier-ridges.js';
+import { SOUTH_SUVAL_WILDLIFE_ZONES } from '../src/content/regions/south-suval/south-suval-wildlife.js';
+import { BAT_CAVE, BAT_LANDING, SUVAL_HIGHLAND_TRAILS, IMLAMDRIS_REBUILD } from '../src/content/regions/suval-highlands/suval-highlands.js';
+import { ISCARE_ISLANDS, ISCARE_WILDLIFE_ZONES } from '../src/content/regions/iscare/iscare-world.js';
 
 /**
  * South Suval: the peninsula's southern hills, the Stillwater, and Imlamdris on its shore - built
@@ -221,7 +221,7 @@ test('the road leaves by the Landward Gate at the back and goes over the hill pa
   assert.ok(Math.hypot(first.x - LANDWARD_GATE.x, first.z - LANDWARD_GATE.z) < 3, 'the road starts at the gate');
   assert.equal(LANDWARD_GATE.b, TERRACES.at(-1).to, 'and the gate is at the back of the highest terrace');
   assert.equal(regionAt(last.x, last.z).name, 'South Suval');
-  // East Suval's land border is a ridge of rock with two barred gates in it (src/frontier-ridges.js);
+  // East Suval's land border is a ridge of rock with two barred gates in it (src/content/regions/minora-frontier/frontier-ridges.js);
   // the city's road is the road to the southern one, and ends on this side of it.
   assert.ok(ELOD_SOUTH_GATE.locked, 'the southern hill gate is barred');
   assert.ok(Math.hypot(last.x - ELOD_SOUTH_GATE.x, last.z - ELOD_SOUTH_GATE.z) < 9, 'and the road ends at it');

@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createJesseAutopilot } from '../src/jesse-autopilot.js';
-import { createJesseCarriage, JESSE_QUEST } from '../src/jesse-carriage-quest.js';
-import { createJesseCarriageHost } from '../src/jesse-carriage-host.js';
-import { CARRIAGE_PARTS, JESSE, JESSE_WORKSHOP, JESSE_GUILD } from '../src/jesse-carriage-world.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
-import { PLANKS } from '../src/construction.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { moveCharacter, canStand } from '../src/game-state.js';
+import { createJesseAutopilot } from '../src/gameplay/autoplay/jesse-autopilot.js';
+import { createJesseCarriage, JESSE_QUEST } from '../src/content/quests/jesse/jesse-carriage-quest.js';
+import { createJesseCarriageHost } from '../src/content/quests/jesse/jesse-carriage-host.js';
+import { CARRIAGE_PARTS, JESSE, JESSE_WORKSHOP, JESSE_GUILD } from '../src/content/quests/jesse/jesse-carriage-world.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { PLANKS } from '../src/gameplay/skills/woodcutting/construction.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
 
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const world = () => ({ bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 }, colliders: [], heightAt: () => 1 });

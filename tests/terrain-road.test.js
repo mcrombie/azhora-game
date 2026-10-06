@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { drapeRoadOnTerrain, drapeRoadOnTerrainSteps, terrainRoadHeight } from '../src/terrain-road.js';
+import { drapeRoadOnTerrain, drapeRoadOnTerrainSteps, terrainRoadHeight } from '../src/world/terrain/terrain-road.js';
 
 // A ridge in the middle of a flat-edged ribbon: sampling only the road edges
 // would hide the whole ridge under the road and let green triangles poke out.

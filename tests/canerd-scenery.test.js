@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { CANERD } from '../src/canerd-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { canStand } from '../src/game-state.js';
-import { createWalkSurfaces } from '../src/walk-surfaces.js';
+import { CANERD } from '../src/content/regions/canerd/canerd-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createWalkSurfaces } from '../src/world/collision/walk-surfaces.js';
 
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createCanerdScenerySteps}=await sourceModule('../src/canerd-scenery.js');
+const {createCanerdScenerySteps}=await sourceModule('../src/content/regions/canerd/canerd-scenery.js');
 const parent=new THREE.Group(),colliders=[];
 // A distinct rendered height catches accidental roots on the logical field.
 const rendered=(x,z)=>groundWithRiver(x,z)+.12;

@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { LOCOMOTION } from '../src/locomotion-skills.js';
+import { LOCOMOTION } from '../src/gameplay/movement/locomotion-skills.js';
 const novice={walking:LOCOMOTION.walkStart,running:LOCOMOTION.runStart};
 const mastered={walking:LOCOMOTION.walkCap,running:LOCOMOTION.runCap};
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createDwarfAutopilot } = await sourceModule('../src/dwarf-autopilot.js');
-const { createBaldroHost } = await sourceModule('../src/baldro-host.js');
-const { BALDRO_KINGDOMS, baldroPathDistance } = await sourceModule('../src/baldro-world.js');
-const { bodyWorld, BODY } = await sourceModule('../src/bodies.js');
-const { moveCharacter } = await sourceModule('../src/game-state.js');
+const { createDwarfAutopilot } = await sourceModule('../src/gameplay/autoplay/dwarf-autopilot.js');
+const { createBaldroHost } = await sourceModule('../src/content/regions/baldro/baldro-host.js');
+const { BALDRO_KINGDOMS, baldroPathDistance } = await sourceModule('../src/content/regions/baldro/baldro-world.js');
+const { bodyWorld, BODY } = await sourceModule('../src/gameplay/combat/bodies.js');
+const { moveCharacter } = await sourceModule('../src/gameplay/movement/game-state.js');
 const WEST = BALDRO_KINGDOMS[0];
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const still = { forward: 0, side: 0, run: false };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createStealth, STEALTH } from '../src/stealth.js';
-import { createSkills, validateSkillsSnapshot } from '../src/skills.js';
+import { createStealth, STEALTH } from '../src/gameplay/law/stealth.js';
+import { createSkills, validateSkillsSnapshot } from '../src/gameplay/skills/skills.js';
 import { sourceModule } from './module-loader.js';
 
 const guard = { x: 0, z: 0, yaw: 0 };
@@ -109,7 +109,7 @@ test('stealth experience and Killian teaching survive saves without requiring ol
   assert.equal(copy.taught('stealth'), false); assert.equal(copy.xp('stealth'), 0);
 });
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 test('sneaking bends the knees and lowers the hips without scaling the character or leaving the pose stuck', () => {
   const actor = createCharacter(), rootScale = actor.group.scale.toArray();
   const joint = name => actor.group.getObjectByName(name);

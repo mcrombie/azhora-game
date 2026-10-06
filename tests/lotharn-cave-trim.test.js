@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { createCaves, nearestPlain } from '../src/east-lotharn-caves.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { easternChamberTrim } from '../src/east-lotharn-cave-trim.js';
+import { createCaves, nearestPlain } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { easternChamberTrim } from '../src/content/regions/east-lotharn/east-lotharn-cave-trim.js';
 
 const cave = createCaves(groundWithRiver).find(c => c.id === 'eastern-chamber');
 const trim = easternChamberTrim(cave, groundWithRiver), at = cave.portals[0], floor = cave.floor(at);

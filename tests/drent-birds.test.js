@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BIRD_SPECIES } from '../src/birding.js';
-import { REGION_CELLS } from '../src/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BIRD_SPECIES } from '../src/gameplay/skills/birding/birding.js';
+import { REGION_CELLS } from '../src/world/terrain/region-world.js';
 
 const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 let built = null;
 async function fixture() {
   built ??= (async () => {
     const { createWorld } = await sourceModule('../src/world.js');
-    const birds = await sourceModule('../src/drent-birds.js');
+    const birds = await sourceModule('../src/content/regions/drent/drent-birds.js');
     return { world: createWorld(new THREE.Scene()), ...birds };
   })();
   return built;

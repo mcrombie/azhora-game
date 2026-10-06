@@ -1,8 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TERRAIN_FALL, shouldStartTerrainFall, terrainFallDamage, createTerrainFall } from '../src/terrain-fall.js';
+import { TERRAIN_FALL, shouldStartTerrainFall, terrainFallDamage, createTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
 
 const before = { x: 0, y: 20, z: 0 };
+test('a running jump clears a waist-high obstacle without losing sprint momentum',()=>{
+  for(const dt of [1/30,1/60,1/144]){
+    const fall=createTerrainFall(),p={x:0,y:0,z:0};let peak=0,blocked=false;
+    fall.begin(p,{velocity:TERRAIN_FALL.jumpVelocity,drift:{x:9.5,z:0}});
+    for(let i=0;i<2/dt&&fall.active;i++){
+      fall.tick(dt,{position:p,surfaceAt:()=>({height:0,slope:0,water:false}),moveHorizontal:(at,dx)=>{
+        if(at.x+dx>=3&&at.x+dx<=3.5&&at.y<1.2){blocked=true;return;}at.x+=dx;
+      }});peak=Math.max(peak,p.y);
+    }
+    assert.equal(blocked,false);assert.ok(peak>1.5&&peak<1.8);assert.ok(p.x>7);assert.equal(p.y,0);
+  }
+});
 test('walking over a ledge starts a fall while small steps and ordinary slopes retain support', () => {
   assert.equal(shouldStartTerrainFall({ before, after: { x: .12, z: 0 }, floor: 5 }), true);
   assert.equal(shouldStartTerrainFall({ before, after: { x: .4, z: 0 }, floor: 19.7 }), false);
@@ -95,7 +107,7 @@ test('pause freezes a fall, steering is limited, and cancel clears all momentum'
   assert.deepEqual(fall.tick(.2, { position, playing: false }), before);
   assert.deepEqual(position, { x: 0, y: 100, z: 0 });
   fall.tick(.1, { position, surfaceAt: flat(), steer: { x: 1, z: 0 } });
-  assert.ok(fall.view().drift.x > .25 && fall.view().drift.x < .35);
+  assert.ok(fall.view().drift.x > .75 && fall.view().drift.x < .85);
   assert.equal(fall.view().drift.z, 2);
   fall.cancel(); assert.equal(fall.active, false); assert.deepEqual(fall.view().drift, { x: 0, z: 0 });
 });

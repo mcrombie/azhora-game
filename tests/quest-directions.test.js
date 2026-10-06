@@ -2,18 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createJourney } from '../src/journey.js';
-import { journeyConversation } from '../src/journey-content.js';
-import { createLusciaChapter, LUSCIA_SITES, lusciaConversation } from '../src/luscia-chapter.js';
-import { createMorosChapter, MOROS_SITES, morosConversation, MOROS_GATE_ID, MOROS_LEGATE_ID } from '../src/moros-chapter.js';
-import { createBorderChapter, BORDER_GATE_ID, borderConversation, borderEncounter } from '../src/border-chapter.js';
-import { AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
-import { AFTERMATH_SITES } from '../src/aftermath-sites.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
-import { SOLIS_STANDS } from '../src/west-suval.js';
-import { OUTPOST_LAYOUT, campPoint } from '../src/outpost.js';
-import { MERCENARY_COMPANY_SIZE } from '../src/mercenaries.js';
-import { REGION_DESIGN } from '../src/campaign-world.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { journeyConversation } from '../src/content/chapters/journey/journey-content.js';
+import { createLusciaChapter, LUSCIA_SITES, lusciaConversation } from '../src/content/chapters/civil-war/luscia-chapter.js';
+import { createMorosChapter, MOROS_SITES, morosConversation, MOROS_GATE_ID, MOROS_LEGATE_ID } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { createBorderChapter, BORDER_GATE_ID, borderConversation, borderEncounter } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { AFTERMATH_VARIANTS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { AFTERMATH_SITES } from '../src/content/chapters/chapter-one/aftermath-sites.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
+import { SOLIS_STANDS } from '../src/content/regions/solis/west-suval.js';
+import { OUTPOST_LAYOUT, campPoint } from '../src/content/regions/drent/outpost.js';
+import { MERCENARY_COMPANY_SIZE } from '../src/gameplay/company/mercenaries.js';
+import { REGION_DESIGN } from '../src/content/chapters/civil-war/campaign-world.js';
 
 /**
  * A quest step that names a direction is the only instruction most players read. The

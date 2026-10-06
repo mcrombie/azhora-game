@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { buildSource, PLAYABLE, WINDOW, ENCLOSED_HEXES } from '../scripts/build-region-survey.mjs';
-import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from '../src/region-survey.js';
-import { regionCells, regionOutline, worldBoundsFor, routeAnchors } from '../src/region-layout.js';
+import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from '../src/dev/tools/region-survey.js';
+import { regionCells, regionOutline, worldBoundsFor, routeAnchors } from '../src/world/terrain/region-layout.js';
 
 const atlasPath = new URL('../assets/azhora-dev-regions.json', import.meta.url);
 const atlas = JSON.parse(readFileSync(atlasPath, 'utf8'));
@@ -24,9 +24,9 @@ const held = { ...atlas, regions: atlas.regions.map(region => {
 
 test('the baked survey is exactly what the atlas says, and has not drifted', () => {
   const generated = buildSource(atlas);
-  const shipped = readFileSync(new URL('../src/region-survey.js', import.meta.url), 'utf8');
+  const shipped = readFileSync(new URL('../src/dev/tools/region-survey.js', import.meta.url), 'utf8');
   assert.equal(shipped.replace(/\r\n/g, '\n'), generated.replace(/\r\n/g, '\n'),
-    'src/region-survey.js is stale: run `node scripts/build-region-survey.mjs`');
+    'src/dev/tools/region-survey.js is stale: run `node scripts/build-region-survey.mjs`');
 });
 
 test('the baked survey carries every playable region and the land around them', () => {

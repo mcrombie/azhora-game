@@ -1,19 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { atlasCellKey, atlasLocalDetail, atlasCityDetail, atlasCityBoundaries, atlasRevealedCityMarks, ATLAS_CITY_DESIGNATIONS, atlasPlaceMarks, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from '../src/world-map-detail.js';
+import { atlasCellKey, atlasLocalDetail, atlasCityDetail, atlasCityBoundaries, atlasRevealedCityMarks, ATLAS_CITY_DESIGNATIONS, atlasPlaceMarks, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from '../src/ui/map/world-map-detail.js';
 import { readFileSync } from 'node:fs';
-import { TRANSFORM, hexAt, hexCentre, landDistance, villageToWorld } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { buildLocalMapModel } from '../src/local-map-data.js';
-import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
-import { createMapFog, SUBREGIONS } from '../src/map-fog.js';
-import { VARN, VARN_CORNERS } from '../src/varn-world.js';
-import { NYLON, NYLON_OUTLINE } from '../src/nylon-city.js';
-import { AEVIS, AEVIS_OUTLINE } from '../src/aevis-city.js';
-import { createCartography, chartShapes, EXPLORED_HEXES } from '../src/cartography.js';
-import { AMBRON_CENTRE, AMBRON_OUTLINE, inAmbronOutline } from '../src/ambron-city-layout.js';
-import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/game-atlas-adjustments.js';
-import { TESSEN } from '../src/pueth-world.js';
+import { TRANSFORM, hexAt, hexCentre, landDistance, villageToWorld } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { buildLocalMapModel } from '../src/ui/map/local-map-data.js';
+import { regions, regionAt, WORLD_BOUNDS } from '../src/world/terrain/regions.js';
+import { createMapFog, SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { VARN, VARN_CORNERS } from '../src/content/regions/varn/varn-world.js';
+import { NYLON, NYLON_OUTLINE } from '../src/content/regions/nylon/nylon-city.js';
+import { AEVIS, AEVIS_OUTLINE } from '../src/content/regions/aevis/aevis-city.js';
+import { createCartography, chartShapes, EXPLORED_HEXES } from '../src/ui/map/cartography.js';
+import { AMBRON_CENTRE, AMBRON_OUTLINE, inAmbronOutline } from '../src/content/regions/ambron/ambron-city-layout.js';
+import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/world/terrain/game-atlas-adjustments.js';
+import { TESSEN } from '../src/content/regions/pueth/pueth-world.js';
 
 test('the capital marker and city footprint agree with the relocated city between the four lakes', () => {
   const detail = atlasCityDetail(), center = TRANSFORM.atlasToWorld(detail.marker.x, detail.marker.y);
@@ -72,7 +72,7 @@ test('Varn uses its actual six-wall footprint and discovered fortress location o
   assert.deepEqual({ x: area.x, z: area.z }, { x: VARN.x, z: VARN.z });
   varn.boundary[0].x = 0;
   assert.notEqual(atlasCityBoundaries().find(city => city.id === 'varn').boundary[0].x, 0);
-  const css = readFileSync(new URL('../src/world-map.css', import.meta.url), 'utf8');
+  const css = readFileSync(new URL('../src/ui/map/world-map.css', import.meta.url), 'utf8');
   assert.match(css, /\.atlas-place\.capital i,\.atlas-place\.city i\{/);
   assert.match(css, /\.atlas-place\.capital span,\.atlas-place\.city span\{/);
 });

@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { BEN, SPIDER_DEN } from '../src/spider-quest.js';
-const {createSpider}=await sourceModule('../src/spider-model.js');
-const {createCombatView}=await sourceModule('../src/combat-view.js');
-const {createCorpseActor}=await sourceModule('../src/corpse-view.js');
+import { BEN, SPIDER_DEN } from '../src/content/quests/spider/spider-quest.js';
+const {createSpider}=await sourceModule('../src/world/actors/spider-model.js');
+const {createCombatView}=await sourceModule('../src/gameplay/combat/combat-view.js');
+const {createCorpseActor}=await sourceModule('../src/gameplay/combat/corpse-view.js');
 
 function visibleBounds(group){
   group.updateMatrixWorld(true);const bounds=new THREE.Box3();let meshes=0;

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills } from '../src/skills.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import {
   CHART_STATES, CHART_XP, EXPLORED_HEXES, STARTING_CHART, CARTOGRAPHY_DIRECTIONS, REGION_NEIGHBOURS,
   createCartography, startingChart, validateCartographySnapshot, chartShapes,
-} from '../src/cartography.js';
-import { regionLevel, levelWords } from '../src/region-levels.js';
+} from '../src/ui/map/cartography.js';
+import { regionLevel, levelWords } from '../src/world/terrain/region-levels.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -194,7 +194,7 @@ test('country knowledge reveals original names but never the full shape, includi
 });
 
 test('the opaque overlay reveals only explored hexes, adjacent terrain, and original names', () => {
-  const map = source('world-map.js'), main = source('main.js');
+  const map = source('ui/map/world-map.js'), main = source('main.js');
   assert.match(map, /fill: '#0b1620'/, 'unknown country is dark');
   // Opaque, both of them. At .93 the whole continent - shapes and lettering - could be read through
   // the dark by a traveler who had charted a single hex, and a known coast showed its interior.
@@ -225,7 +225,7 @@ test('a chart in a state no country can be in is refused', () => {
 });
 
 test('the game keeps the chart, feeds it and hands it over on the landing', () => {
-  const main = source('main.js'), checkpoint = source('road-checkpoint.js');
+  const main = source('main.js'), checkpoint = source('app/saves/road-checkpoint.js');
   assert.match(main, /const cartography=createCartography\(\{skills,/, 'the chart earns its experience through the skill');
   assert.match(main, /cartography:cartography\.snapshot\(\)/, 'and is written down with the road');
   assert.match(main, /cartography\.restore\(saved\.cartography\?\?createCartography\(\)\.snapshot\(\)\)/, 'and read back with it');
@@ -251,7 +251,7 @@ test('the game keeps the chart, feeds it and hands it over on the landing', () =
 });
 
 test('the difficulty is a number in the journal and words everywhere else', () => {
-  // The user's ruling (docs/design-answers.md, and the note at the head of src/region-levels.js):
+  // The user's ruling (docs/design-answers.md, and the note at the head of src/world/terrain/region-levels.js):
   // the region card gives a country's difficulty in the ladder's words on first entering, and the
   // number appears only in the cartography journal, once the country is charted, because finding
   // out how dangerous a place is, is part of charting it. The HUD never shows the number at all.

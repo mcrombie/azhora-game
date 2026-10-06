@@ -52,7 +52,7 @@ the country from the Vastos margin to the hills above Yunethre. That chain is **
 
 Read per hex from the World Builder map (`world-builder/map/resources/examples/azhora.wwmap`,
 `hexes[key].climate`, `koppen-v1`) — not `azhora.cmap.json`, whose one-code-per-region field is a
-default. **Forty-seven `Cfa` and one `Dfa`.** `WEST_LOTHARN_CLIMATE` in `src/west-lotharn-world.js`
+default. **Forty-seven `Cfa` and one `Dfa`.** `WEST_LOTHARN_CLIMATE` in `src/content/regions/west-lotharn/west-lotharn-world.js`
 records all forty-eight and `tests/west-lotharn-world.test.js` holds them to the map hex for hex
 whenever the map is on the machine to ask.
 
@@ -79,7 +79,7 @@ x −3010.001927939127 … 609.9980720608719     z −1301.1705922171766 … 239
 The country's own extent (x −2550…−1550, z −981…−260) is four hundred and fifty metres inside the
 western edge that Nethereum set and three hundred inside the northern one the East Lotharn set, and
 rows 95–102 are inside the survey `WINDOW` (minR 90, maxR 135). `LAND_HEXES` did not change either:
-regenerating `src/region-survey.js` added twelve lines and nothing else, because these hexes were
+regenerating `src/dev/tools/region-survey.js` added twelve lines and nothing else, because these hexes were
 already claimed land in the coast field.
 
 So **`tests/region-layout.test.js`, `tests/isareos-world.test.js` and `tests/nethereum-world.test.js`
@@ -88,7 +88,7 @@ hexes is more than Ovesos (19), the Oves Desert (23), Gala (21) or the East Loth
 
 ## The ground
 
-**Profiles** (`REGION_TERRAIN`, src/region-world.js): default **70 / 10 / 230**, `byTerrain.hills`
+**Profiles** (`REGION_TERRAIN`, src/world/terrain/region-world.js): default **70 / 10 / 230**, `byTerrain.hills`
 **58 / 8 / 215**, `byTerrain.mountain` **96 / 13 / 250**. **Every number is the East Lotharn's, to
 the digit, and that is the point**: the two halves are one massif and share seven hex edges, three of
 them hills against hills, and a base or a wavelength that differed across that border would put a
@@ -141,7 +141,7 @@ shelf. A floor twenty metres across falling **70 m to 30** in a hundred and eigh
 and not a gorge, open all the way, with a wall above it on both sides the whole length.
 
 **The col, and what had to be done about it.** The East Lotharn's Kemrath "drains west, out of the
-range toward the West Lotharn" (src/east-lotharn-world.js), and registering this country made that
+range toward the West Lotharn" (src/content/regions/east-lotharn/east-lotharn-world.js), and registering this country made that
 literally true: **Kemrath's floor and its water now end inside these hexes**, at (−1586.9, −820.5).
 So:
 
@@ -153,7 +153,7 @@ So:
 * **a river cannot stop in the middle of a country**, so **the Kemrath reach** picks the water up at
   exactly that point and at exactly that level. It takes it with `headOf: 'kemrath-water'` rather than
   a typed number, and the measured hand-over is **44.271 m on both sides — equal to the last digit**.
-  Nothing in `src/east-lotharn-world.js` was touched to do it; this is the same allowance Nesdor's
+  Nothing in `src/content/regions/east-lotharn/east-lotharn-world.js` was touched to do it; this is the same allowance Nesdor's
   Ela-South Reach makes for Elagos's water;
 * west of the col this country climbs at once (15 m within thirty), so the water turns **north**,
   along the foot of the east arm and down **the notch** — the cut it has made through the range's
@@ -291,7 +291,7 @@ the beck became a channel cut 30 m below its own banks inside these hexes. Measu
 on the ground the atlas now makes, the floor falls from 28.6 m at the beck's head to 25.1 at x = −1840
 and then climbs — 30.9, 38.8, 48.9 — so **the beck now ends at x = −1848, where the ground stops
 falling**, and spreads and sinks there on its own valley floor. That is the rule that set every other
-foot in `src/west-regions.js` ("a stream has to go downhill; where the lore and the ground disagree,
+foot in `src/content/regions/western-regions/west-regions.js` ("a stream has to go downhill; where the lore and the ground disagree,
 the ground wins"). The other three Meneth valleys are untouched, and the steepest step on Meneth's own
 ground near this border fell from 14.7 to 3.6 as a result.
 
@@ -306,7 +306,7 @@ crest, which is the lore's "within a few hundred meters of their highest summits
 one of them above the line, on a cliff or on a bald. The valley floors are meadow rather than wood —
 a glacier's deep soil under grass — and the balds are pale bleached turf.
 
-The massifs are drawn by a ground of their own three metres apart (`src/west-lotharn-scenery.js`),
+The massifs are drawn by a ground of their own three metres apart (`src/content/regions/west-lotharn/west-lotharn-scenery.js`),
 with the world's seven-metre grid sunk out of sight beneath them, and coloured by what the ground is:
 rock in courses on the cliffs, scree on the climbs, grass on the ledges darker low and paler above the
 tree line, and the balds' own colour on the tops.
@@ -377,19 +377,19 @@ would need words nobody has written down.
 ## Registration
 
 `scripts/build-region-survey.mjs` PLAYABLE → `node scripts/build-region-survey.mjs` (twelve lines
-added, `LAND_HEXES` unchanged) · `src/region-layout.js` PLAYABLE_REGIONS + REGION_BIOMES ·
-`src/region-world.js` REGION_IDS 27, REGION_TERRAIN, REGION_TEXT (subtitle, spawn (−1817,−651) on the
-long valley's floor, description, palette, `npcIds: []`, twelve landmarks) · `src/languages.js` ·
-`src/developer-atlas.js` (anchor (0,98), the hills hex in the middle of the long valley) ·
-`src/map-fog.js` (seven areas, radius 45–110; the least contained, the cold head’s, is 91 % inside the outline and the rest 96 % or better) ·
-`src/build-status.js` · `src/climbing.js` CLIMB_REGIONS (27 and the name; the refusal now reads "in
-Suval, the Lotharn and Feradom") · `src/west-regions.js` (the four courses, `WEST_REGION_NAMES`,
-`WEST_GROUND`) · `src/west-ground.js` (`westLotharnGround` inside `westGround` and `baseBeforeWater`, which is
-how it reaches `src/world-terrain.js`'s chain; the East Lotharn has a **second** hook straight
+added, `LAND_HEXES` unchanged) · `src/world/terrain/region-layout.js` PLAYABLE_REGIONS + REGION_BIOMES ·
+`src/world/terrain/region-world.js` REGION_IDS 27, REGION_TERRAIN, REGION_TEXT (subtitle, spawn (−1817,−651) on the
+long valley's floor, description, palette, `npcIds: []`, twelve landmarks) · `src/gameplay/skills/languages.js` ·
+`src/dev/tools/developer-atlas.js` (anchor (0,98), the hills hex in the middle of the long valley) ·
+`src/ui/map/map-fog.js` (seven areas, radius 45–110; the least contained, the cold head’s, is 91 % inside the outline and the rest 96 % or better) ·
+`src/dev/tools/build-status.js` · `src/gameplay/movement/climbing.js` CLIMB_REGIONS (27 and the name; the refusal now reads "in
+Suval, the Lotharn and Feradom") · `src/content/regions/western-regions/west-regions.js` (the four courses, `WEST_REGION_NAMES`,
+`WEST_GROUND`) · `src/content/regions/western-regions/west-ground.js` (`westLotharnGround` inside `westGround` and `baseBeforeWater`, which is
+how it reaches `src/world/terrain/world-terrain.js`'s chain; the East Lotharn has a **second** hook straight
 into that chain, `eastLotharnGround`, to level its road, its inn's yard and its workings' bench
 after the rivers are cut, and this country has nothing made in it, so it needs no such pass)
 · `src/world.js` (scenery, caves, terrain sink, landmarks, metrics) · `src/main.js` (the cave walk
-over both halves, seven review views) · `src/west-regions-life.js` · `package.json`.
+over both halves, seven review views) · `src/content/regions/western-regions/west-regions-life.js` · `package.json`.
 
 **Its own sky**, and the first country to ask for one on account of height rather than weather: sky
 `0x9fc2d6`, haze `0xc3cec6`, density **.0027** against the East Lotharn's .0036 and the default's

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planGoal } from '../src/autopilot.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { CALOSS, MAIN_ROAD, calossDistance, journeySites, regionNpcPositions } from '../src/region-world.js';
+import { planGoal } from '../src/gameplay/autoplay/autopilot.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { CALOSS, MAIN_ROAD, calossDistance, journeySites, regionNpcPositions } from '../src/world/terrain/region-world.js';
 import { CatmullRomCurve3, Vector3 } from '../vendor/three.module.js';
 
 const state = (position, bridge = 'offered') => ({ mode: 'playing', questStage: QUEST_DONE, position,

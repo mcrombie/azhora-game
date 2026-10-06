@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { regionAt, WORLD_BOUNDS } from '../src/region-world.js';
-import { RAMPS, pointOn, lotharnRouteJoinDelta as delta, nearLotharnRouteJoin } from '../src/east-lotharn-world.js';
-import { LOTHARN_FORTS } from '../src/lotharn-forts.js';
-import { PASS_CASTLES } from '../src/feradom-forts.js';
-import { createClimbing, canWalkSlope } from '../src/climbing.js';
-import { moveCharacter, canStand } from '../src/game-state.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { unclimbableAt } from '../src/no-climb-zones.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { regionAt, WORLD_BOUNDS } from '../src/world/terrain/region-world.js';
+import { RAMPS, pointOn, lotharnRouteJoinDelta as delta, nearLotharnRouteJoin } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { LOTHARN_FORTS } from '../src/content/regions/west-lotharn/lotharn-forts.js';
+import { PASS_CASTLES } from '../src/content/regions/feradom/feradom-forts.js';
+import { createClimbing, canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { unclimbableAt } from '../src/gameplay/movement/no-climb-zones.js';
 import { VARN_CIRCUIT, VARN_PASS_GATE, VARN_AMOD_GATE, VARN_SLABS, SLAB, slabFoot, onLanding, varnWicket,
-  varnBeforeLips, lipRib, varnUnclimbable, varnRouteJoinSceneryDelta } from '../src/varn-world.js';
+  varnBeforeLips, lipRib, varnUnclimbable, varnRouteJoinSceneryDelta } from '../src/content/regions/varn/varn-world.js';
 const oldGround=(x,z)=>groundWithRiver(x,z)-delta(x,z)-varnRouteJoinSceneryDelta(x,z);
 
 test('central join collars retain the closed retaining rims and leave every fort and slab ground unchanged',t=>{
@@ -52,7 +52,7 @@ test('central join collars retain the closed retaining rims and leave every fort
 
 // Build the actual fortress and all its admission colliders on the composed
 // terrain, without rebuilding unrelated regional vegetation or a flood lattice.
-const {createVarnScenery}=await sourceModule('../src/varn-scenery.js');
+const {createVarnScenery}=await sourceModule('../src/content/regions/varn/varn-scenery.js');
 const root=new THREE.Group(),colliders=[];
 createVarnScenery({root,scene:root,colliders,groundHeight:groundWithRiver,material:(color,extra={})=>new THREE.MeshStandardMaterial({color,...extra})});
 const world={bounds:WORLD_BOUNDS,heightAt:groundWithRiver,groundHeight:groundWithRiver,regionAt,unclimbableAt,colliders,waterAt:()=>.45,

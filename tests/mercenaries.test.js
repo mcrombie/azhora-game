@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { wildJourney } from '../src/wild-route.js';
+import { wildJourney } from '../src/content/quests/roadside/wild-route.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryById, mercenaryProgress, arrivalTime, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/mercenaries.js';
+import { MERCENARY_COMPANY_SIZE, MERCENARY_ROSTER, MERCENARY_GROUPS, ARRIVALS, MUS_ARRIVAL, drawMusArrival, KIT_WEAPON_ITEM, createMercenaryCompany, LANDING_QUEUE, mercenaryById, mercenaryProgress, arrivalTime, mercenaryLines, mercenaryStyleLines, tradeOffer, distanceAlongRoad, pointAlongRoad, roadLengths } from '../src/gameplay/company/mercenaries.js';
 
 const road = [{ x: 0, z: 0 }, { x: -100, z: 0 }, { x: -100, z: 100 }, { x: -400, z: 100 }, { x: -400, z: 300 }];
 const stops = [{ id: 'induction', point: { x: -100, z: 30 }, dwell: 90 }, { id: 'crossing', point: { x: -250, z: 104 }, dwell: 60 }];
@@ -184,7 +184,7 @@ test('placements keep the men on or beside the road, off the traveler’s landin
   for (let t = 0; t <= 20000; t += 5) for (const p of c.placements(t)) {
     if (p.phase !== 'walking' && p.phase !== 'stopped') continue;
     // The man who does not use the road is not measured against it. He has a line of his own
-    // (src/wild-route.js) and `tests/wild-route.test.js` holds it against the real one.
+    // (src/content/quests/roadside/wild-route.js) and `tests/wild-route.test.js` holds it against the real one.
     if (mercenaryById(p.id).route === 'wild') {
       if (p.phase === 'walking') wildWalking++; else wildStopped++;
       continue;
@@ -354,7 +354,7 @@ test('mercenaries speak in two lines and know where they stand', () => {
   // The road line is now said by nobody, and a wild man with no lines of his own gets a neutral
   // one rather than a road one.
   assert.notEqual(mercenaryLines('merc-mus', { phase: 'walking' })[1], mercenaryById('merc-mus').says.walking);
-  const src = source('mercenaries.js');
+  const src = source('gameplay/company/mercenaries.js');
   assert.match(src, /const wildShared = \{ first:/, 'there is a neutral fallback for any other wild man');
   // It may say you are off the road - that is what being off it means. What no wild line may do
   // is send you back to it, which is what the line they all used to share did.
@@ -392,7 +392,7 @@ test('trades: held iron for the traveler’s iron, never for a stick, never like
 
 /**
  * Her id is `christin` and `merc-christin`; her name is Kristen. Ids never change once a save has
- * written them and names on screen change freely (src/mercenaries.js), which is the right rule and
+ * written them and names on screen change freely (src/gameplay/company/mercenaries.js), which is the right rule and
  * also a trap: the old spelling goes on being correct in half the tree and wrong in the other half.
  * It was wrong in one place — the line Jerry says at the muster when he walks in behind you —
  * where nothing was looking, because every test that knew her knew her by id.
@@ -403,7 +403,7 @@ test('trades: held iron for the traveler’s iron, never for a stick, never like
 test('nobody is called by an id: the old spelling stays in the ids and out of the writing', () => {
   const dir = fileURLToPath(new URL('../src', import.meta.url));
   const offenders = [];
-  for (const file of readdirSync(dir).filter(name => name.endsWith('.js'))) {
+  for (const file of readdirSync(dir, { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js'))) {
     readFileSync(`${dir}/${file}`, 'utf8').split('\n').forEach((line, i) => {
       // Capitalised and on a word boundary is a name, not an id: `merc-christin` is fine.
       if (/\bChristin\b/.test(line)) offenders.push(`${file}:${i + 1}  ${line.trim().slice(0, 96)}`);

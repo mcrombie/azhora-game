@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCrimeHost,LAW_ENCOUNTER_ID,npcLawProfile} from '../src/crime-host.js';
-import {createInventoryState} from '../src/inventory.js';
-import {createCombat} from '../src/combat.js';
-import {canStand} from '../src/game-state.js';
+import {createCrimeHost,LAW_ENCOUNTER_ID,npcLawProfile} from '../src/gameplay/law/crime-host.js';
+import {createInventoryState} from '../src/gameplay/inventory/inventory.js';
+import {createCombat} from '../src/gameplay/combat/combat.js';
+import {canStand} from '../src/gameplay/movement/game-state.js';
 
 const vec=(x,z)=>({x,y:1,z,set(x,y,z){Object.assign(this,{x,y,z});}});
 function fixture({real=false,canRevive,isProtected=()=>false,additionalPeople=()=>[]}={}){

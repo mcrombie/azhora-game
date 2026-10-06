@@ -1,8 +1,8 @@
 // Scratch: a level, open spot in Tidehaven for Brandy Frank's dye yard, clear of everyone and everything.
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import * as fights from '../src/opening-fights.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import * as fights from '../src/app/startup/opening-fights.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

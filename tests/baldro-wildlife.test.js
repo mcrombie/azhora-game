@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BALDRO_CELLS, BALDRO_PATHS, baldroCellAt, baldroSurfaceHeight, baldroPathDistance, baldroWaterAt } from '../src/baldro-world.js';
-import { BALDRO_WILDLIFE_ZONES as zones, BALDRO_HABITATS } from '../src/baldro-wildlife.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BALDRO_CELLS, BALDRO_PATHS, baldroCellAt, baldroSurfaceHeight, baldroPathDistance, baldroWaterAt } from '../src/content/regions/baldro/baldro-world.js';
+import { BALDRO_WILDLIFE_ZONES as zones, BALDRO_HABITATS } from '../src/content/regions/baldro/baldro-wildlife.js';
 
-const { createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const world = { bounds: { minX: -20000, maxX: 20000, minZ: -20000, maxZ: 20000 },
   heightAt: baldroSurfaceHeight, waterAt: baldroWaterAt, colliders: [],
   paths: BALDRO_PATHS.map(p => Object.assign([...p.points], { width: p.width })),

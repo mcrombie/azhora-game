@@ -1,7 +1,7 @@
 # The difficulty ladder (proposal, 2026-09-20)
 
 Every region on the atlas, with a level from 0 to 11. Proposed for the user's approval; nothing
-here is in the game yet. Once approved it becomes `src/region-levels.js` — one table, read by
+here is in the game yet. Once approved it becomes `src/world/terrain/region-levels.js` — one table, read by
 what spawns, by the region card, and by the cartography journal.
 
 **How the level is shown.** The player never sees the number on the HUD. On first entering a

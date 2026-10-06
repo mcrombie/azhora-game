@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { AMBUSH_REBELS, createRoadAmbush } from '../src/road-ambush.js';
+import { AMBUSH_REBELS, createRoadAmbush } from '../src/content/quests/road-ambush/road-ambush.js';
 
-const { createRoadAmbushWatch } = await sourceModule('../src/road-ambush-watch.js');
+const { createRoadAmbushWatch } = await sourceModule('../src/content/quests/road-ambush/road-ambush-watch.js');
 function fixture() {
   const scene = new THREE.Scene(), world = { heightAt: (x, z) => x * .01 + z * .02 };
   const ambush = createRoadAmbush(), watch = createRoadAmbushWatch({ scene, world, definitions: AMBUSH_REBELS });

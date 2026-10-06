@@ -15,29 +15,29 @@ of `world-builder/azhora_lore`, and never write in that repository.
 ## 1. Adding a country, end to end
 
 Nine files in this order. Two of them are generated. Nothing else is needed: a region's
-**level** is already in `src/region-levels.js` (all 131 are), its **campaign design** is in
-`src/campaign-world.js` and is story data you leave alone, and its **neighbours** for the
-journal are already in `src/cartography.js`.
+**level** is already in `src/world/terrain/region-levels.js` (all 131 are), its **campaign design** is in
+`src/content/chapters/civil-war/campaign-world.js` and is story data you leave alone, and its **neighbours** for the
+journal are already in `src/ui/map/cartography.js`.
 
-1. **`src/west-regions.js`** — pure. The water (atlas courses and derived ones), any landform
+1. **`src/content/regions/western-regions/west-regions.js`** — pure. The water (atlas courses and derived ones), any landform
    constants, the region's name in `WEST_REGION_NAMES`, its courses in `WEST_RIVERS`, and its
    `WEST_REGION_LANDMARKS`. *Despite its name this is where the southern countries live too*,
    and the header says why: their water is the Lizeem's, and the Lizeem is built here.
-2. **`src/west-ground.js`** — pure. Only if the country has a landform. See §4.
-3. **`src/region-layout.js`** — `PLAYABLE_REGIONS` (**append**, see §2) and one `REGION_BIOMES`
+2. **`src/content/regions/western-regions/west-ground.js`** — pure. Only if the country has a landform. See §4.
+3. **`src/world/terrain/region-layout.js`** — `PLAYABLE_REGIONS` (**append**, see §2) and one `REGION_BIOMES`
    entry. The biome `id` must be unique; a test counts them against the region list.
-4. **`src/region-world.js`** — `REGION_IDS` (next integer), one `REGION_TERRAIN` entry with an
+4. **`src/world/terrain/region-world.js`** — `REGION_IDS` (next integer), one `REGION_TERRAIN` entry with an
    optional `byTerrain` refinement per atlas terrain, and one `REGION_TEXT` entry: subtitle,
    spawn (must be standable and on the country's own hexes), description, palette, `npcIds: []`,
    landmark ids.
-5. **`src/west-regions-scenery.js`** — the district block. **Append it after the last one**
+5. **`src/content/regions/western-regions/west-regions-scenery.js`** — the district block. **Append it after the last one**
    (§2).
-6. **`src/west-regions-life.js`** — models and `WEST_LIFE_ZONES` entries.
-7. **`src/build-status.js`**, **`src/map-fog.js`** (three or more chart subregions, each of which
-   must land on the country's own hexes — a test checks), **`src/developer-atlas.js`** (one
-   anchor; see below), **`src/languages.js`** (one `REGION_LANGUAGE` entry, taken from the lore
+6. **`src/content/regions/western-regions/west-regions-life.js`** — models and `WEST_LIFE_ZONES` entries.
+7. **`src/dev/tools/build-status.js`**, **`src/ui/map/map-fog.js`** (three or more chart subregions, each of which
+   must land on the country's own hexes — a test checks), **`src/dev/tools/developer-atlas.js`** (one
+   anchor; see below), **`src/gameplay/skills/languages.js`** (one `REGION_LANGUAGE` entry, taken from the lore
    file's own Language section and mapped to an existing tongue; a new dialect must also be
-   named in its parent language's `dialects` list), and **`src/chameleon.js`** — **a chameleon
+   named in its parent language's `dialects` list), and **`src/content/quests/chameleon/chameleon.js`** — **a chameleon
    spot, or `tests/chameleon.test.js` goes red.** One per region plus two in open country, and
    the count assertion in that test rises with the list. Sweep for it the way the others were
    found: standable ground `canStand` accepts at `.34`, out of water, above the tide line, more
@@ -48,8 +48,8 @@ journal are already in `src/cartography.js`.
    silently on a bad merge otherwise — `tests/eer-world.test.js` fell out of the list once and
    nobody noticed until Isareos landed.
 
-**The generated two.** `src/region-survey.js` comes from `node scripts/build-region-survey.mjs`
-and `src/region-rivers.js` from `node scripts/build-region-rivers.mjs`. Both already carry all
+**The generated two.** `src/dev/tools/region-survey.js` comes from `node scripts/build-region-survey.mjs`
+and `src/world/terrain/region-rivers.js` from `node scripts/build-region-rivers.mjs`. Both already carry all
 six southern countries — `WINDOW` is `minQ: -33` and `RIVER_REGIONS` names them — so **you will
 almost certainly not need to run either**. Run the survey anyway and confirm it produces no
 diff; that is thirty seconds and it tells you the window is still wide enough.
@@ -160,7 +160,7 @@ on a coast, `landDistance(x, z) > 1.5` as well: Eer's scrub stood in the surf.
 
 ## 4. Ground
 
-Landform functions live in `src/west-ground.js` beside `menethRidge`, `caricasShelf` and
+Landform functions live in `src/content/regions/western-regions/west-ground.js` beside `menethRidge`, `caricasShelf` and
 `isareosLie`, and they all have the same shape: **gated by the region's own box
 (`inBox(WEST_REGION_BOXES[name], x, z)`), weighted by the region's own blend
 (`terrainMix(x, z).weights[name]`), and returning 0 outside.** That weighting is what makes a
@@ -196,7 +196,7 @@ furthest inland they differ at all is 39.4 m, measured, so the test skips `landD
 
 ## 5. Animals
 
-`src/west-regions-life.js`. Pieces are declared, merged once per kind, and instanced; behaviour
+`src/content/regions/western-regions/west-regions-life.js`. Pieces are declared, merged once per kind, and instanced; behaviour
 is one `tickGround`, one `tickAir`, one `tickSea`.
 
 **A range must fit inside the reach it is ticked from.** A flock runs only while the traveler is
@@ -316,7 +316,7 @@ Win32_OperatingSystem).FreePhysicalMemory/1024)"`). Targeted tests only, read to
 `test:game`, autoplay or `review:draws`. Renders one batch at a time,
 `--review-views=<a,b> --review-clean`, then Read the PNG. Git Bash mangles heredocs and hides
 CRs — script edits with a Python file written by the Write tool, and **open with
-`io.open(..., newline='')`**: `src/map-fog.js` and `src/developer-atlas.js` are CRLF and the rest
+`io.open(..., newline='')`**: `src/ui/map/map-fog.js` and `src/dev/tools/developer-atlas.js` are CRLF and the rest
 are LF, and a `\n` pattern simply will not match in the CRLF ones. Commits end with the
 `Co-Authored-By: Claude Opus 5` line.
 
@@ -436,7 +436,7 @@ Mediterranean scrub in its south.
   `LAND_HEXES` so the ground west of Nethereum is ground; that is all.
 * **Nylon is off the atlas** and both Gala and Eer are defined by it. The survey window stops
   before it, the way it stops before Minora and the Ibenwood.
-* **Isamouth is not built either**, but `ISAMOUTH_GROUND` in `src/west-regions.js` reserves 62 m
+* **Isamouth is not built either**, but `ISAMOUTH_GROUND` in `src/content/regions/western-regions/west-regions.js` reserves 62 m
   at the Isa's confluence with the Lizeem and keeps all of Isareos's scatter off it. **Do the
   same wherever the lore puts a town you are not building.** A settlement dropped later onto
   planted ground means moving a gallery, and moving a gallery re-rolls every seeded draw after

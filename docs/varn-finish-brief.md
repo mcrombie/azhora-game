@@ -15,8 +15,8 @@ so the coordinator's reading is: **a hard climb is the only way round Varn; no f
 
 That agent was stopped mid-way for the night. Overnight the other worker (Codex) imported its unfinished
 files into main and pushed them (`cfa4839`). **Main now has**: Varn, the forts, every gate shut on one flag
-with an inside-only wicket in the Amod Gate, the garrison (`src/varn-garrison.js`), the one table of
-no-hold rock (`src/no-climb-zones.js`), and the climber's route — the Slabs, held by a test that a
+with an inside-only wicket in the Amod Gate, the garrison (`src/content/regions/varn/varn-garrison.js`), the one table of
+no-hold rock (`src/gameplay/movement/no-climb-zones.js`), and the climber's route — the Slabs, held by a test that a
 level-17 climber finishes them with the game's own controller and wind and a level-16 one falls.
 
 Read the "Main-build integration status" section at the top of `docs/varn-report.md`: it is Codex's own
@@ -33,7 +33,7 @@ there, read-only.
 The stopped agent's **later** edits — written after Codex's import, so not on main — are kept in commit
 `d219a2f` (branch `varn`). They may be the unfinished fix for exactly what is red. See them with:
 
-    git diff cfa4839 d219a2f -- src/varn-world.js tests/lattice-flood.js tests/east-lotharn-peaks.test.js tests/varn-world.test.js tests/lotharn-forts.test.js
+    git diff cfa4839 d219a2f -- src/content/regions/varn/varn-world.js tests/lattice-flood.js tests/east-lotharn-peaks.test.js tests/varn-world.test.js tests/lotharn-forts.test.js
 
 (That branch does not have the rest of main, so never merge it or diff it wholesale: only those files.)
 Its last note to itself was: "Now the peaks test's bald law: skip the rim cells, with a note."

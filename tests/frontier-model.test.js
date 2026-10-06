@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createCentaur } = await sourceModule('../src/centaur-model.js');
-const { createFrontierFigure } = await sourceModule('../src/frontier-figures.js');
-const { FRONTIER_PRINCES } = await sourceModule('../src/frontier-people.js');
+const { createCentaur } = await sourceModule('../src/world/actors/centaur-model.js');
+const { createFrontierFigure } = await sourceModule('../src/content/regions/minora-frontier/frontier-figures.js');
+const { FRONTIER_PRINCES } = await sourceModule('../src/content/regions/minora-frontier/frontier-people.js');
 
 function directMeshBounds(joint) {
   const bounds = new THREE.Box3();

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { createWeapons } from '../src/weapons.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
 
 function fixture(options = {}) {
   const world = {

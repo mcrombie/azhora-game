@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import {alezhorWaterRibbons,alezhorRivers,GOLD_REACH_SPEC,ALEZHOR_TRAILS} from '../src/alezhor-world.js';
-import {alezhorSwimmingSurface} from '../src/alezhor-water.js';
-import {groundWithRiver} from '../src/world-terrain.js';
+import {alezhorWaterRibbons,alezhorRivers,GOLD_REACH_SPEC,ALEZHOR_TRAILS} from '../src/content/regions/alezhor/alezhor-world.js';
+import {alezhorSwimmingSurface} from '../src/content/regions/alezhor/alezhor-water.js';
+import {groundWithRiver} from '../src/world/terrain/world-terrain.js';
 
 const sheets=alezhorWaterRibbons().map(r=>{const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(r.positions,3));g.setIndex(r.indices);const mesh=new THREE.Mesh(g,new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));mesh.updateMatrixWorld();return mesh;});
 const ray=new THREE.Raycaster(new THREE.Vector3(),new THREE.Vector3(0,-1,0));

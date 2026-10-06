@@ -4,13 +4,13 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { regions, regionAt, isOpenCountry, MAIN_ROAD, SUVAL_ROAD, SOLIS_ROAD } from '../src/region-world.js';
-import { ATTIC_BOTTLES } from '../src/attic-wines.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { regions, regionAt, isOpenCountry, MAIN_ROAD, SUVAL_ROAD, SOLIS_ROAD } from '../src/world/terrain/region-world.js';
+import { ATTIC_BOTTLES } from '../src/content/quests/wine/attic-wines.js';
 import {
   ED, CHAMELEON_SPOTS, CHAMELEON_SPOT_IDS, CHAMELEON_GIFTS, carryingForEd, chameleonSpotAt,
   createChameleon, chameleonConversation, validateChameleonSnapshot,
-} from '../src/chameleon.js';
+} from '../src/content/quests/chameleon/chameleon.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const talker = () => {
@@ -185,19 +185,19 @@ test('where he is survives the road, and nonsense is refused', () => {
 });
 
 test('the split: Puck keeps Solis and Ed keeps the body, and the game knows which is which', () => {
-  const main = source('main.js'), goblin = source('wine-goblin.js'), chameleon = source('chameleon.js');
+  const main = source('main.js'), goblin = source('content/quests/wine/wine-goblin.js'), chameleon = source('content/quests/chameleon/chameleon.js');
   // The chameleon's model is Ed's, and Puck is built from the game's own goblin.
   assert.match(main, /createPuckView\(scene,/, 'Puck is a goblin');
-  assert.match(source('wine-goblin-view.js'), /createGoblin\(\{ wine: true \}\)/);
-  assert.match(source('characters.js'), /export function createGoblin\(\{ variant = 0, wine = false \} = \{\}\)/);
+  assert.match(source('content/quests/wine/wine-goblin-view.js'), /createGoblin\(\{ wine: true \}\)/);
+  assert.match(source('content/characters/characters.js'), /export function createGoblin\(\{ variant = 0, wine = false \} = \{\}\)/);
   assert.match(main, /createEdView\(scene,/, 'and Ed keeps the chameleon');
-  // Both turn back after a conversation instead of keeping the traveler's bearing (src/bodies.js).
+  // Both turn back after a conversation instead of keeping the traveler's bearing (src/gameplay/combat/bodies.js).
   assert.match(main, /lendFacing\(\{facing:puckFacing,lent:puckLent/, 'Puck turns back');
   assert.match(main, /lendFacing\(\{facing:edFacing,lent:edLent/, 'and so does Ed');
   assert.doesNotMatch(main, /edView\.group\.rotation\.y=Math\.atan2\(pp\.x/, 'the old facing that never came back is gone');
   // A road saved before the split still loads: its `ed` key was always Puck's half of him.
   assert.match(main, /puck\.restore\(saved\.puck\?\?saved\.ed\?\?createPuck\(\)\.snapshot\(\)\)/);
-  assert.match(source('road-checkpoint.js'), /validatePuckSnapshot\(data\.puck \?\? data\.ed\)/);
+  assert.match(source('app/saves/road-checkpoint.js'), /validatePuckSnapshot\(data\.puck \?\? data\.ed\)/);
   assert.match(main, /puck:puck\.snapshot\(\),chameleon:chameleon\.snapshot\(\)/, 'and both are saved from now on');
   // Nothing of Solis followed Ed, and nothing of the chameleon stayed with Puck.
   // The header says what went where; nothing below it is Solis's. He has no quest, no secretary,

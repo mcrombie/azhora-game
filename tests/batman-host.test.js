@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { createBatmanQuestHost } from '../src/batman-quest-host.js';
-import { BATMAN_QUEST } from '../src/batman-quest.js';
-import { createCombat } from '../src/combat.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
-import { BAT_CAVE, BAT_LANDING } from '../src/suval-highlands.js';
+import { createBatmanQuestHost } from '../src/content/quests/batman/batman-quest-host.js';
+import { BATMAN_QUEST } from '../src/content/quests/batman/batman-quest.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { BAT_CAVE, BAT_LANDING } from '../src/content/regions/suval-highlands/suval-highlands.js';
 import { sourceModule } from './module-loader.js';
-const { createBatman } = await sourceModule('../src/batman-model.js');
+const { createBatman } = await sourceModule('../src/content/quests/batman/batman-model.js');
 
 function fixture() {
   const player = { group: new THREE.Group() }; player.group.position.set(BAT_CAVE.approach.x, 2, BAT_CAVE.approach.z);

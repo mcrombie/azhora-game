@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
 import { sourceModule } from './module-loader.js';
 
-const source = (await readFile(new URL('../src/forest-hideout-world.js', import.meta.url), 'utf8'))
+const source = (await readFile(new URL('../src/content/quests/forest/forest-hideout-world.js', import.meta.url), 'utf8'))
   .replace("'three'", `'${new URL('../vendor/three.module.js', import.meta.url).href}'`);
 const { FOREST_HIDEOUT: site, forestHideoutClear, tintForestHideoutGround, createForestHideout } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
 function fixture() {
@@ -42,7 +42,7 @@ test('Clearance and terrain tint are confined to the new camp and its eastern fo
 
 test('Drent keeps every original collectible, and the goblin camp in southern Pueth connects to the road north', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
-  const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
+  const { createWoodlandLife } = await sourceModule('../src/world/life/woodland-life.js');
   const scene = new THREE.Scene(), world = createWorld(scene), life = createWoodlandLife(scene, world), original = life.state();
   assert.deepEqual([original.acorns.length, original.sticks.length, original.fruits.length], [24, 14, 12]);
   assert.ok(original.squirrels.length > 4, 'the four village squirrels are joined by residents throughout Drent');
@@ -83,7 +83,7 @@ test('Drent keeps every original collectible, and the goblin camp in southern Pu
   }
   // The camp's own ground: flood from the road north, along the side trail, and reach the camp's trail, the scouts and the sacks.
   // The box follows the camp and its side trail, so it holds wherever they are put.
-  const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/pueth-world.js');
+  const { HIDEOUT_APPROACH_TRAIL } = await sourceModule('../src/content/regions/pueth/pueth-world.js');
   const road = HIDEOUT_APPROACH_TRAIL[0];
   const campPoints = [...camp.trail, camp.approach, camp.supplies, ...camp.enemies, ...HIDEOUT_APPROACH_TRAIL];
   const ox = Math.floor(Math.min(...campPoints.map(p => p.x)) - 20), oz = Math.floor(Math.min(...campPoints.map(p => p.z)) - 20);

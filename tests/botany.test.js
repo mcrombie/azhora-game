@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, waterAt } from '../src/game-state.js';
-import { createSkills } from '../src/skills.js';
+import { canStand, waterAt } from '../src/gameplay/movement/game-state.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 import { PLANT_SPECIES, PLANT_IDS, BOTANIST, BOTANIST_STAND, BOTANY_LESSON, HERB_ITEM, TUCKAHOE_ITEM, LEAF_ITEM, JIMSON_ITEM,
-  TREE_IDS, plant, createBotany, validateBotanySnapshot, botanistConversation } from '../src/botany.js';
-import { PIPE_SMOKER, PIPE_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, validatePipeSnapshot, pipeSmokerConversation } from '../src/pipeweed.js';
-import { TOFT, JIMSON_PODS_WANTED, JIMSON_NIGHT_DELAY, createJimson, validateJimsonSnapshot, toftConversation } from '../src/jimson-quest.js';
+  TREE_IDS, plant, createBotany, validateBotanySnapshot, botanistConversation } from '../src/gameplay/skills/nature/botany.js';
+import { PIPE_SMOKER, PIPE_ITEM, PIPE_HEAL, WEATHERHEAD, createPipe, validatePipeSnapshot, pipeSmokerConversation } from '../src/content/quests/roadside/pipeweed.js';
+import { TOFT, JIMSON_PODS_WANTED, JIMSON_NIGHT_DELAY, createJimson, validateJimsonSnapshot, toftConversation } from '../src/content/quests/roadside/jimson-quest.js';
 
 const fixture = () => { const skills = createSkills(); return { skills, botany: createBotany({ skills }) }; };
 const satchel = (start = {}) => {
@@ -23,7 +23,7 @@ let built = null;
 async function country() {
   built ??= (async () => {
     const { createWorld } = await sourceModule('../src/world.js');
-    const { createDrentFlora, AUTHORED_STANDS, PLANT_PATCHES } = await sourceModule('../src/drent-flora.js');
+    const { createDrentFlora, AUTHORED_STANDS, PLANT_PATCHES } = await sourceModule('../src/content/regions/drent/drent-flora.js');
     const world = createWorld(new THREE.Scene());
     return { world, AUTHORED_STANDS, PLANT_PATCHES, flora: createDrentFlora(new THREE.Scene(), world, { avoid: Object.values(world.npcPositions) }) };
   })();
@@ -355,9 +355,9 @@ test('a gathered plant is gone, and stays gone across a save', async () => {
 
 test('no specimen tree stands within reach of a quest step, a fire, a bench or a fishing bank', async () => {
   const { world } = await country();
-  const { SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/drent-trees.js');
-  const { FOREST_STORY_SITES } = await sourceModule('../src/forest-story.js');
-  const { REGIONAL_LIFE_SITES } = await sourceModule('../src/regional-life.js');
+  const { SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/content/regions/drent/drent-trees.js');
+  const { FOREST_STORY_SITES } = await sourceModule('../src/content/quests/forest/forest-story.js');
+  const { REGIONAL_LIFE_SITES } = await sourceModule('../src/world/life/regional-life.js');
   // Each with the radius at which the game offers it on F.
   const spots = [
     ...Object.values(world.journeySites ?? {}).map(site => [site.id, site, 2.7]),
@@ -375,7 +375,7 @@ test('no specimen tree stands within reach of a quest step, a fire, a bench or a
 
 test('a tree is named, never taken, and every tree in botany stands somewhere in Drent', async () => {
   const { world } = await country();
-  const { createDrentTrees, SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/drent-trees.js');
+  const { createDrentTrees, SPECIMEN_TREES, TREE_REACH } = await sourceModule('../src/content/regions/drent/drent-trees.js');
   const { skills, botany } = fixture();
   botany.meet();
   const bag = satchel();

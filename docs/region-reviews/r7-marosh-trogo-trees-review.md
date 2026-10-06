@@ -186,7 +186,7 @@ scenery hash, all 4,503 saved identities, all 1,296 reviewed root footprints and
 both wildlife returns pass in that same fixture. This closes these representative
 ordinary-route and wildlife gates; it does not accept the unresolved coastal
 descent or all forest travel. No performance benchmark is inferred from elapsed
-time. The final production change is limited to `src/southwest-world.js`; no
+time. The final production change is limited to `src/content/regions/southwest/southwest-world.js`; no
 shared world hook, scenery generator or wildlife source changed in this pass.
 
 

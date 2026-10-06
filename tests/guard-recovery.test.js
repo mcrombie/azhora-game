@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { moveCharacter } from '../src/game-state.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 function fight(kind, hp=240) {
   const world={heightAt:()=>1.5,colliders:[],bounds:{minX:-80,maxX:80,minZ:-80,maxZ:80}};

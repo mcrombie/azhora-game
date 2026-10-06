@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { regionOutline } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { hexOwnerAt, REGION_CELLS, regionAt } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { westWaterSurface } from '../src/west-ground.js';
-import { WEST_EDGE_REGIONS, DINELV_ASCENT, DINELV_MESAS } from '../src/southwest-world.js';
-import { canWalkSlope, isClimbTerrain, sampleClimbSurface } from '../src/climbing.js';
+import { regionOutline } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { hexOwnerAt, REGION_CELLS, regionAt } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { WEST_EDGE_REGIONS, DINELV_ASCENT, DINELV_MESAS } from '../src/content/regions/southwest/southwest-world.js';
+import { canWalkSlope, isClimbTerrain, sampleClimbSurface } from '../src/gameplay/movement/climbing.js';
 
 // Derive the audit from the atlas, independently of the production seam list.
 const edges = [], seen = new Set();

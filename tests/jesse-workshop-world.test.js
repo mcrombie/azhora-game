@@ -2,9 +2,9 @@
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
-import { JESSE_WORKSHOP, CARRIAGE_PARTS, jesseWorkshopClear } from '../src/jesse-carriage-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { JESSE_WORKSHOP, CARRIAGE_PARTS, jesseWorkshopClear } from '../src/content/quests/jesse/jesse-carriage-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

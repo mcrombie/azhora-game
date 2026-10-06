@@ -5,21 +5,21 @@ import {
   AMOD_BORDER_HEXES, OSTEL, ostelPoint, OSTEL_BUILDINGS, OSTEL_STANDS, OSTEL_SPRING, OSTEL_STONE_YARD,
   TARVEL, TARVEL_BRIDGE, DROMEL_CHANNEL, DROMEL_GATE, TARVEL_HEAD, VESSEN, TIR_OSTEL, TOLL_STONE, OGRE_STAND,
   KELMOD_ROAD_END, tarvelDistance,
-} from '../src/amod-world.js';
-import { PUETH_ROAD } from '../src/pueth-world.js';
-import { hexOwnerAt, hexAt, hexCentre, REGION_IDS, WORLD_BOUNDS, regions } from '../src/region-world.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { BUILD_STATUS } from '../src/build-status.js';
+} from '../src/content/regions/amod/amod-world.js';
+import { PUETH_ROAD } from '../src/content/regions/pueth/pueth-world.js';
+import { hexOwnerAt, hexAt, hexCentre, REGION_IDS, WORLD_BOUNDS, regions } from '../src/world/terrain/region-world.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { BUILD_STATUS } from '../src/dev/tools/build-status.js';
 import { sourceModule } from './module-loader.js';
 import {
   AMOD_TERRACE_GROUND, AMOD_ROAD_PROFILE, TARVEL_PROFILE, DROMEL_PROFILE, TARVEL_DECK_Y,
   TERRACE_RISE, terraceHeight, terraceLevel, amodShaping, amodGround, amodTerracedGround, amodNaturalGround,
-} from '../src/amod-terraces.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+} from '../src/content/regions/amod/amod-terraces.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
 // signs.js draws its own lettering atlas, so it needs three: load it the way the other tests do.
-const { SIGN_LABELS } = await sourceModule('../src/signs.js');
+const { SIGN_LABELS } = await sourceModule('../src/world/scenery/signs.js');
 
 const roadDistance = (x, z) => {
   let best = Infinity;
@@ -104,7 +104,7 @@ test('every place, person and sign of Amod stands in Amod, off the road and out 
    * (docs/known-issues.md, round 5).
    *
    * The clearance is measured against the circles `terraceHouse` actually lays down for a house
-   * (src/amod-scenery.js: a row down the long side, each `short / 2 + .2`), because those are
+   * (src/content/regions/amod/amod-scenery.js: a row down the long side, each `short / 2 + .2`), because those are
    * what a body in this town is stopped by.
    */
   const houseColliders = [];
@@ -256,8 +256,8 @@ test('the pass stones, the toll stone and the ogre stand together on the road in
 
 test('in the built world, everyone in Amod has ground to stand on and the ogre has room to fight', async () => {
   const THREE = await import('../vendor/three.module.js');
-  const { canStand } = await import('../src/game-state.js');
-  const { OGRE_ENCOUNTER } = await import('../src/amod-ogre.js');
+  const { canStand } = await import('../src/gameplay/movement/game-state.js');
+  const { OGRE_ENCOUNTER } = await import('../src/content/regions/amod/amod-ogre.js');
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
   for (const [id, stand] of Object.entries(AMOD_NPC_POSITIONS))

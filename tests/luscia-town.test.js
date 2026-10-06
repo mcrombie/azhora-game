@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from '../src/luscia-town.js';
-import { createCampaign, REGIONAL_ARCS } from '../src/campaign.js';
-import { regionNpcPositions, LUMBER_TOWN, regionAt, MAIN_ROAD } from '../src/regions.js';
-import { createInventoryState } from '../src/inventory.js';
-import { canStand } from '../src/game-state.js';
+import { TOWN_NPCS, TOWN_NPC_IDS, TOWN_BEGGAR_ROUTE, REBEL_CONTACT, townConversation } from '../src/content/regions/luscia/luscia-town.js';
+import { createCampaign, REGIONAL_ARCS } from '../src/content/chapters/civil-war/campaign.js';
+import { regionNpcPositions, LUMBER_TOWN, regionAt, MAIN_ROAD } from '../src/world/terrain/regions.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
 

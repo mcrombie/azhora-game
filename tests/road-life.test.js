@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
-const {createRoadLife,ROAD_LIFE_ZONES}=await sourceModule('../src/road-life.js');
+const {createRoadLife,ROAD_LIFE_ZONES}=await sourceModule('../src/content/regions/drent/road-life.js');
 const [SHEEP,BIRDS,HARES]=ROAD_LIFE_ZONES;
 const middle=zone=>({x:(zone.minX+zone.maxX)/2,z:(zone.minZ+zone.maxZ)/2});
 const fixture=(colliders=[])=>{

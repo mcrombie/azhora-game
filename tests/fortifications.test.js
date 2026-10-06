@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { FORT_STANDARD, fortCircuit, longestTowerGap } from '../src/fortification.js';
-import { OUTPOST_CIRCUIT, STOCKADE_CIRCUIT, MAIN_GATE_ALONG, OUTPOST_ROAD, OUTPOST_CENTRE, campPoint } from '../src/outpost.js';
-import { FRONTIER_CIRCUIT, LUSCIA_BORDER } from '../src/frontier.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
-import { MOROS_GATE_ID, MOROS_LEGATE_ID } from '../src/moros-chapter.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { FORT_STANDARD, fortCircuit, longestTowerGap } from '../src/world/scenery/fortification.js';
+import { OUTPOST_CIRCUIT, STOCKADE_CIRCUIT, MAIN_GATE_ALONG, OUTPOST_ROAD, OUTPOST_CENTRE, campPoint } from '../src/content/regions/drent/outpost.js';
+import { FRONTIER_CIRCUIT, LUSCIA_BORDER } from '../src/content/regions/minora-frontier/frontier.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
+import { MOROS_GATE_ID, MOROS_LEGATE_ID } from '../src/content/chapters/civil-war/moros-chapter.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

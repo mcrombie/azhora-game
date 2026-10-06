@@ -9,15 +9,15 @@ be set down on the quay at Cobble.
 ## What the atlas gave
 
 `assets/azhora-dev-regions.json` already carried Peblos. Adding `'Peblos'` to
-`PLAYABLE_REGIONS` (`src/region-layout.js`) and to `PLAYABLE` in
-`scripts/build-region-survey.mjs`, then regenerating `src/region-survey.js`, gave
+`PLAYABLE_REGIONS` (`src/world/terrain/region-layout.js`) and to `PLAYABLE` in
+`scripts/build-region-survey.mjs`, then regenerating `src/dev/tools/region-survey.js`, gave
 the game **nine hexes: five hills and four plains**, in axial q 11–17, r 107–111.
 The survey window already reached far enough east, so `LAND_HEXES` did not
 change — the islands were already land in the world, as unclaimed outland
 ground, before this branch made them a region.
 
 Nine hexes, and only two of them touch: the map's own answer is **six islands**.
-`PEBLOS_ISLANDS` in `src/peblos-world.js` is derived from the survey at load
+`PEBLOS_ISLANDS` in `src/content/regions/peblos/peblos-world.js` is derived from the survey at load
 time by flooding hex adjacency, so their number, their sizes and their spread are
 the map's and not this file's; `ISLAND_NAMES` only hangs a name and a landmark on
 the island whose anchor hex it recognises, and the test says so.
@@ -46,7 +46,7 @@ its own scatter (`ownScatter`).
 
 ## The crossing
 
-**Jess** (`src/ferry.js`) is the man who rowed the traveler ashore in the
+**Jess** (`src/world/travel/ferry.js`) is the man who rowed the traveler ashore in the
 opening; he is still at the landing, on the pier deck beside his boat. He takes
 **three copper** to Cobble and three copper back.
 
@@ -149,7 +149,7 @@ whole of the Empire's presence in the province.
 
 ## The people
 
-Eleven (`src/peblos-people.js`), each with two or three lines and no quest in any
+Eleven (`src/content/regions/peblos/peblos-people.js`), each with two or three lines and no quest in any
 of them.
 
 - **Bregga Sell**, net-mistress, who keeps the nets and the tally and says the
@@ -199,7 +199,7 @@ island, all with discovery text.
 
 ## The islands' own scatter
 
-`src/peblos-scenery.js` batches per island — one to three hexes each, so a camera
+`src/content/regions/peblos/peblos-scenery.js` batches per island — one to three hexes each, so a camera
 at Cobble submits nothing of the Saltings. Salt grass and thrift cushions in
 pink and grey-green, gorse in flower, grey rock gathering at the waterline and
 thinning inland, and sixteen wind-bent pines on the high rock of the two hills
@@ -237,7 +237,7 @@ else and could see the corner of the plane.
 
 ## Fitting it to what already exists
 
-- **The chart** (`src/map-fog.js`) gains eight named areas: Cobble, the Cobble
+- **The chart** (`src/ui/map/map-fog.js`) gains eight named areas: Cobble, the Cobble
   Headland, the Southern Shore, and one for each outer island. None overlaps any
   other area in the world (`tests/map-fog.test.js` and the new test both check).
 - **Islands are land inside the chart's water.** The trail chart and the minimap
@@ -254,15 +254,15 @@ else and could see the corner of the plane.
 
 ## Files
 
-New: `src/peblos-world.js`, `src/peblos-scenery.js`, `src/peblos-people.js`,
-`src/ferry.js`, `tests/peblos-world.test.js`, `tests/ferry.test.js`, this report.
+New: `src/content/regions/peblos/peblos-world.js`, `src/content/regions/peblos/peblos-scenery.js`, `src/content/regions/peblos/peblos-people.js`,
+`src/world/travel/ferry.js`, `tests/peblos-world.test.js`, `tests/ferry.test.js`, this report.
 
-Changed: `scripts/build-region-survey.mjs`, `src/region-survey.js` (regenerated),
-`src/region-layout.js`, `src/region-world.js`, `src/world-terrain.js`,
-`src/world-regions.js`, `src/world.js`, `src/road-checkpoint.js`,
-`src/local-map-data.js`, `src/trail-map.js`, `src/trail-map.css`,
-`src/minimap.js`, `src/map-fog.js`, `src/build-status.js`,
-`src/developer-atlas.js`, `src/developer-mode.js`, `src/adventure.css`,
+Changed: `scripts/build-region-survey.mjs`, `src/dev/tools/region-survey.js` (regenerated),
+`src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`, `src/world/terrain/world-terrain.js`,
+`src/world/terrain/world-regions.js`, `src/world.js`, `src/app/saves/road-checkpoint.js`,
+`src/ui/map/local-map-data.js`, `src/ui/map/trail-map.js`, `src/ui/map/trail-map.css`,
+`src/ui/map/minimap.js`, `src/ui/map/map-fog.js`, `src/dev/tools/build-status.js`,
+`src/dev/tools/developer-atlas.js`, `src/dev/tools/developer-mode.js`, `src/ui/styles/adventure.css`,
 `index.html`, `package.json`, `src/main.js`.
 
 `src/world.js` (CRLF, patched by exact anchors): two imports, the quay deck in
@@ -453,7 +453,7 @@ and Peblos pays the same one.
 
 ## For the lead, on merge
 
-- **Regenerate `src/region-survey.js`** if another region lands at the same time
+- **Regenerate `src/dev/tools/region-survey.js`** if another region lands at the same time
   (`node scripts/build-region-survey.mjs`); `tests/region-survey.test.js` catches
   a stale file.
 - **Region ids.** Peblos took **7** in `REGION_IDS`. Nothing assumes it except
@@ -472,7 +472,7 @@ and Peblos pays the same one.
 - **`src/main.js`**: the ferry is created straight after `createAftermathChapter`,
   the conversation hook straight after Pueth's, the frame hook after the
   occupation pass, and `saveRoad`/`continueRoad` each gained one clause.
-- **`villageWeight` changed** (`src/world-terrain.js`). Anything that samples
+- **`villageWeight` changed** (`src/world/terrain/world-terrain.js`). Anything that samples
   Tidehaven's height field east of world x 36 now gets the ordinary sea floor.
   The Pueth work's `TIDEHAVEN_GROUND_REACH` and its test are unaffected: that
   constant is about the field's *sideways* reach, which is unchanged.
@@ -482,5 +482,5 @@ and Peblos pays the same one.
   through to the trail chart and the minimap draws it after the water. Any other
   region that is an island, or has one offshore, gets the same for free by
   putting its outline in `world.mapLands`.
-- **Nothing in `src/world-scale.js` changed**, and no cluster was added.
+- **Nothing in `src/world/terrain/world-scale.js` changed**, and no cluster was added.
 - The branch is four commits on `peblos` and has not been pushed.

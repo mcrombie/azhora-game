@@ -14,14 +14,14 @@ import { scopedWorld } from './scoped-world.js';
  * cut over it (`createIbenwoodRiverSystem`'s `ground`, which src/world.js lays after every country's layer).
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_IDS, REGION_TERRAIN, hexOwnerAt, regionAt, landDistance, terrainMix, SEA_LEVEL } = await sourceModule('../src/region-world.js');
-const { groundWithRiver: ground, groundBeforeAlezhor: before, groundTint, SHORE_TINT_FAMILIES, GROUND_TINT_FAMILIES, shoreTintOf } = await sourceModule('../src/world-terrain.js');
-const { canStand, moveCharacter, WATERLINE } = await sourceModule('../src/game-state.js');
-const { westWaterSurface, WEST_PROFILES } = await sourceModule('../src/west-ground.js');
-const { ALEZHOR_WATER } = await sourceModule('../src/west-regions.js');
-const { createIbenwoodRiverSystem } = await sourceModule('../src/ibenwood-rivers.js');
-const { regionBuildStatus } = await sourceModule('../src/build-status.js');
-const A = await sourceModule('../src/alezhor-world.js');
+const { REGION_IDS, REGION_TERRAIN, hexOwnerAt, regionAt, landDistance, terrainMix, SEA_LEVEL } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver: ground, groundBeforeAlezhor: before, groundTint, SHORE_TINT_FAMILIES, GROUND_TINT_FAMILIES, shoreTintOf } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canStand, moveCharacter, WATERLINE } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { westWaterSurface, WEST_PROFILES } = await sourceModule('../src/content/regions/western-regions/west-ground.js');
+const { ALEZHOR_WATER } = await sourceModule('../src/content/regions/western-regions/west-regions.js');
+const { createIbenwoodRiverSystem } = await sourceModule('../src/content/regions/ibenwood/ibenwood-rivers.js');
+const { regionBuildStatus } = await sourceModule('../src/dev/tools/build-status.js');
+const A = await sourceModule('../src/content/regions/alezhor/alezhor-world.js');
 const { ALEZHOR, ALEZHOR_CELLS, ALEZHOR_CLIMATE, ALEZHOR_EDGES, ALEZHOR_LINES, ALEZHOR_BOX, ALEZHOR_KEPT, ALEZHOR_RESERVED, ALEZHOR_COVES,
   ALEZHOR_FOLDS, ALEZHOR_ARRIVAL, ALEZHOR_LANDMARKS, ALEZHOR_TRAILS, ALEZHOR_VIEWS, ALEZHOR_GROUND, ALEZHOR_WATER_BANK, GOLD_REACH_SPEC,
   alezhorGround, alezhorTint, alezhorShoreTint, alezhorOwns, alezhorWrites, alezhorCover, alezhorWaterAt, alezhorRiverAt,

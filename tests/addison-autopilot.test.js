@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAddisonAutopilot } from '../src/addison-autopilot.js';
-import { ADDISON, ADDISON_STAND } from '../src/lighthouse.js';
-import { SMUGGLERS_DOOR, TOWER_STEP, ROUTE_TO_DOOR } from '../src/rival-light.js';
+import { createAddisonAutopilot } from '../src/gameplay/autoplay/addison-autopilot.js';
+import { ADDISON, ADDISON_STAND } from '../src/content/quests/lighthouse/lighthouse.js';
+import { SMUGGLERS_DOOR, TOWER_STEP, ROUTE_TO_DOOR } from '../src/content/quests/rival-light/rival-light.js';
 
 const world = { bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 }, colliders: [], heightAt: () => 1 };
 function fixture(state) {

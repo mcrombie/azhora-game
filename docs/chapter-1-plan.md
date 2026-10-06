@@ -45,7 +45,7 @@ Dialogue beats, as short as the road's other lines and in the register of the me
 
 Every hook below was read at `e3626a5`.
 
-**The tutorial spine is eleven numbered stages** (`questSteps`, `src/game-state.js:62-76`) driven
+**The tutorial spine is eleven numbered stages** (`questSteps`, `src/gameplay/movement/game-state.js:62-76`) driven
 by one pure function (`advanceQuest`, `:77-90`):
 
 ```
@@ -54,19 +54,19 @@ by one pure function (`advanceQuest`, `:77-90`):
 ```
 
 **Do not renumber them.** Six things key off the numbers and would all have to move together:
-the save validator (`src/road-checkpoint.js:77`, which accepts `1..10` and **rejects 4** so a save
+the save validator (`src/app/saves/road-checkpoint.js:77`, which accepts `1..10` and **rejects 4** so a save
 can never sit inside the fight; `:90` requires the letter at ≥2 and the token at ≥6; `:192`
-requires two practice hits and one dodge at ≥3); the autopilot's ladder (`src/autopilot.js:428-438`,
+requires two practice hits and one dodge at ≥3); the autopilot's ladder (`src/gameplay/autoplay/autopilot.js:428-438`,
 one case per stage); `knownNPCs` at ≥5 (`src/main.js:2985`); Bran's "You cleared the road!" at ≥5
 (`:3885`); the road smoke; and every existing save. Reusing the numbers and changing what happens
 *at* them is the whole migration story, and it is why this plan is cheap.
 
-**The fight itself.** `GREENWAY_RAID` (`src/opening-fights.js:9-14`): three goblins at 75 hp,
+**The fight itself.** `GREENWAY_RAID` (`src/app/startup/opening-fights.js:9-14`): three goblins at 75 hp,
 centre `(-56, 29)`, checkpoint `(-45, 29)`, retreat line `x = -36`. `OPENING_FIGHT_GROUND` (`:22`)
 is what keeps props off the checkpoint and the entry points, and `src/world.js` reads it. The
 trigger is a box test at stage 3 — `x` between −68 and −46, `|z − 29| < 8` — calling `startAmbush()`
 (`src/main.js:5130`, `:4790`). `startAmbush` also rings the village bell and calls `caughtIn`,
-which puts villagers in the fight through `bystandersFor` (`src/bystanders.js`): some take up an
+which puts villagers in the fight through `bystandersFor` (`src/gameplay/combat/bystanders.js`): some take up an
 axe, some are caught in the open.
 
 **The teaching-fight policy exists and must be kept.** `TEACHING_FIGHTS`
@@ -74,26 +74,26 @@ axe, some are caught in the open.
 encounter id must join it, or companions finish the lesson for the player.
 
 **The instructor.** Footman Ottar is already built: `post-landing`, a `legionary` at authored
-`(-3, 34)` with two lines (`src/legion-posts.js:18`), one of which already points at the
+`(-3, 34)` with two lines (`src/content/regions/drent/legion-posts.js:18`), one of which already points at the
 quartermaster in the Avrel clearing. He is the right man and he needs no new geography.
 
-**Corvan** is the quartermaster at `corvanPost = avrel(4, -8)` (`src/places.js:44`), in the Avrel
+**Corvan** is the quartermaster at `corvanPost = avrel(4, -8)` (`src/world/scenery/places.js:44`), in the Avrel
 clearing — which is in Drent, so "Corvan's existing Drent post" is satisfied by copy alone.
 
 **The straw post pays Blades already** (`src/main.js:4816`, `:4822`): a `practice-hit` increments
 `practiceHits` at stage 2 and calls `arms.learn('blades')` with `source: 'post'`.
 
-**Luscia.** `LUSCIA_WOLVES` (`src/luscia-chapter.js:44-45`), id `lauvel-wolves`, centre
+**Luscia.** `LUSCIA_WOLVES` (`src/content/chapters/civil-war/luscia-chapter.js:44-45`), id `lauvel-wolves`, centre
 `toWorld(-375, 177)`, checkpoint `toWorld(-386, 182.9)`. State is four booleans — `started`,
 `briefed`, `satchelTaken`, `wolvesCleared`, `returned` — validated at `:70`, and taking the
 satchel is what starts the fight (`:141`).
 
-**Levels.** Drent is level **0** and Luscia level **1** (`src/region-levels.js`), and encounters
+**Levels.** Drent is level **0** and Luscia level **1** (`src/world/terrain/region-levels.js`), and encounters
 take their ground's level unless one is authored. So the same bandit kind is automatically harder
 at the Lauvel: health ×1.45 and damage ×1.30. That is the brief's "tougher in Luscia" for free,
 and it means the pair there must be measured, not assumed.
 
-**No human bandit kind exists.** `ENEMY_KINDS` (`src/combat.js:20-37`) has goblin, wolf, soldier,
+**No human bandit kind exists.** `ENEMY_KINDS` (`src/gameplay/combat/combat.js:20-37`) has goblin, wolf, soldier,
 sparring and ogre. The soldier is the trained man: `guard .8`, `armor .2`, `poise true`, `pack 2`.
 
 **Overlapping work: none.** Every agent is retired and all 25 worktree branches are merged. The
@@ -163,9 +163,9 @@ Because the numbers are reused, most of this is arithmetic rather than migration
 | stage 0–1 | Nothing owed. The new lesson is ahead of it. |
 | **stage 2** | Was "go and hit the post"; is now "report to Ottar". The save carries `practiceHits`/`practiceDodges`, so a traveler who had already hit the post twice must **not** be made to do it again: treat the lesson as begun and let Ottar acknowledge the work already done. |
 | stage 3 | Walking to a fight that has moved. The marker and the trigger box move with it; nothing in the save contradicts that. |
-| stage 4 | **Cannot exist** — `src/road-checkpoint.js:77` rejects it. Nothing to migrate, and this is worth keeping. |
+| stage 4 | **Cannot exist** — `src/app/saves/road-checkpoint.js:77` rejects it. Nothing to migrate, and this is worth keeping. |
 | stage ≥5 | The fight is behind them. Its copy is in the journal as prose only; no state says "three goblins". |
-| **`wolvesCleared`** | The Luscia fight keeps its id `lauvel-wolves` and its four booleans. A save that cleared the wolves has cleared the gang; the obligation must not replay and the copper must not pay twice. **Keep the id.** Renaming it would invalidate saves at `src/luscia-chapter.js:70` for no gain. |
+| **`wolvesCleared`** | The Luscia fight keeps its id `lauvel-wolves` and its four booleans. A save that cleared the wolves has cleared the gang; the obligation must not replay and the copper must not pay twice. **Keep the id.** Renaming it would invalidate saves at `src/content/chapters/civil-war/luscia-chapter.js:70` for no gain. |
 | `meadowCleared`, the goblin camp, the Avrel raid | Untouched. Goblins stay in the world. |
 
 The one real risk is the stage-2 save, and the mitigation is that the lesson's completion is
@@ -202,7 +202,7 @@ comparison, and the levels above make that concrete:
 
 **Model and name.** No proper name is invented by this plan: the Azhora rule is that invented
 names come from the registers, and a Drent road robber wants one from the user or from the
-Drentish register. `src/characters.js` builds people from a `modelRole` and a look; the plan is a
+Drentish register. `src/content/characters/characters.js` builds people from a `modelRole` and a look; the plan is a
 human build with worn traveling clothes and a distinctive fastening, **not** a goblin with a human
 label and **not** a Coalition uniform. Two of the same look, varied, are the Lauvel pair.
 
@@ -222,18 +222,18 @@ goblins that remain; the new fight simply does not ring it, and Ottar's line sta
 
 Confirmed by search; this is the whole list.
 
-- `src/game-state.js:67` — stage 4's card, "Drive off the three goblin raiders."
-- `src/game-state.js:68` — stage 5's card, "Report the three goblins to Eren…"
+- `src/gameplay/movement/game-state.js:67` — stage 4's card, "Drive off the three goblin raiders."
+- `src/gameplay/movement/game-state.js:68` — stage 5's card, "Report the three goblins to Eren…"
 - `src/main.js` `startAmbush` toast — "Goblins on the Greenway!"
 - `src/main.js:3918` — the doomsayer: "three of them still out on the Greenway".
-- `src/story-chapters.js:60` — Chapter 1's first step, "clear the Greenway of raiders".
+- `src/content/chapters/journey/story-chapters.js:60` — Chapter 1's first step, "clear the Greenway of raiders".
 - Eren's own report lines, and Bran's "You cleared the road!" (`:3885`).
 - `docs/`: the opening-sequence and campaign notes that describe the raid.
 
 Also to touch: the journal's quest list (derived from `questSteps`, so it follows), the map
 marker for stage 3 (moves with the arena), the **F8 panel** (the new go-anywhere rows reach the
 site by name once the arena is a named ground, and `test-prepare` must still leave a coherent
-state), and `src/autopilot.js` cases 2–5, which are the ladder the automated walk climbs.
+state), and `src/gameplay/autoplay/autopilot.js` cases 2–5, which are the ladder the automated walk climbs.
 
 ---
 

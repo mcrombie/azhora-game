@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { createColliderGrid, watchColliderEdits, COLLIDER_CELL } from '../src/collider-grid.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createColliderGrid, watchColliderEdits, COLLIDER_CELL } from '../src/world/collision/collider-grid.js';
 
 let built = null;
 const fixture = async () => built ??= (async () => {

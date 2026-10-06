@@ -34,7 +34,7 @@ That leaves **104 regions outside the integrated regional build**. Four of those
 
 These labels are a starting inventory, not certification that the 27 are complete. Existing build descriptions contain stale details, and Cape Thalmagar has a fortress/developer-view prototype despite lacking a normal integrated region build. The developer status list currently covers only 70 of the 131 atlas regions. A complete ledger and a review of existing content should precede broad expansion. Keep a separate completion track for the 27 integrated regions: existing quests, travel, settlements and unfinished mechanics still need their own reviewed work. Building terrain in the other 104 does not make the existing regions, or the game, complete.
 
-Use the current `src/region-levels.js` danger ladder. The older campaign table is incomplete and uses a different scale. Preserve canonical atlas IDs, including unusual spellings, until a deliberate compatibility-safe naming cleanup is approved.
+Use the current `src/world/terrain/region-levels.js` danger ladder. The older campaign table is incomplete and uses a different scale. Preserve canonical atlas IDs, including unusual spellings, until a deliberate compatibility-safe naming cleanup is approved.
 
 ## What each region brief should contain
 
@@ -154,7 +154,7 @@ The September arrival, first full-moon night, winter invasion and Chapter 3 army
 ## Sources and accompanying records
 
 - [Atlas export](../assets/azhora-dev-regions.json), and the World Builder map's per-hex climate data.
-- [Build status](../src/build-status.js), [current danger levels](../src/region-levels.js), and [wilderness handover](wilderness-handover.md).
+- [Build status](../src/dev/tools/build-status.js), [current danger levels](../src/world/terrain/region-levels.js), and [wilderness handover](wilderness-handover.md).
 - [Campaign design](campaign-design.md) and [Chapter 3/autumn proposal](chapter-3-autumn-proposal.md).
 - Regional geography and flora/fauna files under `../../world-builder/azhora_lore/`, read without modification.
 - Existing Mithala work and its brief in `../../azhora-game-mithala/docs/mithala-brief.md`.

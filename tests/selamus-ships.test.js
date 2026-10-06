@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createSelamusShip } = await sourceModule('../src/selamus-ships.js');
+const { createSelamusShip } = await sourceModule('../src/content/regions/selamus/selamus-ships.js');
 const feature = (ship, name) => ship.children.filter(m => m.userData.feature === name);
 
 test('Selemis hulls straddle their waterline and have closed outward-facing pointed volumes', () => {

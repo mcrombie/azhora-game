@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { occupationControl, isOut, hasStake, stakeOf, legionPostStake } from '../src/occupation.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
-import { AFTERMATH_NPCS, AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
-import * as campaignModule from '../src/campaign.js';
+import { occupationControl, isOut, hasStake, stakeOf, legionPostStake } from '../src/gameplay/company/occupation.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
+import { AFTERMATH_NPCS, AFTERMATH_VARIANTS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import * as campaignModule from '../src/content/chapters/civil-war/campaign.js';
 
 const legionary = { id: 'outpost-sentry', holds: 'empire', region: 'Moros Plain' };
 const rebel = { id: 'outpost-valley-captain', holds: 'coalition', region: 'Moros Plain' };

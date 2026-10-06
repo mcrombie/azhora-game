@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAP_TUTORIAL_DONE, MAP_TUTORIAL_STEPS, createMapTutorial, validateMapTutorial } from '../src/map-tutorial.js';
+import { MAP_TUTORIAL_DONE, MAP_TUTORIAL_STEPS, createMapTutorial, validateMapTutorial } from '../src/ui/map/map-tutorial.js';
 
 test('the map tutorial starts on the first region beyond Drent and only while playing', () => {
   const tutorial = createMapTutorial();

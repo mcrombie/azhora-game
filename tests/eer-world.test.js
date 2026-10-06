@@ -3,24 +3,24 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regionAt, regions, landDistance, SEA_LEVEL,
-} from '../src/region-world.js';
+} from '../src/world/terrain/region-world.js';
 import {
   LIZEEM, LIZEEM_REACH, EER_CHANNELS, WEST_BRAIDS, WEST_RIVERS, WEST_REGION_LANDMARKS,
   courseDistance, westBareGround, inWestWater,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface, braidThreadOffset } from '../src/west-ground.js';
-import { DEFAULT_SKY, regionSky, composeSky, mixHex } from '../src/region-sky.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { nylonGround, nylonReserved } from '../src/nylon-city.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { regionLevel, levelWords } from '../src/region-levels.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface, braidThreadOffset } from '../src/content/regions/western-regions/west-ground.js';
+import { DEFAULT_SKY, regionSky, composeSky, mixHex } from '../src/world/environment/region-sky.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { nylonGround, nylonReserved } from '../src/content/regions/nylon/nylon-city.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { regionLevel, levelWords } from '../src/world/terrain/region-levels.js';
 import { OWN_SKY } from './own-sky.js';
 
 /**
@@ -33,7 +33,7 @@ import { OWN_SKY } from './own-sky.js';
  * between Eer and Gala anywhere along the Lizeem.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = createWorld(scene);
 const cells = REGION_CELLS.Eer;

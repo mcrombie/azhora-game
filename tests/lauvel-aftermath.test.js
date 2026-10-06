@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BEARERS_ROUND, BURIAL, FALLEN, HEWES_GRAVE, bearersAt, bearersStandingBack, fieldPoint } from '../src/lauvel-aftermath.js';
-import { LUSCIA_NPCS, LUSCIA_WOLVES } from '../src/luscia-chapter.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { LAUVEL_PEOPLE, LAUVEL_PEOPLE_IDS, LAUVEL_LINES, BEARERS_ROUND, BURIAL, FALLEN, HEWES_GRAVE, bearersAt, bearersStandingBack, fieldPoint } from '../src/content/regions/luscia/lauvel-aftermath.js';
+import { LUSCIA_NPCS, LUSCIA_WOLVES } from '../src/content/chapters/civil-war/luscia-chapter.js';
 
 const { pickUp, layDown, pace, lift, rest } = BEARERS_ROUND;
 const CYCLE = 2 * Math.hypot(layDown.x - pickUp.x, layDown.z - pickUp.z) / pace + lift + rest;
@@ -58,7 +58,7 @@ test('the gravedigger is turned towards the grave he is digging', () => {
   // His spade swings straight out in front of him, so his yaw is not decoration: it is the
   // difference between digging the grave and digging the turf beside it. Anything that turns him
   // - the traveler stopping to talk, a scare off the field - has to turn him back again, which is
-  // what the facing loan in src/bodies.js is for.
+  // what the facing loan in src/gameplay/combat/bodies.js is for.
   const hewe = LAUVEL_PEOPLE.find(person => person.digs);
   const grave = fieldPoint(BURIAL.graves[HEWES_GRAVE].dx, BURIAL.graves[HEWES_GRAVE].dz);
   assert.equal(BURIAL.graves[HEWES_GRAVE].open, true, 'the grave he stands at has been filled in');

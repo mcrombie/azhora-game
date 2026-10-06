@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FACTIONS, describeRegion } from '../src/campaign-world.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { SUBREGIONS, createMapFog } from '../src/map-fog.js';
-import { BALDRO_KINGDOMS, baldroRegionAt } from '../src/baldro-world.js';
+import { FACTIONS, describeRegion } from '../src/content/chapters/civil-war/campaign-world.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { SUBREGIONS, createMapFog } from '../src/ui/map/map-fog.js';
+import { BALDRO_KINGDOMS, baldroRegionAt } from '../src/content/regions/baldro/baldro-world.js';
 
 test('Dwarfland confederates two surviving sovereign dwarf kingdoms with separately described cities',()=>{
   const factions=BALDRO_KINGDOMS.map(k=>FACTIONS[k.id]);

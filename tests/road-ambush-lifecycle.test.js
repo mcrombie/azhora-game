@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { AMBUSH, AMBUSH_REBELS, createRoadAmbush, validateRoadAmbushSnapshot } from '../src/road-ambush.js';
-import { createRoadAmbushHost } from '../src/road-ambush-host.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { AMBUSH, AMBUSH_REBELS, createRoadAmbush, validateRoadAmbushSnapshot } from '../src/content/quests/road-ambush/road-ambush.js';
+import { createRoadAmbushHost } from '../src/content/quests/road-ambush/road-ambush-host.js';
 
 const base = { id: 'caloss-rebels', center: AMBUSH.point,
   checkpoint: { x: -92, z: 40 }, retreatAxis: 'x', retreatLine: -80,

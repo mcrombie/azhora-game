@@ -24,7 +24,7 @@ The user raised the plan's four-region waiting limit on 4 October ("Raise the fo
 | Landmarks / views | 11 / 8 | 10 / 7 |
 
 **New files**:
-- `src/south-ibenal-world.js` (one plain over both countries, `ibenalLand`) and `src/north-ibenal-world.js` (uses it)
+- `src/content/regions/south-ibenal/south-ibenal-world.js` (one plain over both countries, `ibenalLand`) and `src/content/regions/north-ibenal/north-ibenal-world.js` (uses it)
 - `src/{south,north}-ibenal-scenery.js` (one builder serving both countries) and `src/{south,north}-ibenal-wildlife.js`
 - `tests/{south,north}-ibenal-world.test.js`, `tests/ibenal-life.test.js`
 - `docs/ibenal-brief.md`, `docs/region-reviews/routes/ibenal-corridor.json`
@@ -32,13 +32,13 @@ The user raised the plan's four-region waiting limit on 4 October ("Raise the fo
 
 **Registration and wiring** (small, line-ending-preserving edits). Registration:
 - `scripts/build-region-survey.mjs` (`WINDOW.minQ` -56: South Ibenal's coast takes two more columns; the generated survey is byte-identical) and the regenerated survey
-- `src/region-layout.js`, `src/region-world.js`
-- `src/developer-atlas.js`, `src/build-status.js` (`environment`), `src/languages.js` (both `ibnael`, Forest Mittoli)
-- `src/map-fog.js`, `tests/test-manifest.json`
+- `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`
+- `src/dev/tools/developer-atlas.js`, `src/dev/tools/build-status.js` (`environment`), `src/gameplay/skills/languages.js` (both `ibnael`, Forest Mittoli)
+- `src/ui/map/map-fog.js`, `tests/test-manifest.json`
 
 Wiring:
-- `src/world-terrain.js`: two outermost layers, `groundBefore` functions, tint and shore-tint rows.
-- `src/west-regions-life.js`: the zones, and the new grey seal's rig (+44 lines).
+- `src/world/terrain/world-terrain.js`: two outermost layers, `groundBefore` functions, tint and shore-tint rows.
+- `src/content/regions/western-regions/west-regions-life.js`: the zones, and the new grey seal's rig (+44 lines).
 - `src/main.js`: views; the `-wildlife` views frame a forest-cat (South) and a grey seal (North).
 - `src/world.js`:
   - Two scenery steps under their own labels.

@@ -3,37 +3,37 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES, HEX_WORLD_TRANSFORM, worldBoundsFor } from '../src/region-layout.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
-import { LAND_HEXES, PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexAt, hexCentre, hexOwnerAt, regionAt, regions, insideRegion, terrainMix, landDistance } from '../src/region-world.js';
-import { groundWithRiver, GROUND_TINT_FAMILIES } from '../src/world-terrain.js';
-import { regionSky } from '../src/region-sky.js';
-import { regionLevel } from '../src/region-levels.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { REGION_LANGUAGE, LANGUAGES } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
-import { describeRegion, FACTIONS } from '../src/campaign-world.js';
-import { NO_CLIMB_ZONES, unclimbableAt } from '../src/no-climb-zones.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES, HEX_WORLD_TRANSFORM, worldBoundsFor } from '../src/world/terrain/region-layout.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
+import { LAND_HEXES, PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexAt, hexCentre, hexOwnerAt, regionAt, regions, insideRegion, terrainMix, landDistance } from '../src/world/terrain/region-world.js';
+import { groundWithRiver, GROUND_TINT_FAMILIES } from '../src/world/terrain/world-terrain.js';
+import { regionSky } from '../src/world/environment/region-sky.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { REGION_LANGUAGE, LANGUAGES } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
+import { describeRegion, FACTIONS } from '../src/content/chapters/civil-war/campaign-world.js';
+import { NO_CLIMB_ZONES, unclimbableAt } from '../src/gameplay/movement/no-climb-zones.js';
 import { PLAYABLE, WINDOW } from '../scripts/build-region-survey.mjs';
-import { canWalkSlope, isClimbTerrain, createClimbing, sampleClimbSurface } from '../src/climbing.js';
+import { canWalkSlope, isClimbTerrain, createClimbing, sampleClimbSurface } from '../src/gameplay/movement/climbing.js';
 import { OWN_SKY } from './own-sky.js';
-import { OVES_BORDER_STREAM, GALA_DESERT_STREAM, GALA_TELEMONIA_STREAM, OVES_RIVERS, GALA_RIVERS, inWestWater } from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/west-ground.js';
+import { OVES_BORDER_STREAM, GALA_DESERT_STREAM, GALA_TELEMONIA_STREAM, OVES_RIVERS, GALA_RIVERS, inWestWater } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
 import {
   TELEMONIA, TELEMONIA_CLIMATE, UNBUILT_NEIGHBOURS, TELEMONIA_CELLS, PLAIN_CELLS, RIM_CELLS, BORDER, TELEMONIA_BOX, PLAIN_MIDDLE,
   GALMETH, CREST, INNER, ROTHKAR, PASSES, WASHES, GULLIES, KETHORN, KETHORN_WALL, STRATA, TERRACES, TELEMONIA_LANDMARKS, TERRACE_VIEW,
   telemoniaGround, telemoniaPlace, telemoniaTint, plainLevel, plainDistance, borderDepth, passAt, passCol, washAt, washWeight, kethornFrame,
   kethornPoint, kethornLift, onKethornTop, topOutside, stairDistance, belkethShare, crestHeight, ridgePhase, gullyAt,
   kethornBearing, kethornUnclimbable, ROTHKAR_WAY, wayAt, onPassFloor, inTelemoniaBox, TELEMONIA_PATCH_REACH,
-} from '../src/telemonia-world.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { TELEMONIA_WILDLIFE_ZONES } from '../src/telemonia-wildlife.js';
-import { TELEMONIA_TOWN_LANDMARKS } from '../src/telemonia-ways.js';
-import { legemumSeamDistance } from '../src/legemum-world.js';
-import { eastPyrosBoundaryDistance } from '../src/east-pyros-world.js';
+} from '../src/content/regions/telemonia/telemonia-world.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { TELEMONIA_WILDLIFE_ZONES } from '../src/content/regions/telemonia/telemonia-wildlife.js';
+import { TELEMONIA_TOWN_LANDMARKS } from '../src/content/regions/telemonia/telemonia-ways.js';
+import { legemumSeamDistance } from '../src/content/regions/legemum/legemum-world.js';
+import { eastPyrosBoundaryDistance } from '../src/content/regions/east-pyros/east-pyros-world.js';
 
 /**
  * Telemonia, stage 1: the country and not its people (docs/telemonia-stage1-brief.md,
@@ -49,7 +49,7 @@ import { eastPyrosBoundaryDistance } from '../src/east-pyros-world.js';
  * the basin or on the rock.
  */
 const { scopedWorld } = await import('./scoped-world.js');
-const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 // Build this country and its actual registered neighbors through Fast's production
 // jobs. The fixture retains real neighboring meshes and colliders for seam tests.
@@ -75,7 +75,7 @@ const RADIUS = .34;
 // ---------------------------------------------------------------------------
 /**
  * Every metre of the box, its height and whether a body can stand there, sampled once. Steps between
- * neighbours are judged by the game's own `canWalkSlope` (src/climbing.js) - which is what the traveler
+ * neighbours are judged by the game's own `canWalkSlope` (src/gameplay/movement/climbing.js) - which is what the traveler
  * controller asks before every uphill step in a climbing country - against a heightfield read off this
  * lattice, and by `canStand`, which carries every collider the world placed: the wall, the trees, the
  * rocks. A descent is always allowed, as it is in the game: going down a cliff is a fall, not a wall.
@@ -236,7 +236,7 @@ test('the border is the neighbours’ own ground, and their streams, seams and s
       // In a border stream the ground is the stream's channel on both sides, and none of it is this country's.
       if (inWestWater(x, z, 2)) continue;
       // A tenth of a metre across the line: a step up that size is one the climbing rule lets a walker take
-      // (.9 of the run and eight centimetres, src/climbing.js), and a seam would be the whole of it.
+      // (.9 of the run and eight centimetres, src/gameplay/movement/climbing.js), and a seam would be the whole of it.
       const inside = H(x - (a.x - c.x) / n * .05, z - (a.z - c.z) / n * .05), outside = H(x + (a.x - c.x) / n * .05, z + (a.z - c.z) / n * .05);
       worst = Math.max(worst, outside - inside);
       assert.ok(outside - inside < .17, `leaving the country at ${x.toFixed(1)}, ${z.toFixed(1)} is a step up of ${(outside - inside).toFixed(2)} m`);
@@ -458,10 +458,10 @@ test('Kethorn’s rock: cliff on three sides, a wall with one gate across the fo
 });
 
 test('Kethorn’s rock cannot be climbed: the gate is the only way onto its top, for a climber as for a walker', () => {
-  // The rule is the climbing rule's own (src/climbing.js, `climbForbidden`): the world marks the rock and
+  // The rule is the climbing rule's own (src/gameplay/movement/climbing.js, `climbForbidden`): the world marks the rock and
   // the game's climbing check reads the mark. The climbing world is built as the game builds it for the
   // controller (src/main.js), and the same world without the mark shows what the mark refuses.
-  // The world answers from one table of such places now (src/no-climb-zones.js); Kethorn's rock is a row of it.
+  // The world answers from one table of such places now (src/gameplay/movement/no-climb-zones.js); Kethorn's rock is a row of it.
   assert.equal(world.unclimbableAt, unclimbableAt);
   assert.ok(NO_CLIMB_ZONES.some(zone => zone.at === kethornUnclimbable), 'Kethorn’s rock is not a row of the no-climb table');
   const climbWorld = { bounds: world.bounds, colliders: world.colliders, heightAt: world.heightAt, waterAt: world.waterAt, regionAt: world.regionAt,
@@ -937,10 +937,10 @@ test('the chart, the tongue, the polity and the travel stop know the country, an
 test('the region’s number is written in REGION_IDS and nowhere else in the code', () => {
   const id = REGION_IDS[TELEMONIA];
   const hits = [];
-  for (const file of readdirSync(new URL('../src/', import.meta.url))) {
+  for (const file of readdirSync(new URL('../src/', import.meta.url), { recursive: true }).map(name => name.replaceAll('\\', '/'))) {
     if (!file.endsWith('.js')) continue;
     const text = readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8');
     if (new RegExp(`\\[\\s*${id}\\s*,\\s*'Telemonia'|Telemonia'?\\s*:\\s*${id}\\b|regions:\\s*new Set\\(\\[[^\\]]*\\b${id}\\b`).test(text)) hits.push(file);
   }
-  assert.deepEqual(hits, ['region-world.js']);
+  assert.deepEqual(hits, ['world/terrain/region-world.js']);
 });

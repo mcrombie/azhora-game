@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { regionOutline } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { hexOwnerAt, REGION_CELLS } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { WEST_PROFILES, WEST_POOL_LEVELS, westWaterSurface } from '../src/west-ground.js';
-import { SOUTHWEST_NORTH_REGIONS, southwestSeamWeight } from '../src/southwest-world.js';
-import { shouldStartTerrainFall } from '../src/terrain-fall.js';
+import { regionOutline } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { hexOwnerAt, REGION_CELLS } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { WEST_PROFILES, WEST_POOL_LEVELS, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { SOUTHWEST_NORTH_REGIONS, southwestSeamWeight } from '../src/content/regions/southwest/southwest-world.js';
+import { shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
 
 const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 function borders(names) {

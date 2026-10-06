@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { CAGNEY, CAGNEY_START, CAGNEY_ROUTE, CAGNEY_HOME, CAGNEY_WAVES } from '../src/cagney-quest.js';
-import { bodyWorld, stepToward, BODY } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
+import { CAGNEY, CAGNEY_START, CAGNEY_ROUTE, CAGNEY_HOME, CAGNEY_WAVES } from '../src/content/quests/cagney/cagney-quest.js';
+import { bodyWorld, stepToward, BODY } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
@@ -39,7 +39,7 @@ test('every gang of cagnappers, its retreat checkpoint and where she waits for i
 });
 
 test('Cagney keeps her long hair, glasses and shirt ribbons on the ordinary civilian rig', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const actor = createCharacter({ role: CAGNEY.modelRole, tunic: CAGNEY.color, look: CAGNEY.look });
   assert.ok(actor.group.getObjectByName('Shirt ribbons'));
   assert.ok(actor.group.getObjectByName('Spectacles'));

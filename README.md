@@ -1,5 +1,7 @@
 ﻿# Azhora: An Adventure Game
 
+**Finding your way around the code:** start with the [codebase guide](docs/architecture/README.md), follow [Chapter 1 through the source](docs/architecture/chapter-one-walkthrough.md), or search the [file index](docs/architecture/source-index.md). The October 6 cleanup groups existing features into folders while retaining gameplay behavior. See the [change and verification record](docs/architecture/reorganization.md).
+
 **5 October update:** [33 northern and island environments](docs/outer-regions-environments.md) are integrated, including Gorgiwood, South Gorgi Mountains and both Ithzel regions. Unbuilt countries are gray on the map. Southern jungle development is on hold; further loading optimization is paused.
 
 **Additional 5 October integration:** [Eshtor Plateau](docs/eshtor-plateau.md) is built, and Claude's South/North Ibenal, Henborth and Mithala city are [reviewed and integrated](docs/region-reviews/main-integration-2026-10-05.md) into the desktop working copy. Find them in F8 travel.
@@ -12,7 +14,7 @@ The Drent road also offers optional skill lessons: Stanley's repeatable Farming 
 
 The Greenway ambushers keep their individual health and positions between attacks and saves. They wait in visible brush camouflage, emerge to fight, and surviving raiders walk back into cover after driving someone off. Dead raiders stay dead. See [ambush persistence](docs/road-ambush-rendering.md).
 
-The **civil-war campaign** runs to the border battle and the day after it in 3D; the branches beyond are designed and executable but not yet built. See [docs/campaign-design.md](docs/campaign-design.md). Every authored region has a difficulty level (0 tutorial to 5 deadly), a controlling faction and its threats (`src/campaign-world.js`); the main quest runs Drent → Luscia → Moros Plain → West Suval, forks at Solis between the Ambroni Empire and the Republican Coalition, and continues along mirrored branches to the South Oremindi Mountains (`src/campaign.js`). Regional side arcs flip provinces on the political map, faction trust rises and falls, and double-dealing is eventually exposed. The journal’s **The civil war** section shows the current chapter, your standing, and the regions around Drent; the developer atlas tints every region by level.
+The **civil-war campaign** runs to the border battle and the day after it in 3D; the branches beyond are designed and executable but not yet built. See [docs/campaign-design.md](docs/campaign-design.md). Every authored region has a difficulty level (0 tutorial to 5 deadly), a controlling faction and its threats (`src/content/chapters/civil-war/campaign-world.js`); the main quest runs Drent → Luscia → Moros Plain → West Suval, forks at Solis between the Ambroni Empire and the Republican Coalition, and continues along mirrored branches to the South Oremindi Mountains (`src/content/chapters/civil-war/campaign.js`). Regional side arcs flip provinces on the political map, faction trust rises and falls, and double-dealing is eventually exposed. The journal’s **The civil war** section shows the current chapter, your standing, and the regions around Drent; the developer atlas tints every region by level.
 
 Suval now has [terrain climbing](docs/climbing-suval.md): Space grips a reachable steep face, WASD climbs or traverses, Space boosts upward, and X releases. Moving and hanging consume stamina; clear ledges restore it. The first grip introduces Climbing, and practice improves efficiency. Checkpoints return a suspended climber to the last foothold with skill progress retained. The sealed East Suval border remains closed.
 
@@ -151,7 +153,7 @@ Bring a **tinderbox and two sticks** to any of the five prepared fire rings. Lig
 
 ### The wider larder
 
-Beyond pawpaws and cooked fish, the satchel knows **29 more foods** drawn from Drent and its trade: forest foraging (wood sorrel, hazelnuts, bramble berries, honeycomb, dried venison), Tidehaven and Avrel kitchens (boiled eggs, oatcakes, Avrel apples, Lysa's acorn flatbread and honey cakes, rye loaf, ewe's cheese, smoked forest-hog sausage, roast duck, mutton pie), the Stills and the Pebbles (marsh samphire, oysters, salt shoal-fish, dressed crab, smoked eel, fish stew), and Legion rations and traders' goods (hardtack, salt pork, Elagosi smoked whitefish, Galan olives, Maroshi figs, Ovesian dried pears, Amod chestnuts, Narcoshi cheese). Each restores between **10 and 50 health** under the same rules as fruit and fish, and each has its own satchel icon. Nothing in the world hands them out yet: they are defined in `src/consumables.js` and `src/inventory.js`, ready for vendors, rewards, and foraging sites. The sources follow the lore in `world-builder/azhora_lore` (Drent oysters and flat-water crab, the Pebbles' salted shoal catch, Avrel orchards, Amod chestnuts, Galan olives and figs, Narcoshi cheese).
+Beyond pawpaws and cooked fish, the satchel knows **29 more foods** drawn from Drent and its trade: forest foraging (wood sorrel, hazelnuts, bramble berries, honeycomb, dried venison), Tidehaven and Avrel kitchens (boiled eggs, oatcakes, Avrel apples, Lysa's acorn flatbread and honey cakes, rye loaf, ewe's cheese, smoked forest-hog sausage, roast duck, mutton pie), the Stills and the Pebbles (marsh samphire, oysters, salt shoal-fish, dressed crab, smoked eel, fish stew), and Legion rations and traders' goods (hardtack, salt pork, Elagosi smoked whitefish, Galan olives, Maroshi figs, Ovesian dried pears, Amod chestnuts, Narcoshi cheese). Each restores between **10 and 50 health** under the same rules as fruit and fish, and each has its own satchel icon. Nothing in the world hands them out yet: they are defined in `src/gameplay/inventory/consumables.js` and `src/gameplay/inventory/inventory.js`, ready for vendors, rewards, and foraging sites. The sources follow the lore in `world-builder/azhora_lore` (Drent oysters and flat-water crab, the Pebbles' salted shoal catch, Avrel orchards, Amod chestnuts, Galan olives and figs, Narcoshi cheese).
 
 ### Orris and the distant cape
 
@@ -222,9 +224,9 @@ The **Cape Thalmagar** study contains a basalt approach, dead forest, broken arc
 
 The four playable regions are the authored Drent, Luscia, Moros Plain and East Suval hexes, laid out north-up at 56 m per hex, so the minimap, the compass and the world chart now agree with the atlas. Tidehaven, the Greenway and the woodland places keep their original layout, carried over as one piece onto Drent's east-facing coast. The chapters that use the Lauvel field, the Legion camp, Elod's border post and the town of Elod are designed in the campaign and placed as scenery here, but their quests, dialogue and encounters are unbuilt. Building interiors, a seamless continent, and Clashvergence's broader simulation systems are not implemented.
 
-The chart marks **where you are**: a red marker follows the traveler, and **Where I am** centres on it. Bearings are true to the chart: today's hand-built road runs west-south-west across Drent toward Luscia, so the compass, the minimap (turned so north stays up) and the marker all agree (`src/region-layout.js`, `LEGACY_ROAD_TRANSFORM`). The planned rebuild of Drent, Luscia, the Moros Plain and East Suval on the atlas's own hex outlines is specified in [docs/region-rebuild.md](docs/region-rebuild.md).
+The chart marks **where you are**: a red marker follows the traveler, and **Where I am** centres on it. Bearings are true to the chart: today's hand-built road runs west-south-west across Drent toward Luscia, so the compass, the minimap (turned so north stays up) and the marker all agree (`src/world/terrain/region-layout.js`, `LEGACY_ROAD_TRANSFORM`). The planned rebuild of Drent, Luscia, the Moros Plain and East Suval on the atlas's own hex outlines is specified in [docs/region-rebuild.md](docs/region-rebuild.md).
 
-The journal atlas is an inked parchment chart generated from the developed World Builder map: the same hex geography, region borders and rivers, drawn with smoothed coastlines, a hatched sea, mountain, hill, forest, marsh and dune glyphs, calligraphic province names tilted along elongated provinces, ships, a compass rose and a cartouche. Cape Thalmagar is labeled when discovered or when developer map reveal is enabled. Zoom, pan and regional focus are unchanged. The minimap and the local trail charts use the same parchment-and-ink palette. The playable terrain is an authored interpretation of this opening locality, not a map-scale terrain conversion. Developer selection reuses the region polygon paths from that atlas. The documented game correction in `src/game-atlas-adjustments.js` assigns Tidehaven’s northeast bank to Drent and aligns the Tessen’s journal course with its real water; see `docs/game-atlas-corrections.md`.
+The journal atlas is an inked parchment chart generated from the developed World Builder map: the same hex geography, region borders and rivers, drawn with smoothed coastlines, a hatched sea, mountain, hill, forest, marsh and dune glyphs, calligraphic province names tilted along elongated provinces, ships, a compass rose and a cartouche. Cape Thalmagar is labeled when discovered or when developer map reveal is enabled. Zoom, pan and regional focus are unchanged. The minimap and the local trail charts use the same parchment-and-ink palette. The playable terrain is an authored interpretation of this opening locality, not a map-scale terrain conversion. Developer selection reuses the region polygon paths from that atlas. The documented game correction in `src/world/terrain/game-atlas-adjustments.js` assigns Tidehaven’s northeast bank to Drent and aligns the Tessen’s journal course with its real water; see `docs/game-atlas-corrections.md`.
 
 The local trails chart and minimap read the playable world's existing roads, buildings, and landmarks. Shared water metadata copies the rendered shoreline, pond, and river outlines for those charts; it changes neither the world geometry nor the continental atlas.
 
@@ -387,51 +389,51 @@ New to the code? [docs/codebase-map.md](docs/codebase-map.md) is a guided map of
 
 | Module | Responsibility |
 | --- | --- |
-| `src/babon-world.js`, `src/babon-ground.js`, `src/babon-scenery.js`, `src/babon-wildlife.js` | Babon's jungle ridges, ancient tropical trees, natural routes and island fauna ([design and validation](docs/babon-environment.md)) |
-| `src/world.js`, `src/regions.js` | Terrain, regional layouts, paths, props, collision, fishing banks, landmarks, and completed-site visuals |
-| `src/startup.js`, `scripts/terrain-cache.cjs`, `scripts/profile-startup.cjs` | Staged initialization, validated desktop terrain cache and isolated native cold/warm timing |
-| `src/lazy-character.js`, `src/road-distance-index.js`, `src/terrain-point-cache.js`, `src/hex-boundary-distance.js` | Deferred human rigs and exact indexed/cached terrain queries |
-| `src/characters.js` | Procedural traveler/NPC/goblin models, clothing, and articulated animation |
-| `src/game-state.js` | Movement, collision, and first-shore tutorial transitions |
-| `src/signs.js` | The one sign language: fingerposts, place boards, notice plaques, border stones and milestones from one lettering atlas |
-| `src/languages.js`, `src/linguist.js`, `src/word-frequency.js` | The fourteen tongues of Azhora and their dialects; what the traveler understands of what is said to him, and the commonest words of this game's own speech, which is the order he learns them in (`docs/languages.md`) |
-| `src/fortification.js`, `src/fortworks.js` | The shared fortification standard (wall, wall walk, towers, two gates, ditch) as a ground plan, and its drawing in timber or stone |
-| `src/outpost.js`, `src/moros-works.js` | The Ambroni outpost and the border stockade to that standard, the Moros gate and the Moros wayside |
-| `src/frontier.js`, `src/frontier-works.js`, `src/frontier-ridges.js`, `src/frontier-ridge-works.js`, `src/closed-border.js` | Elod's closed frontier with Luscia, solid limestone ridges and guarded barred hill passes around East Suval, and the closed-region entry rule |
-| `src/places.js`, `src/place-works.js`, `src/wayside.js`, `src/scenery-builder.js` | The built-up places of Drent and Luscia, the wayside on the empty roads, and the merged vertex-coloured builder they share |
-| `src/rena.js`, `src/rena-works.js`, `src/rena-people.js`, `src/rena-letters.js` | The three Renas: the razed town at Drent's centre, Applegarth to its west, the old road between them, their people, and the Ardrys' letters |
-| `src/town-life.js` | Townsfolk, the outpost's Legion and Coalition garrisons (staked through `occupation.js`), Elod's frontier guard and the figures on the walls |
-| `src/journey.js`, `src/journey-content.js` | Ordered road quests, rewards, versioned progress, and optional NPC dialogue |
-| `src/campaign-world.js` | Campaign atlas: difficulty levels, factions, threats, settlements, transcript name aliases, hex adjacency and terrain summaries |
-| `src/campaign.js` | The branching civil-war main quest: fork, battles with side-quest odds, regional arcs, trust and exposure, missions, map control, validated saves |
-| `src/autopilot.js`, `src/autoplay-smoke.js` | Autoplay: quest planner, trail-following navigation with collision probing and stall detours, combat policy, dialogue pacing; the rendered end-to-end check |
-| `src/forest-places.js`, `src/forest-story.js` | Six woodland places, optional Tamsin errand, shrine repair, journal notes, dialogue, and exactly-once rewards |
-| `src/forest-ecology.js` | Instanced understory plants, mossy logs, deer, foraging/fleeing thrushes, butterflies, bees, and dragonflies |
-| `src/spider-den-scenery.js` | Permanent thorn canopy, spiked bramble canes and web strands screening the spider's emergence in Ben's quest |
-| `src/nothom-thickets.js` | Varied bramble patches in the exact west and northwest Nothom hexes; roads and quest approaches stay clear |
-| `src/quest-homes.js` | Named Ambron homes, mailboxes, thresholds and porch approaches for Cagney, Ben and Troy |
-| `src/home-residents.js`, `src/home-resident-host.js`, `src/home-return-routes.js`, `src/home-ferry-view.js` | Saved independent walks home, ferry leg, indoor residents and knocking to ask them outside |
-| `src/home-residents-smoke.js` | Native reward-to-home, checkpoint and doorstep interaction checks (`--homes-checks`) |
-| `src/forest-hideout.js`, `src/forest-hideout-world.js`, `src/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
-| `src/woodland-life.js`, `src/road-life.js`, `src/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
-| `src/drent-wildlife.js`, `src/drent-birds.js` | Resident woodland animals and bird habitats across Drent; stable homes, local animation and distance culling |
-| `src/regional-wildlife.js`, `src/west-regions-life.js` | Regional animal habitats and shared instanced wildlife; West Suval has persistent ground-animal bands throughout its usable countryside, with Solis, road and quest-site exclusions |
-| `src/acorn-quest.js` | Lysa's atomic turn-in and relationship memory |
-| `src/inventory.js`, `src/weapons.js`, `src/consumables.js` | Satchel UI, item stacks, wear, equipment, repairs, and guarded food consumption |
-| `src/campcraft.js` | Fishing timing, catches, fire fuel, and cooking exchanges |
-| `src/combat.js`, `src/combat-view.js` | Deterministic encounters, stamina, tells, coordinated enemies, effects, and retry/retreat |
-| `src/road-audio.js` | Optional local ambience, surface footfalls, nearby calls, and effects |
-| `src/road-checkpoint.js`, `src/woodland-progress.js` | Validated first-shore/road saves, woodland gathering/history, camp state, and legacy compatibility |
-| `src/world-map.js`, `scripts/export-world-map.mjs` | Offline parchment chart generated from the World Builder map (coast, border and river chaining, terrain glyphs, tilted labels, uncharted names), zoom/pan/focus |
-| `src/local-map-data.js`, `src/trail-map.js`, `src/minimap.js` | Read-only regional chart data, discovery-aware journal maps, optional pins, and the player-centered local minimap |
-| `src/developer-atlas.js`, `scripts/export-developer-atlas.mjs` | Exact atlas selection polygons, authored hex survey export, destination provenance, and schematic local route |
-| `src/developer-mode.js`, `src/ghost-camera.js` | Paused adventure isolation, developer controls, translucent spectator, free flight, atlas UI, and scene switching |
-| `src/thalmagar-world.js`, `src/survey-world.js` | Separate fortress study and illustrative terrain survey scenes, with resource cleanup |
+| `src/content/regions/babon/babon-world.js`, `src/content/regions/babon/babon-ground.js`, `src/content/regions/babon/babon-scenery.js`, `src/content/regions/babon/babon-wildlife.js` | Babon's jungle ridges, ancient tropical trees, natural routes and island fauna ([design and validation](docs/babon-environment.md)) |
+| `src/world.js`, `src/world/terrain/regions.js` | Terrain, regional layouts, paths, props, collision, fishing banks, landmarks, and completed-site visuals |
+| `src/app/startup/startup.js`, `scripts/terrain-cache.cjs`, `scripts/profile-startup.cjs` | Staged initialization, validated desktop terrain cache and isolated native cold/warm timing |
+| `src/world/loading/lazy-character.js`, `src/world/terrain/road-distance-index.js`, `src/world/terrain/terrain-point-cache.js`, `src/world/terrain/hex-boundary-distance.js` | Deferred human rigs and exact indexed/cached terrain queries |
+| `src/content/characters/characters.js` | Procedural traveler/NPC/goblin models, clothing, and articulated animation |
+| `src/gameplay/movement/game-state.js` | Movement, collision, and first-shore tutorial transitions |
+| `src/world/scenery/signs.js` | The one sign language: fingerposts, place boards, notice plaques, border stones and milestones from one lettering atlas |
+| `src/gameplay/skills/languages.js`, `src/gameplay/skills/language/linguist.js`, `src/gameplay/skills/word-frequency.js` | The fourteen tongues of Azhora and their dialects; what the traveler understands of what is said to him, and the commonest words of this game's own speech, which is the order he learns them in (`docs/languages.md`) |
+| `src/world/scenery/fortification.js`, `src/world/scenery/fortworks.js` | The shared fortification standard (wall, wall walk, towers, two gates, ditch) as a ground plan, and its drawing in timber or stone |
+| `src/content/regions/drent/outpost.js`, `src/content/regions/moros/moros-works.js` | The Ambroni outpost and the border stockade to that standard, the Moros gate and the Moros wayside |
+| `src/content/regions/minora-frontier/frontier.js`, `src/content/regions/minora-frontier/frontier-works.js`, `src/content/regions/minora-frontier/frontier-ridges.js`, `src/content/regions/minora-frontier/frontier-ridge-works.js`, `src/world/travel/closed-border.js` | Elod's closed frontier with Luscia, solid limestone ridges and guarded barred hill passes around East Suval, and the closed-region entry rule |
+| `src/world/scenery/places.js`, `src/world/scenery/place-works.js`, `src/content/quests/roadside/wayside.js`, `src/world/scenery/scenery-builder.js` | The built-up places of Drent and Luscia, the wayside on the empty roads, and the merged vertex-coloured builder they share |
+| `src/content/quests/rena/rena.js`, `src/content/quests/rena/rena-works.js`, `src/content/quests/rena/rena-people.js`, `src/content/quests/rena/rena-letters.js` | The three Renas: the razed town at Drent's centre, Applegarth to its west, the old road between them, their people, and the Ardrys' letters |
+| `src/world/life/town-life.js` | Townsfolk, the outpost's Legion and Coalition garrisons (staked through `occupation.js`), Elod's frontier guard and the figures on the walls |
+| `src/content/chapters/journey/journey.js`, `src/content/chapters/journey/journey-content.js` | Ordered road quests, rewards, versioned progress, and optional NPC dialogue |
+| `src/content/chapters/civil-war/campaign-world.js` | Campaign atlas: difficulty levels, factions, threats, settlements, transcript name aliases, hex adjacency and terrain summaries |
+| `src/content/chapters/civil-war/campaign.js` | The branching civil-war main quest: fork, battles with side-quest odds, regional arcs, trust and exposure, missions, map control, validated saves |
+| `src/gameplay/autoplay/autopilot.js`, `src/dev/checks/autoplay-smoke.js` | Autoplay: quest planner, trail-following navigation with collision probing and stall detours, combat policy, dialogue pacing; the rendered end-to-end check |
+| `src/content/quests/forest/forest-places.js`, `src/content/quests/forest/forest-story.js` | Six woodland places, optional Tamsin errand, shrine repair, journal notes, dialogue, and exactly-once rewards |
+| `src/world/life/forest-ecology.js` | Instanced understory plants, mossy logs, deer, foraging/fleeing thrushes, butterflies, bees, and dragonflies |
+| `src/content/quests/spider/spider-den-scenery.js` | Permanent thorn canopy, spiked bramble canes and web strands screening the spider's emergence in Ben's quest |
+| `src/world/terrain/nothom-thickets.js` | Varied bramble patches in the exact west and northwest Nothom hexes; roads and quest approaches stay clear |
+| `src/content/quests/homes/quest-homes.js` | Named Ambron homes, mailboxes, thresholds and porch approaches for Cagney, Ben and Troy |
+| `src/content/quests/homes/home-residents.js`, `src/content/quests/homes/home-resident-host.js`, `src/content/quests/homes/home-return-routes.js`, `src/content/quests/homes/home-ferry-view.js` | Saved independent walks home, ferry leg, indoor residents and knocking to ask them outside |
+| `src/dev/checks/home-residents-smoke.js` | Native reward-to-home, checkpoint and doorstep interaction checks (`--homes-checks`) |
+| `src/content/quests/forest/forest-hideout.js`, `src/content/quests/forest/forest-hideout-world.js`, `src/content/quests/forest/forest-hideout-watch.js` | Optional two-scout encounter, marked approach, camp and lookout props, stolen supplies, and Tamsin's one-time reward |
+| `src/world/life/woodland-life.js`, `src/content/regions/drent/road-life.js`, `src/content/regions/drent/road-verges.js` | Squirrels, forage, instanced regional animals, and small botanical patches |
+| `src/content/regions/drent/drent-wildlife.js`, `src/content/regions/drent/drent-birds.js` | Resident woodland animals and bird habitats across Drent; stable homes, local animation and distance culling |
+| `src/world/life/regional-wildlife.js`, `src/content/regions/western-regions/west-regions-life.js` | Regional animal habitats and shared instanced wildlife; West Suval has persistent ground-animal bands throughout its usable countryside, with Solis, road and quest-site exclusions |
+| `src/content/quests/forest/acorn-quest.js` | Lysa's atomic turn-in and relationship memory |
+| `src/gameplay/inventory/inventory.js`, `src/gameplay/combat/weapons.js`, `src/gameplay/inventory/consumables.js` | Satchel UI, item stacks, wear, equipment, repairs, and guarded food consumption |
+| `src/gameplay/skills/crafting/campcraft.js` | Fishing timing, catches, fire fuel, and cooking exchanges |
+| `src/gameplay/combat/combat.js`, `src/gameplay/combat/combat-view.js` | Deterministic encounters, stamina, tells, coordinated enemies, effects, and retry/retreat |
+| `src/world/environment/road-audio.js` | Optional local ambience, surface footfalls, nearby calls, and effects |
+| `src/app/saves/road-checkpoint.js`, `src/content/chapters/journey/woodland-progress.js` | Validated first-shore/road saves, woodland gathering/history, camp state, and legacy compatibility |
+| `src/ui/map/world-map.js`, `scripts/export-world-map.mjs` | Offline parchment chart generated from the World Builder map (coast, border and river chaining, terrain glyphs, tilted labels, uncharted names), zoom/pan/focus |
+| `src/ui/map/local-map-data.js`, `src/ui/map/trail-map.js`, `src/ui/map/minimap.js` | Read-only regional chart data, discovery-aware journal maps, optional pins, and the player-centered local minimap |
+| `src/dev/tools/developer-atlas.js`, `scripts/export-developer-atlas.mjs` | Exact atlas selection polygons, authored hex survey export, destination provenance, and schematic local route |
+| `src/dev/tools/developer-mode.js`, `src/dev/tools/ghost-camera.js` | Paused adventure isolation, developer controls, translucent spectator, free flight, atlas UI, and scene switching |
+| `src/content/regions/thalmagar/thalmagar-world.js`, `src/dev/tools/survey-world.js` | Separate fortress study and illustrative terrain survey scenes, with resource cleanup |
 | `src/main.js` and the CSS files | Renderer, input, camera, game flow, HUD, journals, and panels |
 | `main.cjs`, `preload.cjs`, `scripts/checkpoint-store.cjs` | Desktop window, local asset server, isolated IPC, and atomic disk checkpoint storage |
-| `src/road-smoke.js`, `src/road-traversal.js`, `src/road-check-smoke.js` | Rendered gameplay, continuous walking, intermediate saves/reload, audio, and F8 checks |
-| `src/forest-smoke.js`, `src/developer-smoke.js` | Rendered woodland errands, saved forest state, developer flight, atlas selection, and scene-isolation checks |
-| `src/local-map-smoke.js` | Actual local-map controls, anonymous unexplored places, physical discovery, independent tracking, and adventure/save isolation |
+| `src/dev/checks/road-smoke.js`, `src/world/travel/road-traversal.js`, `src/dev/checks/road-check-smoke.js` | Rendered gameplay, continuous walking, intermediate saves/reload, audio, and F8 checks |
+| `src/dev/checks/forest-smoke.js`, `src/dev/checks/developer-smoke.js` | Rendered woodland errands, saved forest state, developer flight, atlas selection, and scene-isolation checks |
+| `src/dev/checks/local-map-smoke.js` | Actual local-map controls, anonymous unexplored places, physical discovery, independent tracking, and adventure/save isolation |
 | `vendor/` | Three.js 0.185.1 modules and MIT license |
 
 `npm test` runs the Node test suite for the campaign atlas and branching campaign, the autopilot planner and navigator, movement, ordered and optional quests, inventory, repair supplies, weapon condition, combat, campcraft, collectible reachability, ecology, audio lifecycle, checkpoint compatibility/storage failures, exact atlas selection, ghost flight, the Thalmagar scene, and local-map projection, discovery privacy, and rendering.
@@ -470,12 +472,12 @@ Liz now lives beside a small cottage, a working apiary with straw skeps and wood
 
 The desktop icon is an abstract gold sun and winding coastal path over teal water. `scripts/create-icon.ps1` generates its seven ICO sizes; `scripts/create-desktop-shortcut.ps1` updates the shortcut without restarting a live game.
 
-`npm run test:winery` checks the five Wine teachers through their actual dialogue buttons, Rob's Farming-gated viticulture placeholder and marker, the three-winemaker cast, and Catie's Port Calos greeting. `src/winery-lessons.js` keeps viticulture separate from the Wine skill.
+`npm run test:winery` checks the five Wine teachers through their actual dialogue buttons, Rob's Farming-gated viticulture placeholder and marker, the three-winemaker cast, and Catie's Port Calos greeting. `src/content/regions/winery/winery-lessons.js` keeps viticulture separate from the Wine skill.
 
 
 ### Kayla and the Cobble character update
 
-`src/kayla.js` owns Kayla's persistent honey rounds and dialogue; `kayla-host.js` joins her ordinary resident health to her physical roaming and self-defense. `kayla-character.js` is her articulated brown-bear model. Her authored circuit visits Drent, Liz's clearing in Pueth, and Luscia; `kayla-world.test.js` walks the full route against real scenery and the initially broken Caloss bridge. `npm run test:kayla` checks her race invitation, peaceful refusal, combat, checkpoints and corpse restoration in an isolated Electron run.
+`src/content/quests/kayla/kayla.js` owns Kayla's persistent honey rounds and dialogue; `kayla-host.js` joins her ordinary resident health to her physical roaming and self-defense. `kayla-character.js` is her articulated brown-bear model. Her authored circuit visits Drent, Liz's clearing in Pueth, and Luscia; `kayla-world.test.js` walks the full route against real scenery and the initially broken Caloss bridge. `npm run test:kayla` checks her race invitation, peaceful refusal, combat, checkpoints and corpse restoration in an isolated Electron run.
 
 Ari, Imani and Jesse now live in Port Calos. Ari retains her long black curls and violet dress; Jesse retains twelve hair colors and workshop clothing. Port residents await characterization. Troy's Cobble investigation now follows Brenna Vell, Orren Pell and Sivra Noll, preserving its clues and saved progress. Jess, Hallie (Port Calos) and Maddie (Cobble) wear nautical clothing and still operate the three-port ferry network.
 

@@ -4,18 +4,18 @@ import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { westLotharnRiverFixture } from './west-lotharn-river-fixture.js';
-import { WEST_LOTHARN_WATERS } from '../src/west-regions.js';
-import { WEST_PROFILES, westWaterSurface } from '../src/west-ground.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { REGION_CELLS, REGION_IDS, WORLD_BOUNDS, hexOwnerAt } from '../src/region-world.js';
-import { WEST_LOTHARN } from '../src/west-lotharn-world.js';
-import { westLotharnRiverBankDistance } from '../src/west-lotharn-river-ground.js';
+import { WEST_LOTHARN_WATERS } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { REGION_CELLS, REGION_IDS, WORLD_BOUNDS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { WEST_LOTHARN } from '../src/content/regions/west-lotharn/west-lotharn-world.js';
+import { westLotharnRiverBankDistance } from '../src/content/regions/west-lotharn/west-lotharn-river-ground.js';
 import { telemoniaGeometryHash } from './telemonia-geometry-hash.js';
-import { WESTERN_DRY_SEAMS, WESTERN_DRY_SEAM_REACH } from '../src/western-dry-seams.js';
+import { WESTERN_DRY_SEAMS, WESTERN_DRY_SEAM_REACH } from '../src/content/regions/western-regions/western-dry-seams.js';
 
-const { createWestLotharnScenery } = await sourceModule('../src/west-lotharn-scenery.js');
-const { WEST_LOTHARN_GROUND_REGIONS } = await sourceModule('../src/west-lotharn-ground.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { createWestLotharnScenery } = await sourceModule('../src/content/regions/west-lotharn/west-lotharn-scenery.js');
+const { WEST_LOTHARN_GROUND_REGIONS } = await sourceModule('../src/content/regions/west-lotharn/west-lotharn-ground.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 const physicalBefore = WEST_LOTHARN_WATERS.flatMap(course => WEST_PROFILES.get(course.id)
   .flatMap(p => [-1, 0, 1].map(offset => [p.x + p.nx * offset, p.z + p.nz * offset]))
   .map(([x, z]) => [x, z, groundWithRiver(x, z), westWaterSurface(x, z)]));

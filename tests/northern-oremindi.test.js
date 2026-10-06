@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
-import { NORTHERN_NAMES, NORTHERN_IDS, NORTHERN_CELLS, NORTHERN_PATHS, NORTHERN_LAKES, northernGround, northernOwns, northernCellAt } from '../src/northern-oremindi-world.js';
-import { NORTHERN_WILDLIFE_ZONES } from '../src/northern-oremindi-wildlife.js';
-import { regions, REGION_IDS } from '../src/region-world.js';
-import { isClimbTerrain } from '../src/climbing.js';
-import { runNorthernChecks } from '../src/northern-oremindi-checks.js';
+import { NORTHERN_NAMES, NORTHERN_IDS, NORTHERN_CELLS, NORTHERN_PATHS, NORTHERN_LAKES, northernGround, northernOwns, northernCellAt } from '../src/content/regions/northern-oremindi/northern-oremindi-world.js';
+import { NORTHERN_WILDLIFE_ZONES } from '../src/content/regions/northern-oremindi/northern-oremindi-wildlife.js';
+import { regions, REGION_IDS } from '../src/world/terrain/region-world.js';
+import { isClimbTerrain } from '../src/gameplay/movement/climbing.js';
+import { runNorthernChecks } from '../src/dev/checks/northern-oremindi-checks.js';
 const scene=new THREE.Scene(),world=await scopedWorld(scene,NORTHERN_IDS);
 test('five atlas regions have distinct built terrain, typed trees and working climbing',()=>{
   assert.equal(NORTHERN_CELLS.length,127);
@@ -33,7 +33,7 @@ test('rendered mountains and lake beds agree with collision heights',()=>{
   for(const l of NORTHERN_LAKES)assert.ok(world.mapWaters.some(w=>w.id===l.id));
 });
 test('persistent wildlife populates every region and animates on the actual surface',async()=>{
-  const {createWestLife}=await sourceModule('../src/west-regions-life.js');
+  const {createWestLife}=await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
   const life=createWestLife(scene,world,{zones:NORTHERN_WILDLIFE_ZONES});
   const initial=life.snapshot();console.log('Northern animals',initial.creatures.length);
   for(const name of NORTHERN_NAMES){

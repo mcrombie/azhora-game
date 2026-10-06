@@ -28,10 +28,10 @@ thing you can read. In particular:
   mouths — the gulf at the Ganesh Desert's north-west and the Vaellir's mouth at West Pyros's tip —
   because those are the only two places where sea level is a fact. **Keep that datum.**
 - **Job 1 found the game's first true desert** (`BWh`) and built a climate gradient across four
-  countries (`southwestAridity` in `src/southwest-world.js`). Yours is drier still; extend that
+  countries (`southwestAridity` in `src/content/regions/southwest/southwest-world.js`). Yours is drier still; extend that
   field rather than inventing a second one.
 - Its modules are named `southwest-*` **precisely so you extend them** rather than adding a fifth
-  family: `src/southwest-world.js`, `-scenery.js`, `-wildlife.js`, `tests/southwest-world.test.js`.
+  family: `src/content/regions/southwest/southwest-world.js`, `-scenery.js`, `-wildlife.js`, `tests/southwest-world.test.js`.
 - Its haze lesson is the one to carry: on country whose subject is distance, **the haze colour
   matters more than the ground colour**. Its desert first came back white; ~36 % off every ground
   swatch moved the screen 5 %, because at .0030 density a near-white haze was over half of every
@@ -42,7 +42,7 @@ thing you can read. In particular:
 - Branch `southwest-2` in its own worktree, cut from **`southwest-1`**. Never cd into another
   checkout, never a bare `git stash`, **do not commit** — leave the work uncommitted and report.
 - **None of the four is in the survey.** Add all four to `PLAYABLE` after `'Ganesh Plain'` and
-  regenerate with `node scripts/build-region-survey.mjs`. Never hand-edit `src/region-survey.js`.
+  regenerate with `node scripts/build-region-survey.mjs`. Never hand-edit `src/dev/tools/region-survey.js`.
 - **Region ids, in this order after `'Ganesh Plain': 35`:** `'North Meroshe Desert': 36`,
   `'West Meroshe Desert': 37`, `'Central Meroshe Desert': 38`, `'South Meroshe Desert': 39`.
 
@@ -102,7 +102,7 @@ justified from the map or the lore and labelled.
 
 ## Wildlife
 
-Extend `src/southwest-wildlife.js`. **Job 1's finding governs here**: the Ganesh Desert, its largest
+Extend `src/content/regions/southwest/southwest-wildlife.js`. **Job 1's finding governs here**: the Ganesh Desert, its largest
 country at 31 hexes, carries **three** ranges, two of them birds in the air, because its lore says a
 severe dry year "presents a surface that appears essentially lifeless". Ninety-five more hexes of
 `BWh` should be sparser still per hex, not four times as populous. **Emptiness measured and
@@ -138,13 +138,13 @@ lists where they live: `region-layout`, `isareos-world`, `nethereum-world`, `izo
 
 ## Registration checklist — four times over
 
-For **each**: `src/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/region-world.js`
+For **each**: `src/world/terrain/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/world/terrain/region-world.js`
 REGION_IDS, REGION_TERRAIN, REGION_TEXT (subtitle, spawn on dry ground, description, palette,
-`npcIds: []`, landmarks) · `src/developer-atlas.js` LOCALS · `src/map-fog.js` areas (radius 18–130,
-> 60 % inside) · `src/build-status.js` · `src/region-sky.js` (job 1 built a desert sky at .0024 —
-share it or argue for your own) · `src/languages.js` (job 1 added `ganesh`, the Moreshi/Mittoli
+`npcIds: []`, landmarks) · `src/dev/tools/developer-atlas.js` LOCALS · `src/ui/map/map-fog.js` areas (radius 18–130,
+> 60 % inside) · `src/dev/tools/build-status.js` · `src/world/environment/region-sky.js` (job 1 built a desert sky at .0024 —
+share it or argue for your own) · `src/gameplay/skills/languages.js` (job 1 added `ganesh`, the Moreshi/Mittoli
 contact speech; the Moreshi are this desert's people — decide and say why) · extend
-`src/southwest-world.js`, `-scenery.js`, `-wildlife.js` · extend `tests/southwest-world.test.js` ·
+`src/content/regions/southwest/southwest-world.js`, `-scenery.js`, `-wildlife.js` · extend `tests/southwest-world.test.js` ·
 `package.json` if needed · `docs/southwest-2-report.md` · a dated entry in `docs/design-answers.md`.
 
 Names: check `world-builder/azhoran_language_profiles.py` first — job 1 found a `pyrosi` profile and
@@ -179,7 +179,7 @@ Maps: `node scripts/region-map.mjs minX,minZ,maxX,maxZ [scale] [out.png]` with `
 flat country needs `MAP_HI` lowered hard. One short review render at the end if electron is
 available, **after** the last scenery change. No autoplays, no long smokes.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js`, `src/developer-atlas.js` are CRLF.
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js`, `src/dev/tools/developer-atlas.js` are CRLF.
 
 ## Report
 

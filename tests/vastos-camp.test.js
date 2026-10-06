@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { westWaterSurface } from '../src/west-ground.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { VASTOS_CAMP, VASTOS_POSITIONS, createVastosCamp } = await sourceModule('../src/vastos-camp.js');
+const { VASTOS_CAMP, VASTOS_POSITIONS, createVastosCamp } = await sourceModule('../src/content/chapters/civil-war/vastos-camp.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
 const originalColliders = world.colliders.slice();
 const originalGround = Object.entries(VASTOS_POSITIONS).map(([id, p]) => [id, world.heightAt(p.x, p.z)]);

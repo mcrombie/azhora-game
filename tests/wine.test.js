@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { WINES, WINE_IDS, CELLAR_WINES, CELLAR_WINE_IDS, CELLAR_OPENS_AT, TASTING_TERMS, CELLAR_WALK, termsAt,
-  WINE_SKILL, WINE_INTRO_TEACHERS, wineIntroChoice, createWine, vintnerConversation, cellarHandConversation, validateWineSnapshot } from '../src/wine.js';
-import { WINEMAKER, CELLAR_HAND } from '../src/winery.js';
-import { createSkills } from '../src/skills.js';
+  WINE_SKILL, WINE_INTRO_TEACHERS, wineIntroChoice, createWine, vintnerConversation, cellarHandConversation, validateWineSnapshot } from '../src/content/quests/wine/wine.js';
+import { WINEMAKER, CELLAR_HAND } from '../src/content/regions/winery/winery.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 
 /** A dialogue box that records what was said and lets a test pick a reply. */
 function talk(conversation, npc, extra = {}) {

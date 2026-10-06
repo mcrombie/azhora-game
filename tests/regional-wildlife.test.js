@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { REGIONAL_WILDLIFE_ZONES, WEST_SUVAL_WILDLIFE_ZONES, SUVAL_WILDLIFE_EXCLUSIONS } from '../src/regional-wildlife.js';
-import { canStand } from '../src/game-state.js';
-import { REGION_ORDER, REGION_NAME_BY_ID, REGION_CELLS } from '../src/region-world.js';
+import { REGIONAL_WILDLIFE_ZONES, WEST_SUVAL_WILDLIFE_ZONES, SUVAL_WILDLIFE_EXCLUSIONS } from '../src/world/life/regional-wildlife.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { REGION_ORDER, REGION_NAME_BY_ID, REGION_CELLS } from '../src/world/terrain/region-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/west-regions-life.js');
-const { ROAD_LIFE_ZONES } = await sourceModule('../src/road-life.js');
+const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
+const { ROAD_LIFE_ZONES } = await sourceModule('../src/content/regions/drent/road-life.js');
 const world = createWorld(new THREE.Scene());
 const centre = zone => ({ x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 });
 

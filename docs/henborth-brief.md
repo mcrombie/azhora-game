@@ -9,10 +9,10 @@ nothing that belongs to anybody.** Two agents in one worktree, split by layer: a
 
 - **Worktree** `C:\Users\Michael\Programs\typescript\azhora-game-henborth`, branch `henborth`, cut from ``452d7d9`` (the
   Ibenal delivery, stacked on Alezhor, East Izol and Celder). Do not commit, push or stash; touch no other checkout.
-- **Registered and wired**: runtime ID **67** (provisional); stubs `src/henborth-world.js` (`HENBORTH`, `henborthOwns`,
+- **Registered and wired**: runtime ID **67** (provisional); stubs `src/content/regions/henborth/henborth-world.js` (`HENBORTH`, `henborthOwns`,
   `HENBORTH_ARRIVAL`, `HENBORTH_LANDMARKS`, `HENBORTH_TRAILS`, `HENBORTH_VIEWS`, `henborthGround(x, z, incoming,
-  before)`, `henborthTint`), `src/henborth-scenery.js`, `src/henborth-wildlife.js`.
-- Precedents in this worktree: `src/south-celder-world.js` (a plain, seam tables read edge by edge), the Ibenal and
+  before)`, `henborthTint`), `src/content/regions/henborth/henborth-scenery.js`, `src/content/regions/henborth/henborth-wildlife.js`.
+- Precedents in this worktree: `src/content/regions/south-celder/south-celder-world.js` (a plain, seam tables read edge by edge), the Ibenal and
   Alezhor modules (the newest), `docs/alezhor-brief.md` (file ownership, tests, final message).
 - **The user's standing decisions**: lore may be rewritten in place where the atlas contradicts it (minimally, in its
   own voice; never commit in `..\world-builder`; never touch a lore file someone else already modified); new animals

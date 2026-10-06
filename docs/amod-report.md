@@ -17,8 +17,8 @@ it was treated as the design document. What came straight out of it:
 
 | From the lore | Where it is in the build |
 | --- | --- |
-| Foothills of descending ridges, each valley with a stream, every stream made to work | `src/amod-terraces.js`: the Tarvel is graded to fall before its bed is cut; the Dromel is carried on a cut-and-fill bench at about one in three hundred |
-| Terraces as the country's visible human mark, long stone ribs on the contours | The terrace stair is in the **terrain**, not on it; `src/amod-scenery.js` walks the shaped ground, finds every riser and stands a dry-stone rib on it |
+| Foothills of descending ridges, each valley with a stream, every stream made to work | `src/content/regions/amod/amod-terraces.js`: the Tarvel is graded to fall before its bed is cut; the Dromel is carried on a cut-and-fill bench at about one in three hundred |
+| Terraces as the country's visible human mark, long stone ribs on the contours | The terrace stair is in the **terrain**, not on it; `src/content/regions/amod/amod-scenery.js` walks the shaped ground, finds every riser and stands a dry-stone rib on it |
 | The east end drier, stonier, more open, pale grass between the walls | Amod's own scatter thins eastward (`woodland()` in `amod-scenery.js`); grass tufts are tinted pale |
 | Chestnut, oak, beech, walnut above; orchards, vines, pulses, goats below | Tall broadleaf on the high ground, walnut lower and alone, orchard and vine only on ground the terraces have made worth the work |
 | Ostel: the eastern dry-slope town, stonecutters, hard white wine | `OSTEL_BUILDINGS`: the stonecutters' shed and yard with half-worked blocks and a saw pit, the press house, the cellars cut back into the shoulder |
@@ -189,7 +189,7 @@ Scatter: 3,465 ribs (10,048 m of wall), 263 trees, 221 orchard trees, 272 vines,
 
 ### The numbers he shipped with
 
-`ENEMY_KINDS.ogre` in `src/combat.js`:
+`ENEMY_KINDS.ogre` in `src/gameplay/combat/combat.js`:
 
 | | | vs a goblin |
 | --- | --- | --- |
@@ -214,7 +214,7 @@ swings**.
 Everything the ogre needs is three optional fields on the profile. Every other
 enemy kind ignores them and is untouched.
 
-### What the changes to `src/combat.js` actually are
+### What the changes to `src/gameplay/combat/combat.js` actually are
 
 Additive, four small edits, no rewrite:
 
@@ -346,36 +346,36 @@ brothers walked past the stones this morning and nobody asked them for anything.
 
 **New:**
 
-- `src/amod-world.js` — the region as places, roads and water. Pure.
-- `src/amod-terraces.js` — the terrace stair, the Tarvel's valley, the Dromel's
+- `src/content/regions/amod/amod-world.js` — the region as places, roads and water. Pure.
+- `src/content/regions/amod/amod-terraces.js` — the terrace stair, the Tarvel's valley, the Dromel's
   bench and the road's. Pure; imports only `region-world.js` and `amod-world.js`,
   so `world-terrain.js` can call it without a cycle.
-- `src/amod-scenery.js` — the ribs, the water, the bridge, Ostel, Tir Ostel,
+- `src/content/regions/amod/amod-scenery.js` — the ribs, the water, the bridge, Ostel, Tir Ostel,
   Vessen, the pass stones and the region's own scatter.
-- `src/amod-people.js` — nineteen people and what they say, before and after.
-- `src/amod-ogre.js` — the toll, the encounter, the dialogue, `snapshot`/`restore`.
+- `src/content/regions/amod/amod-people.js` — nineteen people and what they say, before and after.
+- `src/content/regions/amod/amod-ogre.js` — the toll, the encounter, the dialogue, `snapshot`/`restore`.
 - `tests/amod-world.test.js`, `tests/amod-ogre.test.js` — sixteen tests.
 
 **Changed, small and local:**
 
 | File | What |
 | --- | --- |
-| `src/region-layout.js` | `'Amod'` in `PLAYABLE_REGIONS`; `REGION_BIOMES.Amod` (`ownScatter`) |
-| `src/region-world.js` | `REGION_IDS.Amod = 8`; `REGION_TERRAIN.Amod`; `REGION_TEXT.Amod` |
+| `src/world/terrain/region-layout.js` | `'Amod'` in `PLAYABLE_REGIONS`; `REGION_BIOMES.Amod` (`ownScatter`) |
+| `src/world/terrain/region-world.js` | `REGION_IDS.Amod = 8`; `REGION_TERRAIN.Amod`; `REGION_TEXT.Amod` |
 | `scripts/build-region-survey.mjs` | `'Amod'` in `PLAYABLE` |
-| `src/region-survey.js` | regenerated (8 lines; `LAND_HEXES` unchanged) |
-| `src/world-terrain.js` | one import and one call: `amodGround` at the end of `groundWithRiver` |
+| `src/dev/tools/region-survey.js` | regenerated (8 lines; `LAND_HEXES` unchanged) |
+| `src/world/terrain/world-terrain.js` | one import and one call: `amodGround` at the end of `groundWithRiver` |
 | `src/world.js` | `axisSamples` takes a list of fine bands; a second band for Amod; one `createAmodScenery` call; the road measured and drawn; landmarks, stands and metrics |
-| `src/world-regions.js` | `AMOD_CLEARINGS` appended to `REGION_CLEARINGS` |
-| `src/map-fog.js` | five `SUBREGIONS` for Amod |
-| `src/build-status.js` | an honest `BUILD_STATUS.Amod` (`early`) |
-| `src/signs.js` | five sign labels |
-| `src/developer-atlas.js` | an Amod anchor hex, so the developer chart has a stop per playable region |
-| `src/combat.js` | **additive only**: the `ogre` kind, `stagger`, `arc`, `aimLock`, `standoff` |
-| `src/combat-view.js` | the ogre's actor, his badge, his shadow, and a warning arc drawn at his own reach |
-| `src/characters.js` | `createOgre()`, appended at the end |
+| `src/world/terrain/world-regions.js` | `AMOD_CLEARINGS` appended to `REGION_CLEARINGS` |
+| `src/ui/map/map-fog.js` | five `SUBREGIONS` for Amod |
+| `src/dev/tools/build-status.js` | an honest `BUILD_STATUS.Amod` (`early`) |
+| `src/world/scenery/signs.js` | five sign labels |
+| `src/dev/tools/developer-atlas.js` | an Amod anchor hex, so the developer chart has a stop per playable region |
+| `src/gameplay/combat/combat.js` | **additive only**: the `ogre` kind, `stagger`, `arc`, `aimLock`, `standoff` |
+| `src/gameplay/combat/combat-view.js` | the ogre's actor, his badge, his shadow, and a warning arc drawn at his own reach |
+| `src/content/characters/characters.js` | `createOgre()`, appended at the end |
 | `src/main.js` | imports, the roster, the actor branch, the conversation, the fight's outcomes, the save, and Amod review viewpoints |
-| `src/road-checkpoint.js` | validate and restore the saved toll |
+| `src/app/saves/road-checkpoint.js` | validate and restore the saved toll |
 | `package.json` | the two new test files |
 
 `src/main.js` and `index.html` were patched only by an anchor script that asserts
@@ -433,27 +433,27 @@ region will be looked at again.
    `LOCALS` in `developer-atlas.js` — `tests/developer-atlas.test.js` requires one
    developer-chart stop per playable region, in order, so a new region added
    without an atlas anchor fails the suite.
-2. **`src/region-survey.js` must be regenerated after the registry is settled**:
+2. **`src/dev/tools/region-survey.js` must be regenerated after the registry is settled**:
    `node scripts/build-region-survey.mjs`. Do not merge the generated file by hand.
 3. **`src/world.js`'s terrain grid is unchanged.** An earlier version of this branch
    widened `axisSamples` into a list of fine bands so the terrace risers would not
    smear into ramps, at a cost of +37% terrain vertices across the whole world.
    The final version drops that: Amod's terraced ground is drawn by its own fine
-   patch in `src/amod-scenery.js`, and the coarse grid is sunk out of sight beneath
-   it (`amodTerrainSink` in `src/amod-terraces.js`). The only line `world.js`
+   patch in `src/content/regions/amod/amod-scenery.js`, and the coarse grid is sunk out of sight beneath
+   it (`amodTerrainSink` in `src/content/regions/amod/amod-terraces.js`). The only line `world.js`
    gains in the terrain loop is that sink.
-4. **`src/combat.js`** is additive but three of its functions changed lines:
+4. **`src/gameplay/combat/combat.js`** is additive but three of its functions changed lines:
    `hurtEnemy` (the stagger branch), `updateEnemy`'s windup (the aim lock) and
    attack (the arc and the lunge guard), and `desiredDistance`. Nobody else was
    supposed to be in this file, but check.
 5. **`src/main.js`** gained a conversation block, an actor branch, a save field and
    a review case. The save field `ogreToll` also needs its validator in
-   `src/road-checkpoint.js`; both were added together and must land together or a
+   `src/app/saves/road-checkpoint.js`; both were added together and must land together or a
    saved game will be refused.
 6. **`WORLD_BOUNDS` grew north** to minZ −868.2. Anything that assumed the old
    northern edge — the coast field, the sea plane, the chart — recomputes itself,
    but the developer atlas and the journal chart are worth a look.
-7. **`src/signs.js`'s `SIGN_LABELS`** gained five entries. Every agent adding a
+7. **`src/world/scenery/signs.js`'s `SIGN_LABELS`** gained five entries. Every agent adding a
    place will add to this list; it is a plain array and the conflict is trivial,
    but `tests/regions-world.test.js` throws by name if a label is missing.
 8. **Amod's relief amplitude is deliberately low** (`REGION_TERRAIN.Amod`: 2.4 for

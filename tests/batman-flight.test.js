@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { regionCells } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { buildSuvalFlightRoute, createBatmanFlight, validateBatmanFlightSnapshot, SUVAL_FLIGHT_REGIONS } from '../src/batman-flight.js';
-import { BAT_CAVE, BAT_LANDING } from '../src/suval-highlands.js';
-import { BATMAN_HISTORY } from '../src/batman-quest.js';
+import { regionCells } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { buildSuvalFlightRoute, createBatmanFlight, validateBatmanFlightSnapshot, SUVAL_FLIGHT_REGIONS } from '../src/content/quests/batman/batman-flight.js';
+import { BAT_CAVE, BAT_LANDING } from '../src/content/regions/suval-highlands/suval-highlands.js';
+import { BATMAN_HISTORY } from '../src/content/quests/batman/batman-quest.js';
 
 const heightAt = (x, z) => 65 + Math.sin(x / 70) * 26 + Math.cos(z / 60) * 19;
 const cells = SUVAL_FLIGHT_REGIONS.flatMap(region => regionCells(PLAYABLE_SURVEY, region));

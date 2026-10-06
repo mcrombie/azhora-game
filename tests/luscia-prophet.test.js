@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { LUSCIA_PROPHET, lusciaProphetConversation } from '../src/luscia-prophet.js';
+import { LUSCIA_PROPHET, lusciaProphetConversation } from '../src/content/regions/luscia/luscia-prophet.js';
 
 function fixture() {
   const dialogs = [];

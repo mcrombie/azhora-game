@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createTroyAutopilot } from '../src/troy-autopilot.js';
+import { createTroyAutopilot } from '../src/gameplay/autoplay/troy-autopilot.js';
 import { CLUES, MURDERER, TROY, WITNESS_IDS, createMurderQuest,
-  troyConversation, cobbleConversation } from '../src/murder-quest.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
+  troyConversation, cobbleConversation } from '../src/content/quests/roadside/murder-quest.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
 
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const world = () => ({ bounds: { minX: -200, maxX: 200, minZ: -200, maxZ: 200 },

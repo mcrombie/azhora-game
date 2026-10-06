@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-const { createSceneryBuilder } = await sourceModule('../src/scenery-builder.js');
+const { createSceneryBuilder } = await sourceModule('../src/world/scenery/scenery-builder.js');
 
 function consume(iterator) {
   let next;

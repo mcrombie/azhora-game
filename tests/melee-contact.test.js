@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCombat} from '../src/combat.js';
-import {meleeContact,meleeContacts} from '../src/melee-contact.js';
+import {createCombat} from '../src/gameplay/combat/combat.js';
+import {meleeContact,meleeContacts} from '../src/gameplay/combat/melee-contact.js';
 
 function fixture({position={x:0,z:0},getMargins}={}) {
   const world={bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},colliders:[],heightAt:()=>1.5};

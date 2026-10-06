@@ -34,7 +34,7 @@ Chosen where the atlas is silent:
 - **The neck is low.** Every hex that touches Gala keeps the seam contract's profile, and every
   landform stays out of the hundred metres next to the border, so the neck lies at Gala's own
   level (4 m, after the merge) and the peninsula rises out of it over the next ninety metres to a
-  plateau at 10-16 m (`FRONTIER`, `PLATEAU` in `src/ascarth-world.js`).
+  plateau at 10-16 m (`FRONTIER`, `PLATEAU` in `src/content/regions/ascarth/ascarth-world.js`).
 - **The "highland interior" is the three hill hexes.** Two rounded rocky hills stand on the two
   that are clear of the border band - the north hill on (-9,123), summit 35.0 m, and the south hill
   on (-8,125), summit 37.2 m - with a saddle between them at about 21 m. The third, (-9,122),
@@ -55,7 +55,7 @@ Chosen where the atlas is silent:
   with the ground dipping toward it. The four on the west, (-10,125), (-9,127), (-8,129), (-7,132),
   are coves in the cliff with no beach: the lore's "good anchorage only ... on its eastern and
   northern shores".
-- **What grows** (`src/ascarth-scenery.js`): tawny `Csa` grass, aromatic garrigue cushions and
+- **What grows** (`src/content/regions/ascarth/ascarth-scenery.js`): tawny `Csa` grass, aromatic garrigue cushions and
   darker maquis (more of it on the sheltered east), grey-brown rock through the thin soil
   everywhere, a wild olive standing alone here and there on the grass (141); on the hills a wood of
   evergreen oak (578) with pine on the tops (288); green and blue-green stain on sixteen outcrops of
@@ -79,7 +79,7 @@ The per-hex field is on the World Builder map itself (`map/resources/examples/az
 Built to it: hot-summer Mediterranean grass and scrub everywhere, the wood only on the cooler
 hills, and one sky for the peninsula (`palette.sky` 0xb3d6e0, haze 0xcdd6d0, density .0045) -
 Eer's clear air with the sea in it, bluer and a shade clearer than Eer's.
-`ASCARTH_CLIMATE` in `src/ascarth-world.js` records every hex; the test checks it against the map.
+`ASCARTH_CLIMATE` in `src/content/regions/ascarth/ascarth-world.js` records every hex; the test checks it against the map.
 
 ## The window measurement
 
@@ -91,7 +91,7 @@ further (measured by walking the lattice exactly as `region-world.js` builds it)
 `WINDOW.maxR` at 133 those rows were the sea: 25 claimed hexes under the lattice, **Selemi's six**
 among them - the island across a channel one hex wide from the tip - plus Central Meroshe, Marosh,
 the Azhor Stones and the Aurumlis. So `maxR` is **135**, with the measurement written in the
-comment above `WINDOW` in `scripts/build-region-survey.mjs`, and `src/region-survey.js` was
+comment above `WINDOW` in `scripts/build-region-survey.mjs`, and `src/dev/tools/region-survey.js` was
 regenerated. `minQ`, `maxQ` and `minR` are unchanged (the peninsula takes nothing east or west).
 
 The world-size guard in `tests/region-layout.test.js` states the case: north-south goes to 37 and
@@ -142,7 +142,7 @@ allowed; nothing staged, committed or stashed there):
 
 Nothing needed appending to `docs/lore-adjusted-to-atlas.md`.
 
-## The zones, their species and why (`src/ascarth-wildlife.js`)
+## The zones, their species and why (`src/content/regions/ascarth/ascarth-wildlife.js`)
 
 Every site measured on the built ground: standable, on its own country's hexes, 2.5 m clear of
 every trunk and stone; the gulls 5-8 m back from the cliff edge on ground 11-14 m up. All pass the
@@ -161,7 +161,7 @@ west's laws (walked at, run at, chased home, watched and unwatched).
 | ascarth-dolphins | dolphin ×2 | off the east shore | the overview: "a consistent presence in Iberos coastal waters" |
 | iberos-sea-plungers | **Great White Sea-plunger** ×3 | circling 22 m over the sea off the tip | the overview's gannet-relative of "the exposed Legemum headlands" (the next peninsula west), diving on the Iberos shoals |
 
-**The one new rig** is the sea-plunger (`src/west-regions-life.js`): a white cigar of a body, a
+**The one new rig** is the sea-plunger (`src/content/regions/western-regions/west-regions-life.js`): a white cigar of a body, a
 straw-yellow head on a grey dagger bill, long narrow white wings dipped black. It soars on the
 hawk's rig and does one thing nothing else does (`zone.plunge`): every nine seconds or so it folds
 its wings back, pitches head-down and falls to the sea, is under for 1.8 s, and climbs back beating.
@@ -171,15 +171,15 @@ are zero on them). Domestic stock is somebody's: no sheep, no goats.
 
 ## Files
 
-New: `src/ascarth-world.js`, `src/ascarth-scenery.js`, `src/ascarth-wildlife.js`,
+New: `src/content/regions/ascarth/ascarth-world.js`, `src/content/regions/ascarth/ascarth-scenery.js`, `src/content/regions/ascarth/ascarth-wildlife.js`,
 `tests/ascarth-world.test.js`, `docs/ascarth-report.md`.
-Changed: `scripts/build-region-survey.mjs` (PLAYABLE, WINDOW), `src/region-survey.js`
-(regenerated), `src/region-layout.js` (PLAYABLE_REGIONS, two biomes), `src/region-world.js`
-(REGION_IDS 22 and 23, REGION_TERRAIN, REGION_TEXT), `src/world-terrain.js` (the ground chain, the
-cliff tint), `src/world.js` (scenery, metrics, landmarks; CRLF kept), `src/west-regions-life.js`
-(the zones, the sea-plunger), `src/languages.js` (the `avite` accent and both regions),
-`src/developer-atlas.js` (two travel stops; CRLF kept), `src/map-fog.js` (six areas; CRLF kept),
-`src/build-status.js` (both `early`), `package.json` (the new test), `tests/region-layout.test.js`,
+Changed: `scripts/build-region-survey.mjs` (PLAYABLE, WINDOW), `src/dev/tools/region-survey.js`
+(regenerated), `src/world/terrain/region-layout.js` (PLAYABLE_REGIONS, two biomes), `src/world/terrain/region-world.js`
+(REGION_IDS 22 and 23, REGION_TERRAIN, REGION_TEXT), `src/world/terrain/world-terrain.js` (the ground chain, the
+cliff tint), `src/world.js` (scenery, metrics, landmarks; CRLF kept), `src/content/regions/western-regions/west-regions-life.js`
+(the zones, the sea-plunger), `src/gameplay/skills/languages.js` (the `avite` accent and both regions),
+`src/dev/tools/developer-atlas.js` (two travel stops; CRLF kept), `src/ui/map/map-fog.js` (six areas; CRLF kept),
+`src/dev/tools/build-status.js` (both `early`), `package.json` (the new test), `tests/region-layout.test.js`,
 `tests/isareos-world.test.js`, `tests/nethereum-world.test.js` (the north-south budget),
 `tests/region-sky.test.js`, `tests/eer-world.test.js` (the own-sky lists), `tests/chameleon.test.js`
 (Ed does not go there yet), `docs/design-answers.md`. Outside the repo:

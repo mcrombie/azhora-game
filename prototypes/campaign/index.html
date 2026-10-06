@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Azhora · Campaign map preview</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header><div class="brand">AZHORA <span>Campaign map</span></div><button id="preview-tools">Preview tools</button></header>
+  <main>
+    <section class="map-stage" aria-label="Campaign map">
+      <div class="map-tools">
+        <div class="layers" role="group" aria-label="Map view"><button data-layer="regions" aria-pressed="true">Regions</button><button data-layer="geopolitical" aria-pressed="false">Geopolitical</button><button data-layer="stability" aria-pressed="false">Stability</button></div>
+        <div class="search"><input id="search" type="search" placeholder="Find a faction or region" aria-label="Find a faction or region" autocomplete="off"><div id="search-results" hidden></div></div>
+      </div>
+      <div id="map-viewport" tabindex="0" aria-label="Atlas. Drag to pan, scroll to zoom. Search supports keyboard selection."><div id="map-canvas"></div><div id="country-labels"></div></div>
+      <p id="loading" role="status">Loading the atlas…</p>
+      <div id="stability-key" hidden><span><i style="background:#769b80"></i>Stable</span><span><i style="background:#d0b273"></i>Unstable</span><span><i style="background:#be7970"></i>Conflict</span><span><i style="background:#c4c7bb"></i>Unassessed</span></div>
+      <div class="map-controls"><button id="fit">Whole map</button><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">+</button></div>
+      <div id="map-tooltip" hidden></div>
+      <span id="sample-note" hidden>Sample territory change</span>
+    </section>
+    <aside class="inspector" aria-label="Map information">
+      <nav class="inspector-tabs" aria-label="Information"><button data-tab="region" aria-pressed="true">Region</button><button data-tab="factions" aria-pressed="false">Factions</button><button data-tab="quests" aria-pressed="false">Quests</button></nav>
+      <div id="detail-content"></div>
+    </aside>
+  </main>
+  <dialog id="dialog"><form method="dialog"><button class="dialog-close" aria-label="Close preview tools">×</button></form><h2>Try a territory change</h2><p>These examples only change the preview. No game systems or saves are running.</p><label for="sample">Map snapshot</label><select id="sample"><option value="opening">Opening territories</option><option value="chapter-monarchy">Chapter 1: Ambron takes West Suval</option><option value="chapter-coalition">Chapter 1: Izol takes Moros Plain</option><option value="north-riesov">Undeadland takes North Riesov</option><option value="east-lond">Lond loses East Lond to Undeadland</option></select><button id="apply-sample" class="primary">Show snapshot</button><p class="hint">Switch to Geopolitical to compare the countries. Chapter 1’s successful endings are independent examples; they do not accumulate.</p></dialog>
+  <script type="module" src="./ui.js"></script>
+</body>
+</html>

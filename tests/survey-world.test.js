@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-const {createSurveyWorld}=await sourceModule('../src/survey-world.js');
+const {createSurveyWorld}=await sourceModule('../src/dev/tools/survey-world.js');
 const atlas=JSON.parse(await readFile(new URL('../assets/azhora-dev-regions.json',import.meta.url),'utf8'));
 
 test('every authored region can be surveyed without moving its cells or inventing surrounding sea',()=>{

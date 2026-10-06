@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
-import { REBEL_CREW, CREW_IDS, DECK_Y, POOP_Y, overTheHouse, DROP_RAIL, crewPose, CREW_ALWAYS_IN_FULL } from '../src/rebel-crew.js';
-import { shipAt, WORD_SHIP, WORD_TRACK, WORD_BEACH } from '../src/word-arrival.js';
-import { createLivingStory } from '../src/living-story.js';
-import { arrivalTime } from '../src/mercenaries.js';
-import { HULL, REBEL_STERN_HOUSE } from '../src/salt-sultan.js';
-import { alwaysInFull, figureDetail } from '../src/figure-lod.js';
+import { REBEL_CREW, CREW_IDS, DECK_Y, POOP_Y, overTheHouse, DROP_RAIL, crewPose, CREW_ALWAYS_IN_FULL } from '../src/content/quests/roadside/rebel-crew.js';
+import { shipAt, WORD_SHIP, WORD_TRACK, WORD_BEACH } from '../src/content/quests/roadside/word-arrival.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
+import { arrivalTime } from '../src/gameplay/company/mercenaries.js';
+import { HULL, REBEL_STERN_HOUSE } from '../src/content/quests/salt/salt-sultan.js';
+import { alwaysInFull, figureDetail } from '../src/world/actors/figure-lod.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -129,13 +129,13 @@ test('they are men at sixty-eight metres and never a row of pegs', () => {
   assert.equal(figureDetail('stand-in', off, CREW_ALWAYS_IN_FULL), 'full', 'and never come back as pegs');
   // And in practice they are not npcs at all: they are built into the hull's own group, so the
   // loop that swaps figures for stand-ins never sees them.
-  const ship = source('salt-ship.js');
+  const ship = source('content/quests/salt/salt-ship.js');
   assert.match(ship, /ship\.add\(actor\.group\)/, 'they ride inside her, so they rock and heel with her');
   assert.match(ship, /castShadow = false/, 'and cast no shadow on open water');
 });
 
 test('only the rebel has a crew, and the meshes she costs are counted', async () => {
-  const { createSultana, createRebelShip } = await sourceModule('../src/salt-ship.js');
+  const { createSultana, createRebelShip } = await sourceModule('../src/content/quests/salt/salt-ship.js');
   const count = group => { let n = 0; group.traverse(object => { if (object.isMesh) n++; }); return n; };
   const sultana = createSultana(false), rebel = createRebelShip();
   const aboard = id => { let found = null; rebel.group.traverse(object => { if (object.name === id) found = object; }); return found; };
@@ -200,7 +200,7 @@ test('the whole deck rides her own clock, so a reload mid-arrival is the same pi
 test('the hull is built from the same stern house the crew stand on', () => {
   // One description of her stern, read by the model, by the man who stands on it and by this
   // test - rather than three copies of the same numbers in three files.
-  const ship = source('salt-ship.js');
+  const ship = source('content/quests/salt/salt-ship.js');
   assert.match(ship, /REBEL_STERN_HOUSE as HOUSE/, 'the model reads it');
   assert.match(ship, /rebel \? HOUSE\.y : 1\.85/, 'for the house');
   assert.match(ship, /rebel \? HOUSE\.roofY : 2\.54/, 'and for the tarpaulin over it');

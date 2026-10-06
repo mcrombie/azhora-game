@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { BALDRO_CELLS, baldroInset, baldroSurfaceHeight, baldroPathDistance, baldroWaterAt, baldroTint } from '../src/baldro-world.js';
-import { SOUTH_OREMINDI_CELLS, southOremindiInset, southOremindiGround, southOremindiPathDistance, southOremindiWaterAt, southOremindiTint } from '../src/south-oremindi-world.js';
+import { BALDRO_CELLS, baldroInset, baldroSurfaceHeight, baldroPathDistance, baldroWaterAt, baldroTint } from '../src/content/regions/baldro/baldro-world.js';
+import { SOUTH_OREMINDI_CELLS, southOremindiInset, southOremindiGround, southOremindiPathDistance, southOremindiWaterAt, southOremindiTint } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
 const regions = [
   ['Baldro', BALDRO_CELLS, baldroInset, baldroSurfaceHeight, baldroPathDistance, baldroWaterAt, baldroTint],
   ['South Oremindi', SOUTH_OREMINDI_CELLS, southOremindiInset, southOremindiGround, southOremindiPathDistance, southOremindiWaterAt, southOremindiTint],

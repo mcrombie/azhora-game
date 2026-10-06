@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWoodcutting, TREE_KINDS, WOODLOT_TREES, validateWoodcuttingSnapshot } from '../src/woodcutting.js';
-import { WOOD_SPECIES } from '../src/wood-species.js';
-import { createSkills, MAX_XP } from '../src/skills.js';
-import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createCampcraft } from '../src/campcraft.js';
+import { createWoodcutting, TREE_KINDS, WOODLOT_TREES, validateWoodcuttingSnapshot } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { WOOD_SPECIES } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { createSkills, MAX_XP } from '../src/gameplay/skills/skills.js';
+import { createInventoryState, INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
 
 const master = () => { const skills = createSkills(); skills.learn('woodcutting'); skills.gain('woodcutting', MAX_XP); return skills; };
 const axe = id => id === 'bronze-axe';

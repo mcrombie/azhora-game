@@ -1,9 +1,9 @@
-import {inAmbronOutline} from '../src/ambron-city-layout.js';
+import {inAmbronOutline} from '../src/content/regions/ambron/ambron-city-layout.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CAGNEY, CAGNEY_START, CAGNEY_HOME, CAGNEY_ROUTE, CAGNEY_AMBUSH, CAGNAPPERS, CAGNEY_WAVES, ALL_CAGNAPPERS,
-  CAGNEY_QUEST, CAGNEY_HEALTH, createCagneyQuest, validateCagneySnapshot, cagneyGuideTarget, cagneyWave } from '../src/cagney-quest.js';
-import { regionAt } from '../src/region-world.js';
+  CAGNEY_QUEST, CAGNEY_HEALTH, createCagneyQuest, validateCagneySnapshot, cagneyGuideTarget, cagneyWave } from '../src/content/quests/cagney/cagney-quest.js';
+import { regionAt } from '../src/world/terrain/region-world.js';
 
 test('Cagney only pays once after surviving the cagnappers and reaching her home', () => {
   const quest = createCagneyQuest();

@@ -1,9 +1,9 @@
 import * as THREE from '../vendor/three.module.js';
-import { groundWithRiver, legacyWesternGroundHeight } from '../src/world-terrain.js';
-import { WEST_LOTHARN_WATERS } from '../src/west-regions.js';
-import { westLotharnTerrainSink } from '../src/west-lotharn-world.js';
-import { westLotharnRiverBankDistance } from '../src/west-lotharn-river-ground.js';
-import { createWestLotharnCaves } from '../src/west-lotharn-caves.js';
+import { groundWithRiver, legacyWesternGroundHeight } from '../src/world/terrain/world-terrain.js';
+import { WEST_LOTHARN_WATERS } from '../src/content/regions/western-regions/west-regions.js';
+import { westLotharnTerrainSink } from '../src/content/regions/west-lotharn/west-lotharn-world.js';
+import { westLotharnRiverBankDistance } from '../src/content/regions/west-lotharn/west-lotharn-river-ground.js';
+import { createWestLotharnCaves } from '../src/content/regions/west-lotharn/west-lotharn-caves.js';
 
 // The production terrain axis has reached its maximum 7.1m spacing here.
 // Keep its phase and Float32 vertices; compact tiles cover only the water

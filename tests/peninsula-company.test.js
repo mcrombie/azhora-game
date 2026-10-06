@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPeninsulaLandingQuest, peninsulaCompanyStamp } from '../src/peninsula-company.js';
-import { createPeninsulaTutorial, PENINSULA_TUTORIAL_ANCHORS as A, PENINSULA_CHRIS_TASKS } from '../src/peninsula-tutorial.js';
-import { createMercenaryCompany, distanceAlongRoad, arrivalTime, CROMB } from '../src/mercenaries.js';
+import { createPeninsulaLandingQuest, peninsulaCompanyStamp } from '../src/content/chapters/prologue/peninsula-company.js';
+import { createPeninsulaTutorial, PENINSULA_TUTORIAL_ANCHORS as A, PENINSULA_CHRIS_TASKS } from '../src/content/chapters/prologue/peninsula-tutorial.js';
+import { createMercenaryCompany, distanceAlongRoad, arrivalTime, CROMB } from '../src/gameplay/company/mercenaries.js';
 
 const road = [{ x: A.tidehavenWait.x, z: A.tidehavenWait.z + 10 }, A.tidehavenWait,
   { x: A.tidehavenWait.x - 60, z: A.tidehavenWait.z }, { x: A.tidehavenWait.x - 300, z: A.tidehavenWait.z - 20 }];

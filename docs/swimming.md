@@ -2,7 +2,7 @@
 
 Water is the only way to some of this country, and the country is willing to
 drown you for trying. This is the design the user settled on: swimming is a
-skill on the same 99-level table as the rest (`src/skills.js`), and running out
+skill on the same 99-level table as the rest (`src/gameplay/skills/skills.js`), and running out
 of wind in deep water kills you through the game's ordinary defeat.
 
 ## Harbour lessons and crossings
@@ -15,7 +15,7 @@ Swimming is walking on water at reduced speed while your wind runs down.
 
 - **Entering.** Walk off a shore into water. There is no prompt and no key: the
   ground stops holding you and you are swimming. Leaving is the same in reverse.
-- **Dismounted only.** A horse will not swim (`src/riding.js`); the traveler is
+- **Dismounted only.** A horse will not swim (`src/gameplay/movement/riding.js`); the traveler is
   refused the water while mounted and told why.
 - **No fighting.** Swings and dodges are refused in the water, and an encounter
   will not start on it. A swimmer is a person with both hands busy.
@@ -24,7 +24,7 @@ Swimming is walking on water at reduced speed while your wind runs down.
 
 ## Water the traveler can be in
 
-`canStand` (`src/game-state.js`) answers "is there ground here", and it stays as
+`canStand` (`src/gameplay/movement/game-state.js`) answers "is there ground here", and it stays as
 it is. Beside it goes `canSwim`, with the same shape:
 
 - inside `world.bounds`, by the mover's radius;
@@ -65,7 +65,7 @@ the skill improves, and costs wind that the skill also improves.
 
 The two lines are linear in the level: `share = .55 + .25 * (level - 1) / 98`
 and `drain = 4.0 - 2.8 * (level - 1) / 98`, over the same 100-point stamina bar
-combat already keeps (`src/combat.js`, `maxStamina: 100`). The distance a
+combat already keeps (`src/gameplay/combat/combat.js`, `maxStamina: 100`). The distance a
 swimmer can cover is the product of the two, so it climbs faster than either:
 roughly five times further at 99 than at 1.
 
@@ -87,7 +87,7 @@ feet, whole, with nothing happening, and the host does the moving.
 
 Getting wet in the middle of a fight resets nothing either. Enemies are moved
 without the swimming flag, so the water stops them at the shore, and the 45 m
-leash in `src/combat.js` ends a fight properly for a traveler who swims away from
+leash in `src/gameplay/combat/combat.js` ends a fight properly for a traveler who swims away from
 one. The reset that used to fire here carried him back to the fight's checkpoint
 with every enemy healed, which made a pond a way to undo a fight you were losing.
 
@@ -151,13 +151,13 @@ how.
 Swimming does not walk the seabed. While the ground under him is below the
 waterline the traveler floats at the surface, feet hanging `SWIM.sink` (1.06 m)
 down, which puts his head and shoulders above it. The rig has a posture for it
-(`pose.swimming` in `src/characters.js`): head up, chest back a little, the arms
+(`pose.swimming` in `src/content/characters/characters.js`): head up, chest back a little, the arms
 pulling over alternately and the legs kicking small and quick. No weapon is
 drawn, because both hands are busy.
 
 ## Ed the Word
 
-Built, in `src/word-arrival.js`. The mechanic is demonstrated before the
+Built, in `src/content/quests/roadside/word-arrival.js`. The mechanic is demonstrated before the
 traveler ever needs it, and every part of it is a pure function of play time, so
 nothing new goes in the save.
 

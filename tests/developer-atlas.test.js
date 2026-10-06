@@ -4,10 +4,10 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { createDeveloperAtlasData, DEV_WORLD_DESTINATIONS, DEV_ATLAS_PROVENANCE,
-  hitAtlasRegion, developerRegionSelection, developerAtlasMarkup, developerLocalRouteMarkup } from '../src/developer-atlas.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { REGION_IDS } from '../src/region-world.js';
-import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/game-atlas-adjustments.js';
+  hitAtlasRegion, developerRegionSelection, developerAtlasMarkup, developerLocalRouteMarkup } from '../src/dev/tools/developer-atlas.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
+import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/world/terrain/game-atlas-adjustments.js';
 
 const read = relative => readFile(new URL(relative, import.meta.url), 'utf8');
 const metadata = JSON.parse(await read('../assets/azhora-world-map.json'));

@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
-import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, markerGrade, markerStyle, strongestMarker, magicTeacherIds, TUTORIAL_DONE } from '../src/quest-markers.js';
-import { BEN, createSpiderQuest } from '../src/spider-quest.js';
-import { LIZ, createCatQuest } from '../src/cat-quest.js';
-import { TROY, MURDERER, WITNESS_IDS, createMurderQuest } from '../src/murder-quest.js';
+import { MARKER_KINDS, MARKER_OPEN, MARKER_STYLE, MARKER_ROLES, markerFor, markerGrade, markerStyle, strongestMarker, magicTeacherIds, TUTORIAL_DONE } from '../src/gameplay/quests/quest-markers.js';
+import { BEN, createSpiderQuest } from '../src/content/quests/spider/spider-quest.js';
+import { LIZ, createCatQuest } from '../src/content/quests/roadside/cat-quest.js';
+import { TROY, MURDERER, WITNESS_IDS, createMurderQuest } from '../src/content/quests/roadside/murder-quest.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -17,7 +17,7 @@ const IDS = Object.freeze({
 });
 /**
  * **These tests read the rules with every quest on the slate**, which is not how the game is
- * playing today: Chapter 1 and the bridge are live and the rest is put away (src/quest-slate.js).
+ * playing today: Chapter 1 and the bridge are live and the rest is put away (src/gameplay/quests/quest-slate.js).
  * The rules for the rest are still written, so they are still tested; `the trimmed slate` at the
  * foot of this file is the other half, and says what a player actually sees.
  */
@@ -71,7 +71,7 @@ test('quest grades share a diamond; ordinary and magic teachers have distinct bo
 });
 
 test('quest geometry is consistent and the teacher book faces the camera', async () => {
-  const { makeQuestMarker } = await sourceModule('../src/characters.js');
+  const { makeQuestMarker } = await sourceModule('../src/content/characters/characters.js');
   const built = new Map();
   for (const kind of MARKER_KINDS) {
     const marker = makeQuestMarker(kind);
@@ -147,7 +147,7 @@ test('the long road wears the arc’s own gold, open, and never instead of the a
 });
 
 test('the optional-road grade preserves its metadata but uses the same filled symbol', async () => {
-  const { makeQuestMarker } = await sourceModule('../src/characters.js');
+  const { makeQuestMarker } = await sourceModule('../src/content/characters/characters.js');
   const solid = makeQuestMarker('main'), hollow = makeQuestMarker('main', { open: true });
   assert.equal(hollow.userData.markerKind, 'main', 'the same kind');
   assert.equal(hollow.userData.markerOpen, true);
@@ -314,7 +314,7 @@ test('a locked teacher is visibly gated and cannot be unlocked by an old wine re
   assert.equal(markerGrade(markerFor(id, { ...base, skillTeachers: [id] })), 'skill', 'An actual available lesson has priority');
   assert.equal(markerGrade(markerFor(id, { ...base, arcDestinations: [id] })), 'main');
   assert.equal(markerGrade(markerFor(id, { ...base, magicTeachers: [id] })), 'magic');
-  const { makeQuestMarker } = await sourceModule('../src/characters.js');
+  const { makeQuestMarker } = await sourceModule('../src/content/characters/characters.js');
   const marker = makeQuestMarker('skill-locked');
   assert.equal(marker.userData.billboard, true);
   assert.equal(marker.userData.markerLocked, true);

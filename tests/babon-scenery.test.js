@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import * as B from '../src/babon-world.js';
-import { BABON_WILDLIFE_ZONES, babonWildlifeClear } from '../src/babon-wildlife.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { timberForSpecies } from '../src/wood-species.js';
+import * as B from '../src/content/regions/babon/babon-world.js';
+import { BABON_WILDLIFE_ZONES, babonWildlifeClear } from '../src/content/regions/babon/babon-wildlife.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
 
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createBabonScenerySteps}=await sourceModule('../src/babon-scenery.js');
-const {getTreeRegistry}=await sourceModule('../src/tree-registry.js');
+const {createBabonScenerySteps}=await sourceModule('../src/content/regions/babon/babon-scenery.js');
+const {getTreeRegistry}=await sourceModule('../src/world/scenery/tree-registry.js');
 const colliders=[],parent=new THREE.Group();
 // A different rendered surface catches props rooted to the logical field.
 const rendered=(x,z)=>groundWithRiver(x,z)+.12;

@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MENORA, MENORA_BUILDINGS, MENORA_GATES, MENORA_PATHS, MENORA_BRIDGES,
   MENORA_NPC_ANCHORS, MENORA_CAMP, inMenora, menoraGround, menoraRiverClearance,
-  menoraReserved, menoraDeckHeight, menoraBridgeAt } from '../src/menora-city.js';
-import { ISAREOS_RIVER, LIZEEM, ISAREOS_BECKS, courseDistance } from '../src/west-regions.js';
-import { regionAt } from '../src/region-world.js';
+  menoraReserved, menoraDeckHeight, menoraBridgeAt } from '../src/content/regions/minora-frontier/menora-city.js';
+import { ISAREOS_RIVER, LIZEEM, ISAREOS_BECKS, courseDistance } from '../src/content/regions/western-regions/west-regions.js';
+import { regionAt } from '../src/world/terrain/region-world.js';
 import { sourceModule } from './module-loader.js';
-import { describeRegion } from '../src/campaign-world.js';
-import { SUBREGIONS } from '../src/map-fog.js';
+import { describeRegion } from '../src/content/chapters/civil-war/campaign-world.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
 
 test('Minora occupies the actual Isareos side of the Isa–Lizeem confluence',()=>{
   assert.deepEqual(MENORA.fork,ISAREOS_RIVER.points.at(-1));
@@ -83,7 +83,7 @@ test('The frontier chart distinguishes Imperial Minora and Caricas from independ
 
 test('Rendered gates, bridge approaches and character anchors have real collision clearance',async()=>{
   const THREE=await sourceModule('../vendor/three.module.js');
-  const {createMenoraScenery}=await sourceModule('../src/menora-scenery.js');
+  const {createMenoraScenery}=await sourceModule('../src/content/regions/minora-frontier/menora-scenery.js');
   const parent=new THREE.Group(),colliders=[];
   const scene=createMenoraScenery({parent,colliders,heightAt:(x,z)=>menoraGround(x,z,21.3)});
   assert.equal(scene.metrics.buildings,MENORA_BUILDINGS.length);

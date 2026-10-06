@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { IMANI, IMANI_STAND, VINE_WORK, VINE_YEAR, GRAFTING, CARRIAGE_TALK, DRAGON_TOLD, IMANI_LINES,
-  ROW_XP, ROW_BONUS, DRAGON_SCALE, createVineyard, imaniConversation, validateVineyardSnapshot } from '../src/vineyard.js';
-import { VARIETY_IDS, VARIETIES, WINERY } from '../src/winery.js';
-import { WINE_SKILL } from '../src/wine.js';
-import { createSkills } from '../src/skills.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
+  ROW_XP, ROW_BONUS, DRAGON_SCALE, createVineyard, imaniConversation, validateVineyardSnapshot } from '../src/content/quests/wine/vineyard.js';
+import { VARIETY_IDS, VARIETIES, WINERY } from '../src/content/regions/winery/winery.js';
+import { WINE_SKILL } from '../src/content/quests/wine/wine.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
 
 /** A dialogue box that records what was said and lets a test pick a reply. */
 function talk(npc, context) {
@@ -142,7 +142,7 @@ test('the walk, the carriages and the dragon all survive a save', () => {
 
 
 test('Rob\'s advanced Farming prerequisite is visible but cannot grant a placeholder lesson', async () => {
-  const { WINERY_LESSON_REQUIREMENT, wineryLessonsStatus, wineryLessonLines, robWineryConversation } = await import('../src/winery-lessons.js');
+  const { WINERY_LESSON_REQUIREMENT, wineryLessonsStatus, wineryLessonLines, robWineryConversation } = await import('../src/content/regions/winery/winery-lessons.js');
   assert.equal(WINERY_LESSON_REQUIREMENT.level, 5);
   assert.equal(WINERY_LESSON_REQUIREMENT.provisional, true);
   assert.deepEqual(WINERY_LESSON_REQUIREMENT.subjects, ['viticulture']);

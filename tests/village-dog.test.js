@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { VILLAGE_DOG, DOG_DISLIKES, DOG_APPETITE, createVillageDog } from '../src/village-dog.js';
+import { VILLAGE_DOG, DOG_DISLIKES, DOG_APPETITE, createVillageDog } from '../src/content/characters/village-dog.js';
 
 const sequence = values => { let i = 0; return () => values[i++ % values.length]; };
 

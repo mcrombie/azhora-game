@@ -25,12 +25,12 @@ Three Presences; the **life agent** builds the scenery and the wildlife. One wri
 
 | file | exports | wired into |
 |---|---|---|
-| `src/east-izol-world.js` | `EAST_IZOL`, `eastIzolOwns(x,z)`, `EAST_IZOL_ARRIVAL`, `EAST_IZOL_LANDMARKS`, `EAST_IZOL_TRAILS`, `EAST_IZOL_VIEWS`, `eastIzolGround(x, z, incoming, before)`, `eastIzolTint(x, z)` | `src/world-terrain.js` (the ground chain, outermost, and the tint table), `src/world.js` (landmarks), `src/map-fog.js`, `src/main.js` (views `east-izol-*`) |
-| `src/east-izol-scenery.js` | `createEastIzolScenerySteps({ parent, heightAt, renderedGroundHeight, colliders })` returning `{ metrics }` | `src/world.js` `regionBuild('eastIzol', ...)` |
-| `src/east-izol-wildlife.js` | `EAST_IZOL_WILDLIFE_ZONES` | `src/west-regions-life.js` |
+| `src/content/regions/east-izol/east-izol-world.js` | `EAST_IZOL`, `eastIzolOwns(x,z)`, `EAST_IZOL_ARRIVAL`, `EAST_IZOL_LANDMARKS`, `EAST_IZOL_TRAILS`, `EAST_IZOL_VIEWS`, `eastIzolGround(x, z, incoming, before)`, `eastIzolTint(x, z)` | `src/world/terrain/world-terrain.js` (the ground chain, outermost, and the tint table), `src/world.js` (landmarks), `src/ui/map/map-fog.js`, `src/main.js` (views `east-izol-*`) |
+| `src/content/regions/east-izol/east-izol-scenery.js` | `createEastIzolScenerySteps({ parent, heightAt, renderedGroundHeight, colliders })` returning `{ metrics }` | `src/world.js` `regionBuild('eastIzol', ...)` |
+| `src/content/regions/east-izol/east-izol-wildlife.js` | `EAST_IZOL_WILDLIFE_ZONES` | `src/content/regions/western-regions/west-regions-life.js` |
 
   `before(x, z)` is the ground without East Izol's layer, for measuring the seam with West Izol (the Celder pattern:
-  read `src/south-celder-world.js`, `celderSeamMove`, and its tests; it is the newest and the most careful).
+  read `src/content/regions/south-celder/south-celder-world.js`, `celderSeamMove`, and its tests; it is the newest and the most careful).
 
 ## The atlas - measured
 
@@ -81,19 +81,19 @@ For the ground and the life:
   and record the discrepancy.
 - Wildlife: the fauna overview (`azhora_lore/fauna/azhoran_fauna_overview.md`), its **Iberos Coast and the Iberos Sea**
   section (seabird colonies on "rocky headlands and offshore islands", the cetaceans offshore, the grey dolphins the
-  Ascarths and Gala already carry), and what West Izol carries (`src/regional-wildlife.js`: headland hill-sheep, shore
+  Ascarths and Gala already carry), and what West Izol carries (`src/world/life/regional-wildlife.js`: headland hill-sheep, shore
   gulls, gorse hares). The highland tribes' flocks are stock - **not yours**.
 
 ## What West Izol already put in East Izol - adopt it, do not duplicate it
 
-West Izol (`src/izol-world.js`, `src/izol-scenery.js`) was built while East Izol was unbuilt and reaches into it:
+West Izol (`src/content/regions/izol/izol-world.js`, `src/content/regions/izol/izol-scenery.js`) was built while East Izol was unbuilt and reaches into it:
 
-1. **The Three Presences** (`THREE_PRESENCES` in `src/izol-world.js`): three skyline props at (520, 1690), (588, 1866)
+1. **The Three Presences** (`THREE_PRESENCES` in `src/content/regions/izol/izol-world.js`): three skyline props at (520, 1690), (588, 1866)
    and (566, 1990), tops at 122, 136 and 116 m, built as seven-sided meshes with no colliders ("a skyline, not
    scenery"); the northern one stands on the atlas's mountain hex (10, 125). They are seen from West Izol's
    Sightstone (380, 1802) "all three at once". **The ground agent makes them real ground** at the same places, heights
    and profiles (width, depth, lean), each distinct, rock at height, and then retires the props with the narrowest
-   change in `src/izol-scenery.js` (build them only while East Izol is unbuilt), so nothing doubles. The Sightstone
+   change in `src/content/regions/izol/izol-scenery.js` (build them only while East Izol is unbuilt), so nothing doubles. The Sightstone
    view must still show all three.
 2. **The Hearth Road** (`IZOL_ROAD`) ends at (492, 1892), "toward the island's centre and the Hearthstone, which is
    outside the built world". Roads are owned: do not extend it. Its end must stay on walkable ground that meets the
@@ -111,11 +111,11 @@ West Izol (`src/izol-world.js`, `src/izol-scenery.js`) was built while East Izol
 
 ## The ground agent
 
-**You own**: `src/east-izol-world.js`, East Izol's rows in `src/region-layout.js` (biome), `src/region-world.js`
-(`REGION_TERRAIN`, `REGION_TEXT`) and `src/build-status.js`, `tests/own-sky.js` (only for a sky of its own),
-`tests/east-izol-world.test.js`, the East Izol lines in `src/world-terrain.js`, the East Izol probes in
-`tests/southwest-world.test.js` (the tint guard), the Presences' retirement in `src/izol-scenery.js`, and - only if you
-propose it and say why - East Izol's entry in `CLIMB_REGIONS` (`src/climbing.js`). Small byte-preserving edits on your
+**You own**: `src/content/regions/east-izol/east-izol-world.js`, East Izol's rows in `src/world/terrain/region-layout.js` (biome), `src/world/terrain/region-world.js`
+(`REGION_TERRAIN`, `REGION_TEXT`) and `src/dev/tools/build-status.js`, `tests/own-sky.js` (only for a sky of its own),
+`tests/east-izol-world.test.js`, the East Izol lines in `src/world/terrain/world-terrain.js`, the East Izol probes in
+`tests/southwest-world.test.js` (the tint guard), the Presences' retirement in `src/content/regions/izol/izol-scenery.js`, and - only if you
+propose it and say why - East Izol's entry in `CLIMB_REGIONS` (`src/gameplay/movement/climbing.js`). Small byte-preserving edits on your
 own lines; never rebuild a shared file; check `git diff --stat`.
 
 1. **The interior**: rising from the coast to the central heights; the Three Presences as three isolated, distinct
@@ -140,8 +140,8 @@ own lines; never rebuild a shared file; check `git diff --stat`.
 
 ## The life agent
 
-**You own**: `src/east-izol-scenery.js`, `src/east-izol-wildlife.js`, `tests/east-izol-life.test.js`, and in
-`src/west-regions-life.js` only what a new species needs. Do not edit any other shared file.
+**You own**: `src/content/regions/east-izol/east-izol-scenery.js`, `src/content/regions/east-izol/east-izol-wildlife.js`, `tests/east-izol-life.test.js`, and in
+`src/content/regions/western-regions/west-regions-life.js` only what a new species needs. Do not edit any other shared file.
 
 1. **Scenery**, natural only, by the Mediterranean climate and the stone: sea turf and short pasture on the softer
    slopes, maquis and garrigue (gorse, thorn, rosemary-like scrub - use West Izol's kit where it fits), rock and scree

@@ -80,43 +80,43 @@ hard-mode language gate is landing.
 The pattern throughout: a pure module (`createX({...})` returning actions plus `snapshot`/
 `restore`, and a `validateXSnapshot`), a hook in `main.js`, and a test that pins the seam.
 
-**Companions** — `src/companions.js`. Who walks with you, the four regard rungs, the ten asks, the
+**Companions** — `src/gameplay/company/companions.js`. Who walks with you, the four regard rungs, the ten asks, the
 dead and their weapons. Host: `companionPlan()` builds the list the mercenary company is made
 from; `placeCompanion` puts each man in the file; `fileOrder` is the placed file.
 `tests/companions.test.js`.
 
-**Company horses** — `src/company-horses.js`. *When you ride, everyone walking with you rides.* No
+**Company horses** — `src/gameplay/company/company-horses.js`. *When you ride, everyone walking with you rides.* No
 save section: a mount is a function of `riding.owned` and who is walking with you. `companyUp(place)`
 in `main.js` is the whole rule and reads `riding.mounted ? since>=turn : since<turn`, which is both
 directions of the mounting stagger. `fileSpotFor` is the file's geometry, pure, so the real ground
 at a real place can be asked the same question a test asks it.
 `tests/company-horses.test.js`, `tests/company-file.test.js`.
 
-**Found weapons** — `src/found-weapons.js`. A presenter that owns nothing and reads from sources;
+**Found weapons** — `src/gameplay/combat/found-weapons.js`. A presenter that owns nothing and reads from sources;
 the first source is `companions.weaponsOnTheGround()`. This is the *only* way a polearm or a staff
 reaches the traveler's hand, because the four who carry them all refuse to trade.
 `tests/found-weapons.test.js`.
 
-**Gear** — `src/gear.js`. Material tiers 0–6 (5 and 6 unnamed slots that nothing sells), three
+**Gear** — `src/gameplay/inventory/gear.js`. Material tiers 0–6 (5 and 6 unnamed slots that nothing sells), three
 armour slots in three weights, `armourOf`, `throughArmour`, `smithStock`, `priceOf`. **The hand
 slot IS the shield.** Host: `getMargins` forwards `armourTurns`, `dodgeScale`, `guardShare`,
 `guardCost`, `hasShield`; `swimTick` spends `dt * gear.windScale`, so plate drowns people.
 `tests/gear.test.js`.
 
-**Smiths** — `src/smith.js`. Three of them share one scene; `SMITH_VOICES` is the only list of who
+**Smiths** — `src/content/quests/roadside/smith.js`. Three of them share one scene; `SMITH_VOICES` is the only list of who
 sells and `sellsHere(id)` is what the host asks. **What a smith sells is a function of the country
 he stands in** (`regionLevel` under the traveler's feet), so the material sentence is generated and
 only the man's own lines are written. Buying is atomic and the host looks the piece up in *today's*
 stock rather than trusting the action string. `tests/smith.test.js`.
 
-**The guard** — `src/combat.js` `guard(held, yaw)`. Held, not pressed: the host offers the key and
+**The guard** — `src/gameplay/combat/combat.js` `guard(held, yaw)`. Held, not pressed: the host offers the key and
 the facing every frame and the module latches nothing. It returns whether the shield is *up*,
 which needs a shield, an idle body and the wind to pay for a blow, and it sets `player.guarding`
 to the same value so nothing can read one and draw the other. Frontal only, within `GUARD_ARC`
 (the same sixty degrees the legionaries' own guard uses). A caught blow does not rock him and buys
 no invulnerable moment. `tests/shield-guard.test.js`.
 
-**Weapon feel** — `src/weapons.js` `WEAPON_TYPES`. `tempo` (how long a swing takes), `arc` (the
+**Weapon feel** — `src/gameplay/combat/weapons.js` `WEAPON_TYPES`. `tempo` (how long a swing takes), `arc` (the
 half-angle it reaches), `room` (clearance needed — only the pike), `locked` (the heavy families'
 third swing cannot be stepped out of). **A weapon that says nothing is the sword**: `tempoOf`,
 `arcOf` and `swingOf` in `combat.js` all default to today's numbers, which is what keeps every
@@ -127,7 +127,7 @@ fight already built untouched. `tests/weapon-feel.test.js`.
 ## 3. Working method, and what it is worth
 
 **Measure headlessly before you render.** A render costs minutes and a picture can be read
-generously. `sourceModule('../src/characters.js')` gives you the real model in node: instantiate
+generously. `sourceModule('../src/content/characters/characters.js')` gives you the real model in node: instantiate
 it, call `animate` across advancing time, and read world positions and facings off it. I found
 every buckler fault that way — wrong height, wrong facing, swallowed by the coat — and the renders
 only confirmed them. Six renders went on a shield I could have placed in one headless sweep.
@@ -162,23 +162,23 @@ heredocs and hides CRs — write patch scripts with the Write tool and detect CR
 
 **Phase 7, teachers and sparring.** Almost everything is already built.
 
-- **Regard and its four rungs** — `src/companions.js`: `RUNGS`, `RUNG_LABELS`, `RUNG_AT`
+- **Regard and its four rungs** — `src/gameplay/company/companions.js`: `RUNGS`, `RUNG_LABELS`, `RUNG_AT`
   (0 / 25 / 60 / 100) and `REGARD`, with the vocabulary `unfamiliar` / `acquainted` / `friendly` /
   `fond` reused from `rena-letters.js`. Regard moves on travelling together, fighting together,
   trading, errands, and the truth about the dead. **The brief's "a lesson at friendship
   milestones" maps onto these rungs directly** — you need no new relationship model.
-- **`MERCENARY_ARMS`** — `src/companions.js`: each companion's `weapon` family, `level` and
+- **`MERCENARY_ARMS`** — `src/gameplay/company/companions.js`: each companion's `weapon` family, `level` and
   `toughness`. Mus is 45, Jerry and Eliana 40, Ciarán / Matt / Ed 35, Chris / Lakota 30,
   Kristen 25 (shield 35), Al 20. **That is your sparring ceiling table already written**: a
   teacher cannot take you past what he is.
-- **Practice ceilings** — `src/combat-skills.js` `ARMS.ceiling`: `post: 5`, `sparring: 20`. The
+- **Practice ceilings** — `src/gameplay/combat/combat-skills.js` `ARMS.ceiling`: `post: 5`, `sparring: 20`. The
   `source` argument threaded through `dealt`, `dodged`, `hurt` and `caught` is what applies them;
   pass `source: 'sparring'` and the ceiling is enforced for you. The brief wants the sparring
   ceiling raised by friendship, so `ceiling.sparring` should become a function of the rung.
 - **`TEACHING_FIGHTS`** — `src/main.js`: the set of encounters a companion is held *out* of, so
   the traveler is taught alone. A sparring match belongs in that set.
 - **Every mercenary already has two lines about his own weapon** — `MERCENARY_STYLES` in
-  `src/mercenaries.js` (`styleLines`). **These are the specification and the copy both.** I took
+  `src/gameplay/company/mercenaries.js` (`styleLines`). **These are the specification and the copy both.** I took
   phase 5's tempo and arc straight from them (Lakota's "strikes twice as often as your sword" is
   literally `tempo: .5`). A lesson should say what that man already says.
 - `arms.learn(id)` returns `{ first }`, and nothing is banked before somebody shows you a skill —

@@ -1,6 +1,6 @@
 # The original brief, verbatim
 
-Saved 2026-09-17 from `Downloads/azhora_game_long_prompt.txt` so it cannot be truncated again. This is the user's voice-to-text brief for the game, exactly as dictated: names are often mis-transcribed (see `NAME_ALIASES` in `src/campaign-world.js` and `docs/brief-review.md` for the readings in use). Later instructions from the user supersede it where they conflict.
+Saved 2026-09-17 from `Downloads/azhora_game_long_prompt.txt` so it cannot be truncated again. This is the user's voice-to-text brief for the game, exactly as dictated: names are often mis-transcribed (see `NAME_ALIASES` in `src/content/chapters/civil-war/campaign-world.js` and `docs/brief-review.md` for the readings in use). Later instructions from the user supersede it where they conflict.
 
 In the source file the brief is preceded by the full text of the novella *The War of Seven Sons*, which is lore and lives at `../world-builder/azhora_lore/history/war_of_seven_sons_novella.md`; it is not copied here.
 

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { createBarrettGeography, validateBarrettGeography, barrettConversation, BARRETT_GEOGRAPHY_COOLDOWN } from '../src/barrett-geography.js';
-import { BARRETT, RYAN } from '../src/willowmere-family.js';
-import { createCartography, CHART_XP } from '../src/cartography.js';
-import { createSkills } from '../src/skills.js';
+import { createBarrettGeography, validateBarrettGeography, barrettConversation, BARRETT_GEOGRAPHY_COOLDOWN } from '../src/content/quests/skill-lessons/barrett-geography.js';
+import { BARRETT, RYAN } from '../src/content/quests/homes/willowmere-family.js';
+import { createCartography, CHART_XP } from '../src/ui/map/cartography.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
 
 const regions = [{ name: 'Drent', centerX: 0, centerY: 0 }, { name: 'Cape Thalmagar', centerX: -100, centerY: -100 },
   { name: 'Unbuilt northern land', centerX: 0, centerY: -100 }];

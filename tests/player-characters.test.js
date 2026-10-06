@@ -1,22 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYABLE, PLAYABLE_IDS, SELECTABLE, SELECTABLE_IDS, DEFAULT_PLAYER, PLAYER_ALIASES, canonicalPlayerId, companyFor, playableCharacter, isPlayableId,
-  playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
+  playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter } from '../src/content/characters/player-characters.js';
 import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, landingMateNote, mateIsEscorting,
   LETTER_STAGE, ESCORT_MODES, LANDING_ESCORT, mercenaryById, mercenaryLines,
-  mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
-import { SKILL_IDS, createSkills, skillLevel } from '../src/skills.js';
-import { createLinguist, MAX_PROFICIENCY } from '../src/linguist.js';
-import { INTERPRETER, interpreterFor, LANGUAGES, ORIGIN_LANGUAGE, speaksTheContract, speechFor } from '../src/languages.js';
-import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
-import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
+  mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/gameplay/company/mercenaries.js';
+import { SKILL_IDS, createSkills, skillLevel } from '../src/gameplay/skills/skills.js';
+import { createLinguist, MAX_PROFICIENCY } from '../src/gameplay/skills/language/linguist.js';
+import { INTERPRETER, interpreterFor, LANGUAGES, ORIGIN_LANGUAGE, speaksTheContract, speechFor } from '../src/gameplay/skills/languages.js';
+import { INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { WEAPON_TYPES, createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
 import { sourceModule } from './module-loader.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 /** How main.js builds the player: the chosen one's look on the traveler's role. */
 const buildPlayer = id => { const look = playerLook(id); return createCharacter(look ? { role: 'traveler', tunic: look.tunic, skin: look.skin, look } : {}); };
 
@@ -107,7 +107,7 @@ test('what everyone starts with is real experience in real skills', () => {
       assert.ok(read.level <= read.top);
     }
   }
-  if (missing.size) console.log(`not yet registered in src/skills.js, so not started: ${[...missing].sort().join(', ')}`);
+  if (missing.size) console.log(`not yet registered in src/gameplay/skills/skills.js, so not started: ${[...missing].sort().join(', ')}`);
   assert.deepEqual(startingSkills('cromb'), {}, 'Cromb starts with the sword and nothing else');
   assert.ok(started > 0, 'somebody begins the road already knowing something');
   // Lakota's birding was written as experience so that it would survive the table growing
@@ -455,7 +455,7 @@ test('the man at your shoulder is the interpreter, unless you are him', () => {
       assert.equal(who, INTERPRETER.npcId);
     }
   }
-  // What he is worth, measured the way src/linguist.js measures it: beside you and in range.
+  // What he is worth, measured the way src/gameplay/skills/language/linguist.js measures it: beside you and in range.
   const linguist = createLinguist();
   const speech = linguist.speech({ id: 'harbormaster', name: 'Jojo', modelRole: 'harbormaster' }, 'Drent');
   const mara = { x: 0, z: 25 }, traveler = { x: 1.2, z: 25.4 };

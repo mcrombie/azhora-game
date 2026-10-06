@@ -34,7 +34,7 @@ still `edge` on the developer's chart, and the only ways in are the F8 tools.
    lettering and cut geometry. Reason: a theology whose whole content is that
    one authority is legitimate and the visible powers are not has no use for a
    likeness, and the alternative — a statue of Balog — would make the Elodi
-   ordinary. Everything in `src/east-suval-world.js` obeys it; there is not one
+   ordinary. Everything in `src/content/regions/east-suval/east-suval-world.js` obeys it; there is not one
    figure carved anywhere in Elod.
 2. **What the Threshold *is*.** A walled court on a stone platform, open to the
    sky, entered from the west, with **one tall opening in its east wall and
@@ -93,7 +93,7 @@ ends and is the Sea-Road Gate.
 | Sevenwalls | **(-205, 690)** | Four terraces, a covered cistern, an olive press. |
 | The shepherds' cistern | **(-150, 850)** | With the fold, below the old ridge lookout. |
 
-**Chart** (`src/map-fog.js`): East Suval had three named areas and now has eight.
+**Chart** (`src/ui/map/map-fog.js`): East Suval had three named areas and now has eight.
 `elod` shrank from r 70 to r 52 and was rewritten; new: `elod-harbour`,
 `north-light`, `sorrow-beach`, `sevenwalls`, `suval-dry-hills`.
 
@@ -103,12 +103,12 @@ ends and is the Sea-Road Gate.
 
 **New**
 
-- `src/east-suval.js` — the region and the city as pure data: the three zones,
+- `src/content/regions/east-suval/east-suval.js` — the region and the city as pure data: the three zones,
   every building, stand, cistern and street, the quay's deck function, the
   breakwater, the outlying places, the scatter rule, and the two stubs
   (`ELOD_SEA_ROUTE`, `ELOD_ADMISSION`).
-- `src/east-suval-world.js` — the three.js scenery.
-- `src/elod-people.js` — twenty-six people, their lines and their conversations.
+- `src/content/regions/east-suval/east-suval-world.js` — the three.js scenery.
+- `src/content/characters/elod-people.js` — twenty-six people, their lines and their conversations.
 - `tests/east-suval.test.js` — ten tests.
 - `docs/east-suval-report.md` — this.
 
@@ -116,21 +116,21 @@ ends and is the Sea-Road Gate.
 
 | File | Change |
 | --- | --- |
-| `src/region-world.js` | Added `ELOD_TERRACE` beside `COBBLE_TERRACE` and into `TERRAIN_PADS`; gave East Suval a `byTerrain.hills` profile (the southern ridges stand higher and barer); rewrote `REGION_TEXT['East Suval']` (spawn now the city, plus the new npcIds and landmarks); rewrote the `elod-gate` landmark's text. |
-| `src/region-layout.js` | East Suval's biome gains `ownScatter: true`, a higher `rocksPerHex`, `undergrowth: 'aromatic-scrub'`, and a truthful note. |
+| `src/world/terrain/region-world.js` | Added `ELOD_TERRACE` beside `COBBLE_TERRACE` and into `TERRAIN_PADS`; gave East Suval a `byTerrain.hills` profile (the southern ridges stand higher and barer); rewrote `REGION_TEXT['East Suval']` (spawn now the city, plus the new npcIds and landmarks); rewrote the `elod-gate` landmark's text. |
+| `src/world/terrain/region-layout.js` | East Suval's biome gains `ownScatter: true`, a higher `rocksPerHex`, `undergrowth: 'aromatic-scrub'`, and a truthful note. |
 | `src/world.js` | Import + one call to `createEastSuvalScenery`; Elod's quay in `heightAt`; the places, the stands and `eastSuvalMetrics`/`elodQuay`/`elodLanding` on the returned world. |
-| `src/world-regions.js` | Deleted the old Elod placeholder (two piers, a lintel and three timber cottages). |
-| `src/map-fog.js` | Five new areas, one rewritten. |
-| `src/build-status.js` | East Suval's entry, still `edge`, now honest about what is behind the gate and what is shut. |
+| `src/world/terrain/world-regions.js` | Deleted the old Elod placeholder (two piers, a lintel and three timber cottages). |
+| `src/ui/map/map-fog.js` | Five new areas, one rewritten. |
+| `src/dev/tools/build-status.js` | East Suval's entry, still `edge`, now honest about what is behind the gate and what is shut. |
 | `src/main.js` | Four small anchored patches: the import, `npcData.push`, one line in `conversation()`, and the testing-panel button — plus the `roadViews` entry `elod`, which pointed at **(-48, 360)** (open water in Peblos since the world rescale) and now points at Elod, with four more views beside it. |
 | `index.html` | One testing-panel button. |
-| `src/developer-mode.js` | The ghost-flight point for `suval` was **(-120, 340)**, also stale water; now (-56, 636). |
+| `src/dev/tools/developer-mode.js` | The ghost-flight point for `suval` was **(-120, 340)**, also stale water; now (-56, 636). |
 | `main.cjs` | Five view names added to the `--road-review` list. |
 | `package.json` | `tests/east-suval.test.js` registered. |
 
-Nothing was touched in `PLAYABLE_REGIONS`, `REGION_IDS`, `scripts/`, `src/closed-border.js`,
-`src/frontier.js`, `src/frontier-works.js`, `src/town-life.js`, `src/characters.js`
-or `src/signs.js`.
+Nothing was touched in `PLAYABLE_REGIONS`, `REGION_IDS`, `scripts/`, `src/world/travel/closed-border.js`,
+`src/content/regions/minora-frontier/frontier.js`, `src/content/regions/minora-frontier/frontier-works.js`, `src/world/life/town-life.js`, `src/content/characters/characters.js`
+or `src/world/scenery/signs.js`.
 
 ---
 
@@ -292,7 +292,7 @@ staying out of the built places.
    the regional-life pass. Nothing was added there.
 5. **The frontier's inside** gained two people and a discovery entry, and
    nothing else: the ditch, the gate, the guard house, the stable and the beacon
-   are `src/frontier-works.js`'s, untouched.
+   are `src/content/regions/minora-frontier/frontier-works.js`'s, untouched.
 6. **The outlying coast** is scenery and one keeper each. Sorrow Beach has no
    fishing, Sevenwalls no work, the dry hills no bandits (the campaign says the
    southern hills belong to `hill-bandit`; nothing was placed).
@@ -309,7 +309,7 @@ staying out of the built places.
    `src/main.js` resets the position on a refusal — so a traveler who walks down
    to the waterline out there is **stuck on the beach until they press F8**. This
    has never mattered, because nobody could get into the region. It matters now.
-   - Elod's own waterfront is walled against it: `src/east-suval-world.js`
+   - Elod's own waterfront is walled against it: `src/content/regions/east-suval/east-suval-world.js`
      builds a sea wall of 334 colliders from z 556 to 712, tracking the outline
      one metre inside it, with a visible rubble parapet every third stud. Inside
      that stretch nothing can be reached that is outside the region.
@@ -324,9 +324,9 @@ staying out of the built places.
      so that test would need its probe distance changed.
 2. **Two stale coordinates were fixed in passing** and you should know, because
    they are in files other agents may also be editing: `roadViews.elod` in
-   `src/main.js` and `points.suval` in `src/developer-mode.js` both pointed at
+   `src/main.js` and `points.suval` in `src/dev/tools/developer-mode.js` both pointed at
    open water in Peblos, left over from the 56 m → 100 m world rescale.
-3. **`src/world-regions.js` lost its Elod placeholder.** If another branch has
+3. **`src/world/terrain/world-regions.js` lost its Elod placeholder.** If another branch has
    also touched that function, keep this branch's deletion — the placeholder's
    two piers and three timber cottages now stand inside the real city.
 4. **`REGION_TEXT['East Suval'].spawn` moved** from `at(-214, 294)` (the Luscian
@@ -341,8 +341,8 @@ staying out of the built places.
 6. **`main.cjs`'s `--road-review` list** grew by five view names. Trivial to
    merge, easy to lose.
 7. **Elod needs a boatman** if you want the sea route. What to wire:
-   `src/ferry.js` already carries a fare, a crossing and a two-sided landing.
-   Elod's side is `ELOD_LANDING` in `src/east-suval.js` — `ashore` on the deck,
+   `src/world/travel/ferry.js` already carries a fare, a crossing and a two-sided landing.
+   Elod's side is `ELOD_LANDING` in `src/content/regions/east-suval/east-suval.js` — `ashore` on the deck,
    `stand` for the boatman, `mooring` off the landing stage, all inside the
    outline so the closed border cannot bite. The honest departure is Cobble, not
    Tidehaven: Peblos already has a quay, a boat and a man who rows for copper.

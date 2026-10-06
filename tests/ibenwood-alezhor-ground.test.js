@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
-import {createStreamedTerrain} from '../src/streamed-terrain.js';
-import {createIbenwoodAlezhorGroundSteps,combinedRiverIndex} from '../src/ibenwood-alezhor-ground.js';
-import {finishBuild} from '../src/build-steps.js';
+import {createStreamedTerrain} from '../src/world/loading/streamed-terrain.js';
+import {createIbenwoodAlezhorGroundSteps,combinedRiverIndex} from '../src/content/regions/ibenwood/ibenwood-alezhor-ground.js';
+import {finishBuild} from '../src/world/loading/build-steps.js';
 
 function river(x,z0,z1){return{courses:[{bounds:{minX:x,maxX:x,minZ:z0,maxZ:z1}}],nearest(px,pz,reach=48){const distance=Math.hypot(px-x,Math.max(z0-pz,pz-z1,0));return distance<=reach?{distance}:null;}};}
 const forest=river(38,30,75),coast=river(38,75,125),heightAt=(x,z)=>12-Math.max(0,1-Math.abs(x-38)/10)*4+Math.sin(z*.04);

@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { sourceModule } from './module-loader.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { MERCENARY_ROSTER } from '../src/mercenaries.js';
-import { FREQUENT_WORDS } from '../src/word-frequency.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { MERCENARY_ROSTER } from '../src/gameplay/company/mercenaries.js';
+import { FREQUENT_WORDS } from '../src/gameplay/skills/word-frequency.js';
 import {
   LANGUAGES, LANGUAGE_IDS, DIALECTS, DIALECT_IDS, REGION_LANGUAGE, ORIGIN_LANGUAGE, KINSHIP,
   STARTING_PROFICIENCY, PLACE_NAMES, NEVER_A_NAME, INTERPRETER, SEEDED_WORDS, SIGN_READING_LEVEL,
   forgeWord, wordIn, lexiconFor, hashWord, regionSpeech, speechFor, originLanguage, SIGN_LANGUAGE, LINGUIST_KEY,
-} from '../src/languages.js';
+} from '../src/gameplay/skills/languages.js';
 
-const { ENGLISH_SIGN_LABELS, FOREIGN_SIGN_LABELS, SIGN_LABELS, signText, setSignReader } = await sourceModule('../src/signs.js');
+const { ENGLISH_SIGN_LABELS, FOREIGN_SIGN_LABELS, SIGN_LABELS, signText, setSignReader } = await sourceModule('../src/world/scenery/signs.js');
 
 test('every tongue is whole: a name, a country, a sound and a seed lexicon', () => {
   assert.ok(LANGUAGE_IDS.length >= 8 && LANGUAGE_IDS.length <= 20, 'the world has a plausible number of tongues');
@@ -134,7 +134,7 @@ test('no two of the commonest words share a word in the same tongue', () => {
 });
 
 test('a glossed root is the tongue’s real word and never a forged one', () => {
-  assert.equal(wordIn('suvalen', 'water'), 'cael');          // src/winery.js: Vaervelm Caelazh
+  assert.equal(wordIn('suvalen', 'water'), 'cael');          // src/content/regions/winery/winery.js: Vaervelm Caelazh
   assert.equal(wordIn('suvalen', 'good'), 'vaer');
   assert.equal(wordIn('suvalen', 'green'), 'velm');
   assert.equal(wordIn('izoli', 'hold'), 'veth');             // Izol's domain: the bond that holds
@@ -214,7 +214,7 @@ test('main.js speaks through the linguist and saves what it learns', async () =>
   assert.match(source, /linguist\.restore\(saved\.linguist/, 'and gives them back');
   assert.match(source, /setSignReader\(/, 'the road asks what the traveler can read');
   assert.match(source, new RegExp(`e\.code===LINGUIST_KEY`), 'and one key shows a line the way it was said');
-  assert.ok(!/'KeyT'/.test(source.replace(/LINGUIST_KEY/g, '')), 'the toggle key is named once, in src/languages.js');
+  assert.ok(!/'KeyT'/.test(source.replace(/LINGUIST_KEY/g, '')), 'the toggle key is named once, in src/gameplay/skills/languages.js');
   assert.equal(LINGUIST_KEY, 'KeyT');
   // The review log keeps the English: the traveler's own notes are his own language.
   assert.match(source, /reviewLog\.lines\.push\(\{at:Math\.round\(playSeconds\),who:npc\.name,lines:lines\.slice/);

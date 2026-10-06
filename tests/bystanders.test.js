@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat } from '../src/combat.js';
-import { GREENWAY_RAID } from '../src/opening-fights.js';
-import { CAUGHT, SPARED, bystandersFor, createFallen, fightGround, validateFallenSnapshot } from '../src/bystanders.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { GREENWAY_RAID } from '../src/app/startup/opening-fights.js';
+import { CAUGHT, SPARED, bystandersFor, createFallen, fightGround, validateFallenSnapshot } from '../src/gameplay/combat/bystanders.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
@@ -116,7 +116,7 @@ test('the specialists who teach a skill, and those who trade or send the travele
 });
 
 test('a villager who fights holds the weapon they took up', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const tamsin = createCharacter({ role: 'forest-woodcutter', armed: true, wields: 'bearded-axe' });
   assert.ok(tamsin.group.getObjectByName('Bearded axe'), 'the axe is in her hand');
   assert.equal(createCharacter({ role: 'forest-woodcutter' }).group.getObjectByName('Bearded axe'), undefined, 'and only when she fights');

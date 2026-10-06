@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCagneyAutopilot } from '../src/cagney-autopilot.js';
-import { createBenAutopilot } from '../src/ben-autopilot.js';
-import { createEscortMotionChecks } from '../src/escort-motion-checks.js';
-import { createEscortFollower } from '../src/escort-autopilot-follow.js';
-import { LOCOMOTION } from '../src/locomotion-skills.js';
+import { createCagneyAutopilot } from '../src/gameplay/autoplay/cagney-autopilot.js';
+import { createBenAutopilot } from '../src/gameplay/autoplay/ben-autopilot.js';
+import { createEscortMotionChecks } from '../src/dev/checks/escort-motion-checks.js';
+import { createEscortFollower } from '../src/gameplay/autoplay/escort-autopilot-follow.js';
+import { LOCOMOTION } from '../src/gameplay/movement/locomotion-skills.js';
 const novice={walking:LOCOMOTION.walkStart,running:LOCOMOTION.runStart};
 const mastered={walking:LOCOMOTION.walkCap,running:LOCOMOTION.runCap};
-import { CAGNEY_AMBUSH, CAGNEY_QUEST } from '../src/cagney-quest.js';
+import { CAGNEY_AMBUSH, CAGNEY_QUEST } from '../src/content/quests/cagney/cagney-quest.js';
 
 const world={bounds:{minX:-2000,maxX:2000,minZ:-2000,maxZ:2000},colliders:[],heightAt:()=>1.5};
 const base=()=>({mode:'playing',position:{x:0,z:0},quest:{stage:'unmet'},cagney:{x:0,z:2,available:true},

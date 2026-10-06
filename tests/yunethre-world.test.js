@@ -3,15 +3,15 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { YUNETHRE_CELLS, YUNETHRE_TOWN, YUNETHRE_CAMP, YUNETHRE_ARRIVAL, YUNETHRE_PATHS, YUNETHRE_BOUNDS,
- YUNETHRE_WILDLIFE_ZONES, YUNETHRE_LAKE, YUNETHRE_RAID_ROUTE, yunethreOwns, yunethreGround, yunethreReserved, yunethreFeatures } from '../src/yunethre-world.js';
-import { REGION_IDS, REGION_CELLS, REGION_ORDER, regionAt } from '../src/region-world.js';
-import { westWaterSurface } from '../src/west-ground.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { southOremindiGround, SOUTH_OREMINDI_LAKES } from '../src/south-oremindi-world.js';
-import { timberForSpecies } from '../src/wood-species.js';
-import { createWalkSurfaces } from '../src/walk-surfaces.js';
-import { canStand } from '../src/game-state.js';
-const {createYunethreScenery}=await sourceModule('../src/yunethre-scenery.js');
+ YUNETHRE_WILDLIFE_ZONES, YUNETHRE_LAKE, YUNETHRE_RAID_ROUTE, yunethreOwns, yunethreGround, yunethreReserved, yunethreFeatures } from '../src/content/regions/minora-frontier/yunethre-world.js';
+import { REGION_IDS, REGION_CELLS, REGION_ORDER, regionAt } from '../src/world/terrain/region-world.js';
+import { westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { southOremindiGround, SOUTH_OREMINDI_LAKES } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { createWalkSurfaces } from '../src/world/collision/walk-surfaces.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+const {createYunethreScenery}=await sourceModule('../src/content/regions/minora-frontier/yunethre-scenery.js');
 const terrain=groundWithRiver;
 const parent=new THREE.Group(),colliders=[];
 const scenery=createYunethreScenery({parent,heightAt:terrain,colliders});
@@ -68,7 +68,7 @@ test('All sparse grove trees carry actual harvestable species and scenery remain
  assert.deepEqual(second.metrics,scenery.metrics);assert.deepEqual(second.trees.map(t=>t.id),scenery.trees.map(t=>t.id));
 });
 
-const {createWestLife,WEST_LIFE_ZONES}=await sourceModule('../src/west-regions-life.js');
+const {createWestLife,WEST_LIFE_ZONES}=await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 test('Yunethre animals persist and remain grounded through motion, culling and a return visit',()=>{
  const habitatWorld={...world,paths:[],waterAt:()=>null,regionAt:(x,z)=>({name:yunethreOwns(x,z)?'Yunethre':'Other'})};
  const life=createWestLife(new THREE.Scene(),habitatWorld,{zones:YUNETHRE_WILDLIFE_ZONES});

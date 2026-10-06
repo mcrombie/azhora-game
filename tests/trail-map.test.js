@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { projectTrailPoint, trailMapSVG, trailMapSelection, trailMapViewBounds } from '../src/trail-map.js';
+import { projectTrailPoint, trailMapSVG, trailMapSelection, trailMapViewBounds } from '../src/ui/map/trail-map.js';
 
 function model() {
   return { region: { id: 1, name: 'Drent' }, currentRegionId: 1, bounds: { minX: -100, maxX: 100, minZ: -170, maxZ: 50 },
@@ -41,7 +41,7 @@ test('The map separates the main objective, player heading and optional marker w
   const m = model(), before = structuredClone(m), svg = trailMapSVG(m, { selectedId: 'bee-fold' });
   assert.ok(svg.includes('trail-goal-marker')); assert.ok(svg.includes('trail-tracked-marker')); assert.ok(svg.includes('trail-player-marker'));
   // Two golds on the sheet as well: the muster road's pin, and the long road's next stop drawn
-  // with the same filled diamond (src/quest-markers.js).
+  // with the same filled diamond (src/gameplay/quests/quest-markers.js).
   assert.ok(svg.includes('trail-open-goal-marker'), 'the long road is not on the sheet');
   assert.ok(svg.includes('the long way round'));
   const openSelection = trailMapSelection(m, 'long-road-bird-garden');

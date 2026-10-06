@@ -28,7 +28,7 @@ Practice XP comes from actual movement near guards, with sight lines and suspici
 
 ## World authoring contracts
 
-`src/drent-sites.js` is the shared source of world coordinates and NPC records. `world.npcPositions` includes `DRENT_NPC_POSITIONS`; the host adds `DRENT_NPCS` to its cast. All points below are world metres.
+`src/content/regions/drent/drent-sites.js` is the shared source of world coordinates and NPC records. `world.npcPositions` includes `DRENT_NPC_POSITIONS`; the host adds `DRENT_NPCS` to its cast. All points below are world metres.
 
 | Site | x | z |
 | --- | ---: | ---: |

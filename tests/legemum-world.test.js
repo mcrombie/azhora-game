@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { REGION_CELLS,landDistance,hexOwnerAt,regionAt,SEA_LEVEL } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { canStand } from '../src/game-state.js';
-import { LEGEMUM_CELLS,LEGEMUM_BOUNDS,LEGEMUM_LANDMARKS,LEGEMUM_TRAILS,legemumOwns,legemumGround,legemumSlope,legemumTint,legemumShoreTint } from '../src/legemum-world.js';
-import { LEGEMUM_WILDLIFE_ZONES } from '../src/legemum-wildlife.js';
-import { timberForSpecies } from '../src/wood-species.js';
-import { GALA_TELEMONIA_STREAM,GALA_TELEMONIA_MOUTH,TRELOSS_PATCH_REACH,TRELOSS_GULLY,trelossGullyDistance,courseDistance } from '../src/west-regions.js';
-import { WEST_PROFILES,westWaterSurface,courseSample } from '../src/west-ground.js';
+import { REGION_CELLS,landDistance,hexOwnerAt,regionAt,SEA_LEVEL } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { LEGEMUM_CELLS,LEGEMUM_BOUNDS,LEGEMUM_LANDMARKS,LEGEMUM_TRAILS,legemumOwns,legemumGround,legemumSlope,legemumTint,legemumShoreTint } from '../src/content/regions/legemum/legemum-world.js';
+import { LEGEMUM_WILDLIFE_ZONES } from '../src/content/regions/legemum/legemum-wildlife.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { GALA_TELEMONIA_STREAM,GALA_TELEMONIA_MOUTH,TRELOSS_PATCH_REACH,TRELOSS_GULLY,trelossGullyDistance,courseDistance } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES,westWaterSurface,courseSample } from '../src/content/regions/western-regions/west-ground.js';
 import { scopedWorld } from './scoped-world.js';
-import { inTelemoniaBox,borderDepth,TELEMONIA_PATCH_REACH } from '../src/telemonia-world.js';
+import { inTelemoniaBox,borderDepth,TELEMONIA_PATCH_REACH } from '../src/content/regions/telemonia/telemonia-world.js';
 
 test('Legemum respects all 24 atlas cells and preserves neighbouring ground and water beds',()=>{
   assert.equal(LEGEMUM_CELLS.length,24);assert.equal(LEGEMUM_CELLS,REGION_CELLS.Legemum);
@@ -40,8 +40,8 @@ test('Every natural landmark is on dry land and the linking saddles can be walke
 });
 
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createLegemumScenery}=await sourceModule('../src/legemum-scenery.js');
-const {getTreeRegistry}=await sourceModule('../src/tree-registry.js');
+const {createLegemumScenery}=await sourceModule('../src/content/regions/legemum/legemum-scenery.js');
+const {getTreeRegistry}=await sourceModule('../src/world/scenery/tree-registry.js');
 const colliders=[],scenery=createLegemumScenery({parent:new THREE.Group(),heightAt:groundWithRiver,colliders});
 const world={bounds:LEGEMUM_BOUNDS,heightAt:groundWithRiver,colliders};
 
@@ -87,7 +87,7 @@ const trelossWorld=()=>trelossBuilt??=(async()=>{const scene=new THREE.Scene();r
  * **The Treloss reaches the sea** (2026-10-03). Gala's western border stream comes down its last atlas edge
  * between Gala and Legemum to the shore. Built with Gala when Legemum was outland, it stopped forty-two metres
  * short of the coast, and once Legemum had ground of its own it ran into a bank 2.4 m high there. Its mouth
- * (`GALA_TELEMONIA_MOUTH`, src/west-regions.js) carries it on to the water. Asked of a world built as the game
+ * (`GALA_TELEMONIA_MOUTH`, src/content/regions/western-regions/west-regions.js) carries it on to the water. Asked of a world built as the game
  * builds it, scoped to Gala, Legemum and Telemonia, over the stream's last 150 m and the whole of the mouth.
  */
 test('The Treloss runs on to the sea down the Legemum border: one falling water, no wall, banks walked to the shore',async()=>{
@@ -126,7 +126,7 @@ test('The Treloss runs on to the sea down the Legemum border: one falling water,
       assert.ok(Math.abs(H(qx,qz)-H(px,pz))/.5<1,`a cliff ${r.toFixed(1)} m off the Treloss at ${px.toFixed(1)}, ${pz.toFixed(1)}`);
     }
   }
-  // The banks fall with the water (`blend`, src/west-regions.js): on lines six to twelve metres out from the mouth's, both
+  // The banks fall with the water (`blend`, src/content/regions/western-regions/west-regions.js): on lines six to twelve metres out from the mouth's, both
   // sides, every half metre down it, the walked ground rises or falls no more than 0.2 m past the water's own fall beside
   // it. Cut to its nearest sample's level, the channel stepped them by up to 0.55 m wherever one sample handed over.
   const runAt=[0];for(let i=1;i<mouth.length;i++)runAt.push(runAt[i-1]+Math.hypot(mouth[i].x-mouth[i-1].x,mouth[i].z-mouth[i-1].z));
@@ -163,7 +163,7 @@ test('The Treloss runs on to the sea down the Legemum border: one falling water,
   }
   assert.ok(waded>=last.length-3,`${waded} of ${last.length} samples waded`);
   // Gala's scatter and Legemum's cover were laid before the mouth was cut, and what it would drown was moved off it
-  // (src/gala-scenery.js `offTheMouth`, src/legemum-scenery.js `offTreloss`): on the two countries' ground within
+  // (src/content/regions/gala/gala-scenery.js `offTheMouth`, src/content/regions/legemum/legemum-scenery.js `offTreloss`): on the two countries' ground within
   // sixty metres of the mouth, no instance, no blade of cover and no collider stands in the stream's water.
   const wet=(x,z)=>['Gala','Legemum'].includes(hexOwnerAt(x,z))&&[GALA_TELEMONIA_STREAM,GALA_TELEMONIA_MOUTH].some(c=>courseDistance(c,x,z,4)<courseSample(c,x,z).half);
   const close=(x,z)=>Math.hypot(x+1815,z-1463)<60,m=new THREE.Matrix4(),v=new THREE.Vector3();
@@ -187,7 +187,7 @@ test('The Treloss runs on to the sea down the Legemum border: one falling water,
  * the mouth and the stream's last twenty metres was the world's 7.1 m grid, which cannot follow a gully four and a
  * half metres wide: from above, pale triangles of it stood up through the water at two points in five, by up to
  * half a metre, and cut the stream into pieces. The gully draws its own ground now, a metre and a half apart, over
- * the grid sunk beneath it (`TRELOSS_GULLY`, src/west-regions.js; src/gala-scenery.js). Read off the built meshes:
+ * the grid sunk beneath it (`TRELOSS_GULLY`, src/content/regions/western-regions/west-regions.js; src/content/regions/gala/gala-scenery.js). Read off the built meshes:
  * the highest drawn ground - the world's grid, Telemonia's ground or the gully's - and the drawn water.
  */
 test('The Treloss is drawn unbroken to the sea: no drawn ground over its water, and no hole round the ground drawn for it',async()=>{
@@ -226,7 +226,7 @@ test('The Treloss is drawn unbroken to the sea: no drawn ground over its water, 
   // its own, and its cliffs are not this ground's to measure), the drawn ground is the walked ground within what a
   // grid can follow - a metre and a half apart inside, seven metres apart outside, never a hole. And the grid does
   // not come up through it: past the sink the grid is not sunk, and it was the higher surface at a quarter to a half
-  // of the outer ring until that ring was drawn on the grid's own surface (src/gala-scenery.js). Inside the gully's
+  // of the outer ring until that ring was drawn on the grid's own surface (src/content/regions/gala/gala-scenery.js). Inside the gully's
   // ground, off Telemonia's, the grid never stands over it by more than a few centimetres, along a fold of its own,
   // and hardly anywhere at all.
   const B=TRELOSS_GULLY.bounds,R=TRELOSS_PATCH_REACH,owners=new Set();

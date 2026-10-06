@@ -17,14 +17,14 @@ builder can start on, in phases, without asking again.
 
 ## What is already there
 
-The fight is a timing game and stays one (`src/combat.js`):
+The fight is a timing game and stays one (`src/gameplay/combat/combat.js`):
 
 - A three-swing combo, each swing heavier and longer than the last (24 / 26 / 34 damage with the
   simple sword). A swing costs 6 stamina; a dodge costs 25, travels 3 m, and cannot be hurt for
   its first 0.37 s. Stamina is 100 and comes back at 24 a second after a short pause. Health is 100.
 - Every enemy kind has a tell, a strike, a contact moment and a recovery, and they differ: a
   wolf's tell is 0.7 s, an ogre's 1.18 s and it hits for 52.
-- Six weapons exist with their own damage and reach (`src/weapons.js`): forest stick, simple
+- Six weapons exist with their own damage and reach (`src/gameplay/combat/weapons.js`): forest stick, simple
   sword, long dagger, iron mace, bearded axe, greatsword. Wear is written and switched off
   (`WEAPON_WEAR = false`).
 - Each of the ten mercenaries carries a different weapon, has lines explaining how he or she
@@ -76,8 +76,8 @@ still can — a side's drill sergeant, a hunter in Rena — but later, and furth
 
 ### What a level does: margins
 
-Level 1 is exactly today's game. Every number below is a multiplier on what `src/combat.js` and
-`src/weapons.js` say now, rising evenly with level.
+Level 1 is exactly today's game. Every number below is a multiplier on what `src/gameplay/combat/combat.js` and
+`src/gameplay/combat/weapons.js` say now, rising evenly with level.
 
 | What | Level 1 | Level 99 | Skill |
 |---|---|---|---|
@@ -225,13 +225,13 @@ at 1. Proposed, for the user to correct when the character profiles are written:
 
 Each phase stands alone and leaves the game working.
 
-1. **The skills and their arithmetic.** — **built 2026-09-21** (`src/combat-skills.js`,
+1. **The skills and their arithmetic.** — **built 2026-09-21** (`src/gameplay/combat/combat-skills.js`,
    `tests/combat-skills.test.js`). Seven families on the world's table, under "Arms" in the grid,
    with every number in one frozen `ARMS` table at the top of the module so the user can tweak any
    of it in one place. `weapons.profile()` multiplies the weapon's own three-swing damage by the
    family's level; `createCombat` takes a `getMargins` and reads health, wind, the dodge window and
    what a swing costs from it. **Level 1 is today to the digit** — `TODAY` is still written in
-   `src/combat.js` and is what a combat built without margins uses, so every fight test passed
+   `src/gameplay/combat/combat.js` and is what a combat built without margins uses, so every fight test passed
    untouched. Nothing is banked in a skill nobody has shown you, and the weapon works anyway.
    Practice ceilings are in: the straw post pays Blades to 5, sparring to 20, a real fight has no
    ceiling.
@@ -252,9 +252,9 @@ Each phase stands alone and leaves the game working.
 3. **Tiers, armour and smiths.** Items, three armour slots, a smith's shop in Tidehaven first.
 4. **The shield's guard.**
 5. **Tempo and arc** for daggers, staves, spears and pikes, and the pike's wall rule.
-6. **Bows.** — **built 2026-09-21** (`src/archery.js`, `tests/archery.test.js`). See "Phase 6" below.
+6. **Bows.** — **built 2026-09-21** (`src/gameplay/combat/archery.js`, `tests/archery.test.js`). See "Phase 6" below.
 7. **Teachers:** lessons at friendship milestones, sparring and its ceiling. — **built
-   2026-09-21** (`src/teachers.js`, `tests/teachers.test.js`). See "Phase 7" below.
+   2026-09-21** (`src/gameplay/skills/teachers.js`, `tests/teachers.test.js`). See "Phase 7" below.
 
 ## Laws, to be written as tests
 
@@ -275,10 +275,10 @@ Each phase stands alone and leaves the game working.
 ### The smithy in Tidehaven — built
 
 Drent is level 0, so the best thing in the village is what you landed with; bog iron is a country
-up the road (`smithStock`, `src/gear.js`). The smith is **Vulcan** — see "The smiths of myth"
+up the road (`smithStock`, `src/gameplay/inventory/gear.js`). The smith is **Vulcan** — see "The smiths of myth"
 below, which settled the naming that this section first left open.
 
-**The plot was chosen by measurement, not by eye** (`TIDEHAVEN_SMITHY`, `src/region-world.js`).
+**The plot was chosen by measurement, not by eye** (`TIDEHAVEN_SMITHY`, `src/world/terrain/region-world.js`).
 Every standable half-metre of the village was swept and scored on five things: a clear yard, off
 the middle of the street, **off every footpath the village draws**, off the opening raid ground,
 and clear of the queue that comes down the pier. Two findings worth keeping.
@@ -304,7 +304,7 @@ Drent. Review view: `tidehaven-smithy`.
 
 ### The smith, and the buying — built
 
-He stands at his own forge and looks at the street: `src/smith.js`. What he sells is
+He stands at his own forge and looks at the street: `src/content/quests/roadside/smith.js`. What he sells is
 a function of **the country he is standing in** and nothing else — `regionLevel` of the region
 under the traveler's feet — so the same man in better country would sell better iron without a
 line of his own. Drent is level 0, so his whole board is three pieces of light wood and bone: a
@@ -316,7 +316,7 @@ Two small decisions worth writing down:
 
 - **The shape is named where the selling happens.** The tier's name is the *material*, and "light
   wood and bone" is a true description of a cap and a useless name for one. `SLOT_NOUNS` in
-  `src/smith.js` gives the shape — Jack, Cap, Buckler — so `gear.js` keeps saying only what
+  `src/content/quests/roadside/smith.js` gives the shape — Jack, Cap, Buckler — so `gear.js` keeps saying only what
   things are made of.
 - **Buying is atomic.** The money moves only if the piece is a thing the game has and the purse
   covers it, and if the wearing fails the money comes back. Buying for a place already worn
@@ -382,7 +382,7 @@ the hand slot. Two things found by looking rather than by testing are written do
 ## Phase 5 — tempo and arc — built
 
 Three numbers on each weapon, and the mercenaries' own lines are the specification
-(`WEAPON_TYPES`, `src/weapons.js`):
+(`WEAPON_TYPES`, `src/gameplay/combat/weapons.js`):
 
 - **`tempo`** multiplies how long a swing takes. The sword is 1 and is the reference, so a
   traveler with the sword he landed with fights exactly the game he fought before. Lakota says a
@@ -413,7 +413,7 @@ Which found a real gap: `KIT_WEAPON_ITEM` had no entry for `spear`, `spears`, `p
 so **four of the ten companions left nothing behind when they died**. They do now.
 ## Phase 7 — teachers and sparring — built
 
-**The company is the faculty**, written down at last (`src/teachers.js`). Two things hang off it:
+**The company is the faculty**, written down at last (`src/gameplay/skills/teachers.js`). Two things hang off it:
 a **lesson**, which is what a man gives at a regard milestone, and a **bout**, which is sparring.
 
 ### Who teaches what, without a second table
@@ -510,7 +510,7 @@ staff struck at a sword's pace, the greatsword's third swing could be stepped ou
 swung happily in a doorway.
 
 It surfaced because lending a pike whose `room: 2` never arrives makes Matt's second lesson a lie.
-`feelOf(id)` in `src/weapons.js` is now the one list of the five, `profile()` spreads it, and
+`feelOf(id)` in `src/gameplay/combat/weapons.js` is now the one list of the five, `profile()` spreads it, and
 `tests/teachers.test.js` walks every weapon the game has and checks each of the five survives the
 journey. The review view reports the three numbers it is actually fighting with, so a picture can
 be checked against them.
@@ -526,7 +526,7 @@ fight, which is the fix above seen from the outside.
 
 The brief called it the largest single piece, and the reason is that it is the only weapon that is
 not a swing: everything else in this game happens where the traveler is standing, and an arrow
-happens somewhere else, a moment later, and may never arrive. `src/archery.js` is the whole of the
+happens somewhere else, a moment later, and may never arrive. `src/gameplay/combat/archery.js` is the whole of the
 arithmetic; `combat.js` owns the shot inside a fight; nothing else knows anything about it.
 
 ### The four rules
@@ -610,7 +610,7 @@ place-name generator is asked for a person. Tidehaven's smith is **Vulcan**, the
 armourer **Wayland**, Ambron City's **Hephaestus**, and Mern of Ostel is **Goibniu** — his id
 (`ostel-smith`) and every word he says are untouched but his own name. Later forges draw from the
 same well: Ilmarinen, Brokkr and Sindri, Tubal-cain, Svarog, Kothar. The register is
-`MYTH_SMITHS` in `src/smith.js` and a test asserts every seller's shown name is in it; in prose
+`MYTH_SMITHS` in `src/content/quests/roadside/smith.js` and a test asserts every seller's shown name is in it; in prose
 they are still the smith and the armourer, because the name is a name and not a trade.
 
 ### The capital sells better gear — built
@@ -621,7 +621,7 @@ because an imperial capital's racks are stocked by an empire and not by the coun
 gate — and arrows, like every forge. **Not fine steel**: that is a gift from a side you have
 served.
 
-**The exception is one table and nothing else.** `SELLER_TIERS` in `src/smith.js` maps a seller to
+**The exception is one table and nothing else.** `SELLER_TIERS` in `src/content/quests/roadside/smith.js` maps a seller to
 the materials he keeps; a seller with no entry falls through to `tierSoldAt` of the ground he
 stands on. `smithOffers(level, { id })` is the only board-builder there is, `smithStock` is now
 `stockOfTier(tierSoldAt(level))`, and a test compares every other smith's board against
@@ -632,7 +632,7 @@ the host rebuilds *that man's* board from the man and the ground. Fifteen pieces
 arrows: six of wrought iron (plate needs tier 3) and nine of steel, sorted dearest last across
 both grades, so it is one board and not two lists.
 
-**The plot was swept, not chosen** (`AMBRON_FORGE`, `src/ambron.js`). Every metre inside the walls
+**The plot was swept, not chosen** (`AMBRON_FORGE`, `src/content/regions/ambron/ambron.js`). Every metre inside the walls
 was scored for a shed that keeps three metres clear of everything drawn, stands off every street
 corridor but within sight of one, and leaves standable ground at its door. **The east bank offers
 nothing at all** — the old city is solid warehouses, halls and the physic garden — and every plot
@@ -653,7 +653,7 @@ beginning after the border battle is won. It is the only way tier 4 enters the g
 puts it in level-6/7 country and no country with a forge standing in it is within four levels of
 that, so nothing sells it at any price.
 
-**One piece, the body, in mail** (`SIDE_GIFT`, `src/aftermath-chapter.js`). The weight is the
+**One piece, the body, in mail** (`SIDE_GIFT`, `src/content/chapters/chapter-one/aftermath-chapter.js`). The weight is the
 arithmetic's choice. At tier 4 a light jack turns .096 of a blow and a mail coat turns .16; the
 best body piece on any board the traveler has stood at by the border is bog-iron mail at .115. A
 *fine steel* jack would therefore turn **less** than a thing he can buy for seventy-two copper,
@@ -692,7 +692,7 @@ smith sells and every level the game can give, because eight soldiers land a blo
 a dodge is affordable every 1.9 s. Numbers on your side decide that fight, not gear. So it is the
 army's battle, and the army makes up the number.
 
-`src/file-fill.js`, pure. **One constant**: `FILE_FLOOR = 6`, which the hunter measured and
+`src/gameplay/combat/file-fill.js`, pure. **One constant**: `FILE_FLOOR = 6`, which the hunter measured and
 confirmed — the line is identical for the border battle and `solis-sweep`, at a plausible kit and
 a prepared one, and it does not care *who* the six are (0+6, 3+3 and 6+0 all win; anything
 totalling five loses). Fewer than six walking with him and his commander assigns the difference as
@@ -732,7 +732,7 @@ of the traveler's company — more soldiers, never a higher level — so that te
 fight worth ten and a full company is still a climax.* Ten companions won the eight-man line 40 of
 40 at 96 % health in 36 seconds with one man down: a parade.
 
-**One table in `src/border-chapter.js`**, `BORDER_LINE`, indexed by the number of companions
+**One table in `src/content/chapters/chapter-one/border-chapter.js`**, `BORDER_LINE`, indexed by the number of companions
 walking with him: rows 0 to 6 are all **eight**, and above the floor it is **one more soldier a
 companion**, to twelve. A short company meets exactly the battle the fill was measured on, because
 below `FILE_FLOOR` the army is already making his numbers up for him and a battle that grew at the

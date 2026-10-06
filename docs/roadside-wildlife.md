@@ -23,4 +23,4 @@ The previously empty regions now use the existing western animal models and simu
 
 There are 24 new groups and 64 animals. The existing populations in other regions remain intact, and all 17 loaded regions now have ambient wildlife independently of combat encounters. Solis's abandoned Shepherds Fold stays empty as its story describes; the new sheep graze farther inland.
 
-`src/regional-wildlife.js` authors the new habitats from atlas hexes. `src/west-regions-life.js` reuses shared geometry, instancing, terrain checks, pause handling and distance culling. Tests verify regional coverage, actual-world spawn counts and footing, visible transforms, livestock calming and culling. No new per-animal rendering loop or world timer is introduced.
+`src/world/life/regional-wildlife.js` authors the new habitats from atlas hexes. `src/content/regions/western-regions/west-regions-life.js` reuses shared geometry, instancing, terrain checks, pause handling and distance culling. Tests verify regional coverage, actual-world spawn counts and footing, visible transforms, livestock calming and culling. No new per-animal rendering loop or world timer is introduced.

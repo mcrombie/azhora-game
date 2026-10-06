@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills } from '../src/skills.js';
-import { createVisualArts, SYLVIA, SYLVIA_STUDIO, sylviaConversation } from '../src/visual-arts.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createVisualArts, SYLVIA, SYLVIA_STUDIO, sylviaConversation } from '../src/gameplay/skills/performance/visual-arts.js';
 
 test('Sylvia teaches the unified skill through her completed lesson, with no XP shortcut',()=>{
   const skills=createSkills(),arts=createVisualArts({skills});let speech;

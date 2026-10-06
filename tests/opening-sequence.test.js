@@ -4,17 +4,17 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { createMercenaryCompany, MERCENARY_ROSTER, ESCORT_OFFSETS, escortSpotFor } from '../src/mercenaries.js';
-import { BODY } from '../src/bodies.js';
-import { createLivingStory } from '../src/living-story.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createMercenaryCompany, MERCENARY_ROSTER, ESCORT_OFFSETS, escortSpotFor } from '../src/gameplay/company/mercenaries.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
 import { advanceHostClock } from './host-function.js';
-import { INTERPRETER } from '../src/languages.js';
+import { INTERPRETER } from '../src/gameplay/skills/languages.js';
 import {
   SEQUENCE_SECONDS, SHORE_SECONDS, BEATS, SHORE_BEATS, BOAT_PATH, BOAT, BOAT_REST, SPAWN, PIER_HEAD, BELL, LANDED, LOOKS, PHASES,
   CAPTION_LIMITS, PLAYABLE_IDS, DEFAULT_PLAYER, VARIANT_IDS, SEA_LEVEL,
   captionsFor, companionFor, normalisePlayer, variantFor, stateAt, eventsBetween, eventsOf, boatBob, SKIP, SKIP_BY_VARIANT,
-} from '../src/opening-sequence.js';
+} from '../src/app/startup/opening-sequence.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());
@@ -276,7 +276,7 @@ test('the world lets the host move the arrival boat and put it back', () => {
 
 test('the host is wired to the sequence: the caption layer, the Skip button, and every way out of it', () => {
   // The page and the stylesheet the sequence writes into (docs/opening-sequence-build.md step 2).
-  const page = file('index.html'), css = file('src/adventure.css'), main = file('src/main.js');
+  const page = file('index.html'), css = file('src/ui/styles/adventure.css'), main = file('src/main.js');
   for (const id of ['cutscene', 'cutscene-eyebrow', 'cutscene-text', 'skip-cutscene']) {
     assert.ok(page.includes(`id="${id}"`), `index.html has #${id}`);
   }
@@ -315,8 +315,8 @@ test('the host is wired to the sequence: the caption layer, the Skip button, and
   assert.equal(advanceHostClock({ living: clock, mode: 'playing', dt: 1 }), 1, 'the world resumes after landing');
   // The camera is the eye exactly, with no lerp behind it.
   assert.match(main, /else if\(mode==='arriving'&&opening\)\{cameraTarget\.copy\(openingCamera\.position\);cameraFocus\.copy\(openingCamera\.target\);camera\.position\.copy\(cameraTarget\);\}/);
-  // 'arriving' keeps its name: src/autopilot.js answers wait for it and the vitals stay hidden.
-  assert.match(file('src/autopilot.js'), /arriving/);
+  // 'arriving' keeps its name: src/gameplay/autoplay/autopilot.js answers wait for it and the vitals stay hidden.
+  assert.match(file('src/gameplay/autoplay/autopilot.js'), /arriving/);
 });
 
 test('the boat starts a long way out and the sequence ends it at the berth', () => {

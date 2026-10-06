@@ -19,7 +19,7 @@ Ovesos ruling is already settled by the user.
 ## State of play
 
 - **Both are already in the survey.** `scripts/build-region-survey.mjs` lists `'Ovesos'` and
-  `'Oves Desert'` in `PLAYABLE` and `src/region-survey.js` carries their hexes — the same
+  `'Oves Desert'` in `PLAYABLE` and `src/dev/tools/region-survey.js` carries their hexes — the same
   half-finished state Gala was in. **Do not regenerate the survey**; it is correct.
 - Neither has a `REGION_IDS` entry, terrain profile, text, sky, wildlife, map-fog area or
   build-status line. That is this job.
@@ -88,7 +88,7 @@ two-fifths** below the Gala/Ovesos/Oves Desert corner, then a deep-water wall do
 stopping 25 m short of the Lizeem's centre line. There is also a **wadeable desert border stream**
 on the Gala|Oves Desert border and a small Telemonia border stream.
 
-`src/region-rivers.js` already carries the authored courses; **do not author new rivers there.**
+`src/world/terrain/region-rivers.js` already carries the authored courses; **do not author new rivers there.**
 Minor water — a spring line at the hill foot, a seasonal wash with no water in it — is terrain and
 scenery, the way Gala's dry gravel wash and Eer's channels are.
 
@@ -109,9 +109,9 @@ The desert has **no permanent water**. That is the point of it.
 
 ## Wildlife
 
-A new `src/oves-wildlife.js`, zones tagged `region: 'Ovesos'` or `'Oves Desert'`, spread into
-`src/west-regions-life.js` after the Ascarths'. `src/gala-wildlife.js` and
-`src/ascarth-wildlife.js` show the shape; their tests show how a site is held to its ground.
+A new `src/content/regions/oves/oves-wildlife.js`, zones tagged `region: 'Ovesos'` or `'Oves Desert'`, spread into
+`src/content/regions/western-regions/west-regions-life.js` after the Ascarths'. `src/content/regions/gala/gala-wildlife.js` and
+`src/content/regions/ascarth/ascarth-wildlife.js` show the shape; their tests show how a site is held to its ground.
 
 Rigs that exist today: boar, dolphin, duck, egret, goose, gull, harrier, hill-sheep, longhorn,
 nethrani-cattle, otter, plateau-hawk, red-deer, river-fox, sea-plunger, stilt, turkey-vulture,
@@ -127,17 +127,17 @@ backing off needs ~90–150 m of clear room behind it.
 
 ## Registration checklist (every item, or say why not)
 
-`src/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/region-world.js` REGION_IDS (25,
+`src/world/terrain/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/world/terrain/region-world.js` REGION_IDS (25,
 26), REGION_TERRAIN (default + `byTerrain.grassland` for Ovesos, `byTerrain.hills` for the desert
 rim), REGION_TEXT for each (subtitle, spawn on dry ground, description, palette, `npcIds: []`,
-landmarks) · `src/languages.js` a dialect for Ovesos after `gala` (the lore gives the Mittoli
-root *oves-*; the desert has no speech of its own — say so) · `src/developer-atlas.js` LOCALS
-(rows are `[id, label, target, regionId, anchor]`) · `src/map-fog.js` 2–4 areas each (radius
-18–130, > 60 % inside its own region) · `src/build-status.js` (`'early'`) · `src/region-sky.js`
+landmarks) · `src/gameplay/skills/languages.js` a dialect for Ovesos after `gala` (the lore gives the Mittoli
+root *oves-*; the desert has no speech of its own — say so) · `src/dev/tools/developer-atlas.js` LOCALS
+(rows are `[id, label, target, regionId, anchor]`) · `src/ui/map/map-fog.js` 2–4 areas each (radius
+18–130, > 60 % inside its own region) · `src/dev/tools/build-status.js` (`'early'`) · `src/world/environment/region-sky.js`
 if they get a sky — a dry bright `BSh` sky would be the first of its kind; add to **every**
 OWN_SKY list a test pins (`tests/region-sky.test.js` *and* `tests/eer-world.test.js`) ·
-`src/oves-world.js` hooked into the chain in `src/world-terrain.js` · `src/oves-scenery.js`
-hooked in `src/world.js` · `src/oves-wildlife.js` · `tests/oves-world.test.js` ·
+`src/content/regions/oves/oves-world.js` hooked into the chain in `src/world/terrain/world-terrain.js` · `src/content/regions/oves/oves-scenery.js`
+hooked in `src/world.js` · `src/content/regions/oves/oves-wildlife.js` · `tests/oves-world.test.js` ·
 `package.json` test list · `docs/oves-report.md` · a dated entry in `docs/design-answers.md`.
 
 Names: check `world-builder/azhoran_language_profiles.py` for an Ovesi profile before coining
@@ -168,7 +168,7 @@ render at the end if electron is available
 images in `tests/artifacts/`); no autoplays, no long smokes. Take it **after** any final scenery
 tuning — both previous builders photographed before their last change and had nothing to show.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js` and `src/developer-atlas.js` are
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` and `src/dev/tools/developer-atlas.js` are
 CRLF; keep every file as found.
 
 ## Report

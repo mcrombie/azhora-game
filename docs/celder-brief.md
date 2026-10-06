@@ -23,14 +23,14 @@ plain, and two halves shaped by two hands would leave a ridge or a valley along 
 
 | file | exports | wired into |
 |---|---|---|
-| `src/{south,north}-celder-world.js` | `SOUTH_CELDER` / `NORTH_CELDER`, `southCelderOwns(x,z)`, `SOUTH_CELDER_ARRIVAL`, `SOUTH_CELDER_LANDMARKS`, `SOUTH_CELDER_TRAILS`, `SOUTH_CELDER_VIEWS`, `southCelderGround(x, z, incoming, before)`, `southCelderTint(x, z)` (and the same for North) | `src/world-terrain.js` (the ground chain, outermost, and the tint table), `src/world.js` (landmarks), `src/map-fog.js` (landmarks become chart areas), `src/main.js` (views `south-celder-*` / `north-celder-*`) |
+| `src/{south,north}-celder-world.js` | `SOUTH_CELDER` / `NORTH_CELDER`, `southCelderOwns(x,z)`, `SOUTH_CELDER_ARRIVAL`, `SOUTH_CELDER_LANDMARKS`, `SOUTH_CELDER_TRAILS`, `SOUTH_CELDER_VIEWS`, `southCelderGround(x, z, incoming, before)`, `southCelderTint(x, z)` (and the same for North) | `src/world/terrain/world-terrain.js` (the ground chain, outermost, and the tint table), `src/world.js` (landmarks), `src/ui/map/map-fog.js` (landmarks become chart areas), `src/main.js` (views `south-celder-*` / `north-celder-*`) |
 | `src/{south,north}-celder-scenery.js` | `createSouthCelderScenerySteps({ parent, heightAt, renderedGroundHeight, colliders })` returning `{ metrics }` | `src/world.js` `regionBuild('southCelder', …)` |
-| `src/{south,north}-celder-wildlife.js` | `SOUTH_CELDER_WILDLIFE_ZONES` / `NORTH_CELDER_WILDLIFE_ZONES` | `src/west-regions-life.js` |
+| `src/{south,north}-celder-wildlife.js` | `SOUTH_CELDER_WILDLIFE_ZONES` / `NORTH_CELDER_WILDLIFE_ZONES` | `src/content/regions/western-regions/west-regions-life.js` |
 
   The ground chain: `northCelderGround(x, z, southCelderGround(x, z, ground, before), before)`, where
   `before(x, z)` is `groundBeforeCelder` — the ground without either Celder, for measuring a seam (the
-  Varn/Nether pattern). Codex's newest countries are the interface's precedent: read `src/legemum-world.js`,
-  `src/legemum-scenery.js`, `src/legemum-wildlife.js` and how they are wired.
+  Varn/Nether pattern). Codex's newest countries are the interface's precedent: read `src/content/regions/legemum/legemum-world.js`,
+  `src/content/regions/legemum/legemum-scenery.js`, `src/content/regions/legemum/legemum-wildlife.js` and how they are wired.
 
 ## The atlas — measured
 
@@ -45,7 +45,7 @@ plain, and two halves shaped by two hands would leave a ridge or a valley along 
 - **Water**: the atlas draws **small streams along North Celder's eastern border** — 11 edges with West
   Mithala and 6 with South Mithala — and **one edge between the two Celders**, (-2,94)|(-2,95). Nothing else.
   The Mithala builder built those border streams as Mithala's own (`MITHALA_WEST_ARM`, `MITHALA_CELDER_WATER`
-  in `src/west-regions.js`; `docs/mithala-report.md`) when Celder was unbuilt outland — the Treloss lesson
+  in `src/content/regions/western-regions/west-regions.js`; `docs/mithala-report.md`) when Celder was unbuilt outland — the Treloss lesson
   (`docs/design-answers.md`, 2026-10-03): their Celder bank is outland ground until now.
 - The survey window and the world box do not move (both countries are well inside).
 
@@ -72,7 +72,7 @@ plain, and two halves shaped by two hands would leave a ridge or a valley along 
   buffalo**, "a heavy wild bovid of the Mithsla and Celder plains whose northern summer circuit sometimes
   reaches Henborth" (`azhora_lore/fauna/azhoran_fauna_overview.md`, line 73 — read the whole paragraph and
   the file's grassland sections). Derive the rest from that file and from what the built neighbours already
-  carry (Mithala, Yunethre, the West Lotharn: `src/mithala-wildlife.js` and `src/west-regions-life.js`).
+  carry (Mithala, Yunethre, the West Lotharn: `src/content/regions/mithala/mithala-wildlife.js` and `src/content/regions/western-regions/west-regions-life.js`).
 - **Not yours**: Canerd and **its mound** (the lore calls the mound artificial — a made thing), the
   horse-lord houses, herds, studs, farms, quarries, roads, people. Say where Canerd's mound would stand
   ("somewhere on the plain west of central Celder").
@@ -82,12 +82,12 @@ plain, and two halves shaped by two hands would leave a ridge or a valley along 
 
 ## The ground agent
 
-**You own**: `src/south-celder-world.js`, `src/north-celder-world.js`, both countries' rows in
-`src/region-layout.js` (the biome entry), `src/region-world.js` (`REGION_TERRAIN` and `REGION_TEXT` rows) and
-`src/build-status.js`, `tests/own-sky.js` (only if you give them a sky of their own), the Celder probes in
+**You own**: `src/content/regions/south-celder/south-celder-world.js`, `src/content/regions/canerd/north-celder-world.js`, both countries' rows in
+`src/world/terrain/region-layout.js` (the biome entry), `src/world/terrain/region-world.js` (`REGION_TERRAIN` and `REGION_TEXT` rows) and
+`src/dev/tools/build-status.js`, `tests/own-sky.js` (only if you give them a sky of their own), the Celder probes in
 `tests/southwest-world.test.js`, `tests/south-celder-world.test.js`, `tests/north-celder-world.test.js`, the
-Celder lines in `src/world-terrain.js`, and — **only where the seam needs it** — the Mithala border streams in
-`src/west-regions.js` / `src/mithala-world.js`. Edit shared files only on your own lines, with small
+Celder lines in `src/world/terrain/world-terrain.js`, and — **only where the seam needs it** — the Mithala border streams in
+`src/content/regions/western-regions/west-regions.js` / `src/content/regions/mithala/mithala-world.js`. Edit shared files only on your own lines, with small
 byte-preserving edits (read, replace your line, write at once); never rebuild a file from HEAD; check
 `git diff --stat` shows only your lines.
 
@@ -99,7 +99,7 @@ byte-preserving edits (read, replace your line, write at once); never rebuild a 
    stream edge between the two Celders: build it or explain it. Fast and cold means a steeper fall, gravel
    beds, wadeable.
 3. **Every border joins**: half-metre samples along every shared hex edge with a built neighbour, worst step
-   under about half a metre (`eastPyrosSeamMove` in `src/east-pyros-world.js` and the Nether Desert's seam,
+   under about half a metre (`eastPyrosSeamMove` in `src/content/regions/east-pyros/east-pyros-world.js` and the Nether Desert's seam,
    commits `d460241` and `4592af8`, are the method). Unbuilt neighbours: feather to what is there.
 4. **Colour**: `southCelderTint` / `northCelderTint` must paint (the tint guard in `tests/southwest-world.test.js`
    is red until they do), by what decides colour here — terrace, silt fan, swell crest, foothill, stream bank.
@@ -110,8 +110,8 @@ byte-preserving edits (read, replace your line, write at once); never rebuild a 
 
 ## The life agent
 
-**You own**: `src/south-celder-scenery.js`, `src/north-celder-scenery.js`, `src/south-celder-wildlife.js`,
-`src/north-celder-wildlife.js`, `tests/celder-life.test.js`, and in `src/west-regions-life.js` only what a
+**You own**: `src/content/regions/south-celder/south-celder-scenery.js`, `src/content/regions/canerd/north-celder-scenery.js`, `src/content/regions/south-celder/south-celder-wildlife.js`,
+`src/content/regions/canerd/north-celder-wildlife.js`, `tests/celder-life.test.js`, and in `src/content/regions/western-regions/west-regions-life.js` only what a
 new species needs (its rig, its gait). Do not edit any other shared file; if you need a change elsewhere,
 say so in your final message.
 
@@ -120,7 +120,7 @@ say so in your final message.
    grassland), the mineral-silt fans' grass, the streams' margins. Place everything by `heightAt` and
    `world.waterAt` / `westWaterSurface` at build time — **the ground agent is reshaping the ground while you
    work**, so never hard-code a height; keep clear of the trails and landmarks the world modules export.
-   Follow `src/legemum-scenery.js`'s step-wise shape; use instanced meshes for anything repeated.
+   Follow `src/content/regions/legemum/legemum-scenery.js`'s step-wise shape; use instanced meshes for anything repeated.
 2. **Wildlife**: the frostback buffalo (wild, heavy, migratory: its range and a herd that behaves like one),
    and what else the fauna overview and the neighbours support on this plain — grassland birds, a small
    predator, something at the streams. **No domestic stock.** The west's laws hold (`tests/west-life.test.js`:

@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFishingLessons, FISHING_TEACHERS, FISHING_DEMO_SECONDS, fishingLessonChoices, fishingLessonRoute, validateFishingLessonsSnapshot } from '../src/fishing-lessons.js';
-import { createFishing, waterOf } from '../src/fishing-skill.js';
-import { createSkills } from '../src/skills.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createCampcraft } from '../src/campcraft.js';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
-import { INSTRUCTOR_STAND } from '../src/instructor.js';
-import { JEAN_STAND } from '../src/birding.js';
-import { FARMER } from '../src/farming.js';
-import { RYAN } from '../src/willowmere-family.js';
+import { createFishingLessons, FISHING_TEACHERS, FISHING_DEMO_SECONDS, fishingLessonChoices, fishingLessonRoute, validateFishingLessonsSnapshot } from '../src/gameplay/skills/fishing/fishing-lessons.js';
+import { createFishing, waterOf } from '../src/gameplay/skills/fishing/fishing-skill.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { INSTRUCTOR_STAND } from '../src/gameplay/skills/instructor.js';
+import { JEAN_STAND } from '../src/gameplay/skills/birding/birding.js';
+import { FARMER } from '../src/gameplay/skills/farming/farming.js';
+import { RYAN } from '../src/content/quests/homes/willowmere-family.js';
 import { sourceModule } from './module-loader.js';
 const start = { x: 0, z: 0 }, bank = { x: 6, z: 0 }, route = [bank];
 function fixture() {

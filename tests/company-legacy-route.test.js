@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {legacyCompanyProgress} from '../src/company-route.js';
-import {createLivingStory} from '../src/living-story.js';
+import {legacyCompanyProgress} from '../src/gameplay/company/company-route.js';
+import {createLivingStory} from '../src/gameplay/company/living-story.js';
 
 const p=x=>({x,z:0});
 const base={road:[p(0),p(100)],ambush:p(20),bridgeExit:p(45),relay:p(65),

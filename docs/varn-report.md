@@ -15,7 +15,7 @@ The main build includes Varn, its wall garrison, the three pass forts, shut gate
 | `varn-world`, 21 of 22 | "nobody steps off a jamb's top": `west-jamb reaches Amod behind the city, by any fall` (10,646 m², by a fall of 38.9 m off the rim at (-1267, -721)) | **The test's method.** The rims are built in treads and risers (0.7 m, 2.6 m and 3.7 m over the ledge). A lattice a metre apart, reading the face two metres across, took a diagonal step from the first tread onto the second - a rise of 1.28 m in 1.41 - and stepped off the far side. `canWalkSlope` refuses that step, and a traveler moved with `moveCharacter` is stopped at the first riser. With that take-off barred the lattice found five more like it in the next sixty metres of the same rim: it was the lattice, not a place. | The flood takes a step that crosses a riser in the game's own strides (`risers`, tests/lattice-flood.js). The assertion is unchanged. And a traveler with the game's own step and fall is now sent at that rim every three metres for forty, and held to it. |
 | `lotharn-forts`, 11 of 12 | "open the gates...each alone": `varn-pass-gate open alone does not let a walker down to Amod, below Varn` (a fall of 34.8 m) | **Two things.** The lattice (1.5 m) has no point in the wicket (1.2 m; a body has 0.52 m of it): the method. But the fall it reported instead was **real**: 34.8 m off the south-west peak's first ledge at (-1418, -648), where the ledge has no brink and the rim rule built nothing. With the game's own step and fall a traveler slid off it and came down 40 to 45 m onto the Empire's ground, alive with anything over a hundred health. | The wicket is walked with the traveler's own step, both ways, and given to the lattice as a step out and never in; the assertion is unchanged and passes. The slide is closed in the ground, there and nowhere else: `LIP_STOPS` (decision 1, below). |
 | `east-lotharn-peaks`, 4 of 6 | "four summits...": `eastern-peak's bald is walked, not climbed (1.71 at its steepest)` | The rim Varn raises on every brink within its reach stands round the eastern peak's bald too; the law measured the rim as if it were the bald. | The law passes over rim cells, with a note (the stopped agent's own edit, kept in `d219a2f`). The bald itself is held as before. |
-| `east-lotharn-peaks` | "a traveler walks into a cave...": `eastern-high-chimney: never a step (1.75 m)` (and, behind it, the same of `eastern-chamber`) | **The ground.** Both caves open on shelves no wider than the rim: its inner treads stood in the caves' own doors. | No rim stands within two metres of where a cave's line comes out (`DOOR`, src/varn-world.js). What that leaves open is measured in decision 1, below. |
+| `east-lotharn-peaks` | "a traveler walks into a cave...": `eastern-high-chimney: never a step (1.75 m)` (and, behind it, the same of `eastern-chamber`) | **The ground.** Both caves open on shelves no wider than the rim: its inner treads stood in the caves' own doors. | No rim stands within two metres of where a cave's line comes out (`DOOR`, src/content/regions/varn/varn-world.js). What that leaves open is measured in decision 1, below. |
 | `east-lotharn-world`, 11 of 12 | "nobody lives here yet...": `varn-slabs is not a place` | The chart lists the Slabs for the East Lotharn, which is the country they stand in; the range's test looked every listed place up in the range's own module, and the Slabs are described in Varn's. | The test looks in both. The landmark stays on the chart. |
 
 Raising the rim everywhere was not tried again, and the fall rule is as it was.
@@ -47,13 +47,13 @@ And one tool was added to it: `travel(world, { x, z, heading, speed, seconds })`
 
 The full suite was not run, as instructed.
 
-**Files changed on 3 October**: `src/varn-world.js` (the stop; the caves' doors), `tests/lattice-flood.js` (above), `tests/varn-world.test.js` (every flood given the rims as risers; two tests added: "the stop", and "the game's own step and the game's own fall"), `tests/lotharn-forts.test.js` (the wicket; every flood given the rims as risers; one test added: "Varn's reach"), `tests/east-lotharn-peaks.test.js` and `tests/east-lotharn-world.test.js` (one line each, above), and this report. Nothing else: the fall rule, the climbing rule, `src/main.js`, the lore and every other country's source are as they were at `cfa4839`. No assertion that was there was rewritten or removed. Two were given something different to look at, and both are named in the table above: the bald law no longer counts rim cells as bald, and the range's list of places is looked up in Varn's module as well as its own.
+**Files changed on 3 October**: `src/content/regions/varn/varn-world.js` (the stop; the caves' doors), `tests/lattice-flood.js` (above), `tests/varn-world.test.js` (every flood given the rims as risers; two tests added: "the stop", and "the game's own step and the game's own fall"), `tests/lotharn-forts.test.js` (the wicket; every flood given the rims as risers; one test added: "Varn's reach"), `tests/east-lotharn-peaks.test.js` and `tests/east-lotharn-world.test.js` (one line each, above), and this report. Nothing else: the fall rule, the climbing rule, `src/main.js`, the lore and every other country's source are as they were at `cfa4839`. No assertion that was there was rewritten or removed. Two were given something different to look at, and both are named in the table above: the bald law no longer counts rim cells as bald, and the range's list of places is looked up in Varn's module as well as its own.
 
 Source provenance: imported from branch `varn` (originally cut from `land-all` at `01e0578`), including commit `05b71b1` and the later source HEAD `85aede18abd2c9f71bc472252a5b704971eb2085`. The source worktree was left untouched. A final dirty-file refresh was recorded at `2026-10-02T23:06:29-04:00`:
 
 | Source file | SHA-256 at refresh |
 |---|---|
-| `src/varn-world.js` | `541f58168f036055928462b983995a1d3883fb1fb4b8277eb9fd5f445498e704` |
+| `src/content/regions/varn/varn-world.js` | `541f58168f036055928462b983995a1d3883fb1fb4b8277eb9fd5f445498e704` |
 | `tests/varn-world.test.js` | `cdbfd8860949b2993307610006f9b7ae232791e3b744f4d50a650193b138ce1e` |
 
 These hashes identify the imported source, before main-build fixture adaptations and before the work of 3 October. The stopped agent's later edits are kept in commit `d219a2f` (branch `varn`). Of them: the bald law's note was taken as written; reading the face as the game reads it was taken, and bounded; "the rim stops short of a cave's mouth" was taken at two metres instead of six, because at six it opened the eastern chamber's ledge, which is over Amod; and opening both of Varn's gates in the forts' "each alone" assertion was not taken, because it asks less of the wicket than the assertion did.
@@ -87,13 +87,13 @@ No wind comes back on a slab (no ledge, nothing under 31 degrees), so a pitch is
 - *The eastern peak's first ramp, which was the easy way before.* It still starts at the forecourt and still keeps its hold, because it is that peak's only way up. It takes a climber of any level to the first ledge, the shelf and the summit. It no longer takes anyone down: every face off the ways is no-hold, the ways' own shoulders are rimmed, and both floods above start from the valley the ramp starts from.
 - *By a fall, at any health.* A fall costs at most 100 and health runs to 400, so "survivable" means "possible at all": the floods count a way by **any** fall. Inside the reach there is none. One place was found where there was one - the forts' red test had been reporting it - and it is closed:
 
-**The slide, and the stop** (`LIP_STOPS`, src/varn-world.js: the one thing added to the ground on 3 October; the one thing taken off it is the rim in the caves' doors, below). On the south-west peak's first ledge, over the hills between Varn and the Vastos Gate, between x -1420 and -1392, the ledge has no brink. It tips toward its edge at a grade of 0.94 to 1.2 for six or seven metres and then goes over, and the rim rule, which looks for gentle ground and then a cliff, read it as a ledge that slopes. With the game's own step and fall a traveler who walked south off the last gentle ground at (-1418, -648) slid to the edge and came down **42.2 m** (40 to 45 m, by where he left it), took the 100 a fall can cost, and walked on into Vastos and Amod. It is the place the first survey named, (-1426, -648): the rule's rim there stops six metres short.
+**The slide, and the stop** (`LIP_STOPS`, src/content/regions/varn/varn-world.js: the one thing added to the ground on 3 October; the one thing taken off it is the rim in the caves' doors, below). On the south-west peak's first ledge, over the hills between Varn and the Vastos Gate, between x -1420 and -1392, the ledge has no brink. It tips toward its edge at a grade of 0.94 to 1.2 for six or seven metres and then goes over, and the rim rule, which looks for gentle ground and then a cliff, read it as a ledge that slopes. With the game's own step and fall a traveler who walked south off the last gentle ground at (-1418, -648) slid to the edge and came down **42.2 m** (40 to 45 m, by where he left it), took the 100 a fall can cost, and walked on into Vastos and Amod. It is the place the first survey named, (-1426, -648): the rule's rim there stops six metres short.
 
 A rim on the edge would have stopped the fall and kept the man (nobody walks back up 1.1, and the rock gives no hold), so the rim stands at the head of the slide instead: a ridge 3.2 m high and 2.5 m through, 40.5 m long, from (-1427.5, -648.15) to (-1387, -648.15), from the rule's own rim west of the slide to its rim east of it. The ledge either side was already two dead ends (the course above bulges out between them), so nothing that was walked to is cut off. Held three ways: by the plan (`the stop`), by the lattice (the reach, above), and by twelve travelers sent at it from both ends, walking and running, square on and slantwise - none past its line, none hurt, each able to walk away again - with the same traveler sent over the same ground without the lips to show what it was (42.2 m, 100 damage, alive at the bottom).
 
 **The surveys.** Before and after the stop, both massifs were flooded a metre apart from every way up them (the south-west peak, x -1565 to -1255; the eastern massif, x -1108 to -700), each way found down was walked by a traveler with the game's own step and fall, its take-off was barred, and the flood was asked again until it found nothing. Twenty take-offs: six real, all of them the slide; fourteen the lattice's (the traveler stopped at the rim's first riser). After the stop: none real. A tireless climber with the slabs barred found the same twenty and no others. These were run from the scratch directory and are not kept as tests; the reach flood in `lotharn-forts` is what holds the result.
 
-**The caves' doors.** No rim stands within two metres of a cave's mouth (`DOOR`, src/varn-world.js), because on a shelf no wider than the rim the rim stood in the door. On a ledge wider than its rim that changes nothing: the crest is still on the brink. On a narrow shelf it leaves the brink before the door open, as it was before there were rims. Eleven doors are inside the reach. Forty-eight bodies were set down at each and sent off on twenty-four headings, walking and running, and the ground was then flooded from wherever each first came to rest:
+**The caves' doors.** No rim stands within two metres of a cave's mouth (`DOOR`, src/content/regions/varn/varn-world.js), because on a shelf no wider than the rim the rim stood in the door. On a ledge wider than its rim that changes nothing: the crest is still on the brink. On a narrow shelf it leaves the brink before the door open, as it was before there were rims. Eleven doors are inside the reach. Forty-eight bodies were set down at each and sent off on twenty-four headings, walking and running, and the ground was then flooded from wherever each first came to rest:
 
 - At three doors nobody fell: the south-west chamber's, the western chimney's lower, the Olveth passage's southern.
 - At five, bodies fell (29 to 34 of the 48), and none of the Empire's ground is come to from where they landed, by any further fall: the eastern low chimney's two, the western chimney's upper, the central chamber's, the Olveth passage's northern. They are over the mountains' own side.
@@ -103,7 +103,7 @@ A rim on the edge would have stopped the fall and kept the man (nobody walks bac
 
 ### 2. Every gate shut by default
 
-**Built.** One flag, `LOTHARN_PASSES_SHUT` (src/varn-world.js), `true`. Varn's Pass Gate, Varn's Amod Gate, and the gate of each of the three forts read it and nothing else. Varn is a closed place while it is shut (`VARN_CLOSED`, src/closed-border.js), the way East Suval and Feradom are. The Amod Gate keeps a **wicket**: a door 1.2 m wide at the west side of the passage, where the row of colliders that shuts the gate stops short. The stone lets a body through both ways; the closed-place rule refuses the step in and allows the step out.
+**Built.** One flag, `LOTHARN_PASSES_SHUT` (src/content/regions/varn/varn-world.js), `true`. Varn's Pass Gate, Varn's Amod Gate, and the gate of each of the three forts read it and nothing else. Varn is a closed place while it is shut (`VARN_CLOSED`, src/world/travel/closed-border.js), the way East Suval and Feradom are. The Amod Gate keeps a **wicket**: a door 1.2 m wide at the west side of the passage, where the row of colliders that shuts the gate stops short. The stone lets a body through both ways; the closed-place rule refuses the step in and allows the step out.
 
 **Measured** (`tests/varn-world.test.js`, `tests/lotharn-forts.test.js`):
 
@@ -115,7 +115,7 @@ A rim on the edge would have stopped the fall and kept the man (nobody walks bac
 
 ### 3. The garrison
 
-**Built** (src/varn-garrison.js): twenty-eight men-at-arms, the Empire's own `legion-soldier` in mail and plate under the red tabard, with one `legion-officer` on each keep - medieval, never Roman. They are entries in the game's one list of wall figures (`WALL_FIGURES`, src/town-life.js), drawn and animated within ninety-five metres by the one watch that already mans the army's outpost, Elod's frontier and Feradom's pass castles.
+**Built** (src/content/regions/varn/varn-garrison.js): twenty-eight men-at-arms, the Empire's own `legion-soldier` in mail and plate under the red tabard, with one `legion-officer` on each keep - medieval, never Roman. They are entries in the game's one list of wall figures (`WALL_FIGURES`, src/world/life/town-life.js), drawn and animated within ninety-five metres by the one watch that already mans the army's outpost, Elod's frontier and Feradom's pass castles.
 
 | Place | Men | Where |
 |---|---|---|
@@ -208,7 +208,7 @@ shut. Then the caves were added as the ways they are, which a lattice of the sur
 | 2+3 | **The Vastos mouth**, where 2 and 3 come out together | 170 m | (−1660, −584) and (−1505, −653) | Vastos, hex (2,99) | nobody → **the Vastos Gate** |
 | 4 | The Meneth gap, the one break in the long valley's southern wall | 79 m | (−2050, −370) and (−1993, −425) | Meneth | nobody → **the Meneth Gate** |
 | 5 | The western reach | 75 m at its narrowest, 117 m where the wall stands | (−2310, −461) and (−2308, −386) | Isareos (and Yunethre) | nobody → **the Reach Gate** |
-| 6 | **Through the rock**: the passage under the east arm (`col-passage`, src/west-lotharn-caves.js) | a passage 3.6 m wide, 89 m long | in at (−1594, −801) on the col, out at (−1629, −719) in the long valley's eastern reach | the long valley, and by it ways 3, 4 and 5 | nobody → left **inside** the Vastos Gate |
+| 6 | **Through the rock**: the passage under the east arm (`col-passage`, src/content/regions/west-lotharn/west-lotharn-caves.js) | a passage 3.6 m wide, 89 m long | in at (−1594, −801) on the col, out at (−1629, −719) in the long valley's eastern reach | the long valley, and by it ways 3, 4 and 5 | nobody → left **inside** the Vastos Gate |
 
 Feradom's pass castles hold none of these: they are on the East Lotharn's other side, shutting the
 Duchy's own border, and Feradom is a closed country that turns a walker back at its edge.
@@ -252,8 +252,8 @@ leading west and north) and Kemrath's own floor (76 m).
 - **Round the range.** West of the Reach Gate the reach opens onto both Isareos and Yunethre, and north
   of everything lie the Mithala plain and open country. A walker can go round both ranges by the plains.
   That is not a way through the mountains, and no fort answers it.
-- **By falling.** A fall costs at most 100 health (`src/terrain-fall.js`), and a traveler's health runs
-  from 100 to 400 with his toughness (`src/combat-skills.js`). So no height in the game kills a traveler
+- **By falling.** A fall costs at most 100 health (`src/gameplay/movement/terrain-fall.js`), and a traveler's health runs
+  from 100 to 400 with his toughness (`src/gameplay/combat/combat-skills.js`). So no height in the game kills a traveler
   with more than a hundred health. With every gate shut, the least worst fall on any way from the valleys
   to any lowland is **34.2 m** (the ranges flooded 1.5 m apart, in `tests/lotharn-forts.test.js`; 34.9 m on
   the one-metre survey): up the south-west peak's first ramp from the Kemrath saddle, along its first
@@ -269,8 +269,8 @@ leading west and north) and Kemrath's own floor (76 m).
 
 ## 2. Varn
 
-Numbers in `src/varn-world.js` (pure), drawn by `src/varn-scenery.js`, the masonry shared with the forts
-in `src/imperial-masonry.js`. One build step in `src/world.js` (`regionBuild('varn', [10, 20], …)`), after
+Numbers in `src/content/regions/varn/varn-world.js` (pure), drawn by `src/content/regions/varn/varn-scenery.js`, the masonry shared with the forts
+in `src/world/scenery/imperial-masonry.js`. One build step in `src/world.js` (`regionBuild('varn', [10, 20], …)`), after
 Amod and the East Lotharn.
 
 **Where.** The tip of Amod's notch, hex (7,97), where the pass road stopped at (−1150, −792). The city
@@ -330,10 +330,10 @@ a traveler walked at the city side with the game's own step is stopped by it. Wh
 at the mountain's own ledge a return runs out to the jamb's very edge; without those the strip outside it
 could be walked round to the city side, which the first layout allowed.
 
-**And to a climber.** The rule is one function in `src/climbing.js`, `climbForbidden(world, x, z)`, read
+**And to a climber.** The rule is one function in `src/gameplay/movement/climbing.js`, `climbForbidden(world, x, z)`, read
 where a hand goes for a hold (`sampleClimbSurface`) and at every attached step of a climb; the world
-answers it from one table, `src/no-climb-zones.js`, a row to a place. Varn's row is the first cliff
-(below the mountain's first ledge, `src/lotharn-first-course.js`) inside two boxes: x −1310…−1199 and
+answers it from one table, `src/gameplay/movement/no-climb-zones.js`, a row to a place. Varn's row is the first cliff
+(below the mountain's first ledge, `src/content/regions/west-lotharn/lotharn-first-course.js`) inside two boxes: x −1310…−1199 and
 x −1101…−990, z −800…−690.
 
 - From Amod, inside the rule's reach: no way up at all. Every face on that side is the first cliff.
@@ -358,7 +358,7 @@ caught the same thing at the Vastos Gate, where the south-west peak's route pass
 the wall's end two courses up. So the rule takes the first cliff and no more, never a peak's own ramp
 (`RAMPS_KEEP_THEIR_HOLD`, one constant), and Varn's boxes begin at the jambs and run south.
 
-**Gates on one flag.** `LOTHARN_PASSES_SHUT` in `src/varn-world.js`, read by Varn's Pass Gate and by
+**Gates on one flag.** `LOTHARN_PASSES_SHUT` in `src/content/regions/varn/varn-world.js`, read by Varn's Pass Gate and by
 every fort's gate. Default **shut** (section 10).
 
 **Nobody is sealed in.** The city opens onto Amod by the Amod Gate whatever the flag says (a traveler is
@@ -370,7 +370,7 @@ Pass Gate is the pass road's own end and opens back onto Kemrath; the jambs' top
 ## 3. What was changed in the mountains, and in whose country
 
 Measured as the ground with Varn against the ground before it, a metre apart (`groundBeforeVarn`,
-`src/world-terrain.js`). The forts change no ground at all.
+`src/world/terrain/world-terrain.js`). The forts change no ground at all.
 
 | Whose | Hexes | What | Area | By how much |
 |-------|-------|------|------|-------------|
@@ -395,7 +395,7 @@ moving anything else: 101 trees, 43 loose rocks and 268 drawn tufts, stones and 
 
 ## 4. The forts
 
-`src/lotharn-forts.js` (pure) and `src/lotharn-forts-scenery.js`; one build step, after the western
+`src/content/regions/west-lotharn/lotharn-forts.js` (pure) and `src/content/regions/west-lotharn/lotharn-forts-scenery.js`; one build step, after the western
 country (`regionBuild('lotharnForts', [20, 27, 11], …)`).
 
 Each is one straight curtain from cliff to cliff, both ends run up the fallen rock into the first cliff;
@@ -467,27 +467,27 @@ The atlas is unchanged. In the game's own documents: Varn is on the list in `doc
 
 ## 7. Files
 
-**New**: `src/varn-world.js`, `src/varn-scenery.js`, `src/imperial-masonry.js`, `src/lotharn-forts.js`,
-`src/lotharn-forts-scenery.js`, `src/no-climb-zones.js`, `src/lotharn-first-course.js`,
-`src/scenery-clearing.js`, `tests/varn-world.test.js`, `tests/lotharn-forts.test.js`,
+**New**: `src/content/regions/varn/varn-world.js`, `src/content/regions/varn/varn-scenery.js`, `src/world/scenery/imperial-masonry.js`, `src/content/regions/west-lotharn/lotharn-forts.js`,
+`src/content/regions/west-lotharn/lotharn-forts-scenery.js`, `src/gameplay/movement/no-climb-zones.js`, `src/content/regions/west-lotharn/lotharn-first-course.js`,
+`src/world/scenery/scenery-clearing.js`, `tests/varn-world.test.js`, `tests/lotharn-forts.test.js`,
 `tests/lattice-flood.js` (the measuring tool the two tests share), `docs/varn-report.md`.
 
 **Changed, and why** - several are other countries' files:
 
-- `src/world-terrain.js`: Varn's layer in the ground, and `groundBeforeVarn`, the same ground without it.
+- `src/world/terrain/world-terrain.js`: Varn's layer in the ground, and `groundBeforeVarn`, the same ground without it.
 - `src/world.js`: the two build steps; the road; the landmarks; `unclimbableAt` on the world; the fine
   ground's sink; the two neighbours handed `unbuiltGround`. The Varn road is deliberately **not** among
   the lines the countries' scatter keeps off (it would re-seed Amod's): its ground is cleared afterwards.
-- `src/climbing.js`: `climbForbidden`, read in `sampleClimbSurface` and in the attached step.
-- `src/east-lotharn-scenery.js` (the East Lotharn's): its loose stone is judged on the ground as the
+- `src/gameplay/movement/climbing.js`: `climbForbidden`, read in `sampleClimbSurface` and in the attached step.
+- `src/content/regions/east-lotharn/east-lotharn-scenery.js` (the East Lotharn's): its loose stone is judged on the ground as the
   range made it (`kit.unbuiltGround`), one line, so that the jambs do not re-seed the range.
-- `src/amod-scenery.js` (Amod's): its terrace walls are found on the ground as Amod cut it, four lines,
+- `src/content/regions/amod/amod-scenery.js` (Amod's): its terrace walls are found on the ground as Amod cut it, four lines,
   for the same reason; and the Kelmod bar.
-- `src/tree-registry.js`: `remove(id)` - a tree taken out for good, struck off the register.
+- `src/world/scenery/tree-registry.js`: `remove(id)` - a tree taken out for good, struck off the register.
 - `src/main.js`: the review views; `unclimbableAt` handed to the climbing controller; and the count of
   streamed trees replaced by a set, because `remove` shortens the list that count ran along.
-- `src/amod-world.js`, `src/map-fog.js` (one area, Varn), `src/campaign-world.js` (one settlement),
-  `src/region-world.js` (Amod's landmark list), `src/build-status.js` (three countries' entries),
+- `src/content/regions/amod/amod-world.js`, `src/ui/map/map-fog.js` (one area, Varn), `src/content/chapters/civil-war/campaign-world.js` (one settlement),
+  `src/world/terrain/region-world.js` (Amod's landmark list), `src/dev/tools/build-status.js` (three countries' entries),
   `docs/campaign-design.md`, `package.json` (the two tests on the list).
 - `tests/east-lotharn-world.test.js`: the law "no step in the ground off the peaks" passes over the two
   jambs, which are cliffs on purpose (without it: 8 steps counted, 6 of them the jambs' faces, limit 4).
@@ -496,7 +496,7 @@ The atlas is unchanged. In the game's own documents: Varn is on the list in `doc
 
 **For the merge with Telemonia's no-climb rule** (`azhora-game-telemonia`, read only): the two were
 written in the same shape. `climbForbidden` and its two call sites are the same code lines; this side
-answers `world.unclimbableAt` from the table in `src/no-climb-zones.js`, and Telemonia's
+answers `world.unclimbableAt` from the table in `src/gameplay/movement/no-climb-zones.js`, and Telemonia's
 `kethornUnclimbable` becomes one more row of it. The comment above `climbForbidden` differs in two lines.
 
 ---
@@ -620,7 +620,7 @@ answers - the gates' default (all shut), the garrison (twenty-eight men), and fa
      (rims kept) a climber from the Col comes to every door, and with the rims taken off but the mark kept nobody
      does without a fall. The rims fill the shelves as well: walked from its door, the chamber's shelf is 5 m²,
      the high chimney's two together 19 m².
-   - *The way* (`CAVE_WAY`, src/varn-world.js): the mark is lifted on one stretch of rock, the tread of the
+   - *The way* (`CAVE_WAY`, src/content/regions/varn/varn-world.js): the mark is lifted on one stretch of rock, the tread of the
      eastern peak's **fourth ledge** from the top of its fourth ramp (-938, -759) west along the south face to the
      high chimney's lower door (-1037, -797), about 110 m; only that ledge's band of lift, within 2.5 m of the
      line, never on a rim or a rail (358 m² keep a hold). It is a climber's way: about forty short hand's moves

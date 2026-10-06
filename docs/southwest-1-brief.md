@@ -28,13 +28,13 @@ and are not built; so is everything the lore hangs on the Ganesh caravan routes.
 
 - **None of the four is registered or in the survey.** Add all four to `PLAYABLE` in
   `scripts/build-region-survey.mjs` after `'North Mithala'` and regenerate with
-  `node scripts/build-region-survey.mjs`. Never hand-edit `src/region-survey.js`.
+  `node scripts/build-region-survey.mjs`. Never hand-edit `src/dev/tools/region-survey.js`.
 - **Region ids, in this order after `'North Mithala': 31`:** `Navarth: 32`, `'West Pyros': 33`,
   `'Ganesh Desert': 34`, `'Ganesh Plain': 35`.
 - Branch `southwest-1` in its own worktree, cut from **`mithala` (599d192)** — that is main plus
   the West Lotharn plus the four Mithala countries. Never cd into another checkout, never a bare
   `git stash`, **do not commit** — leave the work uncommitted and report.
-- `src/region-levels.js` already carries `West Pyros` and `Ganesh Plain` at level 3; check the
+- `src/world/terrain/region-levels.js` already carries `West Pyros` and `Ganesh Plain` at level 3; check the
   other two and follow whatever it says.
 
 ## What the atlas says (authority; the lore is adjusted to it)
@@ -98,8 +98,8 @@ write is refused, append claim by claim to `docs/lore-adjusted-to-atlas.md` and 
 
 ## Wildlife
 
-A new `src/southwest-wildlife.js` (the later jobs will extend it), zones tagged with each region
-name, spread into `src/west-regions-life.js` after Mithala's. `src/oves-wildlife.js` is the closest
+A new `src/content/regions/southwest/southwest-wildlife.js` (the later jobs will extend it), zones tagged with each region
+name, spread into `src/content/regions/western-regions/west-regions-life.js` after Mithala's. `src/content/regions/oves/oves-wildlife.js` is the closest
 precedent — the Oves Desert is the game's existing dry country, and **what it did about emptiness
 is the model**: a level-4 country with three ranges was the honest dry-year reading, and it said so
 rather than padding. Arid country should feel sparse; that is not a failure.
@@ -116,15 +116,15 @@ west-life chase loop stops at the first failing zone.
 
 ## Registration checklist — four times over
 
-For **each**: `src/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/region-world.js`
+For **each**: `src/world/terrain/region-layout.js` REGION_BIOMES + PLAYABLE_REGIONS · `src/world/terrain/region-world.js`
 REGION_IDS, REGION_TERRAIN (default + `byTerrain` for hills/plains/grassland/forest), REGION_TEXT
 (subtitle, spawn on dry ground, description, palette, `npcIds: []`, landmarks) ·
-`src/developer-atlas.js` LOCALS (`[id, label, target, regionId, anchor]`) · `src/map-fog.js` areas
-(radius 18–130, > 60 % inside its own region) · `src/build-status.js` · `src/region-sky.js` (arid
-country may want its own sky; argue it) · `src/languages.js` (the lore gives Pyros a Tallyss
-tongue; decide and say why) · `src/southwest-world.js` hooked into the chain in
-`src/world-terrain.js` · `src/southwest-scenery.js` hooked in `src/world.js` ·
-`src/southwest-wildlife.js` · `tests/southwest-world.test.js` · `package.json` ·
+`src/dev/tools/developer-atlas.js` LOCALS (`[id, label, target, regionId, anchor]`) · `src/ui/map/map-fog.js` areas
+(radius 18–130, > 60 % inside its own region) · `src/dev/tools/build-status.js` · `src/world/environment/region-sky.js` (arid
+country may want its own sky; argue it) · `src/gameplay/skills/languages.js` (the lore gives Pyros a Tallyss
+tongue; decide and say why) · `src/content/regions/southwest/southwest-world.js` hooked into the chain in
+`src/world/terrain/world-terrain.js` · `src/content/regions/southwest/southwest-scenery.js` hooked in `src/world.js` ·
+`src/content/regions/southwest/southwest-wildlife.js` · `tests/southwest-world.test.js` · `package.json` ·
 `docs/southwest-1-report.md` · a dated entry in `docs/design-answers.md`.
 
 Name the modules `southwest-*` rather than after one country: jobs 2–4 extend them.
@@ -167,7 +167,7 @@ Maps: `node scripts/region-map.mjs minX,minZ,maxX,maxZ [scale] [out.png] [x,z;x,
 electron is available, taken **after** any final scenery tuning; four builders in a row
 photographed before their last change and regretted it. No autoplays, no long smokes.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js` and `src/developer-atlas.js` are
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` and `src/dev/tools/developer-atlas.js` are
 CRLF; keep every file as found.
 
 ## Report

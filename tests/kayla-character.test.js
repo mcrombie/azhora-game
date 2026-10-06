@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createKaylaBear } = await sourceModule('../src/kayla-character.js');
+const { createKaylaBear } = await sourceModule('../src/content/quests/kayla/kayla-character.js');
 const pawNames = ['Left Fore Paw', 'Right Fore Paw', 'Left Hind Paw', 'Right Hind Paw'];
 
 test('Kayla has a large natural bear silhouette and four articulated paws within a small draw budget', () => {

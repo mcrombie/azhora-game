@@ -1,17 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBirding, birdWatcherConversation, BIRD_WATCHER } from '../src/birding.js';
-import { createLakota } from '../src/lakota.js';
-import { createArchaeology, RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED } from '../src/archaeology.js';
-import { createWine } from '../src/wine.js';
-import { createCooking } from '../src/cooking.js';
-import { LAKOTA_KNOWS } from '../src/lakota-knows.js';
+import { createBirding, birdWatcherConversation, BIRD_WATCHER } from '../src/gameplay/skills/birding/birding.js';
+import { createLakota } from '../src/content/quests/lakota/lakota.js';
+import { createArchaeology, RENA_FINDS, RENA_FIND_IDS, RENA_NEEDED } from '../src/gameplay/skills/nature/archaeology.js';
+import { createWine } from '../src/content/quests/wine/wine.js';
+import { createCooking } from '../src/gameplay/skills/crafting/cooking.js';
+import { LAKOTA_KNOWS } from '../src/content/quests/lakota/lakota-knows.js';
 import { LAKOTA_SHEET, OFFER_IDS, OFFER_TOOL, MIND_LIMITS, validOffers, lakotaState, lakotaRequest, cleanReply, readReply, replyCost,
-  memoryRequest, createLakotaMind, validateLakotaMindSnapshot } from '../src/lakota-mind.js';
+  memoryRequest, createLakotaMind, validateLakotaMindSnapshot } from '../src/content/quests/lakota/lakota-mind.js';
 
 const satchel = () => { const bag = {}; return { add(id, n = 1) { bag[id] = (bag[id] ?? 0) + n; return true; }, has: id => (bag[id] ?? 0) > 0, remove(id, n = 1) { bag[id] -= n; return true; } }; };
 const world = () => ({ birding: createBirding(), lakota: known(), archaeology: createArchaeology(), wine: createWine(), cooking: createCooking() });
-/** The traveler has worked out what he is; nothing of his is offered before that (src/lakota.js). */
+/** The traveler has worked out what he is; nothing of his is offered before that (src/content/quests/lakota/lakota.js). */
 const known = () => { const l = createLakota(); l.know(); return l; };
 /** The written menu's choices that lead to each offer. */
 const CHOICE_TO_OFFER = { 'report-rena': 'report-rena', 'learn-archaeology': 'learn-archaeology',

@@ -20,6 +20,7 @@ const r4R7JourneyChecksOnly=smoke&&process.argv.includes('--r4-r7-journey-checks
 const r4R7Captures=[];
 const fastLoadChecksOnly=smoke&&process.argv.includes('--fast-load-checks');
 const loadChoiceChecksOnly=smoke&&process.argv.includes('--load-choice-checks');
+const startupFlowChecksOnly=smoke&&process.argv.includes('--startup-flow-checks');
 const fastLoad=fastLoadChecksOnly||process.argv.includes('--fast-load');
 const catieAutoplayChecksOnly = smoke && process.argv.includes('--catie-autoplay-checks');
 const ariAutoplayChecksOnly = smoke && process.argv.includes('--ari-autoplay-checks');
@@ -156,7 +157,7 @@ let server;
 let mainWindow;
 const errors = [];
 /**
- * What the frame's one catch caught, asked of the page (src/frame-errors.js). A review run
+ * What the frame's one catch caught, asked of the page (src/dev/tools/frame-errors.js). A review run
  * must never write a picture of a broken frame: the fatal panel is only checked at load, and
  * a throw arriving while the camera is placed used to be photographed and filed.
  */
@@ -201,7 +202,7 @@ if (ownsInstance) app.whenReady().then(async () => {
     let pathname;
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); } catch { res.writeHead(400).end(); return; }
     const target = path.resolve(__dirname, '.' + (pathname === '/' ? '/index.html' : pathname));
-    if (!target.startsWith(__dirname + path.sep)) { res.writeHead(403).end(); return; }
+    if (!require('./scripts/public-file.cjs').isPublicFile(__dirname,target)) { res.writeHead(403).end(); return; }
     const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.jpg':'image/jpeg', '.svg':'image/svg+xml' };
     fs.readFile(target, (error, data) => {
       if (error) { res.writeHead(404).end(); return; }
@@ -239,6 +240,7 @@ if (ownsInstance) app.whenReady().then(async () => {
       await win.webContents.executeJavaScript('window.__r4R7CaptureAck='+JSON.stringify(acknowledgment));
     })());
   });
+  if(startupFlowChecksOnly)win.webContents.on('console-message',(_e,level,message)=>{if(level>=3)console.error(message);});
   if(minoraOpeningChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('MINORA_PROGRESS '))console.log(message);if(message.startsWith('MINORA_CAPTURE ')){const name=message.slice(15).replace(/[^a-z0-9-]/gi,'');minoraCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`minora-${name}.png`),image.toPNG())));}});
   if(peninsulaChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('PENINSULA_PROGRESS '))console.log(message);if(message.startsWith('PENINSULA_CAPTURE ')){const name=message.slice(18).replace(/[^a-z0-9-]/gi,'');peninsulaCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`peninsula-${name}.png`),image.toPNG())));}});
   if(telemoniaChecksOnly)win.webContents.on('console-message',(_event,level,message)=>{if(message.startsWith('TELEMONIA_PROGRESS '))console.log(message);if(message.startsWith('TELEMONIA_CAPTURE ')){const name=message.slice(18).replace(/[^a-z0-9-]/gi,'');telemoniaCaptures.push(win.webContents.capturePage().then(image=>fs.writeFileSync(path.join(__dirname,'tests','artifacts',`telemonia-play-${name}.png`),image.toPNG())));}});
@@ -246,7 +248,12 @@ if (ownsInstance) app.whenReady().then(async () => {
   const dwarfCaptures=[];
   win.webContents.on('console-message', (_, level, message) => { if(sylviaIvyChecksOnly&&message.startsWith('IVY_CAPTURE ')){const name=message.slice(12).replace(/[^a-z0-9-]/gi,'');ivyCaptures.push(win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','ivy-'+name+'.png'),img.toPNG())).catch(error=>errors.push('Ivy capture: '+error.message)));} if(countrysideChecksOnly&&message.startsWith('COUNTRYSIDE_CAPTURE ')){const name=message.slice(20).replace(/[^a-z0-9-]/gi,'');countrysideCaptures.push(win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','countryside-'+name+'.png'),img.toPNG())).catch(error=>errors.push('Countryside capture: '+error.message)));} if(northernRegionsChecksOnly&&message.startsWith('NORTHERN_CAPTURE ')){const name=message.slice(17).replace(/[^a-z0-9-]/gi,'');northernCaptures.push(win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','northern-'+name+'.png'),img.toPNG())).catch(error=>errors.push('Northern capture: '+error.message)));} if((jesseCarriageChecksOnly||jesseAutoplayChecksOnly)&&message.startsWith('JESSE_'))console.log(message); if(silverAutoplayChecksOnly&&message.startsWith('SILVER_PROGRESS '))console.log(message); if(jesseCarriageChecksOnly&&message.startsWith('JESSE_CAPTURE ')){const name=message.slice(14).replace(/[^a-z0-9-]/gi,'');win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','jesse-'+name+'.png'),img.toPNG()));} if(catieAutoplayChecksOnly&&message.startsWith('CATIE_CAPTURE ')){const name=message.slice(14).replace(/[^a-z0-9-]/gi,'');win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','catie-'+name+'.png'),img.toPNG()));} if(climbingChecksOnly&&message.startsWith('CLIMB_CAPTURE ')){const name=message.slice(14).replace(/[^a-z0-9-]/gi,'');win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','climb-'+name+'.png'),img.toPNG()));} if(batmanChecksOnly&&message.startsWith('BAT_CAPTURE ')){const name=message.slice(12).replace(/[^a-z0-9-]/gi,'');win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','bat-'+name+'.png'),img.toPNG()));} if((dwarfAutoplayChecksOnly||fastLoadChecksOnly)&&message.startsWith('DWARF_PROGRESS '))console.log(message); if(dwarfAutoplayChecksOnly&&message.startsWith('DWARF_CAPTURE ')){const name=message.slice(14).replace(/[^a-z0-9-]/gi,'');dwarfCaptures.push(win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','dwarf-'+name+'.png'),img.toPNG())));} if (level >= 3) errors.push(message); if ((catieAutoplayChecksOnly && message.startsWith('CATIE_AUTOPLAY_PROGRESS'))||(cagneyAutoplayChecksOnly && message.startsWith('CAGNEY_AUTOPLAY_PROGRESS'))||(addisonAutoplayChecksOnly && message.startsWith('ADDISON_AUTOPLAY_PROGRESS'))||(bearQuestChecksOnly&&message.startsWith('BEAR_'))) console.log(message); if(bearQuestChecksOnly&&message.startsWith('BEAR_CAPTURE ')){const name=message.slice(13).replace(/[^a-z0-9-]/gi,'');win.webContents.capturePage().then(img=>fs.writeFileSync(path.join(__dirname,'tests/artifacts','bear-'+name+'.png'),img.toPNG()));} });
   win.webContents.on('render-process-gone', (_, details) => { console.error(details); app.exit(1); });
-  await win.loadURL(`http://127.0.0.1:${server.address().port}/${smoke || windowTest ? '?test=1'+(unbatchedWorld?'&spatial=0':'')+(process.argv.includes('--touch')?'&touch=1':'')+(loadChoiceChecksOnly?'&load=choose':fastLoad?'&load=fast':'&load=full') : fastLoad?'?load=fast':''}`);
+  if(process.argv.includes('--climate-annex-checks')){
+    win.webContents.on('console-message',(_e,level,message,line,source)=>console.log(level>=3?message+' at '+source+':'+line:message));
+    win.webContents.on('did-finish-load',()=>win.webContents.executeJavaScript('window.addEventListener("error",e=>console.error("ANNEX_TEST_ERROR "+(e.error?.stack||e.message)));').catch(()=>{}));
+  }
+  const annexMode=process.argv.includes('--climate-annex')||process.argv.includes('--climate-annex-checks');
+  await win.loadURL(annexMode?`http://127.0.0.1:${server.address().port}/?scene=climate-annex${smoke?'&test=1':''}`:`http://127.0.0.1:${server.address().port}/${smoke || windowTest ? '?test=1'+(process.argv.includes('--chapter-one-checks')||startupFlowChecksOnly?'&world=campaign':'')+(unbatchedWorld?'&spatial=0':'')+(process.argv.includes('--touch')?'&touch=1':'')+(loadChoiceChecksOnly||startupFlowChecksOnly?'&load=choose':fastLoad?'&load=fast':'&load=full') : fastLoad?'?load=fast':''}`);
   // --mobile: a phone held sideways (844 x 390), for looking at the touch controls and the HUD at that size.
   // --mobile=360x800 is one held upright.
   const mobileArg = process.argv.find(arg => arg === '--mobile' || arg.startsWith('--mobile='));
@@ -270,10 +277,56 @@ if (ownsInstance) app.whenReady().then(async () => {
     }catch(error){console.log('FAST_PROGRESS '+error.message);}finally{reading=false;}},20000);
     win.on('closed',()=>clearInterval(progress));
   }
+  if(smoke&&process.argv.includes('--climate-annex-checks')){
+    const dir=path.join(__dirname,'tests/artifacts');fs.mkdirSync(dir,{recursive:true});
+    try{
+      await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__CLIMATE_ANNEX__?resolve():Date.now()-start>60000?reject(new Error("Annex did not initialize")):setTimeout(poll,100);poll();})');
+      roadStore.handle('set','azhora-road-checkpoint-v1','{"annexIsolationSentinel":true}');
+      const result=await win.webContents.executeJavaScript('import("./src/dev/checks/climate-annex-smoke.js").then(m=>m.checkClimateAnnex(window.__CLIMATE_ANNEX__))');
+      const shots={exterior:'h.reset();h.look(.28,.32,11);',interior:'h.reset();await h.walk([{x:0,z:4.8},{x:0,z:1.5}]);h.look(0,.48,11);',humidity:'h.reset();await h.walk([{x:0,z:1},{x:5.8,z:3.5}]);h.look(-.4,.45,5);',attendant:'h.reset();await h.walk([{x:0,z:1},{x:-3.8,z:1.5}]);h.look(2.5,.3,4);h.interact();',emissary:'h.reset();await h.walk([{x:0,z:1},{x:-4,z:-.5},{x:-6.1,z:-3.3}]);h.look(-.25,.15,3.5);','attendant-work':'h.reset();await h.walk([{x:0,z:1},{x:-3.8,z:1.5}]);h.look(2.1,.48,4.8);',before:'h.reset();await h.walk([{x:0,z:1},{x:.2,z:-.8}]);h.look(.2,.35,5.2);',after:'h.interact();for(let i=0;i<150;i++)h.step(.02);h.look(.2,.35,5.2);'};
+      for(const [name,code] of Object.entries(shots)){
+        await win.webContents.executeJavaScript('(async()=>{const h=window.__CLIMATE_ANNEX__;'+code+'await new Promise(r=>setTimeout(r,250));})()');
+        fs.writeFileSync(path.join(dir,'climate-annex-'+name+'.png'),(await win.webContents.capturePage()).toPNG());
+      }
+      if(errors.length)throw new Error('Annex renderer errors: '+errors.join('; '));
+      if(roadStore.handle('get','azhora-road-checkpoint-v1').value!=='{"annexIsolationSentinel":true}')throw new Error('Prototype changed the saved adventure');
+      result.checks.push('Saved adventure sentinel unchanged throughout play and reset');roadStore.handle('remove','azhora-road-checkpoint-v1');
+      const denied=await win.webContents.executeJavaScript('fetch("/reference-private/2026-10-06-extraction.txt").then(r=>r.status)');
+      if(denied!==403)throw new Error('Private reference was not denied by the real server');
+      result.checks.push('Real game HTTP server denies the private extraction');
+      await win.webContents.executeJavaScript('window.__CLIMATE_ANNEX__.dispose()');
+      await win.loadURL(win.webContents.getURL());
+      await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{let i=0;const poll=()=>window.__CLIMATE_ANNEX__?resolve():i++>100?reject(new Error("Reentry failed")):setTimeout(poll,100);poll();})');
+      const fresh=await win.webContents.executeJavaScript('window.__CLIMATE_ANNEX__.state()');if(fresh.phase!=='leaking')throw new Error('Reentry retained old state');
+      await win.webContents.executeJavaScript('history.replaceState(null,"","?scene=climate-annex&load=full&world=campaign");document.getElementById("annex-exit").click()');
+      await new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
+      if(new URL(win.webContents.getURL()).searchParams.has('scene'))throw new Error('Exit retained the prototype URL');
+      await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>document.querySelector("#opening:not(.hidden)")&&document.querySelector("#loading.hidden")&&document.querySelector("#begin-chapter-one")?resolve():Date.now()-start>600000?reject(new Error("Normal menu did not return")):setTimeout(poll,200);poll();})');
+      const normal=await win.webContents.executeJavaScript('({prototype:!!window.__CLIMATE_ANNEX__,canvas:!!document.getElementById("world"),menu:document.getElementById("opening").className})');
+      if(normal.prototype||!normal.canvas)throw new Error('Prototype survived menu exit');
+      result.checks.push('Dispose, reenter, and leave before helping via Exit to main menu');
+      fs.writeFileSync(path.join(dir,'climate-annex-returned-menu.png'),(await win.webContents.capturePage()).toPNG());
+      fs.writeFileSync(path.join(dir,'climate-annex-checks.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));app.exit(0);
+    }catch(e){console.error(e.stack);fs.writeFileSync(path.join(dir,'climate-annex-failure.png'),(await win.webContents.capturePage()).toPNG());app.exit(1);}
+    return;
+  }
+  if(process.argv.includes('--chapter-one-checks'))win.webContents.on('console-message',(_e,_l,message)=>console.log(message));
+  if(smoke&&process.argv.includes('--chapter-one-checks')){
+    const artifactDir=path.join(__dirname,'tests/artifacts');fs.mkdirSync(artifactDir,{recursive:true});
+    try{
+      await win.webContents.executeJavaScript('new Promise((resolve,reject)=>{const start=Date.now();const poll=()=>window.__AZHORA__?resolve():Date.now()-start>600000?reject(new Error("Chapter renderer did not initialize")):setTimeout(poll,200);poll();})');
+      const result=await win.webContents.executeJavaScript('window.__AZHORA__.chapterOneChecks()');
+      fs.writeFileSync(path.join(artifactDir,'chapter-one-checks.json'),JSON.stringify(result,null,2));
+      fs.writeFileSync(path.join(artifactDir,'chapter-one.png'),(await win.webContents.capturePage()).toPNG());
+      console.log(JSON.stringify(result,null,2));app.exit(result.ok?0:1);
+    }catch(e){console.error(e.stack);fs.writeFileSync(path.join(artifactDir,'chapter-one-failure.png'),(await win.webContents.capturePage()).toPNG());app.exit(1);}
+    return;
+  }
   if (smoke) {
     const artifactDir = path.join(__dirname, 'tests/artifacts'); fs.mkdirSync(artifactDir, { recursive: true });
     const viewStats={};
     try {
+      if(startupFlowChecksOnly){const result=await require('./tests/startup-flow-native.cjs')(win,artifactDir,{fast:fastLoad,menuOnly:process.argv.includes('--startup-menu-only')});fs.writeFileSync(path.join(artifactDir,(result.menuOnly?'startup-menu-':'startup-flow-')+result.mode+'.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
       if(loadChoiceChecksOnly){const result=await require('./tests/loading-choice-native.cjs')(win,artifactDir);fs.writeFileSync(path.join(artifactDir,'loading-choice-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(result.ok&&!errors.length?0:1);return;}
       const result = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const start = Date.now(); const poll = () => {

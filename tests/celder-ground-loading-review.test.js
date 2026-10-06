@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { REGION_IDS, regionAt } from '../src/region-world.js';
+import { REGION_IDS, regionAt } from '../src/world/terrain/region-world.js';
 
 const scene = new THREE.Scene();
 const world = await scopedWorld(scene, [REGION_IDS['South Celder']]);

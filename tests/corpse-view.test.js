@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createCorpses, CORPSE_TIMING } from '../src/corpses.js';
-import { mercenaryById } from '../src/mercenaries.js';
-const { createCorpseView, createCorpseActor } = await sourceModule('../src/corpse-view.js');
-const { createCharacter } = await sourceModule('../src/characters.js');
-const { createStandIn } = await sourceModule('../src/figure-stand-in.js');
-const { createCombatView } = await sourceModule('../src/combat-view.js');
-const { createCorpseHost } = await sourceModule('../src/corpse-host.js');
+import { createCorpses, CORPSE_TIMING } from '../src/gameplay/combat/corpses.js';
+import { mercenaryById } from '../src/gameplay/company/mercenaries.js';
+const { createCorpseView, createCorpseActor } = await sourceModule('../src/gameplay/combat/corpse-view.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
+const { createStandIn } = await sourceModule('../src/world/actors/figure-stand-in.js');
+const { createCombatView } = await sourceModule('../src/gameplay/combat/combat-view.js');
+const { createCorpseHost } = await sourceModule('../src/gameplay/combat/corpse-host.js');
 const world = { heightAt: () => 4 };
 
 test('every combat body type renders at its death position, stays full size and reconstructs after reload', () => {

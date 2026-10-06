@@ -28,27 +28,27 @@ The ground is **bit-identical**: the largest difference on 126,213 sampled point
 | Landmarks on the chart | the central plain; the northern, eastern and southern Presence; the east bay; the wooded folds; the north arm; the east head; the south head |
 
 **New files**:
-- `src/east-izol-world.js`, `src/east-izol-scenery.js`, `src/east-izol-wildlife.js`
+- `src/content/regions/east-izol/east-izol-world.js`, `src/content/regions/east-izol/east-izol-scenery.js`, `src/content/regions/east-izol/east-izol-wildlife.js`
 - `tests/east-izol-world.test.js`, `tests/east-izol-life.test.js`
 - `docs/east-izol-brief.md`
 - the evidence tools `scripts/walk-route.mjs` and `scripts/region-evidence.mjs`, with `docs/region-reviews/routes/celder-loop.json` and `east-izol-trails.json`
 - this report
 
 **Registration and wiring** (small, line-ending-preserving edits). Registration:
-- `scripts/build-region-survey.mjs` and the regenerated `src/region-survey.js`
-- `src/region-layout.js`, `src/region-world.js`
-- `src/developer-atlas.js`, `src/build-status.js` (`environment`), `src/languages.js` (`izoli`)
+- `scripts/build-region-survey.mjs` and the regenerated `src/dev/tools/region-survey.js`
+- `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`
+- `src/dev/tools/developer-atlas.js`, `src/dev/tools/build-status.js` (`environment`), `src/gameplay/skills/languages.js` (`izoli`)
 - `tests/test-manifest.json`
 
 Wiring:
-- `src/world-terrain.js`: the outermost `eastIzolLayer`, `groundBeforeEastIzol`, tint and shore-tint rows.
+- `src/world/terrain/world-terrain.js`: the outermost `eastIzolLayer`, `groundBeforeEastIzol`, tint and shore-tint rows.
 - `src/world.js`: its `regionBuild` step under its own label, "East Izol".
-- `src/map-fog.js` and `src/west-regions-life.js`.
+- `src/ui/map/map-fog.js` and `src/content/regions/western-regions/west-regions-life.js`.
 - `src/main.js`: views; the `-wildlife` view frames a gull colony.
 
 Neighbour edits:
-- `src/climbing.js`: East Izol by name.
-- `src/izol-scenery.js`: two lines; West Izol's Presence props draw only where no ground stands at the peak, and the built world draws none.
+- `src/gameplay/movement/climbing.js`: East Izol by name.
+- `src/content/regions/izol/izol-scenery.js`: two lines; West Izol's Presence props draw only where no ground stands at the peak, and the built world draws none.
 - `tests/developer-atlas.test.js`: its unbuilt example moved from East Izol to Alezhor.
 - `tests/selemis-world.test.js`: one guard line for the new shore-tint row.
 - The East Izol probe in `tests/southwest-world.test.js`.
@@ -209,6 +209,6 @@ Seen in review and left for the reviewer:
 ## Next action
 
 - **Review and integrate** (ChatGPT). Take `29ca691` with or after the Celder pair.
-- **For R10 (West Izol)**: the `izol-world` line-66 assertion; its corner seams near (400, 1876.5); the two-line props change in `src/izol-scenery.js`.
+- **For R10 (West Izol)**: the `izol-world` line-66 assertion; its corner seams near (400, 1876.5); the two-line props change in `src/content/regions/izol/izol-scenery.js`.
 - **For the user**: builder choices 1-8, and the lore wording.
 - **Next build**: Claude starts queue row 4, Alezhor, on top of this delivery. After it, four delivered regions will be waiting (the Celder pair, East Izol, Alezhor), the plan's limit during the initial backlog.

@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { FERADOM_BOX } from '../src/feradom-world.js';
-import { FARMSTEADS, regionalFarmlandClear } from '../src/regional-farmland.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { FERADOM_BOX } from '../src/content/regions/feradom/feradom-world.js';
+import { FARMSTEADS, regionalFarmlandClear } from '../src/world/scenery/regional-farmland.js';
 
-const { createFeradomScenery } = await sourceModule('../src/feradom-scenery.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { createFeradomScenery } = await sourceModule('../src/content/regions/feradom/feradom-scenery.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 
 // Construct only the production Feradom scenery, with its real terrain and colliders.
 // Read its actual indexed triangles independently of the tree's placement callback.

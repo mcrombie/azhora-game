@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { REGIONAL_LIFE_NPCS, regionalLifeConversation } from '../src/regional-life.js';
-import { keepsNpc } from '../src/cast.js';
+import { REGIONAL_LIFE_NPCS, regionalLifeConversation } from '../src/world/life/regional-life.js';
+import { keepsNpc } from '../src/content/characters/cast.js';
 
 const smedley = REGIONAL_LIFE_NPCS.find(npc => npc.id === 'smedley');
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 test('Smedley wears his requested peruke and purple robe, with visible breath and no flame', () => {
   assert.ok(smedley);

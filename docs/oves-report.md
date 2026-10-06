@@ -31,7 +31,7 @@ Read per hex from the World Builder map (`world-builder/map/resources/examples/a
 default and says `Cfb` for almost everything:
 
 **`BSh` on every hex of both countries. Forty-two hexes, one code.** Hot semi-arid steppe, every row
-of both, and `OVES_CLIMATE` in `src/oves-world.js` records all forty-two; the test holds them to the
+of both, and `OVES_CLIMATE` in `src/content/regions/oves/oves-world.js` records all forty-two; the test holds them to the
 map hex for hex and asserts that the set of codes has **one** member. For context the whole quarter
 reads the same: Telemonia `BSh` × 23 + `Csb` × 2, the Nether Desert `BSh` × 26, East Pyros `BSh` × 29.
 
@@ -53,7 +53,7 @@ large numbers" — is what a season would bring, and there are no seasons, so wh
 
 ## The ground, and what was chosen where the atlas is silent
 
-**Profiles** (`REGION_TERRAIN`, src/region-world.js): Ovesos `plains` **base 10 / amp .7 / wave 320**
+**Profiles** (`REGION_TERRAIN`, src/world/terrain/region-world.js): Ovesos `plains` **base 10 / amp .7 / wave 320**
 and `byTerrain.grassland` **16 / 1.6 / 320**; Oves Desert `plains` **12 / .8 / 320** and
 `byTerrain.hills` **22 / 1.6 / 320**. The 16 and the 10 are `docs/six-regions-brief.md`'s own numbers
 ("grass upland at 16 m in the north, falling to the river bottom at 10 in the south"), and they were
@@ -110,7 +110,7 @@ and by a hard hundred-metre keep from the Gala border):
 
 ## The water, and the hand-over Gala left
 
-`src/west-regions.js` adds two courses, both the atlas's own lines, both on a border, and both before
+`src/content/regions/western-regions/west-regions.js` adds two courses, both the atlas's own lines, both on a border, and both before
 Gala's in `WEST_RIVERS`:
 
 - **`OVETH_UPPER`**, the Oveth's upper course: (−2050, 751) down the Ovesos|Oves Desert line to
@@ -210,7 +210,7 @@ wavelengths) and would move every border in the world; not attempted, and still 
 Away from those margins both countries are walkable: **6.1 %** of Ovesos and **9.3 %** of the Oves
 Desert is steeper than 1 in 3, and the desert's share is the rim hills and the channel banks.
 
-## What grows (`src/oves-scenery.js`, its own seeded stream after Gala's)
+## What grows (`src/content/regions/oves/oves-scenery.js`, its own seeded stream after Gala's)
 
 There is no climate to sort anything by, so what decides is which country a point is in and what the
 ground is made of there (`ovesLie`).
@@ -244,7 +244,7 @@ Sorten's bottomland in Ovesos, the soil pockets and the bare rock exposures in t
 changes over forty metres in the desert, which no count per hex can say. Everywhere else it answers
 null and nothing changes.
 
-## The animals (`src/oves-wildlife.js`), every site measured on the built ground
+## The animals (`src/content/regions/oves/oves-wildlife.js`), every site measured on the built ground
 
 | zone | species | where | why |
 |---|---|---|---|
@@ -293,9 +293,9 @@ unchanged; both added to the OWN_SKY lists in `tests/region-sky.test.js` and `te
 · `package.json` · `tests/oves-world.test.js` (new) · `tests/eer-world.test.js` (one assertion: Ovesos
 is built now) · `docs/oves-report.md`, `docs/lore-adjusted-to-atlas.md`, `docs/design-answers.md`.
 
-`src/region-survey.js` was **not** regenerated: both countries were already in `PLAYABLE` and the
-survey already carried their hexes, as the brief says. `src/region-levels.js` already had them (3 and
-4) and `src/campaign-world.js` already had their one-line designs; neither was touched.
+`src/dev/tools/region-survey.js` was **not** regenerated: both countries were already in `PLAYABLE` and the
+survey already carried their hexes, as the brief says. `src/world/terrain/region-levels.js` already had them (3 and
+4) and `src/content/chapters/civil-war/campaign-world.js` already had their one-line designs; neither was touched.
 
 **Two skies**, and they are the first `BSh` skies in the game. Ovesos gets Gala's own steppe air
 (sky 0xc6dad8, haze 0xdad5bc, density .0044 against Gala's .0046), because Gala's northern rows are
@@ -416,7 +416,7 @@ _(see the section below, written after the render)_
    unnamed in the lore and in the atlas, and are called "the southern border stream" and "the Dry
    Gully" in plain words rather than coined.
    **Answered 2026-10-01** (docs/southwest-finish-report.md): the southern border stream is **the
-   Caelin**, *mittoli.roots.flow* ("the flow", `src/languages.js`, built from the `mittoli` profile's own
+   Caelin**, *mittoli.roots.flow* ("the flow", `src/gameplay/skills/languages.js`, built from the `mittoli` profile's own
    `cael` root and `-in` suffix) - and it carries the same name as Gala's reach of it, because the atlas
    draws the two as one chain and they hand over at (-1850, 1039), the way the Oveth's two reaches do.
    The **Dry Gully stays descriptive**: it is a dry cut rather than a watercourse, Standard Mittoli's

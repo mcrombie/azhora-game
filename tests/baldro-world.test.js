@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { BALDRO_CELLS, BALDRO_REGIONS, BALDRO_BOUNDS, BALDRO_KINGDOMS, BALDRO_PATHS, BALDRO_PEAKS, BALDRO_RIVERS,
-  baldroOwns, baldroRegionAt, baldroInset, baldroHeight, baldroSurfaceHeight, baldroSlope, baldroWaterAt } from '../src/baldro-world.js';
-import { REGION_IDS, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS, hexAt, hexCentre, landDistance } from '../src/region-world.js';
-import { LAND_HEXES } from '../src/region-survey.js';
+  baldroOwns, baldroRegionAt, baldroInset, baldroHeight, baldroSurfaceHeight, baldroSlope, baldroWaterAt } from '../src/content/regions/baldro/baldro-world.js';
+import { REGION_IDS, REGION_ORDER, REGION_CELLS, WORLD_BOUNDS, hexAt, hexCentre, landDistance } from '../src/world/terrain/region-world.js';
+import { LAND_HEXES } from '../src/dev/tools/region-survey.js';
 import { WINDOW } from '../scripts/build-region-survey.mjs';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { CLIMBING, createClimbing, sampleClimbSurface, canWalkSlope } from '../src/climbing.js';
-import { shouldStartTerrainFall, createTerrainFall } from '../src/terrain-fall.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { CLIMBING, createClimbing, sampleClimbSurface, canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { shouldStartTerrainFall, createTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
 
 const climbingWorld={ heightAt:baldroSurfaceHeight, regionAt:baldroRegionAt,
   waterAt:(x,z)=>baldroWaterAt(x,z)??.06, bounds:BALDRO_BOUNDS, colliders:[] };

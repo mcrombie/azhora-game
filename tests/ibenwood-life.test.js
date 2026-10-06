@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { REGION_CELLS, hexOwnerAt } from '../src/region-world.js';
-import { IBENWOOD_NAMES, IBENWOOD_GROVES, IBENWOOD_PILOT } from '../src/ibenwood-environment.js';
-import { IBENWOOD_LIFE_ZONES } from '../src/ibenwood-life.js';
+import { REGION_CELLS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { IBENWOOD_NAMES, IBENWOOD_GROVES, IBENWOOD_PILOT } from '../src/content/regions/ibenwood/ibenwood-environment.js';
+import { IBENWOOD_LIFE_ZONES } from '../src/content/regions/ibenwood/ibenwood-life.js';
 
-const { createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const ground = IBENWOOD_LIFE_ZONES.filter(zone => !zone.air);
 const centre = zone => ({ x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 });
 const settled = [IBENWOOD_PILOT, ...IBENWOOD_GROVES];
@@ -32,7 +32,7 @@ test('natural ground wildlife reaches all five Ibenwood regions without dense he
 });
 
 test('Ibenwood habitats use real body radii, stable atlas identities, and bounded roaming ranges', async () => {
-  const second = await import(`../src/ibenwood-life.js?determinism=1`);
+  const second = await import(`../src/content/regions/ibenwood/ibenwood-life.js?determinism=1`);
   assert.deepEqual(second.IBENWOOD_LIFE_ZONES, IBENWOOD_LIFE_ZONES);
   assert.equal(new Set(IBENWOOD_LIFE_ZONES.map(zone => zone.id)).size, IBENWOOD_LIFE_ZONES.length);
   for (const zone of IBENWOOD_LIFE_ZONES) {

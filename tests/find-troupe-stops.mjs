@@ -1,12 +1,12 @@
 // Scratch: find level, open camp spots for the players' wagon near an anchor in each region.
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { FERNWAY_REST, LUMBER_TOWN, SOLIS_ROAD, regionLandmarks } from '../src/region-world.js';
-import { RIMEHOLT } from '../src/pueth-world.js';
-import { NEMMEL } from '../src/elagos-world.js';
-import { OSTEL } from '../src/amod-world.js';
-import { MOROS_WAYSIDE } from '../src/wayside.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { FERNWAY_REST, LUMBER_TOWN, SOLIS_ROAD, regionLandmarks } from '../src/world/terrain/region-world.js';
+import { RIMEHOLT } from '../src/content/regions/pueth/pueth-world.js';
+import { NEMMEL } from '../src/content/regions/ambron/elagos-world.js';
+import { OSTEL } from '../src/content/regions/amod/amod-world.js';
+import { MOROS_WAYSIDE } from '../src/content/quests/roadside/wayside.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

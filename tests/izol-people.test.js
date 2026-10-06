@@ -3,10 +3,10 @@ import assert from 'node:assert/strict';
 import {
   IZOL_NPCS, IZOL_NPC_IDS, CONDITIONAL_NPC_IDS, IZOL_AMBIENT, IZOL_ALTERNATES, PARTISANS,
   izolLines, izolConversation,
-} from '../src/izol-people.js';
-import { createIzolHost } from '../src/izol-host.js';
-import { IZOL_STANDS, IZOL_GENERALS, generalById, generalsStance, RECRUITING_STANDS } from '../src/izol-world.js';
-import { COALITION_MEMBERS, FACTIONS } from '../src/campaign-world.js';
+} from '../src/content/regions/izol/izol-people.js';
+import { createIzolHost } from '../src/content/regions/izol/izol-host.js';
+import { IZOL_STANDS, IZOL_GENERALS, generalById, generalsStance, RECRUITING_STANDS } from '../src/content/regions/izol/izol-world.js';
+import { COALITION_MEMBERS, FACTIONS } from '../src/content/chapters/civil-war/campaign-world.js';
 
 const byId = new Map(IZOL_NPCS.map(npc => [npc.id, npc]));
 const allLines = (control = {}) => IZOL_NPC_IDS.flatMap(id => izolLines(id, control));

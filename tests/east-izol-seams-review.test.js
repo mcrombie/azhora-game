@@ -1,10 +1,10 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { groundWithRiver, groundBeforeEastIzol, legacyEastIzolGroundHeight } from '../src/world-terrain.js';
-import { EAST_IZOL_LINE } from '../src/east-izol-world.js';
-import { regionAt } from '../src/region-world.js';
-import { izolSeamWeight } from '../src/izol-ground.js';
+import { groundWithRiver, groundBeforeEastIzol, legacyEastIzolGroundHeight } from '../src/world/terrain/world-terrain.js';
+import { EAST_IZOL_LINE } from '../src/content/regions/east-izol/east-izol-world.js';
+import { regionAt } from '../src/world/terrain/region-world.js';
+import { izolSeamWeight } from '../src/content/regions/izol/izol-ground.js';
 
 const defects = [
   { x:454.99807206087246,z:1792.8050723743067,nx:-.5,nz:.8660254037844383,old:1.5639517425 },

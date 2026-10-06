@@ -11,18 +11,18 @@ import { scopedWorld } from './scoped-world.js';
  * world's three. The scenery is built here on the world's own ground function, as the game builds it.
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_CELLS, REGION_IDS, regionAt, WORLD_BOUNDS, SEA_LEVEL } = await sourceModule('../src/region-world.js');
-const { groundWithRiver } = await sourceModule('../src/world-terrain.js');
-const { canStand, canSwim, WATERLINE } = await sourceModule('../src/game-state.js');
-const { timberForSpecies } = await sourceModule('../src/wood-species.js');
-const { EAST_IZOL_WILDLIFE_ZONES, eastIzolWildlifeClear } = await sourceModule('../src/east-izol-wildlife.js');
-const GROUND = await sourceModule('../src/east-izol-world.js');
-const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
-const SCENERY = await sourceModule('../src/east-izol-scenery.js');
+const { REGION_CELLS, REGION_IDS, regionAt, WORLD_BOUNDS, SEA_LEVEL } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canStand, canSwim, WATERLINE } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { timberForSpecies } = await sourceModule('../src/gameplay/skills/woodcutting/wood-species.js');
+const { EAST_IZOL_WILDLIFE_ZONES, eastIzolWildlifeClear } = await sourceModule('../src/content/regions/east-izol/east-izol-wildlife.js');
+const GROUND = await sourceModule('../src/content/regions/east-izol/east-izol-world.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
+const SCENERY = await sourceModule('../src/content/regions/east-izol/east-izol-scenery.js');
 const { createEastIzolScenery, createEastIzolScenerySteps, readEastIzolGround, eastIzolTrailDistance, eastIzolWaterAt, eastIzolReserved,
   EAST_IZOL_SIGHTLINES, eastIzolSightline } = SCENERY;
-const { finishBuild } = await sourceModule('../src/build-steps.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { finishBuild } = await sourceModule('../src/world/loading/build-steps.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 
 const NAME = 'East Izol', ZONES = EAST_IZOL_WILDLIFE_ZONES;
 const ground = ZONES.filter(zone => !zone.air && !zone.sea);

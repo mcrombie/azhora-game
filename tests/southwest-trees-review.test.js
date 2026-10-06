@@ -5,16 +5,16 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { REGION_IDS, hexOwnerAt, landDistance } from '../src/region-world.js';
-import { SOUTHWEST_NORTH_REGIONS, MEROSHE_REGIONS, WEST_EDGE_REGIONS, EAST_EDGE_REGIONS, SOUTHWEST_REGIONS, southwestSeamWeight } from '../src/southwest-world.js';
-import { SOUTHWEST_WILDLIFE_ZONES } from '../src/southwest-wildlife.js';
+import { REGION_IDS, hexOwnerAt, landDistance } from '../src/world/terrain/region-world.js';
+import { SOUTHWEST_NORTH_REGIONS, MEROSHE_REGIONS, WEST_EDGE_REGIONS, EAST_EDGE_REGIONS, SOUTHWEST_REGIONS, southwestSeamWeight } from '../src/content/regions/southwest/southwest-world.js';
+import { SOUTHWEST_WILDLIFE_ZONES } from '../src/content/regions/southwest/southwest-wildlife.js';
 import { sourceModule } from './module-loader.js';
-const { GANESH_SHADE_SCRUB } = await sourceModule('../src/ganesh-shade-scrub.js');
-import { canStand } from '../src/game-state.js';
-import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
-import { createWoodcutting, LOG_ITEMS } from '../src/woodcutting.js';
-import { createSkills, MAX_XP } from '../src/skills.js';
-import { createCampcraft } from '../src/campcraft.js';
+const { GANESH_SHADE_SCRUB } = await sourceModule('../src/world/terrain/ganesh-shade-scrub.js');
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWoodcutting, LOG_ITEMS } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { createSkills, MAX_XP } from '../src/gameplay/skills/skills.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
 
 const scene = new THREE.Scene(), world = await scopedWorld(scene, SOUTHWEST_REGIONS.map(name => REGION_IDS[name]));
 scene.updateMatrixWorld(true);
@@ -285,7 +285,7 @@ test('all 63 existing Meroshe thorn roots meet the rendered terrain and keep the
 });
 
 const merosheZones = SOUTHWEST_WILDLIFE_ZONES.filter(zone => MEROSHE_REGIONS.includes(zone.region));
-const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 function dryFooting(animal, zone) {
   if (animal.action === 'fly') {

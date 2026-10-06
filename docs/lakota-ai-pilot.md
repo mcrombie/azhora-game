@@ -2,7 +2,7 @@
 
 Status (2026-09-18): step 1 built, waiting for an API key to run the exam. Nothing in the game uses it yet. Scope: Lakota, the birder of Tidehaven, and nobody else.
 
-Built so far: `src/lakota-mind.js` (sheet, state, offers, request, reply cleaning, memory), `src/lakota-knows.js` (what he knows of the world), `tests/lakota-mind.test.js`, and the exam `scripts/lakota-exam.mjs` (`npm run exam:lakota`; `--dry-run` works without a key).
+Built so far: `src/content/quests/lakota/lakota-mind.js` (sheet, state, offers, request, reply cleaning, memory), `src/content/quests/lakota/lakota-knows.js` (what he knows of the world), `tests/lakota-mind.test.js`, and the exam `scripts/lakota-exam.mjs` (`npm run exam:lakota`; `--dry-run` works without a key).
 
 ## The short version
 
@@ -31,8 +31,8 @@ Built so far: `src/lakota-mind.js` (sheet, state, offers, request, reply cleanin
 
 | Piece | Where | Job |
 |---|---|---|
-| Lakota's mind | `src/lakota-mind.js` (new, pure) | Builds the character sheet and the state block; lists the valid offers; cleans replies; holds his memories with snapshot, restore and validate like every other module. |
-| Conversation | `src/birding.js` | `birdWatcherConversation` gets an optional `mind` in its context and, when present, adds the **Ask him something else…** choice. |
+| Lakota's mind | `src/content/quests/lakota/lakota-mind.js` (new, pure) | Builds the character sheet and the state block; lists the valid offers; cleans replies; holds his memories with snapshot, restore and validate like every other module. |
+| Conversation | `src/gameplay/skills/birding/birding.js` | `birdWatcherConversation` gets an optional `mind` in its context and, when present, adds the **Ask him something else…** choice. |
 | Dialogue panel | `index.html`, `src/main.js` | A text input inside `#dialogue`, streaming into `#speech`, offer buttons in `#dialogue-choices`, and fallbacks. Accepted offers call the existing `birdingAct(action)`. |
 | Bridge | `preload.cjs` | Exposes `azhoraMind.ask(request)`, `onChunk(callback)`, `cancel(id)` and `status()` through `contextBridge`, the same way `azhoraRoadStorage` is exposed now. |
 | The call | `scripts/npc-mind.cjs` (new), loaded by `main.cjs` | Holds the key, calls the Anthropic Messages API with streaming (plain `fetch`, no new dependency), forwards text to the page, enforces limits, and counts tokens for the cost counter. |
@@ -49,7 +49,7 @@ Each request has three layers.
 - **Hard limits:** he never invents quests, rewards, places or people who are not in his sheet. Asked about something he does not know, he says so the way he would ("I have never been past the Caloss in winter; ask a boatman").
 - **The fourth wall** (decided: he can be told, and believe it): he already suspects he is in a game. If the traveler tells him he is a made mind in a made world, he believes it, and it suits him: it is his theory proven. He stays Lakota about it (curious, moved, a little frightened, still watching the wren), never an assistant. What he must not do is drop into an assistant's voice ("As an AI language model…") or offer to help with things outside his world.
 
-**2. What Lakota knows of the world** (cached, a hand-picked text of about 1,200 tokens in `src/lakota-knows.js`, a module so the game can bundle it). It is drawn from `azhora_lore`: Drent and its rivers, Tidehaven and its people, the Rena ruins, Vaervelm Caelazh and Livia, Thareth and the spring, the war in broad strokes. It is *not* the whole lore folder. That would be expensive, and the more he is given, the more he can get wrong.
+**2. What Lakota knows of the world** (cached, a hand-picked text of about 1,200 tokens in `src/content/quests/lakota/lakota-knows.js`, a module so the game can bundle it). It is drawn from `azhora_lore`: Drent and its rivers, Tidehaven and its people, the Rena ruins, Vaervelm Caelazh and Livia, Thareth and the spring, the war in broad strokes. It is *not* the whole lore folder. That would be expensive, and the more he is given, the more he can get wrong.
 
 **3. The state block** (not cached, about 200–400 tokens, rebuilt every request by `lakotaState()` from the modules' own views):
 - which birds the traveler has seen, and where the feeder errand stands;

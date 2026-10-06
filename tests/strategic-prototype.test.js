@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createStrategicPrototype, createStrategicPrototypeStore, validateStrategicPrototype, STRATEGIC_SAVE_KEY,
-  STRATEGIC_CELLS, STRATEGIC_EDGES, STRATEGIC_BRIDGE_EDGE, STRATEGIC_HOLDINGS } from '../src/strategic-prototype.js';
-import { REGION_CELLS } from '../src/region-world.js';
+  STRATEGIC_CELLS, STRATEGIC_EDGES, STRATEGIC_BRIDGE_EDGE, STRATEGIC_HOLDINGS } from '../src/experiments/frontier-command/strategic-prototype.js';
+import { REGION_CELLS } from '../src/world/terrain/region-world.js';
 const imperial = 'imperial-field-force', centaur = 'centaur-band', bridge = 'menora-lizeem-bridge';
 const unit = (model, id) => model.view().armies.find(a => a.id === id);
 const holding = (model, id) => model.view().holdings.find(h => h.id === id);

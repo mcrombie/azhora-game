@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { IZOL_NPC_POSITIONS } from '../src/izol-world.js';
-import { EAST_IZOL_WILDLIFE_ZONES as zones } from '../src/east-izol-wildlife.js';
+import { IZOL_NPC_POSITIONS } from '../src/content/regions/izol/izol-world.js';
+import { EAST_IZOL_WILDLIFE_ZONES as zones } from '../src/content/regions/east-izol/east-izol-wildlife.js';
 
 const reference = JSON.parse(readFileSync(new URL('./fixtures/east-izol-integrated-identities.json', import.meta.url), 'utf8'));
 const digest = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -146,7 +146,7 @@ export async function inspectEastIzolScene(scene, world) {
       worst: [...rows].sort((a,b) => b.maximum-a.maximum).slice(0,3) });
     if (exposed || buried || absent) problems.push(`${mesh.name}: ${exposed} unsupported basal hulls; ${buried} entirely buried; ${absent} missing support`);
   });
-  const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+  const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
   const animalScene = new THREE.Scene(), life = createWestLife(animalScene, world, { zones });
   const animals = [], animalProblems = [];
   let savedBefore, savedAfter;

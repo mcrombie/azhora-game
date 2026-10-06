@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCatieAutopilot, catieCaveRoute } from '../src/catie-autopilot.js';
-import { BAT_CAVE } from '../src/suval-highlands.js';
+import { createCatieAutopilot, catieCaveRoute } from '../src/gameplay/autoplay/catie-autopilot.js';
+import { BAT_CAVE } from '../src/content/regions/suval-highlands/suval-highlands.js';
 
 const world = { bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 }, colliders: [], paths: [], heightAt: () => 1 };
 function fixture(extra = {}) {

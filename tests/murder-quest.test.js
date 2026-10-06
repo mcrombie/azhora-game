@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 import { TROY, TROY_LINES, TROY_OPENING, MURDERER, MURDERER_READING, TESTIMONY, WITNESS_IDS, CLUES, CLEARED,
   UNPROVEN, STAGES, REWARDS, PURSE, ACCUSE_REST, VICTIM, createMurderQuest, validateMurderQuestSnapshot,
-  troyConversation, cobbleConversation } from '../src/murder-quest.js';
-import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT } from '../src/peblos-people.js';
-import { SKILLS } from '../src/skills.js';
-import { SPELLS } from '../src/sorcery.js';
+  troyConversation, cobbleConversation } from '../src/content/quests/roadside/murder-quest.js';
+import { PEBLOS_NPCS, PEBLOS_NPC_IDS, PEBLOS_AMBIENT } from '../src/content/regions/peblos/peblos-people.js';
+import { SKILLS } from '../src/gameplay/skills/skills.js';
+import { SPELLS } from '../src/gameplay/magic/sorcery.js';
 
 /** Everything a scene needs to be opened and read back. */
 function stage() {
@@ -233,7 +233,7 @@ test('the four of them stand in Cobble, and Troy stands where he can be talked t
 });
 
 test('he is still red-bearded and grinning, and half of him is not red any more', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const actor = createCharacter({ role: TROY.modelRole, tunic: TROY.color, skin: TROY.skin, look: TROY.look });
   for (const name of ['Troy’s spectacles', 'Troy’s bee smoker']) assert.ok(actor.group.getObjectByName(name), `he has no ${name}`);
   assert.equal(actor.group.getObjectByName('Troy’s bee hat'), undefined, 'and no hat');
@@ -278,7 +278,7 @@ test('version-one witness accusations migrate to the new islanders without losin
 });
 
 test('Cobble replacements have distinct hatless silhouettes and lore-specific work', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const witnesses = WITNESS_IDS.map(id => PEBLOS_NPCS.find(npc => npc.id === id));
   assert.deepEqual(witnesses.map(npc => npc.name), ['Brenna Vell', 'Orren Pell', 'Sivra Noll']);
   assert.equal(new Set(witnesses.map(npc => `${npc.modelRole}:${npc.color}:${npc.look.hairStyle}:${npc.skin}`)).size, 3);

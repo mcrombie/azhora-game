@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { SOUTH_OREMINDI, SOUTH_OREMINDI_BOUNDS, SOUTH_OREMINDI_LAKES, SOUTH_OREMINDI_PATHS,
-  southOremindiFeatures, southOremindiGround, southOremindiWaterAt } from '../src/south-oremindi-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { timberForSpecies } from '../src/wood-species.js';
-import { canStand } from '../src/game-state.js';
-import { isClimbTerrain } from '../src/climbing.js';
-import { INQUEST, INQUEST_HOME, INQUEST_HOME_PATH, INQUEST_PLACEHOLDER, inquestHomeClear } from '../src/inquest-home.js';
-const { createSouthOremindiScenery } = await sourceModule('../src/south-oremindi-scenery.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+  southOremindiFeatures, southOremindiGround, southOremindiWaterAt } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { isClimbTerrain } from '../src/gameplay/movement/climbing.js';
+import { INQUEST, INQUEST_HOME, INQUEST_HOME_PATH, INQUEST_PLACEHOLDER, inquestHomeClear } from '../src/content/quests/homes/inquest-home.js';
+const { createSouthOremindiScenery } = await sourceModule('../src/content/regions/south-oremindi/south-oremindi-scenery.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 const parent = new THREE.Group(), colliders = [];
 const scenery = createSouthOremindiScenery({ parent, colliders, heightAt: groundWithRiver });
 const world = { bounds:SOUTH_OREMINDI_BOUNDS, heightAt: groundWithRiver, colliders, waterAt: (x,z) => southOremindiWaterAt(x,z) ?? .45,

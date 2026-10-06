@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MARK, MARK_SKILLS, markConversation } from '../src/mark.js';
-import { createSkills, SKILLS } from '../src/skills.js';
-import { createBotany } from '../src/botany.js';
-import { createGeology } from '../src/geology.js';
+import { MARK, MARK_SKILLS, markConversation } from '../src/content/quests/roadside/mark.js';
+import { createSkills, SKILLS } from '../src/gameplay/skills/skills.js';
+import { createBotany } from '../src/gameplay/skills/nature/botany.js';
+import { createGeology } from '../src/gameplay/skills/nature/geology.js';
 
 function fixture(saved = null) {
   const events = [], learned = [], dialogs = [];

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { ARI_HOME } from '../src/ari-home.js';
-import { ARI_STAND, SUNFLOWER_ROWS } from '../src/ari-garden.js';
-import { APPLEGARTH_BUILDINGS } from '../src/rena.js';
-import { canStand } from '../src/game-state.js';
+import { ARI_HOME } from '../src/content/quests/ari/ari-home.js';
+import { ARI_STAND, SUNFLOWER_ROWS } from '../src/content/quests/ari/ari-garden.js';
+import { APPLEGARTH_BUILDINGS } from '../src/content/quests/rena/rena.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 test('Ari takes the existing cottage on her left, with a named mailbox beside a clear approach', async () => {
   const original = APPLEGARTH_BUILDINGS.find(h => h.id === ARI_HOME.buildingId);
@@ -14,7 +14,7 @@ test('Ari takes the existing cottage on her left, with a named mailbox beside a 
   assert.ok((original.x - ARI_STAND.x) * left.x + (original.z - ARI_STAND.z) * left.z > 0);
   assert.equal(ARI_HOME.mailbox.name, 'Ari');
   const THREE = await sourceModule('../vendor/three.module.js');
-  const { buildRenaWorks } = await sourceModule('../src/rena-works.js');
+  const { buildRenaWorks } = await sourceModule('../src/content/quests/rena/rena-works.js');
   const parent = new THREE.Group(), colliders = [];
   buildRenaWorks({ parent, heightAt: () => 2, colliders, signs: { border() {}, place() {}, direction() {} } });
   const world = { colliders, heightAt: () => 2, bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 } };

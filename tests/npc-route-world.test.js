@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { bodyWorld, stepToward, BODY } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
-import { WORD_BEACH } from '../src/word-arrival.js';
-import { INSTRUCTOR_STAND } from '../src/instructor.js';
-import { villageToWorld } from '../src/region-world.js';
-import { FERNWAY_SHELTER } from '../src/places.js';
+import { bodyWorld, stepToward, BODY } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { WORD_BEACH } from '../src/content/quests/roadside/word-arrival.js';
+import { INSTRUCTOR_STAND } from '../src/gameplay/skills/instructor.js';
+import { villageToWorld } from '../src/world/terrain/region-world.js';
+import { FERNWAY_SHELTER } from '../src/world/scenery/places.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const world = createWorld(new THREE.Scene());

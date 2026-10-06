@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInventoryState } from '../src/inventory.js';
-import { createRiding, RIDING_LESSON } from '../src/riding.js';
-import { createMorosChapter } from '../src/moros-chapter.js';
-import { createLivingStory } from '../src/living-story.js';
-import { OSTLER_NPC, OSTLER_TOKEN, horseWaiting, redeemHorse, ostlerConversation } from '../src/ostler.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createRiding, RIDING_LESSON } from '../src/gameplay/movement/riding.js';
+import { createMorosChapter } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
+import { OSTLER_NPC, OSTLER_TOKEN, horseWaiting, redeemHorse, ostlerConversation } from '../src/content/quests/roadside/ostler.js';
 
 const hitch = { x: -420, z: 236, yaw: 1 };
 function fixture({ token = true } = {}) {

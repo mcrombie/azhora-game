@@ -2,10 +2,13 @@ node_modules/
 tests/artifacts/
 *.log
 logs/
-saves/
+/saves/
 tests/.electron-profiles/
 .claude/worktrees/
 # The static build (scripts/build-web.mjs); Render makes its own on deploy.
 public/
 # Throwaway measuring scripts: probes for road distances, fight difficulty and the like.
 .tmpchk/
+
+# Confidential author reference: never source or distribution content.
+/reference-private/

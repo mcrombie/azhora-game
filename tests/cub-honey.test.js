@@ -1,9 +1,9 @@
 ﻿import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCubHoneyQuest, CUB_HONEY_SOURCE, CUB_HONEY_XP, validateCubHoneyQuestSnapshot } from '../src/cub-honey-quest.js';
-import { createCubHoneyHost, validateCubHoneySnapshot, HONEY_APPROACH, HONEY_STORE, honeyLineOfSight } from '../src/cub-honey-host.js';
-import { createSkills } from '../src/skills.js';
-import { LIZ, LIZ_STAND } from '../src/cat-quest.js';
+import { createCubHoneyQuest, CUB_HONEY_SOURCE, CUB_HONEY_XP, validateCubHoneyQuestSnapshot } from '../src/content/quests/bear-family/cub-honey-quest.js';
+import { createCubHoneyHost, validateCubHoneySnapshot, HONEY_APPROACH, HONEY_STORE, honeyLineOfSight } from '../src/content/quests/bear-family/cub-honey-host.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { LIZ, LIZ_STAND } from '../src/content/quests/roadside/cat-quest.js';
 
 function fixture() {
   const world = { bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 }, colliders: [], npcPositions: {}, heightAt: () => 2, waterAt: () => 0 };

@@ -19,7 +19,7 @@ and the Marshal waiting for you.
 
 ## 1. The number: 87 minutes
 
-The company's clock is `src/mercenaries.js`. With the road the game uses (`MAIN_ROAD`), the three
+The company's clock is `src/gameplay/company/mercenaries.js`. With the road the game uses (`MAIN_ROAD`), the three
 stops `main.js` gives the company (Corvan 90 s, Chip 60 s, Iven 120 s) and the muster at the army
 camp (1,277 m along a 1,677 m road), each of the ten does this, in minutes of play (landing and
 leaving as m:ss, the rest as decimal minutes):
@@ -87,7 +87,7 @@ Three voices, in this order, and none of them is a menu.
 on pointing down the road to Fernway, the gate, Corvan and the muster, exactly as today. Beside it
 there is a second gold.
 
-**Two golds.** The user's three marker kinds stand (`src/quest-markers.js`: main, plot, skill). The
+**Two golds.** The user's three marker kinds stand (`src/gameplay/quests/quest-markers.js`: main, plot, skill). The
 long road is main quest, so it is gold too — the same cut stone, **open**: the ring without the
 stone in it. Solid gold is the muster road; open gold is the long road's next recommended stop. A
 teacher wears their green leaf as always; the open gold rides over whichever one is next. The
@@ -170,7 +170,7 @@ Today seven teachers stand within a hundred metres of the pier and the 245 m fro
 to the clearing teaches nothing. After: three at the harbour, two in the near wood, one at
 Fernway, two in the clearing, two on the Caloss road, one at the bridge. Geology was already laid
 out this way — its stones run from the Weatherhead shingle to the granite at the crossing
-(`src/drent-stones.js`) — which is the argument that the rest should be.
+(`src/content/regions/drent/drent-stones.js`) — which is the argument that the rest should be.
 
 ## 5. Skill by skill
 
@@ -197,7 +197,7 @@ mill, and a game whose company walks on a clock should have one skill that *grow
 skill on the 99 table: sow, wait, reap. A sown row ripens on play-seconds — barley in four
 minutes — which teaches in one lesson that Drent goes on while you are elsewhere, the same truth
 the mercenaries are. Picking in Applegarth's kept orchard is farming with no sowing. Drent leaf
-(`src/pipeweed.js`: half the good ground is under tobacco) is the second crop. No more than that
+(`src/content/quests/roadside/pipeweed.js`: half the good ground is under tobacco) is the second crop. No more than that
 in the first cut.
 
 ## 6. The language budget
@@ -306,7 +306,7 @@ you at the border river), 81–85 (Chris leaves), 95+ (the muster turns to look 
 them a bell every quarter-hour, and no lesson over eight minutes.
 
 **One brush with danger, optional.** The Bramble Scout Camp over the Tessen in Pueth already
-exists (`src/forest-hideout.js`): level 1, two scouts, stolen sacks, Tamsin's one-time reward. The
+exists (`src/content/quests/forest/forest-hideout.js`): level 1, two scouts, stolen sacks, Tamsin's one-time reward. The
 long road points at it from Fernway with a scroll and never with gold. Chris waits at the Tessen
 road post talking Ambroni with Drevan's garrison — the best Ambroni ear-lesson there is.
 
@@ -332,7 +332,7 @@ long road's long tail: Bowden shows it at minute 40; nobody builds a house in a 
 
 **What the short road gives that the long road does not.** First of eleven: the empty pegs, each
 arrival met fresh, Venmor's remark that he remembers who came first (a small gain in the army's
-trust in `src/campaign.js`). Each road has something the other cannot get. Neither is a penalty.
+trust in `src/content/chapters/civil-war/campaign.js`). Each road has something the other cannot get. Neither is a penalty.
 
 ## 10. The eleven: rules, not rewrites
 
@@ -427,7 +427,7 @@ The bug hunter measured this design against the built world before anyone built 
   anywhere beside it breaks the standing rule that nobody is placed on a bird's ground; the
   designed spot was also 2.8 m from the road's centreline, inside the 4.6 m the company walks in.
   The new spot is 7.4 m from the cairn, 5.5 m from the road, 2.3 m clear of the bird. His present
-  stand is set in `src/main.js`, not `src/mycology.js`. Fernway Rest needs a kept-clear disc.
+  stand is set in `src/main.js`, not `src/gameplay/skills/nature/mycology.js`. Fernway Rest needs a kept-clear disc.
 - **Nell and Silas stand exactly where designed.** Silas's marl cart fits on one side of the Toll
   House only; it should be the side facing the road, since the house hides him from a traveler
   coming from Tidehaven.
@@ -449,7 +449,7 @@ The bug hunter measured this design against the built world before anyone built 
   so today he walks the main road and at his earliest draw musters at minute 19.8; he is already
   in for a direct traveler in roughly a quarter of games.
 
-  **Built 2026-09-21** (`src/wild-route.js`, `tests/wild-route.test.js`). A strand of his own
+  **Built 2026-09-21** (`src/content/quests/roadside/wild-route.js`, `tests/wild-route.test.js`). A strand of his own
   round the headland south of the harbour at (10, -60), then west through the low country behind
   Drent, up round the head of the bay, and down onto the Moros plain from the north-west across
   open ground. **1,598 m of authored line, 1,714 m with the muster leg, against the road's 1,295,

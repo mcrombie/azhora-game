@@ -1,11 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, validateSkillsSnapshot } from '../src/skills.js';
+import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, MAX_XP, createSkills, skillLevel, validateSkillsSnapshot } from '../src/gameplay/skills/skills.js';
+
+test('starting skills can be granted silently while later lessons still announce',()=>{
+  const events=[],skills=createSkills({onEvent:e=>events.push(e)});
+  skills.learn('walking',{announce:false});skills.learn('blades',{announce:false});
+  assert.equal(events.length,0);assert.equal(skills.taught('walking'),true);assert.equal(skills.taught('blades'),true);
+  skills.learn('fishing');assert.equal(events.length,1);assert.equal(events[0].id,'fishing');
+  const restored=createSkills();restored.restore(skills.snapshot());assert.equal(restored.taught('walking'),true);
+});
 
 test('levels are read from the thresholds, with progress toward the next', () => {
   // Twenty-two that are about the world, then the seven that are about fighting, then the six
   // schools of sorcery - each group under its own heading in the grid (docs/combat-brief.md,
-  // src/sorcery.js).
+  // src/gameplay/magic/sorcery.js).
   assert.deepEqual(SKILL_IDS, ['walking', 'running', 'birding', 'flying', 'husbandry', 'fishing', 'botany', 'geology', 'mycology', 'archaeology', 'wine', 'cooking', 'firemaking', 'smithing', 'dwarvenSmithing', 'woodcutting', 'construction', 'cartography', 'swimming', 'climbing', 'stealth', 'farming', 'visualarts', 'acting', 'linguist',
     'blades', 'heavy-arms', 'polearms', 'staves', 'bows', 'shield', 'toughness',
     'fire', 'mind', 'beast', 'frost', 'wards', 'time']);

@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { groundWithRiver, groundBeforeVarn } from '../src/world-terrain.js';
-import { createCaves } from '../src/east-lotharn-caves.js';
-import { CAVE_BENCH, CAVE_BENCHES, caveBenchRib, varnLandscapeSceneryDelta } from '../src/varn-world.js';
-import { lotharnCrestRows, LOTHARN_SHELTER_TREES } from '../src/east-lotharn-habitat.js';
-import { lotharnLandscapeDelta } from '../src/east-lotharn-world.js';
+import { groundWithRiver, groundBeforeVarn } from '../src/world/terrain/world-terrain.js';
+import { createCaves } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { CAVE_BENCH, CAVE_BENCHES, caveBenchRib, varnLandscapeSceneryDelta } from '../src/content/regions/varn/varn-world.js';
+import { lotharnCrestRows, LOTHARN_SHELTER_TREES } from '../src/content/regions/east-lotharn/east-lotharn-habitat.js';
+import { lotharnLandscapeDelta } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
 
-const { createEastLotharnScenery } = await sourceModule('../src/east-lotharn-scenery.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { createEastLotharnScenery } = await sourceModule('../src/content/regions/east-lotharn/east-lotharn-scenery.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 let fixture;
 
 // Build this region alone, once. Real scenery geometry and terrain are required:

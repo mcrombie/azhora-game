@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCombat} from '../src/combat.js';
-import {strategicBattleEncounter,strategicCombatOutcome} from '../src/strategic-battle.js';
-import {createStrategicPrototype} from '../src/strategic-prototype.js';
+import {createCombat} from '../src/gameplay/combat/combat.js';
+import {strategicBattleEncounter,strategicCombatOutcome} from '../src/experiments/frontier-command/strategic-battle.js';
+import {createStrategicPrototype} from '../src/experiments/frontier-command/strategic-prototype.js';
 const world={bounds:{minX:-10000,maxX:10000,minZ:-10000,maxZ:10000},heightAt:()=>3,colliders:[]};
 function pending(){const m=createStrategicPrototype();m.order('imperial-field-force',{type:'march',target:'menora-lizeem-bridge'});for(let i=0;i<40&&!m.view().pendingBattle;i++)m.advance(6);return m;}
 test('The strategic detachment fights through real combat and reconciles its victory once',()=>{

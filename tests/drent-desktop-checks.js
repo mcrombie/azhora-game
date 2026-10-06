@@ -1,5 +1,5 @@
-import {DRENT_SITES} from '../src/drent-sites.js';
-import {DRENT_EVIDENCE_ID,DRENT_QUEST_ID,DRENT_SUPPLIES_ID} from '../src/drent-civil-war.js';
+import {DRENT_SITES} from '../src/content/regions/drent/drent-sites.js';
+import {DRENT_EVIDENCE_ID,DRENT_QUEST_ID,DRENT_SUPPLIES_ID} from '../src/content/chapters/civil-war/drent-civil-war.js';
 
 /** A bounded renderer integration check, launched with an isolated Electron profile. */
 export async function runDrentDesktopChecks(h){

@@ -6,8 +6,8 @@ import {
   TIERS, TOP_TIER, NAMED_TIERS, tierScale, tiernamed, tierSoldAt, WEIGHTS, SLOTS, MOST_TURNED,
   armourOf, throughArmour, validPiece, smithStock, priceOf, createGear, validateGearSnapshot,
   gearId, TRAVEL_CLOTHES,
-} from '../src/gear.js';
-import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
+} from '../src/gameplay/inventory/gear.js';
+import { WEAPON_TYPES, createWeapons } from '../src/gameplay/combat/weapons.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -22,7 +22,7 @@ test('tier 0 with nothing on is today, to the digit', () => {
     assert.ok(!type.tier, `${id} is tier 0 until a smith sells something better`);
   const weapons = createWeapons({ inventory: { has: () => true, count: () => 1 } });
   assert.deepEqual(weapons.profile().damage, [...WEAPON_TYPES['simple-sword'].damage], 'the sword is the sword');
-  assert.match(source('combat.js'), /armourTurns: 0, dodgeScale: 1/, 'and combat still knows what today is');
+  assert.match(source('gameplay/combat/combat.js'), /armourTurns: 0, dodgeScale: 1/, 'and combat still knows what today is');
 });
 
 test('the material is one line, and the top two have no names', () => {
@@ -109,8 +109,8 @@ test('the host wears it, and the water knows', () => {
   assert.match(main, /armourTurns:gear\.turns,dodgeScale:gear\.dodgeScale/, 'which combat reads with the rest of the margins');
   assert.match(main, /swimStep\(\{dt:dt\*gear\.windScale/, 'and the water spends it twice as fast in plate');
   assert.match(main, /gear:gear\.snapshot\(\)/, 'it is saved with the road');
-  assert.match(source('road-checkpoint.js'), /validateGearSnapshot\(data\.gear\)/, 'and the checkpoint checks it');
-  assert.match(source('weapons.js'), /tierScale\(type\.tier \?\? 0\)/, 'a weapon is worth what it is made of');
+  assert.match(source('app/saves/road-checkpoint.js'), /validateGearSnapshot\(data\.gear\)/, 'and the checkpoint checks it');
+  assert.match(source('gameplay/combat/weapons.js'), /tierScale\(type\.tier \?\? 0\)/, 'a weapon is worth what it is made of');
 });
 
 test('replacing and removing armor retains it and the exact loadout survives a save', () => {

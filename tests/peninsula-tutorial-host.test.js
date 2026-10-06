@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
-import { createCooking } from '../src/cooking.js';
-import { createCampcraft } from '../src/campcraft.js';
-import { createCartography } from '../src/cartography.js';
-import { createSwimming } from '../src/swimming.js';
-import { createFishing } from '../src/fishing-skill.js';
-import { PENINSULA_TEACHERS, PENINSULA_TUTORIAL_ANCHORS as A } from '../src/peninsula-tutorial.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createCooking } from '../src/gameplay/skills/crafting/cooking.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { createCartography } from '../src/ui/map/cartography.js';
+import { createSwimming } from '../src/gameplay/movement/swimming.js';
+import { createFishing } from '../src/gameplay/skills/fishing/fishing-skill.js';
+import { PENINSULA_TEACHERS, PENINSULA_TUTORIAL_ANCHORS as A } from '../src/content/chapters/prologue/peninsula-tutorial.js';
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createPeninsulaTutorialHost } = await sourceModule('../src/peninsula-tutorial-host.js');
+const { createPeninsulaTutorialHost } = await sourceModule('../src/content/chapters/prologue/peninsula-tutorial-host.js');
 
 function fixture({ observeEvent } = {}) {
   const scene = new THREE.Group(), player = { group: new THREE.Group() };

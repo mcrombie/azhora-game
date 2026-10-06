@@ -2,19 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { REGION_CELLS, hexOwnerAt } from '../src/region-world.js';
-import { IBENWOOD_NAMES, IBENWOOD_PATHS, IBENWOOD_PILOT, IBENWOOD_GROVES, ibenwoodWaterClear, segmentDistance } from '../src/ibenwood-environment.js';
-import { IBENWOOD_BRANCH_SITES, IBENWOOD_BRANCH_IDS, createIbenwoodGatheringSites } from '../src/ibenwood-gathering.js';
-import { GROVE_WOOD } from '../src/ibenwood-pilot.js';
-import { validateWoodlandProgress, copyWoodlandProgress } from '../src/woodland-progress.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { createForestStory } from '../src/forest-story.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
+import { REGION_CELLS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { IBENWOOD_NAMES, IBENWOOD_PATHS, IBENWOOD_PILOT, IBENWOOD_GROVES, ibenwoodWaterClear, segmentDistance } from '../src/content/regions/ibenwood/ibenwood-environment.js';
+import { IBENWOOD_BRANCH_SITES, IBENWOOD_BRANCH_IDS, createIbenwoodGatheringSites } from '../src/content/regions/ibenwood/ibenwood-gathering.js';
+import { GROVE_WOOD } from '../src/content/regions/ibenwood/ibenwood-pilot.js';
+import { validateWoodlandProgress, copyWoodlandProgress } from '../src/content/chapters/journey/woodland-progress.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createForestStory } from '../src/content/quests/forest/forest-story.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
 
-const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
+const { createWoodlandLife } = await sourceModule('../src/world/life/woodland-life.js');
 const legacyIds = Array.from({ length: 7 }, (_, pocket) => [1, 2].map(slot => `stick-${pocket + 1}-${slot}`)).flat();
 const groveIds = ['ibenwood-fallen-0', 'ibenwood-fallen-1', 'ibenwood-fallen-2'];
 const allIds = [...legacyIds, ...groveIds, ...IBENWOOD_BRANCH_IDS];
@@ -27,7 +27,7 @@ const flatWorld = () => ({ bounds: { minX: -10000, maxX: 10000, minZ: -10000, ma
   regionAt: (x, z) => ({ name: hexOwnerAt(x, z) }) });
 
 test('stable branch identities cover all five regions at about one site per two atlas cells', async () => {
-  const second = await import('../src/ibenwood-gathering.js?determinism=1');
+  const second = await import('../src/content/regions/ibenwood/ibenwood-gathering.js?determinism=1');
   assert.deepEqual(second.IBENWOOD_BRANCH_SITES, IBENWOOD_BRANCH_SITES);
   assert.equal(new Set(allIds).size, allIds.length);
   assert.deepEqual(GROVE_WOOD.map(site => site.id), groveIds, 'pilot save identities are unchanged');

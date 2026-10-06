@@ -2,21 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { REGION_CELLS, REGION_IDS, REGION_TERRAIN, hexOwnerAt, regions } from '../src/world/terrain/region-world.js';
 import {
   LIZEEM, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_REGION_LANDMARKS,
   courseDistance, westBareGround,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface, braidThreadOffset } from '../src/west-ground.js';
-import { ELAGOS_REACHES, inElagosWater } from '../src/elagos-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface, braidThreadOffset } from '../src/content/regions/western-regions/west-ground.js';
+import { ELAGOS_REACHES, inElagosWater } from '../src/content/regions/ambron/elagos-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = createWorld(scene);
 const cells = REGION_CELLS.Nesdor;

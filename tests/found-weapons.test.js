@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createFoundWeapons, fallenCompanions, REACH } from '../src/found-weapons.js';
-import { createCompanions } from '../src/companions.js';
-import { createFallen } from '../src/bystanders.js';
+import { createFoundWeapons, fallenCompanions, REACH } from '../src/gameplay/combat/found-weapons.js';
+import { createCompanions } from '../src/gameplay/company/companions.js';
+import { createFallen } from '../src/gameplay/combat/bystanders.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 

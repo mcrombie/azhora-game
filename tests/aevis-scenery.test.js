@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { AEVIS, AEVIS_BUILDINGS, AEVIS_GATES, AEVIS_PATHS, AEVIS_QUAYS, AEVIS_BOATS, AEVIS_OUTLINE, AEVIS_WALL_EDGES, aevisDeckHeight } from '../src/aevis-city.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+import { AEVIS, AEVIS_BUILDINGS, AEVIS_GATES, AEVIS_PATHS, AEVIS_QUAYS, AEVIS_BOATS, AEVIS_OUTLINE, AEVIS_WALL_EDGES, aevisDeckHeight } from '../src/content/regions/aevis/aevis-city.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createAevisScenery}=await sourceModule('../src/aevis-scenery.js');
-const {checkAevisDefenses}=await sourceModule('../src/aevis-smoke.js');
-const {AEVIS_SOLDIERS,createAevisSoldier}=await sourceModule('../src/aevis-soldiers.js');
+const {createAevisScenery}=await sourceModule('../src/content/regions/aevis/aevis-scenery.js');
+const {checkAevisDefenses}=await sourceModule('../src/dev/checks/aevis-smoke.js');
+const {AEVIS_SOLDIERS,createAevisSoldier}=await sourceModule('../src/content/regions/aevis/aevis-soldiers.js');
 const terrain=groundWithRiver;
 const heightAt=(x,z)=>aevisDeckHeight(x,z)??terrain(x,z);
 const colliders=[],city=createAevisScenery({parent:new THREE.Group(),colliders,heightAt:terrain});

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, mkdirSync } from 'node:fs';
-import { RAMPS,pointOn,lotharnRouteJoinDelta as delta,nearLotharnRouteJoin } from '../src/east-lotharn-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { createCaves } from '../src/east-lotharn-caves.js';
-import { varnRouteJoinSceneryDelta } from '../src/varn-world.js';
+import { RAMPS,pointOn,lotharnRouteJoinDelta as delta,nearLotharnRouteJoin } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { createCaves } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { varnRouteJoinSceneryDelta } from '../src/content/regions/varn/varn-world.js';
 const before=(x,z)=>groundWithRiver(x,z)-delta(x,z)-varnRouteJoinSceneryDelta(x,z);
 test('central trail endpoint progress no longer creates the reproduced entry steps',t=>{
  const rows=[];

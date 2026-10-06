@@ -20,13 +20,13 @@ Do **only job 3**.
 you are joining. They carry, and you inherit:
 
 - **The block's datum**: its river mouths and shores, the only places sea level is a fact.
-- **`southwestAridity`** in `src/southwest-world.js` — extend it, do not start a second field.
+- **`southwestAridity`** in `src/content/regions/southwest/southwest-world.js` — extend it, do not start a second field.
 - **The modules are `southwest-*`** — extend them; this is the third job to do so.
 - **The haze lesson**: on country whose subject is distance, the haze colour matters more than the
   ground colour. Desert haze is `0xc6b996` at .0024.
 - **Job 2's answer to flat country**: surface, not relief. Hamada, erg, reg and sabkha, each with
   its own sight distance and its own way of navigating.
-- **`groundTint` is an if/else chain in `src/world-terrain.js` and it silently dropped an entire
+- **`groundTint` is an if/else chain in `src/world/terrain/world-terrain.js` and it silently dropped an entire
   block's tint for a whole build.** Job 2 fixed the missing branch and recommended it become a
   table. If you add a tint, **check it reaches the screen** — do not assume.
 
@@ -103,7 +103,7 @@ block uses wavelength **320**. Specifically:
 
 ## Wildlife
 
-Extend `src/southwest-wildlife.js`. The block's standard, set by job 1 and held by job 2, is
+Extend `src/content/regions/southwest/southwest-wildlife.js`. The block's standard, set by job 1 and held by job 2, is
 **emptiness measured and defended**: 7 ranges over job 2's 95 hexes, 0.074 a hex. **But two of your
 three countries are not that dry.** Hama's `Csb` half and Cape Heth's coast can carry more life than
 the erg, and should — the block has been getting emptier for two jobs and this is where it stops.
@@ -146,7 +146,7 @@ the reach law and your own site checks are what stand behind them.
 Maps and renders: `node scripts/region-map.mjs` with `MAP_LO`/`MAP_HI`; one short review render at
 the end if electron is available, **after** the last scenery change. No autoplays, no long smokes.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js`, `src/developer-atlas.js` are CRLF.
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js`, `src/dev/tools/developer-atlas.js` are CRLF.
 
 ## Report
 

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { lotharnWoodlandHabitat, lotharnCanopyHabitat, lotharnTreeFoot, lotharnCrestRows } from '../src/east-lotharn-habitat.js';
-import { EAST_LOTHARN_WILDLIFE_ZONES } from '../src/east-lotharn-wildlife.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { LOTHARN, lotharnOpen, onRamp } from '../src/east-lotharn-world.js';
-import { inWestWater } from '../src/west-regions.js';
+import { lotharnWoodlandHabitat, lotharnCanopyHabitat, lotharnTreeFoot, lotharnCrestRows } from '../src/content/regions/east-lotharn/east-lotharn-habitat.js';
+import { EAST_LOTHARN_WILDLIFE_ZONES } from '../src/content/regions/east-lotharn/east-lotharn-wildlife.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { LOTHARN, lotharnOpen, onRamp } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { inWestWater } from '../src/content/regions/western-regions/west-regions.js';
 
 test('sheltered soil carries woodland above the old altitude limit while an exposed crest stays bare', () => {
   const hollow = (x, z) => 280 + .045 * (x * x + z * z);

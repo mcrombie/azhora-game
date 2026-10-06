@@ -36,7 +36,7 @@ every one before it. All three came out where the brief said they would.
 | level | 4 | 3 | 4 | 3 |
 
 Every one of those numbers was read off the survey rather than copied from the brief, and
-`tests/southwest-world.test.js` re-derives them. `src/region-levels.js` already carried all four
+`tests/southwest-world.test.js` re-derives them. `src/world/terrain/region-levels.js` already carried all four
 (4, 3, 4, 3) and was not touched.
 
 **The three odd hexes are the block's three features, and every one of them is also one of its
@@ -52,7 +52,7 @@ The test asserts the agreement.
 
 Read per hex from the World Builder map (`world-builder/map/resources/examples/azhora.wwmap`,
 `hexes[key].climate`, `koppen-v1` — **not** `azhora.cmap.json`, whose one-code-per-region field is a
-default and says `Cfb` for almost everything). `SOUTHWEST_CLIMATE` in `src/southwest-world.js`
+default and says `Cfb` for almost everything). `SOUTHWEST_CLIMATE` in `src/content/regions/southwest/southwest-world.js`
 records all 107 and the test holds them to the map hex for hex whenever the map is on the machine.
 
 **`BWh` × 81, `BSh` × 18, `Csb` × 6, `Csa` × 2.**
@@ -334,7 +334,7 @@ only reason Navarth and the Ganesh Desert are joined on foot round the north.
 
 **The names.** `world-builder/azhoran_language_profiles.py` *does* have a `pyrosi` profile — the
 first tongue in the west whose profile is actually in the World Builder, where there is no Mithali,
-no Ovesi and no Lothi — and `src/languages.js` carries it with its lexicon, in which **`vaellir` is
+no Ovesi and no Lothi — and `src/gameplay/skills/languages.js` carries it with its lexicon, in which **`vaellir` is
 the word for "river"**. So the great river is **the Vaellir**, which is the Pyrosi for the river, the
 way an Avon is a river: nothing is coined, the tongue's own word is used. The other is named for the
 country it comes out of, which is what `MITHALA_CELDER_WATER` did a quarter of a continent away. The
@@ -402,7 +402,7 @@ own box, and the test checks five points across the built world.
 
 ## What grows
 
-`src/southwest-scenery.js`, one seeded stream of its own drawn after the Mithala's, so nothing
+`src/content/regions/southwest/southwest-scenery.js`, one seeded stream of its own drawn after the Mithala's, so nothing
 already built anywhere else moves for it. Everything is placed on these four countries' own hexes.
 
 **The whole file is mostly a statement about how little there is**, and that is the Oves Desert's
@@ -449,8 +449,8 @@ of the wet corners and the depressions, and the damp reach.
 
 ## What lives there, and why
 
-**Seventeen ranges**, and they are deliberately not spread evenly. `src/southwest-wildlife.js`,
-spread into `src/west-regions-life.js` after the Mithala's.
+**Seventeen ranges**, and they are deliberately not spread evenly. `src/content/regions/southwest/southwest-wildlife.js`,
+spread into `src/content/regions/western-regions/west-regions-life.js` after the Mithala's.
 
 | zone | species | where | why |
 |---|---|---|---|
@@ -647,24 +647,24 @@ Ganesh Desert and Ganesh Plain are spelled identically in the atlas, the lore fi
 
 `scripts/build-region-survey.mjs` PLAYABLE + `WINDOW.minQ` −33 → −41 → `node scripts/build-region-survey.mjs` ·
 `scripts/build-region-rivers.mjs` RIVER_REGIONS → `node scripts/build-region-rivers.mjs` (194 → 222 edges) ·
-`src/region-layout.js` PLAYABLE_REGIONS + four REGION_BIOMES ·
-`src/region-world.js` REGION_IDS 32–35, four REGION_TERRAIN, four REGION_TEXT (subtitle, spawn,
+`src/world/terrain/region-layout.js` PLAYABLE_REGIONS + four REGION_BIOMES ·
+`src/world/terrain/region-world.js` REGION_IDS 32–35, four REGION_TERRAIN, four REGION_TEXT (subtitle, spawn,
 description, palette with the two skies, `npcIds: []`, nineteen landmarks between them) ·
-`src/languages.js` (`west-pyrosi` and `ganesh`, the two tongues' dialect lists, four `spoken` entries) ·
-`src/developer-atlas.js` (four anchors, one middle hex each) ·
-`src/map-fog.js` (fifteen areas) ·
-`src/build-status.js` (four `early` entries) ·
-`src/west-regions.js` (the two courses, `SOUTHWEST_RIVERS`, `WEST_RIVERS`, `WEST_REGION_NAMES`) ·
-`src/west-ground.js` (`southwestGround` wrapping `westGround` and `baseBeforeWater`, outermost of the
+`src/gameplay/skills/languages.js` (`west-pyrosi` and `ganesh`, the two tongues' dialect lists, four `spoken` entries) ·
+`src/dev/tools/developer-atlas.js` (four anchors, one middle hex each) ·
+`src/ui/map/map-fog.js` (fifteen areas) ·
+`src/dev/tools/build-status.js` (four `early` entries) ·
+`src/content/regions/western-regions/west-regions.js` (the two courses, `SOUTHWEST_RIVERS`, `WEST_RIVERS`, `WEST_REGION_NAMES`) ·
+`src/content/regions/western-regions/west-ground.js` (`southwestGround` wrapping `westGround` and `baseBeforeWater`, outermost of the
 chain because its swale reshapes the ground the rest leave) ·
-`src/world-terrain.js` (`southwestTint` in `groundTint`) ·
+`src/world/terrain/world-terrain.js` (`southwestTint` in `groundTint`) ·
 `src/world.js` (scenery, landmarks, metrics, update) ·
-`src/west-regions-life.js` (the bone-bird rig, its `SOAR` row and three table entries, the zones) ·
-`src/southwest-world.js`, `src/southwest-scenery.js`, `src/southwest-wildlife.js` ·
+`src/content/regions/western-regions/west-regions-life.js` (the bone-bird rig, its `SOAR` row and three table entries, the zones) ·
+`src/content/regions/southwest/southwest-world.js`, `src/content/regions/southwest/southwest-scenery.js`, `src/content/regions/southwest/southwest-wildlife.js` ·
 `tests/southwest-world.test.js` · `package.json` · this report · `docs/design-answers.md`.
 
-`src/region-levels.js` already carried all four (4, 3, 4, 3) and was not touched.
-`src/campaign-world.js` already had their one-line designs and was not touched.
+`src/world/terrain/region-levels.js` already carried all four (4, 3, 4, 3) and was not touched.
+`src/content/chapters/civil-war/campaign-world.js` already had their one-line designs and was not touched.
 
 ---
 
@@ -720,7 +720,7 @@ the world west shifts every vertex of the renderer's coarse band, and that landm
 crest where the analytic ground rises a pace and a half over eighteen metres, which a seven-metre
 grid cannot follow. It had been within a hand's breadth of the limit since the Mithala was built. It
 stands eight metres further off the channel now, on the bank the gallery actually stands on, and the
-reason is written above it in `src/mithala-world.js`.
+reason is written above it in `src/content/regions/mithala/mithala-world.js`.
 
 
 ### The stale lists that were found and moved

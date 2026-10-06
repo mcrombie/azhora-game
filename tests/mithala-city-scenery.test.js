@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import { MITHALA_CITY, MITHALA_DISTRICTS, MITHALA_BRIDGES, MITHALA_STREETS, MITHALA_GATES, MITHALA_BARGES, MITHALA_QUAY,
-  MITHALA_GAUGE, mithalaCityGround, mithalaSegmentDistance } from '../src/mithala-city.js';
-import { createWalkSurfaces, colliderOverlapsHeight, WALK_STEP } from '../src/walk-surfaces.js';
-import { westWaterSurface, westGroundAt } from '../src/west-ground.js';
+  MITHALA_GAUGE, mithalaCityGround, mithalaSegmentDistance } from '../src/content/regions/mithala/mithala-city.js';
+import { createWalkSurfaces, colliderOverlapsHeight, WALK_STEP } from '../src/world/collision/walk-surfaces.js';
+import { westWaterSurface, westGroundAt } from '../src/content/regions/western-regions/west-ground.js';
 
 /**
- * Mithala's scenery (src/mithala-city-scenery.js) built on its own, without the world: the made ground laid over a flat
+ * Mithala's scenery (src/content/regions/mithala/mithala-city-scenery.js) built on its own, without the world: the made ground laid over a flat
  * plain twelve metres up, so the platforms, banks, skirts and cuttings are all there and nothing else is. The barges are
  * held to the real water of the plain's channels and the real bed under it, which is what they are built on.
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createMithalaCityScenery } = await sourceModule('../src/mithala-city-scenery.js');
+const { createMithalaCityScenery } = await sourceModule('../src/content/regions/mithala/mithala-city-scenery.js');
 const ground = (x, z) => mithalaCityGround(x, z, 12);
 const colliders = [];
 const city = createMithalaCityScenery({ parent: new THREE.Group(), heightAt: ground, groundHeight: ground, colliders });

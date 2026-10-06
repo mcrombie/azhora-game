@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { treeGroundingOffset } from '../src/tree-grounding.js';
-import { terrainRoadHeight } from '../src/terrain-road.js';
-import { brandyHomeClear } from '../src/brandy-home-world.js';
+import { treeGroundingOffset } from '../src/world/scenery/tree-grounding.js';
+import { terrainRoadHeight } from '../src/world/terrain/terrain-road.js';
+import { brandyHomeClear } from '../src/content/quests/brandy/brandy-home-world.js';
 
 test('leaning tree roots meet a hillside at their actual footprint instead of at the crown centre', () => {
   const tree = new THREE.Object3D();

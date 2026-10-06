@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createWestLife } = await sourceModule('../src/west-regions-life.js');
-const { createRoadLife, ROAD_LIFE_ZONES } = await sourceModule('../src/road-life.js');
-const { createWoodlandLife } = await sourceModule('../src/woodland-life.js');
+const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
+const { createRoadLife, ROAD_LIFE_ZONES } = await sourceModule('../src/content/regions/drent/road-life.js');
+const { createWoodlandLife } = await sourceModule('../src/world/life/woodland-life.js');
 const world = { bounds: { minX: -20000, maxX: 20000, minZ: -20000, maxZ: 20000 },
   heightAt: () => 3, waterAt: () => null, colliders: [] };
 const zone = (id, x = 0, species = 'red-deer', extra = {}) => ({ id, species, region: 'Test woodland', radius: .5,

@@ -2,24 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { hexOwnerAt, insideRegion } from '../src/region-world.js';
-import { CLIMBING, isClimbTerrain, canWalkSlope } from '../src/climbing.js';
+import { hexOwnerAt, insideRegion } from '../src/world/terrain/region-world.js';
+import { CLIMBING, isClimbTerrain, canWalkSlope } from '../src/gameplay/movement/climbing.js';
 // The authored hiking routes retain their modest grades; the main build also allows
 // deliberate stamina-driven free climbing on steeper ground. These are geometry budgets,
 // not an obsolete player movement controller.
 const HIKING_ROUTE = Object.freeze({ easy: .7, limit: 1.19, stand: 1.35, reach: 1.2 });
-import { moveCharacter, canStand } from '../src/game-state.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
 import {
   FERADOM, FERADOM_BOX, INLAND_BORDER, MIDLINE, PASSES, BELT, GULLIES, GULLY_HALF, SUMMITS, TOWERS, YARDS,
   hillRise, beltAt, beltPoint, beltScale, midlineAt, passPoint, inBarrierHills, feradomGround, scarpAt,
-} from '../src/feradom-world.js';
-import { PASS_CASTLES, FERADOM_TOWERS, FERADOM_LANDMARKS } from '../src/feradom-forts.js';
-import { FERADOM_GARRISON, FERADOM_WALL_FIGURES } from '../src/feradom-people.js';
-import { closedRegionEntered, createBorderWatch } from '../src/closed-border.js';
-import { FERADOM_BARRIER } from '../src/pueth-world.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { FERADOM_PASS_WILDLIFE_ZONES } from '../src/feradom-wildlife.js';
-const { LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+} from '../src/content/regions/feradom/feradom-world.js';
+import { PASS_CASTLES, FERADOM_TOWERS, FERADOM_LANDMARKS } from '../src/content/regions/feradom/feradom-forts.js';
+import { FERADOM_GARRISON, FERADOM_WALL_FIGURES } from '../src/content/regions/feradom/feradom-people.js';
+import { closedRegionEntered, createBorderWatch } from '../src/world/travel/closed-border.js';
+import { FERADOM_BARRIER } from '../src/content/regions/pueth/pueth-world.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { FERADOM_PASS_WILDLIFE_ZONES } from '../src/content/regions/feradom/feradom-wildlife.js';
+const { LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 
 /**
  * Feradom's barrier hills (the user, 27 September 2026: "start building the Feradom region, paying

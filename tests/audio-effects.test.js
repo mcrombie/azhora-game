@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createRoadAudio, roadAudioProfile } from '../src/road-audio.js';
+import { createRoadAudio, roadAudioProfile } from '../src/world/environment/road-audio.js';
 
 /**
  * `effect(name)` looks the name up in its own table and returns false when there is nothing
@@ -12,13 +12,13 @@ import { createRoadAudio, roadAudioProfile } from '../src/road-audio.js';
  * make a sound. `discovery` was asked for twelve times and was not in the table.
  */
 const dir = fileURLToPath(new URL('../src/', import.meta.url));
-const source = readFileSync(dir + 'road-audio.js', 'utf8');
+const source = readFileSync(dir + 'world/environment/road-audio.js', 'utf8');
 const table = source.slice(source.indexOf('const EFFECTS=Object.freeze({'), source.indexOf('});', source.indexOf('const EFFECTS=')));
 const known = new Set([...table.matchAll(/(?:^|[,{\s])'?([a-z-]+)'?\s*:\s*\[/gm)].map(match => match[1]));
 
 /** Every effect name written out in full anywhere in src/, and where. */
 const asked = new Map();
-for (const file of readdirSync(dir).filter(name => name.endsWith('.js'))) {
+for (const file of readdirSync(dir, { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js'))) {
   for (const match of readFileSync(dir + file, 'utf8').matchAll(/audio\s*\??\.\s*effect\s*\(\s*'([^']+)'/g)) {
     if (!asked.has(match[1])) asked.set(match[1], new Set());
     asked.get(match[1]).add(file);
@@ -56,7 +56,7 @@ test('a sound the table does not have is refused rather than thrown', () => {
 
 test('the geography of sound survives nonsense without a device', () => {
   // Region 0 is not nonsense any more: it is open country, ground no country on the atlas
-  // claims, and src/road-audio.js keeps its id rather than falling back to Drent's, because
+  // claims, and src/world/environment/road-audio.js keeps its id rather than falling back to Drent's, because
   // falling back meant hearing Drent's forest a kilometre south of Nesdor. It is checked on
   // its own below. Everything here is still a value that means nothing.
   for (const given of [undefined, { region: 3 }, { position: { x: NaN, z: Infinity }, region: 2 },
@@ -72,7 +72,7 @@ test('the geography of sound survives nonsense without a device', () => {
 test('open country is a region, and the one that sounds of nothing', () => {
   // It keeps its own id where a fallback would have handed it Drent's, and it plays none of
   // Drent's beds: no sea off a coast it is not on, no forest, no river, no field, no ridge.
-  // Wind and earth underfoot, which is the whole of what the builder gave it (src/road-audio.js).
+  // Wind and earth underfoot, which is the whole of what the builder gave it (src/world/environment/road-audio.js).
   const open = roadAudioProfile({ position: { x: 0, z: 0 }, region: 0 });
   assert.equal(open.region, 0, 'open country is not quietly turned into Drent');
   assert.equal(open.surface, 'earth');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoadSurfaceMask } from '../src/path-junctions.js';
+import { createRoadSurfaceMask } from '../src/world/terrain/path-junctions.js';
 
 const p = (x, z) => ({ x, z, y: x * .1 + z * .2 + 3 });
 const area = polygon => Math.abs(polygon.reduce((sum, a, i) => {

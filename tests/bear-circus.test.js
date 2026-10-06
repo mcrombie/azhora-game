@@ -4,15 +4,15 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
 import { MICHAEL, AVA, ELLE, CIRCUS_BEARS, CIRCUS_ACTS, CIRCUS_LOOKS, CIRCUS_CAMP, CIRCUS_FILE, CIRCUS_LINES,
-  circusConversation, circusPerforming } from '../src/bear-circus.js';
-import { createBearFamily, validateBearFamilySnapshot } from '../src/bear-family.js';
-import { createKaylaHost } from '../src/kayla-host.js';
-import { KAYLA, KAYLA_LINES, kaylaConversation, createKayla, kaylaMaySwim } from '../src/kayla.js';
-import { KAYLA_RACE_LANE } from '../src/kayla-race.js';
-import { CUB, CUB_STAND } from '../src/cub-honey-quest.js';
-import { canStand, canSwim } from '../src/game-state.js';
+  circusConversation, circusPerforming } from '../src/content/quests/bear-family/bear-circus.js';
+import { createBearFamily, validateBearFamilySnapshot } from '../src/content/quests/bear-family/bear-family.js';
+import { createKaylaHost } from '../src/content/quests/kayla/kayla-host.js';
+import { KAYLA, KAYLA_LINES, kaylaConversation, createKayla, kaylaMaySwim } from '../src/content/quests/kayla/kayla.js';
+import { KAYLA_RACE_LANE } from '../src/content/quests/kayla/kayla-race.js';
+import { CUB, CUB_STAND } from '../src/content/quests/bear-family/cub-honey-quest.js';
+import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
 
-const { createCircusBear, createKaylaBear, CIRCUS_BEAR_LOOKS } = await sourceModule('../src/kayla-character.js');
+const { createCircusBear, createKaylaBear, CIRCUS_BEAR_LOOKS } = await sourceModule('../src/content/quests/kayla/kayla-character.js');
 const world = await scopedWorld(new THREE.Scene(), [1, 2, 6]);
 world.setJourneySiteState('bridge-repair', false);
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);

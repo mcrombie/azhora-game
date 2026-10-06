@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-const { regionalWildlifeSight } = await sourceModule('../src/regional-wildlife-sight.js');
-const { createGaneshShadeScrub } = await sourceModule('../src/ganesh-shade-scrub.js');
+const { regionalWildlifeSight } = await sourceModule('../src/world/life/regional-wildlife-sight.js');
+const { createGaneshShadeScrub } = await sourceModule('../src/world/terrain/ganesh-shade-scrub.js');
 
 test('wildlife photography detects an actual transformed trunk even when the animal is in frame', () => {
   const group = new THREE.Group(), mesh = new THREE.InstancedMesh(new THREE.CylinderGeometry(.3, .4, 4, 7), new THREE.MeshBasicMaterial(), 2);

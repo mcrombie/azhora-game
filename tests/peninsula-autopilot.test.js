@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPeninsulaAutopilot } from '../src/peninsula-autopilot.js';
-import { createPeninsulaTutorial, PENINSULA_TUTORIAL_ANCHORS as A } from '../src/peninsula-tutorial.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createCampcraft } from '../src/campcraft.js';
-import { createCombat } from '../src/combat.js';
-import { createSkills } from '../src/skills.js';
-import { createLocomotionSkills } from '../src/locomotion-skills.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { moveCharacter } from '../src/game-state.js';
+import { createPeninsulaAutopilot } from '../src/content/chapters/prologue/peninsula-autopilot.js';
+import { createPeninsulaTutorial, PENINSULA_TUTORIAL_ANCHORS as A } from '../src/content/chapters/prologue/peninsula-tutorial.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createLocomotionSkills } from '../src/gameplay/movement/locomotion-skills.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const terrain = () => ({ bounds: { minX: 90, maxX: 275, minZ: -130, maxZ: 110 }, colliders: [], heightAt: x => x < 151 ? 0 : 3 });

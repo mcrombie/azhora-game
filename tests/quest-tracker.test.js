@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { activeOptionalQuests, createQuestTracker, normalizeTrackableQuests } from '../src/quest-tracker.js';
-import { createBurying } from '../src/lauvel-burying.js';
-import { createDrentCivilWar } from '../src/drent-civil-war.js';
+import { activeOptionalQuests, createQuestTracker, normalizeTrackableQuests } from '../src/gameplay/quests/quest-tracker.js';
+import { createBurying } from '../src/content/regions/luscia/lauvel-burying.js';
+import { createDrentCivilWar } from '../src/content/chapters/civil-war/drent-civil-war.js';
 
 test('Sela joins the selectable quest tracker only after accepting, with objectives that follow the work', () => {
   const burying = createBurying(), tracker = createQuestTracker();

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { QUEST_DONE } from '../src/game-state.js';
-import { CAT, LIZ_STAND } from '../src/cat-quest.js';
-import { createInventoryState } from '../src/inventory.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { CAT, LIZ_STAND } from '../src/content/quests/roadside/cat-quest.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
 import { FOREST_HIDEOUT_QUEST, createForestHideoutQuest, validateForestHideoutSnapshot,
-  hideoutConversation, hideoutTamsinChoices, garrisonConversation, HIDEOUT_GARRISON } from '../src/forest-hideout.js';
+  hideoutConversation, hideoutTamsinChoices, garrisonConversation, HIDEOUT_GARRISON } from '../src/content/quests/forest/forest-hideout.js';
 
 function fixture() {
   const inventory = createInventoryState(), events = [];

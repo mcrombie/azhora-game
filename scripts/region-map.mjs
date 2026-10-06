@@ -6,7 +6,7 @@ import { writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from '../tests/module-loader.js';
-import { hexOwnerAt } from '../src/region-world.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
 
 const [minX, minZ, maxX, maxZ] = process.argv[2].split(',').map(Number);
 const scale = Number(process.argv[3] ?? 2), out = process.argv[4] ?? 'tests/artifacts/region-map.png';

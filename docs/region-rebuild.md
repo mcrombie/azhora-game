@@ -1,6 +1,6 @@
 # Region rebuild: Drent, Luscia, Moros Plain, East Suval
 
-The playable world is rebuilt so that each region's shape, size and position match the atlas, the four regions are the four the story needs next, and the minimap, compass and chart all agree about north. This document is the plan and the brief for whoever builds it. The scaffold it relies on is `src/region-layout.js` (tests in `tests/region-layout.test.js`).
+The playable world is rebuilt so that each region's shape, size and position match the atlas, the four regions are the four the story needs next, and the minimap, compass and chart all agree about north. This document is the plan and the brief for whoever builds it. The scaffold it relies on is `src/world/terrain/region-layout.js` (tests in `tests/region-layout.test.js`).
 
 ## What changes and what stays
 

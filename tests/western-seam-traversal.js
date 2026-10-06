@@ -1,11 +1,11 @@
-import { moveCharacter, canStand } from '../src/game-state.js';
-import { bodyWorld, BODY } from '../src/bodies.js';
-import { canWalkSlope } from '../src/climbing.js';
-import { canPushThrough } from '../src/undergrowth.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { SWIM } from '../src/swimming.js';
-import { WALK_STEP } from '../src/walk-surfaces.js';
-import { createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
+import { bodyWorld, BODY } from '../src/gameplay/combat/bodies.js';
+import { canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { canPushThrough } from '../src/world/scenery/undergrowth.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { SWIM } from '../src/gameplay/movement/swimming.js';
+import { WALK_STEP } from '../src/world/collision/walk-surfaces.js';
+import { createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
 
 export const WESTERN_SEAM_CROSSINGS = Object.freeze([
   { name: 'Isareos internal dry edge', x: -2300.4349406410192, z: -201.6901076758503, nx: .5, nz: .8660254037844387 },

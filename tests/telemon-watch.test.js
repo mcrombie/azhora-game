@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTelemonWatch, passMouths, validTelemonWatchState, TELEMON_LINES, WATCH } from '../src/telemon-watch.js';
+import { createTelemonWatch, passMouths, validTelemonWatchState, TELEMON_LINES, WATCH } from '../src/content/regions/telemonia/telemon-watch.js';
 
 // A country that is the band -100 < z < 100, with a pass mouth on each of its two edges.
 const inside = (x, z) => Math.abs(z) < 100;

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { IVY_PATCHES, IVY_VARIETIES } from '../src/ivy-sites.js';
-import { createSylviaIvy, validateSylviaIvy, sylviaIvyChoice, SYLVIA_IVY_QUEST_ID, IVY_CLEAR_XP, IVY_QUEST_REWARD, IVY_REACH } from '../src/sylvia-ivy.js';
-import { SYLVIA } from '../src/visual-arts.js';
-import { createSkills } from '../src/skills.js';
-import { createInventoryState } from '../src/inventory.js';
-import { COPPER_ITEM } from '../src/economy.js';
+import { IVY_PATCHES, IVY_VARIETIES } from '../src/content/quests/sylvia/ivy-sites.js';
+import { createSylviaIvy, validateSylviaIvy, sylviaIvyChoice, SYLVIA_IVY_QUEST_ID, IVY_CLEAR_XP, IVY_QUEST_REWARD, IVY_REACH } from '../src/content/quests/sylvia/sylvia-ivy.js';
+import { SYLVIA } from '../src/gameplay/skills/performance/visual-arts.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { COPPER_ITEM } from '../src/gameplay/inventory/economy.js';
 
 const first = IVY_PATCHES[0], second = IVY_PATCHES[1];
 function fixture() {

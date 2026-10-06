@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {METRES_PER_HEX} from '../src/world-scale.js';
-import {AMBRON_LAYOUT_VERSION} from '../src/ambron-city-layout.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createCampcraft } from '../src/campcraft.js';
-import { createJourney } from '../src/journey.js';
-import { createForestStory } from '../src/forest-story.js';
-import { FARM_FIRE } from '../src/farming.js';
-import { copyWoodlandProgress, validateWoodlandProgress } from '../src/woodland-progress.js';
+import {METRES_PER_HEX} from '../src/world/terrain/world-scale.js';
+import {AMBRON_LAYOUT_VERSION} from '../src/content/regions/ambron/ambron-city-layout.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createForestStory } from '../src/content/quests/forest/forest-story.js';
+import { FARM_FIRE } from '../src/gameplay/skills/farming/farming.js';
+import { copyWoodlandProgress, validateWoodlandProgress } from '../src/content/chapters/journey/woodland-progress.js';
 import { sourceModule } from './module-loader.js';
 
 function fixture() {
@@ -37,7 +37,7 @@ test('partial practice resumes but invalid lesson, gathering, camp and story dat
   const {data,checkpoint}=fixture();data.questStage=2;data.inventory.push({id:'harbor-letter',quantity:1});data.woodland.practiceHits=1;
   assert.equal(checkpoint.save(data).ok,true);
   // Stage 3 is the last step and refuses an unfinished lesson; 4 and 6 are off the end of a
-  // spine that is four long now, and are refused for that (src/game-state.js).
+  // spine that is four long now, and are refused for that (src/gameplay/movement/game-state.js).
   const bad=[{...data,questStage:3},{...data,questStage:4},{...data,questStage:6},
     {...data,woodland:{...data.woodland,acorns:['acorn-1-1','acorn-1-1']}},
     {...data,woodland:{...data.woodland,sticks:['stick-8-1']}},

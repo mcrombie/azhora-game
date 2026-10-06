@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCombat} from '../src/combat.js';
+import {createCombat} from '../src/gameplay/combat/combat.js';
 
 const encounter={id:'road-observed',independent:true,center:{x:0,z:0},checkpoint:{x:14,z:0},
   retreatAxis:'x',retreatLine:26,

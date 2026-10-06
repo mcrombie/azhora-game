@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLivingStory } from '../src/living-story.js';
-import { createLivingStoryHost } from '../src/living-story-host.js';
-import { createInventoryState } from '../src/inventory.js';
-import { MERCENARY_ROSTER } from '../src/mercenaries.js';
-import { createJourney } from '../src/journey.js';
-import { createWeapons } from '../src/weapons.js';
-import { createSkills } from '../src/skills.js';
-import { createMorosChapter, MOROS_PAY } from '../src/moros-chapter.js';
-import { createQuestTracker } from '../src/quest-tracker.js';
-import { createCombat } from '../src/combat.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
+import { createLivingStoryHost } from '../src/gameplay/company/living-story-host.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { MERCENARY_ROSTER } from '../src/gameplay/company/mercenaries.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createMorosChapter, MOROS_PAY } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { createQuestTracker } from '../src/gameplay/quests/quest-tracker.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 
 function setup({ realCombat = false } = {}) {
   let story = createLivingStory({ roster: MERCENARY_ROSTER.filter(a => a.id === 'merc-word') }), mode = 'playing';

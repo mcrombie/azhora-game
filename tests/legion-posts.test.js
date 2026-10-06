@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from '../src/legion-posts.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { LEGION_POSTS, LEGION_POST_IDS, legionPostLines } from '../src/content/regions/drent/legion-posts.js';
 
 test('eight army posts line the road, each with a name, a rank, a model and two lines', () => {
   // Eleven until 22 September 2026, when the Caloss Gate came out of the world and Footman Bram

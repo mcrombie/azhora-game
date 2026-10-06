@@ -3,28 +3,28 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { canWalkSlope } from '../src/climbing.js';
-import { REGION_IDS, hexOwnerAt } from '../src/region-world.js';
-import { TELEMONIA, TELEMONIA_BOX, PLAIN_MIDDLE, ROTHKAR_WAY, washWeight, borderDepth, onKethornTop, kethornLift } from '../src/telemonia-world.js';
-import { TELEMON_MEN, TELEMON_WOMEN, TORETH_HANDS, TELEMONIA_PEOPLE, TELEMONIA_FIGURES, TELEMON_WORDS, TORETH_WORDS, isTelemon, peopleSummary } from '../src/telemonia-people.js';
-import { PASS_MOUTHS, groundKind, plainEdgePoint, TELEMON_HORSES, TELEMONIA_HERD_ZONES } from '../src/telemonia-ways.js';
-import { TELEMON_LINES } from '../src/telemon-watch.js';
-import { WALL_FIGURES } from '../src/town-life.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { REGION_IDS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { TELEMONIA, TELEMONIA_BOX, PLAIN_MIDDLE, ROTHKAR_WAY, washWeight, borderDepth, onKethornTop, kethornLift } from '../src/content/regions/telemonia/telemonia-world.js';
+import { TELEMON_MEN, TELEMON_WOMEN, TORETH_HANDS, TELEMONIA_PEOPLE, TELEMONIA_FIGURES, TELEMON_WORDS, TORETH_WORDS, isTelemon, peopleSummary } from '../src/content/regions/telemonia/telemonia-people.js';
+import { PASS_MOUTHS, groundKind, plainEdgePoint, TELEMON_HORSES, TELEMONIA_HERD_ZONES } from '../src/content/regions/telemonia/telemonia-ways.js';
+import { TELEMON_LINES } from '../src/content/regions/telemonia/telemon-watch.js';
+import { WALL_FIGURES } from '../src/world/life/town-life.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
 
 /**
  * Telemonia, stage 2: the people, and how they meet an outsider, in the world (docs/telemonia-stage2-brief.md).
  * Built on Telemonia alone (tests/scoped-world.js). The rule on its own is tests/telemon-watch.test.js; the town
  * and the fields are the town's own test (tests/telemonia-town.test.js).
  */
-const { createCharacter } = await sourceModule('../src/characters.js');
-const { telemonWatchFor, telemonSightline, inTelemonia, fighterSpec, createTelemoniaHost, TELEMON_FIGHT, TELEMON_MOUTHS } = await sourceModule('../src/telemonia-host.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
+const { telemonWatchFor, telemonSightline, inTelemonia, fighterSpec, createTelemoniaHost, TELEMON_FIGHT, TELEMON_MOUTHS } = await sourceModule('../src/content/regions/telemonia/telemonia-host.js');
 const world = await scopedWorld(new THREE.Scene(), [REGION_IDS[TELEMONIA]]);
 const DT = 1 / 30;
 const watchers = () => [...TELEMON_MEN, ...TELEMON_WOMEN].map(p => ({ id: p.id, x: p.x, z: p.z, yaw: p.yaw, kind: p.telemon, range: TELEMON_FIGHT.vision }));
@@ -134,7 +134,7 @@ test('walking in by any pass in the open is seen; over the western rim, walking 
     assert.ok(seen.r, `${m.id}: walked in by it in the open and nobody saw`);
     assert.ok(inTelemonia(seen.at.x, seen.at.z), `${m.id}: seen inside the country`);
   }
-  // The western rim is two hexes thick and no pass goes through it; three men of the bands face it (src/telemonia-people.js
+  // The western rim is two hexes thick and no pass goes through it; three men of the bands face it (src/content/regions/telemonia/telemonia-people.js
   // `WEST_WATCH`): two on the terraces, one at the foot of the Rothkar way. Each looks at the rim: thirty metres before him is
   // not the plain but the terraces, the way or the rim's own cliff.
   const west = TELEMON_MEN.filter(p => /facing the rim/.test(p.role));

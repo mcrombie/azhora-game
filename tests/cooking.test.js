@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills } from '../src/skills.js';
-import { COOKING_SKILL, LAKOTA_CUP_WAIT, LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, RECIPES, createCooking, validateCookingSnapshot } from '../src/cooking.js';
-import { BIRD_WATCHER, birdWatcherConversation } from '../src/birding.js';
-import { FOODS } from '../src/consumables.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
-import { PEDDLER_STOCK } from '../src/economy.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { COOKING_SKILL, LAKOTA_CUP_WAIT, LAKOTA_MAKES_A_CUP, LAKOTA_TEACHES_THE_CUP, RECIPES, createCooking, validateCookingSnapshot } from '../src/gameplay/skills/crafting/cooking.js';
+import { BIRD_WATCHER, birdWatcherConversation } from '../src/gameplay/skills/birding/birding.js';
+import { FOODS } from '../src/gameplay/inventory/consumables.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { PEDDLER_STOCK } from '../src/gameplay/inventory/economy.js';
 
 const satchel = (start = {}) => {
   const bag = { ...start };

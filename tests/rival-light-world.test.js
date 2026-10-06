@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { ELOD_LIGHT, SMUGGLERS_DOOR, LIGHT_GUARDS, TOWER_STEP, BLOCKHOUSE_DOOR, SUBTRACTIDAUGHTER_STAND, SOVIK,
-  ROUTE_TO_DOOR, ROUTE_IN, ROUTE_OUT } from '../src/rival-light.js';
-import { bodyWorld, stepToward, BODY } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
-import { createStealth, STEALTH } from '../src/stealth.js';
-import { guardLineOfSight } from '../src/drent-host.js';
-import { SEA_LEVEL } from '../src/region-world.js';
+  ROUTE_TO_DOOR, ROUTE_IN, ROUTE_OUT } from '../src/content/quests/rival-light/rival-light.js';
+import { bodyWorld, stepToward, BODY } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { createStealth, STEALTH } from '../src/gameplay/law/stealth.js';
+import { guardLineOfSight } from '../src/content/regions/drent/drent-host.js';
+import { SEA_LEVEL } from '../src/world/terrain/region-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);

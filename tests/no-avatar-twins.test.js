@@ -26,12 +26,12 @@ test('nobody in Azhora is a copy of the traveler', async () => {
 });
 
 test('the people of Tidehaven do not share a face with each other either', async () => {
-  const { BOTANIST } = await import('../src/botany.js');
-  const { MYCOLOGIST } = await import('../src/mycology.js');
-  const { PIPE_SMOKER } = await import('../src/pipeweed.js');
-  const { TOFT } = await import('../src/jimson-quest.js');
-  const { BIRD_WATCHER } = await import('../src/birding.js');
-  const { REFUGEES } = await import('../src/refugees.js');
+  const { BOTANIST } = await import('../src/gameplay/skills/nature/botany.js');
+  const { MYCOLOGIST } = await import('../src/gameplay/skills/nature/mycology.js');
+  const { PIPE_SMOKER } = await import('../src/content/quests/roadside/pipeweed.js');
+  const { TOFT } = await import('../src/content/quests/roadside/jimson-quest.js');
+  const { BIRD_WATCHER } = await import('../src/gameplay/skills/birding/birding.js');
+  const { REFUGEES } = await import('../src/content/quests/roadside/refugees.js');
   const people = [BOTANIST, MYCOLOGIST, PIPE_SMOKER, TOFT, BIRD_WATCHER, ...REFUGEES];
   const seen = new Map();
   for (const person of people) {

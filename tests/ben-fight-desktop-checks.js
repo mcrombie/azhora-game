@@ -1,5 +1,5 @@
-import { BEN, SPIDER, SPIDER_DEN } from '../src/spider-quest.js';
-import { BEN_ROUTE } from '../src/ben-guide.js';
+import { BEN, SPIDER, SPIDER_DEN } from '../src/content/quests/spider/spider-quest.js';
+import { BEN_ROUTE } from '../src/content/quests/roadside/ben-guide.js';
 
 /** A real-frame regression for the den's visible actors and recovery choices.
  * Only the long walk to the den and the final low-health setup are shortened.

@@ -5,11 +5,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { sourceModule } from './module-loader.js';
 import { AMBUSH, PARTIES, AMBUSHED_IDS, RISK, roll, outcomeFor, createRoadAmbush,
-  validateRoadAmbushSnapshot, ambushPartiesForRoster, bodyPlace } from '../src/road-ambush.js';
-import { MERCENARY_ROSTER, CROMB, roadLengths, distanceAlongRoad } from '../src/mercenaries.js';
-import { companyFor, PLAYABLE } from '../src/player-characters.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
+  validateRoadAmbushSnapshot, ambushPartiesForRoster, bodyPlace } from '../src/content/quests/road-ambush/road-ambush.js';
+import { MERCENARY_ROSTER, CROMB, roadLengths, distanceAlongRoad } from '../src/gameplay/company/mercenaries.js';
+import { companyFor, PLAYABLE } from '../src/content/characters/player-characters.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 
 /** The whole company walks past, in the order the roster sends them, with nobody interfering. */
 function walkTheRoad(ambush, { withTraveler = [], dead = [] } = {}) {
@@ -240,7 +240,7 @@ test('they lie up at the unsigned Greenway junction on the road out of Drent', a
 });
 
 test('the traveler’s own fight: three of them, and they are not goblins', async () => {
-  const { ENEMY_KINDS } = await import('../src/combat.js');
+  const { ENEMY_KINDS } = await import('../src/gameplay/combat/combat.js');
   assert.equal(AMBUSH.rebels, 3);
   assert.ok(ENEMY_KINDS.rebel, 'the rebels have a kind of their own');
   const { rebel, goblin, soldier } = ENEMY_KINDS;
@@ -267,8 +267,8 @@ test('the host authors them at the health the module names, and answers a refuse
 });
 
 test('a live rebel ambush draws three armed people, readable tells, and draws them again after retry', async () => {
-  const { createCombat } = await import('../src/combat.js');
-  const { createCombatView } = await sourceModule('../src/combat-view.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
+  const { createCombatView } = await sourceModule('../src/gameplay/combat/combat-view.js');
   // Only the badge DOM is stubbed: the encounter, actors, meshes and view update are the real
   // game modules. The regression was a renderer whitelist that silently skipped every rebel.
   const element = () => ({ children: [], style: {}, classList: { toggle() {} },

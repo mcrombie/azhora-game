@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { REGION_CELLS, REGION_OUTLINES, hexOwnerAt } from '../src/region-world.js';
-import { pointInPolygon } from '../src/region-layout.js';
-import { moveCharacter } from '../src/game-state.js';
-import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/climbing.js';
+import { REGION_CELLS, REGION_OUTLINES, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { pointInPolygon } from '../src/world/terrain/region-layout.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/gameplay/movement/climbing.js';
 import { SOUTH_OREMINDI, SOUTH_OREMINDI_CELLS, SOUTH_OREMINDI_BOUNDS, SOUTH_OREMINDI_CLIMATE,
   SOUTH_OREMINDI_ARRIVAL, PEAKS, PATHS, LAKES, southOremindiOwns, southOremindiInset,
-  southOremindiGround, southOremindiWaterAt, southOremindiFeatures, SOUTH_OREMINDI_SHELVES } from '../src/south-oremindi-world.js';
+  southOremindiGround, southOremindiWaterAt, southOremindiFeatures, SOUTH_OREMINDI_SHELVES } from '../src/content/regions/south-oremindi/south-oremindi-world.js';
 
 const key=c=>`${c.q},${c.r}`,distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const world={bounds:SOUTH_OREMINDI_BOUNDS,colliders:[],heightAt:southOremindiGround,

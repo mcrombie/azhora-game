@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { drawMinimap, miniMapProjection, miniMapFogTiles, MINIMAP_PALETTE } from '../src/minimap.js';
-import { regions, regionAt, WORLD_BOUNDS } from '../src/regions.js';
-import { toWorld } from '../src/world-scale.js';
-import { hexCentre } from '../src/region-world.js';
-import { pointInPolygon } from '../src/region-layout.js';
-import { createMapFog } from '../src/map-fog.js';
-import { questMapColour } from '../src/world-map-detail.js';
+import { drawMinimap, miniMapProjection, miniMapFogTiles, MINIMAP_PALETTE } from '../src/ui/map/minimap.js';
+import { regions, regionAt, WORLD_BOUNDS } from '../src/world/terrain/regions.js';
+import { toWorld } from '../src/world/terrain/world-scale.js';
+import { hexCentre } from '../src/world/terrain/region-world.js';
+import { pointInPolygon } from '../src/world/terrain/region-layout.js';
+import { createMapFog } from '../src/ui/map/map-fog.js';
+import { questMapColour } from '../src/ui/map/world-map-detail.js';
 
 /** The fixture speaks authored metres, like the world it stands in for. */
 const at = (x, z) => toWorld(x, z);
@@ -68,7 +68,7 @@ test('independent bearings retain both targets even on opposite map edges', () =
 
 test('the long road’s next stop is a second, ringed target beside the arc’s own', () => {
   // Two golds: the muster road's filled diamond and the long road's open one, both drawn, so
-  // following one never hides the other (src/quest-markers.js, docs/drent-long-road.md §2).
+  // following one never hides the other (src/gameplay/quests/quest-markers.js, docs/drent-long-road.md §2).
   const world = fixture(), position = { x: -80, z: 29 };
   const ctx = context();
   const view = drawMinimap(ctx, { world, position, goal: { x: -75, z: 29 }, openGoal: { id: 'long-road-bird-garden', x: -30, z: 20 } });

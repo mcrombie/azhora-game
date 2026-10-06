@@ -1,4 +1,4 @@
-import { QUEST_DONE } from '../src/game-state.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
@@ -6,15 +6,15 @@ import { fileURLToPath } from 'node:url';
 import {
   DEFAULT_GAME_MODE, GAME_MODES, GAME_MODE_HARD, GAME_MODE_NORMAL, HARD_MODE_FEATURES, HARD_MODE_FEATURE_IDS,
   createGameMode, gameModeOf, hiddenSkillsIn, isGameMode, validateGameModeSnapshot,
-} from '../src/game-mode.js';
-import { SKILL_IDS, SKILLS, SKILLS_VERSION, createSkills, validateSkillsSnapshot } from '../src/skills.js';
-import { createLinguist, renderLine } from '../src/linguist.js';
-import { speechFor } from '../src/languages.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
+} from '../src/app/game-mode.js';
+import { SKILL_IDS, SKILLS, SKILLS_VERSION, createSkills, validateSkillsSnapshot } from '../src/gameplay/skills/skills.js';
+import { createLinguist, renderLine } from '../src/gameplay/skills/language/linguist.js';
+import { speechFor } from '../src/gameplay/skills/languages.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
 
 const srcDir = fileURLToPath(new URL('../src/', import.meta.url));
 const source = name => readFileSync(`${srcDir}${name}`, 'utf8');
@@ -78,19 +78,19 @@ test('the mode is one field, it round-trips, and no field at all is normal', () 
 });
 
 test('the gate is the only reader of the mode', () => {
-  const files = readdirSync(srcDir).filter(name => name.endsWith('.js') && name !== 'game-mode.js');
+  const files = readdirSync(srcDir, { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js') && name !== 'app/game-mode.js');
   const importers = [];
   for (const name of files) {
     const text = source(name);
-    const imported = text.match(/import \{([^}]*)\} from '\.\/game-mode\.js';/);
+    const imported = text.match(/import \{([^}]*)\} from '[^']*\/game-mode\.js';/);
     if (imported) importers.push([name, imported[1].split(',').map(part => part.trim()).filter(Boolean)]);
     assert.doesNotMatch(text, /GAME_MODE_HARD|GAME_MODE_NORMAL|HARD_MODE_FEATURES|hiddenSkillsIn/,
       `${name} does not name a mode or reach past the gate for its table`);
   }
   // Two files, and each takes exactly what it needs: the host builds the gate, the checkpoint
   // checks the one field it carries.
-  assert.deepEqual(importers.map(([name]) => name).sort(), ['main.js', 'road-checkpoint.js']);
-  assert.deepEqual(Object.fromEntries(importers), { 'main.js': ['createGameMode'], 'road-checkpoint.js': ['validateGameModeSnapshot'] });
+  assert.deepEqual(importers.map(([name]) => name).sort(), ['app/saves/road-checkpoint.js', 'main.js']);
+  assert.deepEqual(Object.fromEntries(importers), { 'main.js': ['createGameMode'], 'app/saves/road-checkpoint.js': ['validateGameModeSnapshot'] });
   const main = source('main.js');
   assert.match(main, /const gameMode=createGameMode\(\{mode:testingQuery\.get\('mode'\)\}\);/,
     'the only way in is the launch flag, beside the testing query');
@@ -155,7 +155,7 @@ test('normal mode filters hidden and reserved skills, pays none of the Linguist,
 });
 
 test('no line in normal mode says the traveler cannot follow what is said', () => {
-  const swept = ['long-road.js', 'story-chapters.js', 'moros-chapter.js', 'economy.js'];
+  const swept = ['content/chapters/journey/long-road.js', 'content/chapters/journey/story-chapters.js', 'content/chapters/civil-war/moros-chapter.js', 'gameplay/inventory/economy.js'];
   for (const name of swept) {
     const text = source(name);
     for (const phrase of ['you cannot hear what is being said', 'a language you did not have',
@@ -163,7 +163,7 @@ test('no line in normal mode says the traveler cannot follow what is said', () =
       assert.ok(!text.includes(phrase), `${name} still says “${phrase}”`);
   }
   // Wendel offers a phrasebook only out of the line kept for the mode that sells one.
-  const economy = source('economy.js');
+  const economy = source('gameplay/inventory/economy.js');
   const [, lines] = economy.match(/lines: Object\.freeze\(\[([\s\S]*?)\]\),/);
   assert.ok(!lines.includes('phrasebook'), 'his opening does not mention one');
   assert.match(economy, /phrasebookLine: 'Now\./, 'and the line that does is kept beside it');
@@ -196,7 +196,7 @@ test('every other surface a tongue could reach is shut in normal mode', () => {
   // and the character sheet is handed the hidden list so nobody reads a Linguist level off it.
   assert.match(main, /if\(gameMode\.has\('linguist'\)\)for\(const \[id,proficiency\] of Object\.entries\(startingLanguages\(playerId\)\)\)/);
   assert.match(main, /SKILL_IDS\.includes\(id\)&&!hiddenSkills\.has\(id\)/);
-  assert.match(source('character-select.js'), /describeStartingSkills\(entry, hidden\)/);
+  assert.match(source('app/startup/character-select.js'), /describeStartingSkills\(entry, hidden\)/);
 });
 
 /* ------------------------------------------------------------------ *
@@ -252,7 +252,7 @@ test('a save that holds linguist experience keeps every point of it', () => {
   const skills = createSkills();
   assert.equal(skills.restore(held), true);
   assert.equal(skills.known('linguist'), true);
-  // The snapshot also carries who taught what now (src/skills.js); a save from before that says
+  // The snapshot also carries who taught what now (src/gameplay/skills/skills.js); a save from before that says
   // it with its own keys, so both skills come back taught.
   assert.deepEqual(skills.snapshot(), { ...held, taught: ['birding', 'linguist'] }, 'and it comes back untouched');
   // It is simply not drawn: the sheet filters, it does not forget.

@@ -12,21 +12,21 @@ import { scopedWorld } from './scoped-world.js';
  * world's own ground function, as the game builds it.
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_CELLS, REGION_IDS, regionAt, WORLD_BOUNDS, SEA_LEVEL } = await sourceModule('../src/region-world.js');
-const { groundWithRiver } = await sourceModule('../src/world-terrain.js');
-const { canStand, canSwim, WATERLINE } = await sourceModule('../src/game-state.js');
-const { timberForSpecies } = await sourceModule('../src/wood-species.js');
-const { SOUTH_IBENAL_WILDLIFE_ZONES, ibenalWildlifeClear } = await sourceModule('../src/south-ibenal-wildlife.js');
-const { NORTH_IBENAL_WILDLIFE_ZONES } = await sourceModule('../src/north-ibenal-wildlife.js');
-const SOUTH_WORLD = await sourceModule('../src/south-ibenal-world.js');
-const NORTH_WORLD = await sourceModule('../src/north-ibenal-world.js');
-const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
-const SCENERY = await sourceModule('../src/south-ibenal-scenery.js');
+const { REGION_CELLS, REGION_IDS, regionAt, WORLD_BOUNDS, SEA_LEVEL } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canStand, canSwim, WATERLINE } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { timberForSpecies } = await sourceModule('../src/gameplay/skills/woodcutting/wood-species.js');
+const { SOUTH_IBENAL_WILDLIFE_ZONES, ibenalWildlifeClear } = await sourceModule('../src/content/regions/south-ibenal/south-ibenal-wildlife.js');
+const { NORTH_IBENAL_WILDLIFE_ZONES } = await sourceModule('../src/content/regions/north-ibenal/north-ibenal-wildlife.js');
+const SOUTH_WORLD = await sourceModule('../src/content/regions/south-ibenal/south-ibenal-world.js');
+const NORTH_WORLD = await sourceModule('../src/content/regions/north-ibenal/north-ibenal-world.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
+const SCENERY = await sourceModule('../src/content/regions/south-ibenal/south-ibenal-scenery.js');
 const { createIbenalScenery, createIbenalScenerySteps, readIbenalGround, ibenalTrailDistance, ibenalWaterAt, ibenalReserved,
   ibenalLineSpecies, ibenalDrawnGround, IBENAL_FOREST, IBENAL_KEPT_POINTS, SOUTH_IBENAL, NORTH_IBENAL } = SCENERY;
-const { createNorthIbenalScenerySteps } = await sourceModule('../src/north-ibenal-scenery.js');
-const { finishBuild } = await sourceModule('../src/build-steps.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { createNorthIbenalScenerySteps } = await sourceModule('../src/content/regions/north-ibenal/north-ibenal-scenery.js');
+const { finishBuild } = await sourceModule('../src/world/loading/build-steps.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 
 const COUNTRIES = [SOUTH_IBENAL, NORTH_IBENAL];
 const ZONES_OF = { [SOUTH_IBENAL]: SOUTH_IBENAL_WILDLIFE_ZONES, [NORTH_IBENAL]: NORTH_IBENAL_WILDLIFE_ZONES };
@@ -246,7 +246,7 @@ test('the ground\'s own water is drawn and laid: its ribbons, and its markers fo
 
 test('nothing that blocks a walker stands on a trail, at a landmark, on a river-mouth flat or in a ground animal\'s range', () => {
   const world = { bounds: WORLD_BOUNDS, heightAt: groundWithRiver, colliders };
-  // The water's own markers (`river-water`) say where the water is and stop nobody (src/game-state.js).
+  // The water's own markers (`river-water`) say where the water is and stop nobody (src/gameplay/movement/game-state.js).
   for (const c of colliders.filter(c => !/water/.test(c.kind ?? ''))) {
     assert.ok(ibenalTrailDistance(c.x, c.z) > c.r + .6, `${c.id} stands on a trail`);
     for (const p of IBENAL_KEPT_POINTS) assert.ok(Math.hypot(c.x - p.x, c.z - p.z) > c.r + 4, `${c.id} stands at ${p.id}`);

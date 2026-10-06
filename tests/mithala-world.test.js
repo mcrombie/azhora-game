@@ -3,37 +3,37 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
 import { PLAYABLE, WINDOW, ENCLOSED_HEXES } from '../scripts/build-region-survey.mjs';
-import { LAND_HEXES } from '../src/region-survey.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
+import { LAND_HEXES } from '../src/dev/tools/region-survey.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexCentre, hexOwnerAt, regionAt,
   regions, terrainMix, landDistance,
-} from '../src/region-world.js';
+} from '../src/world/terrain/region-world.js';
 import {
   MITHALA_RIVERS, MITHALA_MAIN, MITHALA_WEST_ARM, MITHALA_NORTH_BRAID, MITHALA_CELDER_WATER,
   MITHALA_EAST_HEAD, MITHALA_CROSS_BRAID, MITHALA_FAN, WEST_RIVERS, WEST_BRAIDS, WEST_REGION_NAMES,
   courseDistance,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/west-ground.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 import {
   MITHALA_REGIONS, MITHALA_CLIMATE, MITHALA_KOPPEN, SOUTH_MITHALA_CLIMATE, WEST_MITHALA_CLIMATE,
   EAST_MITHALA_CLIMATE, NORTH_MITHALA_CLIMATE, MITHALA_TILT, MITHALA_FLOOD, MITHALA_FEN,
   MITHALA_SWALE, MITHALA_SUMMER_CHANNELS, MITHALA_LANDMARKS, MITHALA_BOX,
   mithalaSlope, mithalaTilt, mithalaFlood, mithalaGround, mithalaWet, mithalaWeight, lotharnGate,
   onLevee, inBackswamp, onSummerFloor, nearestChannel, summerChannelPlace,
-} from '../src/mithala-world.js';
-import { MITHALA_WILDLIFE_ZONES } from '../src/mithala-wildlife.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { regionLevel } from '../src/region-levels.js';
-import { REGION_LANGUAGE, DIALECTS } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
-import { MITHALA_CITY_LANDMARKS, MITHALA_STREETS, MITHALA_DISTRICTS, mithalaCityReserved, polygonDepth } from '../src/mithala-city.js';
+} from '../src/content/regions/mithala/mithala-world.js';
+import { MITHALA_WILDLIFE_ZONES } from '../src/content/regions/mithala/mithala-wildlife.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { REGION_LANGUAGE, DIALECTS } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
+import { MITHALA_CITY_LANDMARKS, MITHALA_STREETS, MITHALA_DISTRICTS, mithalaCityReserved, polygonDepth } from '../src/content/regions/mithala/mithala-city.js';
 
 /**
  * The Mithala plain — South, West, East and North Mithala — built as terrain, climate, water,
@@ -61,7 +61,7 @@ import { MITHALA_CITY_LANDMARKS, MITHALA_STREETS, MITHALA_DISTRICTS, mithalaCity
  * plain, which outside it is still nobody's.
  */
 const { scopedWorld } = await import('./scoped-world.js');
-const { WEST_LIFE_ZONES, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const NAMES = ['South Mithala', 'West Mithala', 'East Mithala', 'North Mithala'];
 const world = await scopedWorld(scene, [...NAMES, 'West Lotharn Mountains', 'East Lotharn Mountains'].map(name => REGION_IDS[name]));
@@ -498,7 +498,7 @@ test('nobody lives here yet: no people, one made place - the city at the meeting
     assert.ok(canStand(region.spawn.x, region.spawn.z, world, .5), `${name}'s spawn is not on ground`);
     // Landmarks, map-fog areas and a developer destination each.
     assert.ok(region.landmarks.length >= 4, `${name} has landmarks`);
-    // The plain's own places, and since 4 October 2026 the city's (src/mithala-city.js) in whichever country each stands.
+    // The plain's own places, and since 4 October 2026 the city's (src/content/regions/mithala/mithala-city.js) in whichever country each stands.
     for (const id of region.landmarks)
       assert.ok(MITHALA_LANDMARKS.some(mark => mark.id === id) || MITHALA_CITY_LANDMARKS.some(mark => mark.id === id && mark.region === name),
         `${name} names ${id} and nothing defines it`);
@@ -511,7 +511,7 @@ test('nobody lives here yet: no people, one made place - the city at the meeting
   // cannot be described without them, and several of them say in as many words that none of it is
   // here — so the test is not the words but the world. Since 4 October 2026 one place on the plain is
   // somebody's: Mithala, the city at the meeting of the arms, a quarter on each of the four countries
-  // (src/mithala-city.js, docs/mithala-city-brief.md; tests/mithala-city-world.test.js walks it). So the
+  // (src/content/regions/mithala/mithala-city.js, docs/mithala-city-brief.md; tests/mithala-city-world.test.js walks it). So the
   // city's own ground is set apart, and outside it nothing has changed: inside the plain's box the only
   // things this build puts in anybody's way are trees and deep water, there is no sign, and the only
   // roads are the city's own streets, which stop at the plain's edge of their approaches.

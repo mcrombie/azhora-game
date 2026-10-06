@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { moveCharacter, canStand } from '../src/game-state.js';
-import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/climbing.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { moveCharacter, canStand } from '../src/gameplay/movement/game-state.js';
+import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/gameplay/movement/climbing.js';
 import {
   LOTHARN, LOTHARN_BOX, PEAKS, PEAK_TOPS, RAMPS, BANDS, KEMRATH, PASS_ROAD_LINE, nearestOn, onRamp, peakUplift,
-} from '../src/east-lotharn-world.js';
-import { CAVE, CAVE_LINES, createCaveWalk, caveOutside, nearestPlain } from '../src/east-lotharn-caves.js';
-import { createLotharnCaveWalk } from '../src/east-lotharn-cave-walk.js';
-import { lipRib } from '../src/varn-world.js';
+} from '../src/content/regions/east-lotharn/east-lotharn-world.js';
+import { CAVE, CAVE_LINES, createCaveWalk, caveOutside, nearestPlain } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { createLotharnCaveWalk } from '../src/content/regions/east-lotharn/east-lotharn-cave-walk.js';
+import { lipRib } from '../src/content/regions/varn/varn-world.js';
 
 /**
  * The East Lotharn's peaks and caves (the user, 27 September 2026: "make the very tall so that
@@ -76,7 +76,7 @@ test('four summits, the eastern about four hundred and twenty metres, each a bal
     for (let dz = -35; dz <= 35; dz += 1.5) for (let dx = -35; dx <= 35; dx += 1.5) {
       const x = peak.x + dx, z = peak.z + dz, onTop = u => u >= PEAK_TOPS[peak.id] - .5;
       if (!onTop(peakUplift(x, z)) || onRamp(x, z, 3.5) || onRamp(x + 1.5, z, 3.5) || onRamp(x, z + 1.5, 3.5)) continue;
-      // The eastern peak stands within Varn's reach (src/varn-world.js, 2 October 2026): the rim of stone Varn raises on
+      // The eastern peak stands within Varn's reach (src/content/regions/varn/varn-world.js, 2 October 2026): the rim of stone Varn raises on
       // every ledge's brink there stands round its bald's edge too, and is a rim, not the bald.
       if (lipRib(x, z) > 0 || lipRib(x + 1.5, z) > 0 || lipRib(x, z + 1.5) > 0) continue;
       area += 2.25;

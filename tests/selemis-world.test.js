@@ -4,32 +4,32 @@ import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES, HEX_WORLD_TRANSFORM, worldBoundsFor } from '../src/region-layout.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
-import { LAND_HEXES, PLAYABLE_SURVEY } from '../src/region-survey.js';
+import { canStand, canSwim, moveCharacter, WATERLINE } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES, HEX_WORLD_TRANSFORM, worldBoundsFor } from '../src/world/terrain/region-layout.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
+import { LAND_HEXES, PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexAt, hexCentre, hexOwnerAt, regionAt, regions, landDistance, insideRegion,
   METRES_PER_HEX,
-} from '../src/region-world.js';
-import { groundBeforeSelamus, groundTint, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES, shoreTintOf } from '../src/world-terrain.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { regionLevel } from '../src/region-levels.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { REGION_LANGUAGE, LANGUAGES } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
+} from '../src/world/terrain/region-world.js';
+import { groundBeforeSelamus, groundTint, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES, shoreTintOf } from '../src/world/terrain/world-terrain.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { REGION_LANGUAGE, LANGUAGES } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
 import { PLAYABLE, WINDOW } from '../scripts/build-region-survey.mjs';
-import { SWIM, swimReach, swimRange, swimSpeed, swimStep, levelForCrossing, levelForDryCrossing } from '../src/swimming.js';
+import { SWIM, swimReach, swimRange, swimSpeed, swimStep, levelForCrossing, levelForDryCrossing } from '../src/gameplay/movement/swimming.js';
 import { OWN_SKY } from './own-sky.js';
-import { HILLS as ASCARTH_HILLS, SOUTH as ASCARTH_TIP } from '../src/ascarth-world.js';
+import { HILLS as ASCARTH_HILLS, SOUTH as ASCARTH_TIP } from '../src/content/regions/ascarth/ascarth-world.js';
 import {
   SELEMI, SELEMIS_CLIMATE, SELEMIS_BOX, MIDDLE, HARBOUR, STRAND, HEADS, HILLS, SADDLES, WINTER_BEDS, ISLAND, CLIFF, CHANNEL_VIEW, SOUTH_CLIFFS,
   SELEMIS_GROUND, SELEMIS_LANDMARKS, strandWeight, cliffShare, hollow, oceanward, hillAt, bedWeight, selemisCover, selemisGround, selemisTint,
   selemisShoreTint,
-} from '../src/selemis-world.js';
-import { SELEMIS_WILDLIFE_ZONES } from '../src/selemis-wildlife.js';
-import { SELAMUS_ARRIVAL, SELAMUS_LANDMARKS, selamusReserved, selamusCanalAt, selamusGround } from '../src/selamus-city.js';
+} from '../src/content/regions/selemis/selemis-world.js';
+import { SELEMIS_WILDLIFE_ZONES } from '../src/content/regions/selemis/selemis-wildlife.js';
+import { SELAMUS_ARRIVAL, SELAMUS_LANDMARKS, selamusReserved, selamusCanalAt, selamusGround } from '../src/content/regions/selamus/selamus-city.js';
 
 /**
  * Selemis - the island one row of water south of the tip of the Ascarth Peninsula - built on the
@@ -47,7 +47,7 @@ import { SELAMUS_ARRIVAL, SELAMUS_LANDMARKS, selamusReserved, selamusCanalAt, se
  * the brief asked to be measured rather than assumed: that the world box and the survey window did
  * not move, how wide the channel is, and what the swim rule as it stands makes of that width.
  */
-const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH, WEST_LIFE_ZONES } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const scene = new THREE.Scene();
 const world = await scopedWorld(scene, [REGION_IDS[SELEMI], REGION_IDS[ASCARTH_TIP]]);
 const island = regions.find(region => region.name === SELEMI);

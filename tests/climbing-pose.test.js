@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { SKILLS, createSkills } from '../src/skills.js';
-import { SKILL_ICONS } from '../src/skill-icons.js';
+import { SKILLS, createSkills } from '../src/gameplay/skills/skills.js';
+import { SKILL_ICONS } from '../src/ui/skills/skill-icons.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 const joint = (actor, name) => actor.group.getObjectByName(name);
 const point = (actor, name) => joint(actor, name).getWorldPosition(new THREE.Vector3());
 const grip = (progress = Math.PI / 2, extra = {}) => ({ phase: 'climbing', progress, moving: true, slope: Math.PI / 3, ...extra });

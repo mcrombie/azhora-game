@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { moveCharacter } from '../src/game-state.js';
-import { WEAPON_TYPES } from '../src/weapons.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { WEAPON_TYPES } from '../src/gameplay/combat/weapons.js';
 
 function fixture(bodies = [], options = {}) {
   const world = { bounds: { minX: -80, maxX: 80, minZ: -80, maxZ: 80 }, colliders: [], heightAt: () => 1.5 };

@@ -14,7 +14,7 @@ One thing so far:
   the traveler learns it: the tongue rendering of speech and of signs, a proficiency for each
   language, Chris Scotwood interpreting while he is with you, his language sittings on the long
   road, the phrasebook, the drills, and the key that shows a line as it was said
-  (`src/linguist.js`, `src/languages.js`, `docs/languages.md`).
+  (`src/gameplay/skills/language/linguist.js`, `src/gameplay/skills/languages.js`, `docs/languages.md`).
 
 The code is kept, not deleted. It is reserved for hard mode.
 
@@ -28,7 +28,7 @@ follow what is being said. A save that already holds linguist experience keeps i
 ## Rules for building
 
 - Develop normal mode. Do not build out hard mode, and do not spend test time on it.
-- A feature that belongs to hard mode goes behind the one gate (`src/game-mode.js`) and is listed
+- A feature that belongs to hard mode goes behind the one gate (`src/app/game-mode.js`) and is listed
   here. Nothing reads the mode anywhere else.
 - The pure tests of a reserved module may stay, because they are cheap and they keep the code
   from rotting while it waits. Tests of the game as played assert normal mode.

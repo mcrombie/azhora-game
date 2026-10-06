@@ -16,7 +16,7 @@ before this branch come out of it unchanged; everything here is built beside the
 
 | Then | Now | Where it is said |
 | --- | --- | --- |
-| **Rena**, the principal town of Drent | ruins | `RENA` in `src/rena.js`; the chart area `rena`; the landmark `rena-ruins`; the bound stone at the east gate reads **RENA** |
+| **Rena**, the principal town of Drent | ruins | `RENA` in `src/content/quests/rena/rena.js`; the chart area `rena`; the landmark `rena-ruins`; the bound stone at the east gate reads **RENA** |
 | **East Rena** → *Eastreena* | **Tidehaven** | the chart area keeps its id `eastreena` and its **name is Tidehaven**, with Eastreena in its note; the **East Rena Stone** beside the Greenway is cut `EAST RENA`; the back of Rena's own bound stone reads `East Rena`; Lorn and the fisher's boy say it aloud |
 | **West Rena** → *Westerina* | **Applegarth** | the chart area `applegarth`; a place board at the village's east end says **Applegarth** and the bound stone beside it still says **Westerina**, because nobody has recut it |
 
@@ -43,7 +43,7 @@ From `../world-builder/azhora_lore/geography/regions/drent.md`, unchanged:
   before the army arrives**.
 
 The lore does not say who razed Rena, because the lore has never heard of Rena.
-**Invented, in the lore's own voice** (`RENA_RAZING` in `src/rena-people.js`, and
+**Invented, in the lore's own voice** (`RENA_RAZING` in `src/content/quests/rena/rena-people.js`, and
 the second exchange of letters):
 
 > Ambron was out of Drent for thirty years. The lords made a congress and it met
@@ -60,7 +60,7 @@ the ledger and not the strongbox — the lore's own detail that Drentish congres
 minutes survive the congresses that wrote them, turned into a reason a man dies.
 
 Nothing about Ambron, the Protectorate, the Torn mouth or the lords contradicts
-`src/campaign-world.js`; Drent is still level 0 and still held quietly by the
+`src/content/chapters/civil-war/campaign-world.js`; Drent is still level 0 and still held quietly by the
 Empire, and nothing added here attacks.
 
 ## The ground
@@ -68,7 +68,7 @@ Empire, and nothing added here attacks.
 Authored **directly in world metres** (100 m per hex), like Pueth and Peblos and
 for the same reason: none of it existed in the 56 m frame, and `world-scale.js`'s
 Tidehaven cluster (190 m round the landing) would capture any 56 m literal near
-the village and pin it. The head of `src/rena.js` says so, and says what a future
+the village and pin it. The head of `src/content/quests/rena/rena.js` says so, and says what a future
 change of scale would have to do.
 
 | Place | World metres | Note |
@@ -154,7 +154,7 @@ ground** — see *What the review caught*.
 
 ## How the letters play
 
-`src/rena-letters.js`, pure, with `src/rena-people.js` for the conversations.
+`src/content/quests/rena/rena-letters.js`, pure, with `src/content/quests/rena/rena-people.js` for the conversations.
 
 1. The traveler finds **Lorn** on the shingle. He says who he is and what he is;
    four topics explain Rena, who pulled it down, why he calls the village
@@ -195,7 +195,7 @@ ground** — see *What the review caught*.
 5. At the end **both of them are fond of you** — `friendship` returns `'fond'`,
    the same standing Lysa's acorn favour gives. A toast says so.
 
-**Nothing else is paid.** `REWARD_HOOK` in `src/rena-letters.js` is the marked,
+**Nothing else is paid.** `REWARD_HOOK` in `src/content/quests/rena/rena-letters.js` is the marked,
 unused place for a reward when the user decides what the errand is worth, and the
 host action `renaAct` in `main.js` is where it would be granted.
 
@@ -207,9 +207,9 @@ this branch loads with the errand untouched.
 
 ## Files
 
-**New**: `src/rena.js` (the places, the old road, the stands, the landmarks, the
-clearings, the signs), `src/rena-works.js` (the scenery), `src/rena-people.js`
-(the ten people and their conversations), `src/rena-letters.js` (the errand),
+**New**: `src/content/quests/rena/rena.js` (the places, the old road, the stands, the landmarks, the
+clearings, the signs), `src/content/quests/rena/rena-works.js` (the scenery), `src/content/quests/rena/rena-people.js`
+(the ten people and their conversations), `src/content/quests/rena/rena-letters.js` (the errand),
 `tests/rena.test.js`, `tests/rena-letters.test.js`, this report.
 
 **Changed**, all of it small and local:
@@ -217,18 +217,18 @@ clearings, the signs), `src/rena-works.js` (the scenery), `src/rena-people.js`
 | File | What |
 | --- | --- |
 | `src/world.js` | two imports, `measurePath`/`addPath` for the old road, one `buildRenaWorks` call, the landmarks, the NPC positions, and `renaRoute` on the world |
-| `src/world-regions.js` | one import and `...RENA_CLEARINGS` in `REGION_CLEARINGS` |
+| `src/world/terrain/world-regions.js` | one import and `...RENA_CLEARINGS` in `REGION_CLEARINGS` |
 | `src/main.js` | two imports, the quest object, the people, one dispatch line, the three actions, the save, the restore, the journal block, the side-quest banner, and two fields on the smoke's `state()` |
 | `index.html` | one journal section |
-| `src/signs.js` | five labels: `The Ruins of Rena`, `Applegarth`, `Rena`, `East Rena`, `Westerina` |
-| `src/map-fog.js` | the village area is named **Tidehaven** (id kept), plus `rena` and `applegarth` |
-| `src/inventory.js` | one item, `ardry-letter` |
-| `src/road-checkpoint.js` | validate and carry `renaLetters` |
-| `src/region-world.js` | Drent's description, its landmark list and its npc list |
-| `src/build-status.js` | Drent's developer-chart entry |
+| `src/world/scenery/signs.js` | five labels: `The Ruins of Rena`, `Applegarth`, `Rena`, `East Rena`, `Westerina` |
+| `src/ui/map/map-fog.js` | the village area is named **Tidehaven** (id kept), plus `rena` and `applegarth` |
+| `src/gameplay/inventory/inventory.js` | one item, `ardry-letter` |
+| `src/app/saves/road-checkpoint.js` | validate and carry `renaLetters` |
+| `src/world/terrain/region-world.js` | Drent's description, its landmark list and its npc list |
+| `src/dev/tools/build-status.js` | Drent's developer-chart entry |
 | `package.json`, `README.md`, `tests/map-fog.test.js` | the two new test files, the region and module rows, and the chart test's new expectation |
 
-`src/main.js`, `index.html`, `src/world.js`, `src/inventory.js`, `package.json`
+`src/main.js`, `index.html`, `src/world.js`, `src/gameplay/inventory/inventory.js`, `package.json`
 and `README.md` are CRLF; every one of them was patched by a Python script that
 asserts each anchor occurs exactly once, writes bytes, and writes nothing if an
 anchor fails. Their line endings and long lines are unchanged.
@@ -376,12 +376,12 @@ same gap, and it is still the one measurement worth taking.
   There is no site action in Rena: no ledger to find in the hall, no search of the
   graves. The hall's hearth and the well are both obvious places for one later.
 - **Lorn and Hesta never meet.** The last letter says so in as many words. If the
-  user ever wants the meeting, the ostler's horse (`src/riding.js`) is the only
+  user ever wants the meeting, the ostler's horse (`src/gameplay/movement/riding.js`) is the only
   thing in the game that could plausibly carry either of them.
 - **The old bound stones use the standard border-stone shape**, which is
   limewashed and painted. They are lettered correctly and read well, but a
   weathered variant of `signs.border` would suit an eighty-year-old stone better
-  than a fresh one; that belongs to whoever touches `src/signs.js` next.
+  than a fresh one; that belongs to whoever touches `src/world/scenery/signs.js` next.
 - **Applegarth has no interior and no work to do**, like every other village in
   the game.
 - **`npm run test:autoplay` was not run.** The autopilot has no goal for the
@@ -403,17 +403,17 @@ same gap, and it is still the one measurement worth taking.
    `addPath`, `npcPositions`, `landmarks`, and `renaRoute`.
 3. **`package.json`**'s test list is main's plus `tests/rena.test.js` and
    `tests/rena-letters.test.js`.
-4. **`src/map-fog.js`**: this branch renames the area `eastreena` to
+4. **`src/ui/map/map-fog.js`**: this branch renames the area `eastreena` to
    **Tidehaven** and adds two areas. The id is deliberately unchanged so saved
    charts keep loading. `tests/map-fog.test.js`'s second test was updated to match;
    if another branch also touched that test, keep both expectations.
-5. **`src/signs.js`**: five labels added to `SIGN_LABELS`. An unknown label throws
+5. **`src/world/scenery/signs.js`**: five labels added to `SIGN_LABELS`. An unknown label throws
    at build time, so a merge that drops them will fail loudly rather than quietly.
-6. **`src/inventory.js`**: one item. `road-checkpoint.js` caps a saved satchel at
+6. **`src/gameplay/inventory/inventory.js`**: one item. `road-checkpoint.js` caps a saved satchel at
    the number of known items, so the cap moves with it.
 7. **Nothing in Tidehaven moved.** If a merge ever appears to move a village
    stand, terrain or scatter, it did not come from here.
-8. **The world scale.** `src/rena.js` is authored in world metres, like
-   `src/pueth-world.js` and `src/peblos-world.js`. A future change of
+8. **The world scale.** `src/content/quests/rena/rena.js` is authored in world metres, like
+   `src/content/regions/pueth/pueth-world.js` and `src/content/regions/peblos/peblos-world.js`. A future change of
    `METRES_PER_HEX` needs a cluster for Rena and one for Applegarth in the new
    frame; the head of the file says so.

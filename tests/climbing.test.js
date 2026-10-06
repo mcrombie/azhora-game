@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CLIMBING, createClimbing, climbSurfaceClear, sampleClimbSurface, canWalkSlope, climbForbidden } from '../src/climbing.js';
+import { CLIMBING, createClimbing, climbSurfaceClear, sampleClimbSurface, canWalkSlope, climbForbidden } from '../src/gameplay/movement/climbing.js';
 
 const ground = (x, z) => 10 + Math.max(0, Math.min(20, z * 2));
 const terrain = (extra = {}) => ({ heightAt: ground, waterAt: () => .45, colliders: [],
@@ -136,7 +136,7 @@ test('a falling climber cannot cross sealed region boundaries or solid props', (
 });
 
 test('a face the world marks unclimbable gives no hold and no step, while walking and falling are the ground’s own', () => {
-  // Kethorn's rock in Telemonia is such a face (src/telemonia-world.js, `kethornUnclimbable`): here the
+  // Kethorn's rock in Telemonia is such a face (src/content/regions/telemonia/telemonia-world.js, `kethornUnclimbable`): here the
   // face from z = 2 up is marked, and the rest of the slope is ordinary climbing rock.
   const marked = terrain({ unclimbableAt: (_x, z) => z >= 2 });
   assert.equal(climbForbidden(marked, 0, 3), true);

@@ -4,17 +4,17 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { CREW_IDS } from '../src/rebel-crew.js';
-import { hexAt, hexCentre } from '../src/region-world.js';
-import { canStand, canSwim, WATERLINE } from '../src/game-state.js';
-import { ARRIVALS, MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/mercenaries.js';
-import { PLAYABLE } from '../src/player-characters.js';
-import { skillLevel } from '../src/skills.js';
-import { SWIM, swimSpeed, swimStep, levelForCrossing, levelForDryCrossing, SWIMMING_LESSON } from '../src/swimming.js';
+import { CREW_IDS } from '../src/content/quests/roadside/rebel-crew.js';
+import { hexAt, hexCentre } from '../src/world/terrain/region-world.js';
+import { canStand, canSwim, WATERLINE } from '../src/gameplay/movement/game-state.js';
+import { ARRIVALS, MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
+import { PLAYABLE } from '../src/content/characters/player-characters.js';
+import { skillLevel } from '../src/gameplay/skills/skills.js';
+import { SWIM, swimSpeed, swimStep, levelForCrossing, levelForDryCrossing, SWIMMING_LESSON } from '../src/gameplay/movement/swimming.js';
 import {
   WORD_ID, WORD_LEVEL, WORD_SHIP, WORD_TRACK, WORD_BEACH, WORD_SWIM, WORD_LINGERS, WORD_ASHORE,
   WORD_TOASTS, WORD_RELEASE, shipAt, swimmerAt, wordToastAt, harborNoticeNearby,
-} from '../src/word-arrival.js';
+} from '../src/content/quests/roadside/word-arrival.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -194,15 +194,15 @@ test('a shore route means a shore: he waits on the beach, and everybody else at 
 });
 
 test('the rebel ship is the Sultana’s hull with everything worth seeing taken off her', async () => {
-  const { createSultana, createRebelShip } = await sourceModule('../src/salt-ship.js');
-  const { HULL } = await sourceModule('../src/salt-sultan.js');
+  const { createSultana, createRebelShip } = await sourceModule('../src/content/quests/salt/salt-ship.js');
+  const { HULL } = await sourceModule('../src/content/quests/salt/salt-sultan.js');
   const size = group => new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
   const sultana = createSultana(), rebel = createRebelShip();
   sultana.update(0, { sail: 1, moving: true }); rebel.update(0, { sail: 1, moving: true });
   const a = size(sultana.group), b = size(rebel.group);
   assert.ok(Math.abs(a.z - b.z) < .6 && Math.abs(a.x - b.x) < .6, 'the same hull: one length, one beam');
   assert.ok(b.z > HULL.length * .9 && b.y > 9, 'a ship, with a mast');
-  // Spheres in her own fabric, not in her people: she carries a crew now (src/rebel-crew.js)
+  // Spheres in her own fabric, not in her people: she carries a crew now (src/content/quests/roadside/rebel-crew.js)
   // and a man has a head, so "any sphere aboard" stopped meaning "a gilt dome over her cabin".
   const domes = group => {
     let n = 0;
@@ -241,7 +241,7 @@ test('the rebel ship is the Sultana’s hull with everything worth seeing taken 
   assert.ok(sail?.visible, 'the sail is set under way');
   rebel.update(1, { sail: 0, moving: false });
   assert.equal(sail.visible, false, 'and spilled when she lies to');
-  assert.match(source('salt-ship.js'), /rebelCloth/, 'she flies her own cloth');
+  assert.match(source('content/quests/salt/salt-ship.js'), /rebelCloth/, 'she flies her own cloth');
 });
 
 test('the host puts her on the water, floats him in it, and lets him teach it', () => {
@@ -267,5 +267,5 @@ test('the host puts her on the water, floats him in it, and lets him teach it', 
   // The lesson is Ed's, in his own words, and it is the swimming module's copy.
   assert.ok(SWIMMING_LESSON.length >= 4);
   assert.match(SWIMMING_LESSON.join(' '), /Walk in/, 'and it starts where the skill starts');
-  assert.doesNotMatch(main, /SWIMMING_LESSON\s*=\s*\[/, 'written once, in src/swimming.js');
+  assert.doesNotMatch(main, /SWIMMING_LESSON\s*=\s*\[/, 'written once, in src/gameplay/movement/swimming.js');
 });

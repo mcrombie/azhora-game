@@ -1,20 +1,20 @@
-import { QUEST_DONE } from '../src/game-state.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   FERRY_FARE, FERRY_NPC, FERRY_HOSTS, FERRY_HOST_IDS, FERRY_LANDINGS, FERRY_SCENE, FERRY_VERSION, FERRY_CAPTIONS,
   createFerry, ferryConversation, validateFerrySnapshot,
-} from '../src/ferry.js';
-import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { PORT_CALOS } from '../src/port-calos-world.js';
-import { createSwimming, SWIMMING_LESSON } from '../src/swimming.js';
-import { createSkills } from '../src/skills.js';
-import { keepsNpc } from '../src/cast.js';
-import { PENINSULA_FERRY_LANDING } from '../src/peninsula-tutorial.js';
+} from '../src/world/travel/ferry.js';
+import { COPPER_ITEM, STARTING_PURSE } from '../src/gameplay/inventory/economy.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { PORT_CALOS } from '../src/content/regions/port-calos/port-calos-world.js';
+import { createSwimming, SWIMMING_LESSON } from '../src/gameplay/movement/swimming.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { keepsNpc } from '../src/content/characters/cast.js';
+import { PENINSULA_FERRY_LANDING } from '../src/content/chapters/prologue/peninsula-tutorial.js';
 
 /** A ferry with a purse, a place to stand and a record of everything the scene asked for. */
 function harness({ purse = STARTING_PURSE, free = false, charges = false, mounted = false, at = FERRY_LANDINGS.drent.ashore, getLanding } = {}) {

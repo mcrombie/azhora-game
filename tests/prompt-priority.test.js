@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { talkTarget, placeKeepsPrompt, fireKeepsPrompt } from '../src/prompt-priority.js';
+import { talkTarget, placeKeepsPrompt, fireKeepsPrompt } from '../src/ui/dialogue/prompt-priority.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 

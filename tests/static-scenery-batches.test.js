@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { batchStaticScenery } from '../src/static-scenery-batches.js';
-import { finishBuild, stageBuildSteps } from '../src/build-steps.js';
+import { batchStaticScenery } from '../src/world/scenery/static-scenery-batches.js';
+import { finishBuild, stageBuildSteps } from '../src/world/loading/build-steps.js';
 
 const regionAt = x => ({ id: x < 0 ? 1 : 2 });
 const cube = new THREE.BoxGeometry(1, 1, 1);

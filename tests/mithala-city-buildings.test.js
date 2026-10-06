@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { MITHALA_CITY, MITHALA_BUILDINGS, MITHALA_TOWER_STAIR, MITHALA_STREETS, mithalaCityGround } from '../src/mithala-city.js';
-import { WALK_STEP, createWalkSurfaces, colliderOverlapsHeight, validWalkSurfaceId } from '../src/walk-surfaces.js';
-import { finishBuild } from '../src/build-steps.js';
+import { MITHALA_CITY, MITHALA_BUILDINGS, MITHALA_TOWER_STAIR, MITHALA_STREETS, mithalaCityGround } from '../src/content/regions/mithala/mithala-city.js';
+import { WALK_STEP, createWalkSurfaces, colliderOverlapsHeight, validWalkSurfaceId } from '../src/world/collision/walk-surfaces.js';
+import { finishBuild } from '../src/world/loading/build-steps.js';
 
 // Mithala's buildings on their own: the step run with a bare group, empty lists and the city's made ground over a flat
-// plain, with no world built (src/mithala-city-buildings.js).
+// plain, with no world built (src/content/regions/mithala/mithala-city-buildings.js).
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createMithalaCityBuildingSteps } = await sourceModule('../src/mithala-city-buildings.js');
+const { createMithalaCityBuildingSteps } = await sourceModule('../src/content/regions/mithala/mithala-city-buildings.js');
 const ground = (x, z) => mithalaCityGround(x, z, 12);
 const root = new THREE.Group(), colliders = [], walkSurfaces = [];
 const metrics = { buildings: 0, batches: 0, vertices: 0, colliders: 0, walkSurfaces: 0, stairFlights: 0 };
@@ -16,7 +16,7 @@ finishBuild(createMithalaCityBuildingSteps({ root, groundHeight: ground, collide
 const surfaces = createWalkSurfaces(walkSurfaces, ground);
 const P = MITHALA_CITY.platform, TRAVELER = .34;
 
-/** The collider that stops a walker of `radius` with its feet at `feet` standing at (x, z), as src/game-state.js asks. */
+/** The collider that stops a walker of `radius` with its feet at `feet` standing at (x, z), as src/gameplay/movement/game-state.js asks. */
 const blocker = (x, z, feet, radius = TRAVELER) => colliders.find(c => colliderOverlapsHeight(c, feet)
   && (c.r !== undefined ? Math.hypot(x - c.x, z - c.z) < c.r + radius : Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius));
 const inFootprint = (b, x, z, margin) => Math.abs(x - b.x) <= b.width / 2 + margin && Math.abs(z - b.z) <= b.depth / 2 + margin;

@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, createSkills } from '../src/skills.js';
-import { SKILL_ICONS } from '../src/skill-icons.js';
-import { WEAPON_TYPES, createWeapons } from '../src/weapons.js';
+import { SKILLS, SKILL_IDS, RUNESCAPE_TABLE, createSkills } from '../src/gameplay/skills/skills.js';
+import { SKILL_ICONS } from '../src/ui/skills/skill-icons.js';
+import { WEAPON_TYPES, createWeapons } from '../src/gameplay/combat/weapons.js';
 import {
   ARMS, ARMS_IDS, ARMS_SKILLS, ARMS_HEADING, WEAPON_FAMILY, familyOf, TOP_LEVEL,
   damageMultiplier, swingCost, maxHealth, maxWind, dodgeWindow, guardShare, guardCost, drawTime,
   marginsFor, createCombatSkills, validateCombatSkillsSnapshot,
-} from '../src/combat-skills.js';
+} from '../src/gameplay/combat/combat-skills.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -62,12 +62,12 @@ test('every curve rises, and ends where the brief says', () => {
 
 test('level 1 is today, to the digit', () => {
   // The law the whole phase rests on. Every margin at level 1 equals the number the game used
-  // before any of this existed, and those numbers are still written in src/combat.js as TODAY.
+  // before any of this existed, and those numbers are still written in src/gameplay/combat/combat.js as TODAY.
   const margins = marginsFor({});
   assert.deepEqual([margins.maxHp, margins.maxStamina, margins.dodgeWindow], [100, 100, .37]);
   assert.equal(margins.swingCostFor('simple-sword'), 6);
   assert.equal(margins.damageFor('simple-sword'), 1);
-  const combat = source('combat.js');
+  const combat = source('gameplay/combat/combat.js');
   assert.match(combat, /const TODAY = Object\.freeze\(\{ maxHp: 100, maxStamina: 100, dodgeWindow: \.37, swingCost: 6, armourTurns: 0, dodgeScale: 1,/,
     'combat still says what today is, and uses it when nobody says otherwise');
   // The shield's own two numbers are today's too, and `hasShield` is false, so a combat wired to
@@ -193,7 +193,7 @@ test('each of the four ways of being paid respects both ceilings', () => {
 });
 
 test('the country pushes back, and level 0 is today', async () => {
-  const { countryHealth, countryDamage, COUNTRY } = await import('../src/combat-skills.js');
+  const { countryHealth, countryDamage, COUNTRY } = await import('../src/gameplay/combat/combat-skills.js');
   // The two multipliers, from docs/combat-brief.md.
   assert.equal(countryHealth(0), 1);
   assert.equal(countryDamage(0), 1);
@@ -217,7 +217,7 @@ test('timing never scales, with any level of anything', async () => {
   // The law that makes the whole design work: a level-8 ogre is not faster and does not
   // telegraph less, so a traveler who reads the tell can still dodge it - he simply cannot
   // afford to miss. Nothing that is a duration may be multiplied by a country level or a skill.
-  const combat = source('combat.js');
+  const combat = source('gameplay/combat/combat.js');
   for (const timing of ['tell', 'attack', 'contact', 'recovery', 'ENEMY_TELL', 'ENEMY_ATTACK', 'ENEMY_CONTACT', 'ENEMY_RECOVERY', 'duration']) {
     const pattern = new RegExp(`${timing}\s*[*]\s*(country|damageMultiplier|margins)`, 'i');
     assert.doesNotMatch(combat, pattern, `${timing} is multiplied by something`);
@@ -225,8 +225,8 @@ test('timing never scales, with any level of anything', async () => {
   // One contact-time damage value is shared by every body in a physical swing, whichever team.
   assert.equal((combat.match(/countryHealth\(/g) ?? []).length, 1, 'health is scaled in exactly one place');
   assert.equal((combat.match(/countryDamage\(/g) ?? []).length, 1, 'enemy strike damage is scaled once, before applying its contacts');
-  const { createCombat } = await import('../src/combat.js');
-  const { countryHealth } = await import('../src/combat-skills.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
+  const { countryHealth } = await import('../src/gameplay/combat/combat-skills.js');
   const world={bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},colliders:[],heightAt:()=>0};
   for(const level of [0,3,8])for(const kind of ['goblin','bear','batman']) {
     const fight=createCombat({world,position:{x:0,y:0,z:0}});
@@ -241,7 +241,7 @@ test('the host gives a fight the level of the country it happens in', () => {
   const main = source('main.js');
   assert.match(main, /getLevel:centre=>regionLevel\(world\.regionAt\(centre\?\.x\?\?0,centre\?\.z\?\?0\)\?\.name\)\?\?0/,
     'the country under the fight, or 0 where there is none');
-  assert.match(source('combat.js'), /Number\.isFinite\(asked\.level\)/, 'and an encounter authored with a level of its own keeps it');
+  assert.match(source('gameplay/combat/combat.js'), /Number\.isFinite\(asked\.level\)/, 'and an encounter authored with a level of its own keeps it');
   // The four payments, each with a truthful source.
   // The straw post pays as a post - and only when it is the post. Jerry's mark runs in the same
   // practice phase and teaches Bows where the arrow lands, so a sword at his straw banks nothing.
@@ -263,7 +263,7 @@ test('the host reads the margins rather than writing numbers of its own', () => 
   assert.match(main, /arms=createCombatSkills\(\{skills/, 'the fighting skills are built beside the rest');
   assert.match(main, /getMargins:\(\)=>\{if\(!arms\)return \{\};/, 'and combat asks them what a level is worth');
   assert.match(main, /damageScale:id=>arms\?\.margins\(\)\.damageFor\(id\)\?\?1/, 'as do the weapons');
-  assert.match(source('weapons.js'), /damage: type\.damage\.map\(hit => hit \* scale\)/, 'the multiplier is on the weapon’s own damage');
+  assert.match(source('gameplay/combat/weapons.js'), /damage: type\.damage\.map\(hit => hit \* scale\)/, 'the multiplier is on the weapon’s own damage');
   // New craft and art lessons do not add or remove any of the seven fighting skills.
   assert.equal(SKILL_IDS.length, 36, 'twenty-two of the world, one guarded specialization, seven of fighting, six of sorcery');
   assert.equal(SKILL_IDS.filter(id => SKILLS[id].group === ARMS_HEADING).length, 7);

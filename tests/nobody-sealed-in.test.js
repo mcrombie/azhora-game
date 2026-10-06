@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
-import { MERCENARY_ROSTER, createMercenaryCompany } from '../src/mercenaries.js';
-import { ANCHORS } from '../src/regions.js';
-import { WORD_BEACH, WORD_ASHORE } from '../src/word-arrival.js';
-import { TIDEHAVEN_SMITHY } from '../src/region-world.js';
-import { OUTPOST_LAYOUT } from '../src/outpost.js';
-import { AMBRON_FORGE } from '../src/ambron.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { MERCENARY_ROSTER, createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
+import { ANCHORS } from '../src/world/terrain/regions.js';
+import { WORD_BEACH, WORD_ASHORE } from '../src/content/quests/roadside/word-arrival.js';
+import { TIDEHAVEN_SMITHY } from '../src/world/terrain/region-world.js';
+import { OUTPOST_LAYOUT } from '../src/content/regions/drent/outpost.js';
+import { AMBRON_FORGE } from '../src/content/regions/ambron/ambron.js';
 
 /**
  * Every other check on the people of this world is local: the ground under them holds a body, and

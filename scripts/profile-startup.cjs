@@ -22,7 +22,7 @@ app.whenReady().then(async()=>{
   const server=http.createServer((req,res)=>{
     let pathname;try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400).end();return;}
     const target=path.resolve(contentRoot,'.'+(pathname==='/'?'/index.html':pathname));
-    if(!target.startsWith(contentRoot+path.sep)){res.writeHead(403).end();return;}
+    if(!require('./public-file.cjs').isPublicFile(contentRoot,target)){res.writeHead(403).end();return;}
     fs.readFile(target,(error,data)=>{
       if(error){res.writeHead(404).end();return;}
       const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.png':'image/png'};

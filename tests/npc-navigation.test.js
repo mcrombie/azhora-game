@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 const ground = colliders => ({ bounds: { minX: -60, maxX: 60, minZ: -60, maxZ: 60 }, colliders, heightAt: () => 1 });
 

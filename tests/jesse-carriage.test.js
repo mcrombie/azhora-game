@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createJesseCarriage, validateJesseCarriage, CARRIAGE_TIMBERS, JESSE_RIDE_LINES } from '../src/jesse-carriage-quest.js';
-import { JESSE, JESSE_WORKSHOP, JESSE_GUILD, CARRIAGE_PARTS, JESSE_CARRIAGE_ROUTE } from '../src/jesse-carriage-world.js';
-import { createJesseCarriageHost, JESSE_GUILD_NOTICE } from '../src/jesse-carriage-host.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills, RUNESCAPE_TABLE } from '../src/skills.js';
-import { PLANKS } from '../src/construction.js';
-import { normalizeTrackableQuests } from '../src/quest-tracker.js';
+import { createJesseCarriage, validateJesseCarriage, CARRIAGE_TIMBERS, JESSE_RIDE_LINES } from '../src/content/quests/jesse/jesse-carriage-quest.js';
+import { JESSE, JESSE_WORKSHOP, JESSE_GUILD, CARRIAGE_PARTS, JESSE_CARRIAGE_ROUTE } from '../src/content/quests/jesse/jesse-carriage-world.js';
+import { createJesseCarriageHost, JESSE_GUILD_NOTICE } from '../src/content/quests/jesse/jesse-carriage-host.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills, RUNESCAPE_TABLE } from '../src/gameplay/skills/skills.js';
+import { PLANKS } from '../src/gameplay/skills/woodcutting/construction.js';
+import { normalizeTrackableQuests } from '../src/gameplay/quests/quest-tracker.js';
 
-const { createJesseCarriageScenery } = await sourceModule('../src/jesse-carriage-scenery.js');
+const { createJesseCarriageScenery } = await sourceModule('../src/content/quests/jesse/jesse-carriage-scenery.js');
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const move = (from, target, amount) => {
   const t = Math.min(1, amount / (distance(from, target) || 1));

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHarbourAlarm, HARBOUR_WATCH, HARBOUR_ALARM_END } from '../src/harbour-alarm.js';
-import { WORD_SHIP, WORD_ASHORE, WORD_BEACH } from '../src/word-arrival.js';
+import { createHarbourAlarm, HARBOUR_WATCH, HARBOUR_ALARM_END } from '../src/content/quests/roadside/harbour-alarm.js';
+import { WORD_SHIP, WORD_ASHORE, WORD_BEACH } from '../src/content/quests/roadside/word-arrival.js';
 
 test('the watch and locals answer the sail, Orris panics, and everybody returns afterward', () => {
   const people = [...HARBOUR_WATCH, {id:'harbormaster'}, {id:'doomsayer'}, {id:'instructor'}, {id:'merc-gotwood'}, {id:'farmer'}];

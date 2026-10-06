@@ -1,16 +1,16 @@
-import { moveCharacter, canStand, canSwim, waterAt } from '../src/game-state.js';
-import { bodyWorld, BODY } from '../src/bodies.js';
-import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/climbing.js';
-import { canPushThrough } from '../src/undergrowth.js';
-import { closedRegionEntered } from '../src/closed-border.js';
-import { createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
-import { WALK_STEP } from '../src/walk-surfaces.js';
-import { SWIM, swimStep, swimSpeed } from '../src/swimming.js';
-import { createSkills } from '../src/skills.js';
-import { createLocomotionSkills } from '../src/locomotion-skills.js';
-import { createCombat } from '../src/combat.js';
+import { moveCharacter, canStand, canSwim, waterAt } from '../src/gameplay/movement/game-state.js';
+import { bodyWorld, BODY } from '../src/gameplay/combat/bodies.js';
+import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { canPushThrough } from '../src/world/scenery/undergrowth.js';
+import { closedRegionEntered } from '../src/world/travel/closed-border.js';
+import { createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
+import { WALK_STEP } from '../src/world/collision/walk-surfaces.js';
+import { SWIM, swimStep, swimSpeed } from '../src/gameplay/movement/swimming.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createLocomotionSkills } from '../src/gameplay/movement/locomotion-skills.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
 
-import { createLotharnCaveWalk } from '../src/east-lotharn-cave-walk.js';
+import { createLotharnCaveWalk } from '../src/content/regions/east-lotharn/east-lotharn-cave-walk.js';
 
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const copy = p => ({ x: p.x, y: p.y, z: p.z });

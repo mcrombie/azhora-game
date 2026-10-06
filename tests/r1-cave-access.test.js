@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import './module-loader.js';
-import { groundWithRiver, groundBeforeVarn } from '../src/world-terrain.js';
-import { regionAt, WORLD_BOUNDS, hexOwnerAt } from '../src/region-world.js';
-import { moveCharacter } from '../src/game-state.js';
-import { canWalkSlope, sampleClimbSurface } from '../src/climbing.js';
-import { CAVE_BENCHES, CAVE_RAILS, varnUnclimbable } from '../src/varn-world.js';
-import { createCaves } from '../src/east-lotharn-caves.js';
-import { createLotharnCaveWalk } from '../src/east-lotharn-cave-walk.js';
+import { groundWithRiver, groundBeforeVarn } from '../src/world/terrain/world-terrain.js';
+import { regionAt, WORLD_BOUNDS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { canWalkSlope, sampleClimbSurface } from '../src/gameplay/movement/climbing.js';
+import { CAVE_BENCHES, CAVE_RAILS, varnUnclimbable } from '../src/content/regions/varn/varn-world.js';
+import { createCaves } from '../src/content/regions/east-lotharn/east-lotharn-caves.js';
+import { createLotharnCaveWalk } from '../src/content/regions/east-lotharn/east-lotharn-cave-walk.js';
 import { travel } from './lattice-flood.js';
 
 // Fast terrain/controller coverage. The existing Varn suite additionally uses the constructed

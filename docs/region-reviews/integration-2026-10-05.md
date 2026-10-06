@@ -16,7 +16,7 @@ the base. `main` is not moved by this branch; see "Main" below.
 ## Ports onto the corrected base
 
 - **Ibenal river ground.** Codex replaced the separate refinement passes with one shared pass for the forest and its
-  coastal outlets (`src/ibenwood-alezhor-ground.js`). The Ibenals' streams join it: `IBENWOOD_ALEZHOR_GROUND_REGIONS`
+  coastal outlets (`src/content/regions/ibenwood/ibenwood-alezhor-ground.js`). The Ibenals' streams join it: `IBENWOOD_ALEZHOR_GROUND_REGIONS`
   gains 65 and 66, the coast index is `combinedRiverIndex(alezhorRiverIndex(), ibenalRiverIndex())`, and the Ibenals'
   scenery reads `forestRenderedGround`. The original branch's `ibenalRiverGround` pass and `nearRefinedRiver` are not
   restored. The refinement's height memo and `reach` parameter (`7fb3ce1`) carry over and serve the shared pass.

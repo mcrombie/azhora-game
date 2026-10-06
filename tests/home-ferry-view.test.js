@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { FERRY_LANDINGS } from '../src/ferry.js';
-import { HOME_FERRY_SECONDS } from '../src/home-residents.js';
+import { FERRY_LANDINGS } from '../src/world/travel/ferry.js';
+import { HOME_FERRY_SECONDS } from '../src/content/quests/homes/home-residents.js';
 const THREE = await sourceModule('../vendor/three.module.js');
-const { homeFerryFrame, createHomeFerryView, HOME_FERRY_BERTHS } = await sourceModule('../src/home-ferry-view.js');
+const { homeFerryFrame, createHomeFerryView, HOME_FERRY_BERTHS } = await sourceModule('../src/content/quests/homes/home-ferry-view.js');
 const sailing = clock => ({phase:'sailing',leg:'quay',clock,position:{...FERRY_LANDINGS.peblos.ashore}});
 const gap = (a,b) => Math.hypot(a.x-b.x,a.y-b.y,a.z-b.z);
 

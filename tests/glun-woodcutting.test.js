@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills } from '../src/skills.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWoodcutting } from '../src/woodcutting.js';
-import { createGlunWoodcutting, GLUN_WOOD_LESSON, glunWoodcuttingChoice, validateGlunWoodcuttingSnapshot } from '../src/glun-woodcutting.js';
-import { INSTRUCTOR_STAND } from '../src/instructor.js';
-import { bodyWorld, BODY, stepToward } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWoodcutting } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { createGlunWoodcutting, GLUN_WOOD_LESSON, glunWoodcuttingChoice, validateGlunWoodcuttingSnapshot } from '../src/content/quests/skill-lessons/glun-woodcutting.js';
+import { INSTRUCTOR_STAND } from '../src/gameplay/skills/instructor.js';
+import { bodyWorld, BODY, stepToward } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import { sourceModule } from './module-loader.js';
 
 function fixture() {

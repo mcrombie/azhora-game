@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMagic, validateMagicSnapshot } from '../src/magic.js';
+import { createMagic, validateMagicSnapshot } from '../src/gameplay/magic/magic.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { createCombat } from '../src/combat.js';
-import { createSkills } from '../src/skills.js';
-import { createWeapons } from '../src/weapons.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSpiderQuest, SPIDER_DEN } from '../src/spider-quest.js';
-import { createCatQuest, createMopWalk, CAT, LIZ_STAND } from '../src/cat-quest.js';
-import { createMurderQuest, WITNESS_IDS, MURDERER, MURDERER_READING } from '../src/murder-quest.js';
-const { createMagicView } = await sourceModule('../src/magic-view.js');
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSpiderQuest, SPIDER_DEN } from '../src/content/quests/spider/spider-quest.js';
+import { createCatQuest, createMopWalk, CAT, LIZ_STAND } from '../src/content/quests/roadside/cat-quest.js';
+import { createMurderQuest, WITNESS_IDS, MURDERER, MURDERER_READING } from '../src/content/quests/roadside/murder-quest.js';
+const { createMagicView } = await sourceModule('../src/gameplay/magic/magic-view.js');
 
 function fixture({enemies=[],allies=[],bodies=[],colliders=[],getCastOrigin}={}) {
   const world={bounds:{minX:-2000,maxX:2000,minZ:-2000,maxZ:2000},colliders,heightAt:()=>1.5};
@@ -176,7 +176,7 @@ test('an earned fireball renders at its traveling world position and disappears 
 
 
 test('Fireball lifts the equipped hand, releases from its current world tip, then recovers',async()=>{
-  const {createCharacter}=await sourceModule('../src/characters.js');
+  const {createCharacter}=await sourceModule('../src/content/characters/characters.js');
   const actor=createCharacter(),parent=new THREE.Group();parent.add(actor.group);
   parent.position.set(12,3,-8);parent.rotation.y=.7;parent.scale.setScalar(1.1);
   let samples=0,releaseTip;

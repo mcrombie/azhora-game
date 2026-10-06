@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import { ELOD_LIGHT, RIVAL_HEAD, SUBTRACTIDAUGHTER, SUBTRACTIDAUGHTER_STAND, BLOCKHOUSE_DOOR, SOVIK, SOVIK_ITEM, KEY_ITEM, PASSPORT_ITEM,
   SMUGGLERS_DOOR, LIGHT_GUARDS, TOWER_STEP, ROUTE_IN, ROUTE_OUT, SISTER_TOLD, SISTER_WHY, CROSSING_PLAN, ADDISON_AFTER, SOVIK_MET,
   SOVIK_TAKEN, RIVAL_FIRST, RIVAL_CASE, RIVAL_YIELDS, RIVAL_AFTER, HEIST_ENDINGS, HEIST_ENDING_IDS, WATCH_FIGHT_ID, LIGHT_FIGHT_ID,
-  createHeist, rivalConversation, validateHeistSnapshot, watchesTraveler, watchFight, arenaAround } from '../src/rival-light.js';
-import { SUVAL_LIGHT, ADDISON, createLightKeeper, addisonConversation } from '../src/lighthouse.js';
-import { createBatmanHunt } from '../src/batman.js';
-import { insideRegion } from '../src/region-world.js';
-import { closedRegionEntered, CLOSED_REGIONS } from '../src/closed-border.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
+  createHeist, rivalConversation, validateHeistSnapshot, watchesTraveler, watchFight, arenaAround } from '../src/content/quests/rival-light/rival-light.js';
+import { SUVAL_LIGHT, ADDISON, createLightKeeper, addisonConversation } from '../src/content/quests/lighthouse/lighthouse.js';
+import { createBatmanHunt } from '../src/content/quests/batman/batman.js';
+import { insideRegion } from '../src/world/terrain/region-world.js';
+import { closedRegionEntered, CLOSED_REGIONS } from '../src/world/travel/closed-border.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
 
 /**
  * Addison's errand, as the user set it on 26 September 2026: steal the fire spirit (loosely

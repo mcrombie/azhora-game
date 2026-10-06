@@ -2,26 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { MAIN_ROAD, regionNpcPositions, regionAt, villageToWorld, TIDEHAVEN_SMITHY } from '../src/region-world.js';
-import { OPENING_FIGHT_GROUND, GREENWAY_RAID } from '../src/opening-fights.js';
-import { LANDING_QUEUE } from '../src/mercenaries.js';
-import { subregionsAt } from '../src/map-fog.js';
-import { distanceAlongRoad, pointAlongRoad } from '../src/mercenaries.js';
-import { LONG_ROAD_SPINE, longRoadStop } from '../src/long-road.js';
-import { FARMER } from '../src/farming.js';
-import { MYCOLOGIST_STAND } from '../src/mycology.js';
-import { BOTANIST_STAND } from '../src/botany.js';
-import { GEOLOGIST_STAND } from '../src/geology.js';
-import { BOWDEN_STAND } from '../src/woodcutting.js';
-import { DRENT_DEEP_PLACES } from '../src/rena.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
+import { MAIN_ROAD, regionNpcPositions, regionAt, villageToWorld, TIDEHAVEN_SMITHY } from '../src/world/terrain/region-world.js';
+import { OPENING_FIGHT_GROUND, GREENWAY_RAID } from '../src/app/startup/opening-fights.js';
+import { LANDING_QUEUE } from '../src/gameplay/company/mercenaries.js';
+import { subregionsAt } from '../src/ui/map/map-fog.js';
+import { distanceAlongRoad, pointAlongRoad } from '../src/gameplay/company/mercenaries.js';
+import { LONG_ROAD_SPINE, longRoadStop } from '../src/content/chapters/journey/long-road.js';
+import { FARMER } from '../src/gameplay/skills/farming/farming.js';
+import { MYCOLOGIST_STAND } from '../src/gameplay/skills/nature/mycology.js';
+import { BOTANIST_STAND } from '../src/gameplay/skills/nature/botany.js';
+import { GEOLOGIST_STAND } from '../src/gameplay/skills/nature/geology.js';
+import { BOWDEN_STAND } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { DRENT_DEEP_PLACES } from '../src/content/quests/rena/rena.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
 import { sourceModule } from './module-loader.js';
 
 // Three of the tables this checks live in files that draw as well as describe, so they are
 // loaded the way tests/quest-markers.test.js loads the marker meshes: with three stubbed out.
-const { BIRD_HABITATS } = await sourceModule('../src/drent-birds.js');
-const { STONE_GROUNDS } = await sourceModule('../src/drent-stones.js');
-const { AUTHORED_STANDS } = await sourceModule('../src/drent-flora.js');
+const { BIRD_HABITATS } = await sourceModule('../src/content/regions/drent/drent-birds.js');
+const { STONE_GROUNDS } = await sourceModule('../src/content/regions/drent/drent-stones.js');
+const { AUTHORED_STANDS } = await sourceModule('../src/content/regions/drent/drent-flora.js');
 
 /**
  * The long road is spaced, and this is what keeps it spaced.
@@ -118,10 +118,10 @@ test('every spine teacher is on the road or in a named ground, and stands in Dre
 
 test('the three who moved are where the ground said they could stand, and not where it said they could not', () => {
   // Odger: on the bench side of Fernway Rest. Beside the cairn is inside the pileated
-  // woodpecker's home ground, and a stand takes a bird's perches away (src/rena.js).
+  // woodpecker's home ground, and a stand takes a bird's perches away (src/content/quests/rena/rena.js).
   const woodpecker = birdGround(BIRD_HABITATS.find(area => area.id === 'greenway-pileated'));
   assert.ok(Number.isFinite(woodpecker.x), 'the pileated woodpecker keeps a home ground');
-  // The rule in src/rena.js is about the stands a pass places: an existing stand is not moved,
+  // The rule in src/content/quests/rena/rena.js is about the stands a pass places: an existing stand is not moved,
   // and a new one goes nowhere near an army post or a bird. These three are new stands.
   for (const id of MOVED) for (const home of BIRD_HABITATS) {
     const ground = birdGround(home);
@@ -132,7 +132,7 @@ test('the three who moved are where the ground said they could stand, and not wh
   assert.ok(gap({ x: -132.3, z: 34.6 }, woodpecker) < woodpecker.radius, 'the cairn is inside the bird’s ground, which is why he is at the bench');
   // And out of the 4.6 m either side of the centreline that the company walks in. Jojo is the
   // exception and always was: the head of the pier is where the road starts, and the company
-  // queues down it past her (LANDING_QUEUE, src/mercenaries.js).
+  // queues down it past her (LANDING_QUEUE, src/gameplay/company/mercenaries.js).
   for (const id of MOVED) assert.ok(fromRoad(TEACHERS[id]) > 4.6, `${id} stands in the road`);
   // Nell and Silas are at the two deep places the design names, to the metre.
   assert.ok(gap(BOTANIST_STAND, DRENT_DEEP_PLACES[0]) < .5, 'Nell is at the Sunken Lane');
@@ -140,7 +140,7 @@ test('the three who moved are where the ground said they could stand, and not wh
   // there is no room to stand in it. He is inside its kept-clear disc and on the road side of it.
   assert.ok(gap(GEOLOGIST_STAND, DRENT_DEEP_PLACES[1]) < DRENT_DEEP_PLACES[1].radius + 3, 'Silas is at the Toll House');
   assert.ok(gap(GEOLOGIST_STAND, DRENT_DEEP_PLACES[1]) > 5, 'and not inside its walls');
-  // Nothing within reach of an army post (src/rena.js's other standing rule).
+  // Nothing within reach of an army post (src/content/quests/rena/rena.js's other standing rule).
   for (const id of MOVED) for (const post of LEGION_POSTS) {
     assert.ok(gap(TEACHERS[id], post) > 12, `${id} stands on top of ${post.id}`);
   }
@@ -149,7 +149,7 @@ test('the three who moved are where the ground said they could stand, and not wh
 test('each of the three who moved has something to teach with, within sight of where he stands', () => {
   // A teacher with nothing to find is a lesson the traveler cannot finish.
   // Odger: mushrooms scatter inside one box of Drent's wood, and he has to be in it.
-  const woods = source('mushrooms.js').match(/const inWoods = \(x, z\) => x >= (-?[\d.]+) && x <= (-?[\d.]+) && z >= (-?[\d.]+) && z <= (-?[\d.]+);/);
+  const woods = source('gameplay/skills/nature/mushrooms.js').match(/const inWoods = \(x, z\) => x >= (-?[\d.]+) && x <= (-?[\d.]+) && z >= (-?[\d.]+) && z <= (-?[\d.]+);/);
   assert.ok(woods, 'the mushroom scatter still names the wood it uses');
   const [, minX, maxX, minZ, maxZ] = woods.map(Number);
   assert.ok(MYCOLOGIST_STAND.x > minX + 20 && MYCOLOGIST_STAND.x < maxX - 20
@@ -175,9 +175,9 @@ test('src/main.js places the three from their own modules, and keeps no literal 
   assert.match(main, /world\.npcPositions\[GEOLOGIST\.id\]=\{x:GEOLOGIST_STAND\.x,z:GEOLOGIST_STAND\.z\}/);
   assert.doesNotMatch(main, /world\.npcPositions\[MYCOLOGIST\.id\]=\{x:-50,z:25\}/, 'the old Greenway-edge literal is back');
   // And nothing anywhere still sends the traveler to the places they left.
-  for (const [file, gone] of [['skills.js', /Odger Pell, at the edge of the Greenway/], ['skills.js', /Nell Harrow, on the outskirts/],
-    ['skills.js', /Silas Garrow, digging marl under the Weatherhead'/], ['consumables.js', /edge of the Greenway/],
-    ['mycology.js', /edge of the Greenway/], ['botany.js', /outskirts of Tidehaven/]])
+  for (const [file, gone] of [['gameplay/skills/skills.js', /Odger Pell, at the edge of the Greenway/], ['gameplay/skills/skills.js', /Nell Harrow, on the outskirts/],
+    ['gameplay/skills/skills.js', /Silas Garrow, digging marl under the Weatherhead'/], ['gameplay/inventory/consumables.js', /edge of the Greenway/],
+    ['gameplay/skills/nature/mycology.js', /edge of the Greenway/], ['gameplay/skills/nature/botany.js', /outskirts of Tidehaven/]])
     assert.doesNotMatch(source(file), gone, `${file} still says where somebody used to be`);
 });
 
@@ -207,7 +207,7 @@ test('the smithy\u2019s plot is the one the four measurements chose', () => {
     assert.ok(Math.hypot(spot.x - forge.x, spot.z - forge.z) > 14, 'clear of the opening fights');
   // 3. Clear of the queue that comes down the pier, where ten mercenaries land one behind the
   //    next. It runs from the pier head toward the road's first point, which is the arithmetic
-  //    `createMercenaryCompany` itself uses (`queue`, src/mercenaries.js).
+  //    `createMercenaryCompany` itself uses (`queue`, src/gameplay/company/mercenaries.js).
   const pier = villageToWorld(4, 20), head = MAIN_ROAD[0];
   const span = Math.hypot(head.x - pier.x, head.z - pier.z);
   const ux = (head.x - pier.x) / span, uz = (head.z - pier.z) / span;

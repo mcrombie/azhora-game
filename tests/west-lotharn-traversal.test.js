@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/climbing.js';
-import { createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
-import { PEAKS, RAMPS, pointOn } from '../src/west-lotharn-world.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { createClimbing, sampleClimbSurface, canWalkSlope } from '../src/gameplay/movement/climbing.js';
+import { createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
+import { PEAKS, RAMPS, pointOn } from '../src/content/regions/west-lotharn/west-lotharn-world.js';
 
 // The flood-fill tests establish geographic access. This test makes a full-size beginner
 // actually follow the highest summit's route: normal walking collision/slope rules, the real

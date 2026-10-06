@@ -5,10 +5,10 @@ import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { inspectCelderRoute } from './celder-route-controller.js';
-import { REGION_IDS } from '../src/region-world.js';
-import { IZOL_ROAD, SEA_GATE_PATH } from '../src/izol-world.js';
-import { EAST_IZOL_TRAILS, EAST_IZOL_ARRIVAL, EAST_IZOL_PRESENCES } from '../src/east-izol-world.js';
-import { WALK_STEP } from '../src/walk-surfaces.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
+import { IZOL_ROAD, SEA_GATE_PATH } from '../src/content/regions/izol/izol-world.js';
+import { EAST_IZOL_TRAILS, EAST_IZOL_ARRIVAL, EAST_IZOL_PRESENCES } from '../src/content/regions/east-izol/east-izol-world.js';
+import { WALK_STEP } from '../src/world/collision/walk-surfaces.js';
 import { inspectEastIzolScene } from './east-izol-scene-review.js';
 
 // The delivered walk-route.mjs kept initial Y and nudged blocked positions.
@@ -29,9 +29,9 @@ const routes = [
 ];
 assert.equal(trails.length, 6, 'all six delivered clear routes are checked');
 assert.equal(EAST_IZOL_PRESENCES.length, 3);
-const sourceFiles = ['src/world.js', 'src/world-terrain.js', 'src/east-izol-world.js', 'src/east-izol-scenery.js',
-  'src/east-izol-wildlife.js', 'src/izol-world.js', 'src/izol-ground.js', 'src/izol-scenery.js',
-  'src/game-state.js', 'src/climbing.js', 'src/terrain-fall.js', 'src/west-regions-life.js', 'tests/celder-route-controller.js'];
+const sourceFiles = ['src/world.js', 'src/world/terrain/world-terrain.js', 'src/content/regions/east-izol/east-izol-world.js', 'src/content/regions/east-izol/east-izol-scenery.js',
+  'src/content/regions/east-izol/east-izol-wildlife.js', 'src/content/regions/izol/izol-world.js', 'src/content/regions/izol/izol-ground.js', 'src/content/regions/izol/izol-scenery.js',
+  'src/gameplay/movement/game-state.js', 'src/gameplay/movement/climbing.js', 'src/gameplay/movement/terrain-fall.js', 'src/content/regions/western-regions/west-regions-life.js', 'tests/celder-route-controller.js'];
 const source = Object.fromEntries(sourceFiles.map(file => [file, createHash('sha256')
   .update(readFileSync(new URL('../' + file, import.meta.url))).digest('hex')]));
 const scene = new THREE.Scene(), world = await scopedWorld(scene, [REGION_IDS['East Izol'], REGION_IDS['West Izol']]);

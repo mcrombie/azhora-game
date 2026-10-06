@@ -2,7 +2,7 @@
 
 5 October 2026. The user requested the existing dark castle at the peninsula's tip, facing inland.
 
-The castle from `src/thalmagar-world.js` now also builds in the normal playable world, on Cape Thalmagar's northern headland at **(-3100, -2600)**. Its great gate faces **south**, toward the mainland and the existing cape route. The model retains its original scale, needle keep, 18 towers, surrounding walls, iron doors and furnace-lit windows.
+The castle from `src/content/regions/thalmagar/thalmagar-world.js` now also builds in the normal playable world, on Cape Thalmagar's northern headland at **(-3100, -2600)**. Its great gate faces **south**, toward the mainland and the existing cape route. The model retains its original scale, needle keep, 18 towers, surrounding walls, iron doors and furnace-lit windows.
 
 The architecture-only build omits the separate art study's sea, sky, terrain and surrounding dead forest. Three static meshes reuse the original castle geometry. The developer art study remains available as a reference scene; there is only one castle placement in the normal world.
 

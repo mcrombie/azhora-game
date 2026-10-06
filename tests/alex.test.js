@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { ALEX, ALEX_STEP, ALEX_DOOR, ALEX_BOUT_ID, ALEX_HEALTH, ALEX_LINES, CAGNEY_AT_HOME, FLIRT_LABEL, alexPresence, alexBout } from '../src/alex.js';
-import { createAlexHost } from '../src/alex-host.js';
-import { createCagneyHost } from '../src/cagney-host.js';
-import { createCagneyQuest, CAGNEY } from '../src/cagney-quest.js';
-import { CAGNEY_RESIDENCE } from '../src/quest-homes.js';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
-import { OWN_IDS } from '../src/cast.js';
+import { ALEX, ALEX_STEP, ALEX_DOOR, ALEX_BOUT_ID, ALEX_HEALTH, ALEX_LINES, CAGNEY_AT_HOME, FLIRT_LABEL, alexPresence, alexBout } from '../src/content/quests/roadside/alex.js';
+import { createAlexHost } from '../src/content/quests/roadside/alex-host.js';
+import { createCagneyHost } from '../src/content/quests/cagney/cagney-host.js';
+import { createCagneyQuest, CAGNEY } from '../src/content/quests/cagney/cagney-quest.js';
+import { CAGNEY_RESIDENCE } from '../src/content/quests/homes/quest-homes.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
+import { OWN_IDS } from '../src/content/characters/cast.js';
 
 /**
  * Alex, who lives with Cagney (the user, 26 September 2026): short brown hair and green glasses;
@@ -29,7 +29,7 @@ test('Alex: short brown hair, green glasses, and in the cast', () => {
 });
 
 test('her glasses are drawn green', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const actor = createCharacter({ role: ALEX.modelRole, tunic: ALEX.color, look: ALEX.look });
   // The rig merges its static parts into vertex-coloured meshes after building, so the frames are
   // looked for by their colour in the vertices, in either colour space.

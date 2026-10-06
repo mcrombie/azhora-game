@@ -1,0 +1,260 @@
+import * as THREE from 'three';
+
+/**
+ * Ed the Chameleon as a figure: a big chameleon, tall and thin
+ * the way they are, with a helmet crest, a spined back, turret eyes behind a
+ * pair of dark sunglasses, a tie-dye toga of sorts slung over his back with a
+ * sash across one shoulder, gripping feet, a tail curled round a bottle
+ * that is never his, and a long clay pipe drooping from the corner of his
+ * mouth. Drunk, his colours drift (greens, gold, a contented wine-purple), he
+ * sways, hiccups and flicks his tongue, his pipe smokes and he blows the odd
+ * smoke ring; sober, he goes a flat grey, keeps still, and the pipe goes out.
+ *
+ * `createEdView` puts him in the world at one of his spots (src/content/quests/chameleon/chameleon.js) and
+ * makes the purple puff he leaves behind when he goes. The puff is `createPuffs`,
+ * exported because Puck the wine goblin took the trick with him when they split
+ * (src/content/quests/wine/wine-goblin.js) and there is no sense drawing it twice.
+ */
+const mat = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: .7, ...extra });
+const ball = new THREE.IcosahedronGeometry(1, 2), tube = new THREE.CylinderGeometry(1, 1, 1, 10), cone = new THREE.ConeGeometry(1, 1, 8);
+function add(parent, geometry, material, [x, y, z], [sx, sy, sz] = [1, 1, 1], [rx, ry, rz] = [0, 0, 0]) {
+  const m = new THREE.Mesh(geometry, material);
+  m.position.set(x, y, z); m.scale.set(sx, sy, sz); m.rotation.set(rx, ry, rz);
+  m.castShadow = true; parent.add(m); return m;
+}
+/** A spiral of every colour, the way tie-dye comes out of the knot. Plain purple where there is no canvas (the tests). */
+function tieDye() {
+  if (typeof document === 'undefined') return mat(0x9a5bb8);
+  const size = 256, canvas = document.createElement('canvas'); canvas.width = canvas.height = size;
+  const g = canvas.getContext('2d'), colours = ['#ff3fa4', '#ff8c1a', '#ffe135', '#7ed321', '#1ec8d8', '#8e44ec'];
+  g.fillStyle = '#ff3fa4'; g.fillRect(0, 0, size, size);
+  for (let r = size; r > 4; r -= 3) for (let a = 0; a < 6; a++) {
+    g.fillStyle = colours[(a + Math.floor(r / 22)) % colours.length];
+    const twist = r / 38;
+    g.beginPath(); g.moveTo(size / 2, size / 2); g.arc(size / 2, size / 2, r, a / 6 * Math.PI * 2 + twist, (a + 1) / 6 * Math.PI * 2 + twist); g.fill();
+  }
+  const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(2, 1);
+  return new THREE.MeshStandardMaterial({ map: texture, roughness: .9, side: THREE.DoubleSide });
+}
+const DRUNK = [0x5fa84a, 0x3f9e7a, 0xb0a33a, 0x7a3f8f, 0x4f9f52].map(c => new THREE.Color(c)), SOBER = new THREE.Color(0x8a8f86);
+
+/** One wheel, a fork and a saddle; Ed's existing body is the only rider. */
+function makeUnicycle(group, rig, hips, skin) {
+  const cycle = new THREE.Group(); cycle.name = 'Ed’s unicycle'; cycle.visible = false; group.add(cycle);
+  const iron = mat(0x494347, { metalness: .5, roughness: .45 }), brass = mat(0xb9914e), rubber = mat(0x342b25), leather = mat(0x642c39);
+  const wheel = new THREE.Group(); wheel.name = 'Single unicycle wheel'; wheel.position.y = .36; cycle.add(wheel);
+  add(wheel, new THREE.TorusGeometry(.325, .035, 7, 24), rubber, [0, 0, 0], [1, 1, 1], [0, Math.PI / 2, 0]);
+  add(wheel, new THREE.TorusGeometry(.291, .012, 6, 24), brass, [0, 0, 0], [1, 1, 1], [0, Math.PI / 2, 0]);
+  add(wheel, tube, iron, [0, 0, 0], [.035, .28, .035], [0, 0, Math.PI / 2]);
+  for (let k = 0; k < 8; k++) add(wheel, tube, brass, [0, 0, 0], [.006, .58, .006], [k * Math.PI / 8, 0, 0]);
+  for (const side of [-1, 1]) add(cycle, tube, brass, [side * .09, .66, 0], [.022, .6, .022]);
+  add(cycle, tube, iron, [0, .99, 0], [.025, .21, .025]);
+  add(cycle, ball, leather, [0, 1.085, -.015], [.145, .042, .12]);
+  const pedalSets = [], limbPoints = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+  for (const side of [-1, 1]) {
+    const crank = new THREE.Group(); crank.name = side < 0 ? 'Left crank and pedal' : 'Right crank and pedal'; cycle.add(crank);
+    add(crank, tube, iron, [side * .14, 0, 0], [.014, .13, .014]);
+    const pedal = add(cycle, new THREE.BoxGeometry(.115, .028, .075), rubber, [side * .2, .36, 0]);
+    const upper = add(cycle, tube, skin, [0, 0, 0], [.028, 1, .028]), lower = add(cycle, tube, skin, [0, 0, 0], [.025, 1, .025]);
+    const foot = add(cycle, ball, skin, [0, 0, 0], [.055, .027, .055]);
+    pedalSets.push({ side, crank, pedal, upper, lower, foot });
+  }
+  let enabled = false, phase = 0;
+  const up = new THREE.Vector3(0, 1, 0), delta = new THREE.Vector3();
+  function segment(mesh, a, b) { delta.subVectors(b, a); mesh.position.copy(a).add(b).multiplyScalar(.5); mesh.scale.y = delta.length(); mesh.quaternion.setFromUnitVectors(up, delta.normalize()); }
+  function setEnabled(value) {
+    enabled = !!value; cycle.visible = enabled;
+    hips[2].visible = hips[3].visible = !enabled;
+    if (!enabled) { rig.position.y = 0; for (const hip of hips) hip.rotation.set(0, 0, 0); }
+  }
+  function update(time, dt, speed) {
+    if (!enabled) return;
+    phase += Math.max(0, speed) * dt / .36; wheel.rotation.x = phase;
+    rig.position.y = .85; rig.rotation.x = -.68; rig.rotation.z = Math.sin(time * 3.1) * .025;
+    for (let i = 0; i < 2; i++) hips[i].rotation.set(-.95, 0, (i ? 1 : -1) * .22);
+    rig.updateMatrixWorld(true);
+    for (let i = 0; i < 2; i++) {
+      const { side, crank, pedal, upper, lower, foot } = pedalSets[i], angle = phase + (side < 0 ? 0 : Math.PI);
+      const y = .36 + Math.cos(angle) * .13, z = Math.sin(angle) * .13;
+      crank.position.set(0, .36 + Math.cos(angle) * .065, Math.sin(angle) * .065); crank.rotation.x = angle;
+      pedal.position.set(side * .2, y, z); foot.position.set(side * .2, y + .035, z);
+      hips[i + 2].getWorldPosition(limbPoints[0]); cycle.worldToLocal(limbPoints[0]);
+      limbPoints[2].copy(foot.position); limbPoints[1].copy(limbPoints[0]).lerp(limbPoints[2], .5); limbPoints[1].x = side * .26; limbPoints[1].z += .13;
+      segment(upper, limbPoints[0], limbPoints[1]); segment(lower, limbPoints[1], limbPoints[2]);
+    }
+  }
+  return { setEnabled, update, get enabled() { return enabled; } };
+}
+
+export function createEdModel() {
+  const group = new THREE.Group(); group.name = 'Ed';
+  const rig = new THREE.Group(); group.add(rig);            // his sway and hiccups ride on this
+  const skin = mat(0x5fa84a), belly = mat(0xd8d27a), dark = mat(0x1c1d1f), lens = mat(0x101216, { roughness: .15, metalness: .6 });
+  const frame = mat(0xc9a24a, { metalness: .6, roughness: .35 }), glass = mat(0x24402a, { roughness: .3, metalness: .1 }), wine = mat(0x6b1f2b);
+  const tongue = mat(0xe07a8a);
+
+  // A tall, thin body, the belly lighter, a row of spines down the back.
+  add(rig, ball, skin, [0, .42, 0], [.13, .23, .36]);
+  add(rig, ball, belly, [0, .33, .02], [.1, .12, .3]);
+  for (let k = 0; k < 9; k++) add(rig, cone, skin, [0, .64 - Math.abs(k - 4) * .012, -.3 + k * .075], [.022, .07, .022], [-.2, 0, 0]);
+  // A tie-dye toga of sorts: draped over his back and down his sides, a sash over the left shoulder, the end knotted and hanging.
+  const toga = tieDye();
+  add(rig, new THREE.SphereGeometry(1, 18, 10, 0, Math.PI * 2, 0, Math.PI * .62), toga, [0, .43, -.02], [.148, .245, .31]);
+  add(rig, new THREE.TorusGeometry(.2, .03, 6, 18), toga, [0, .44, .12], [.78, 1.15, 1], [0, Math.PI / 2, .6]);
+  add(rig, ball, toga, [.13, .3, .14], [.05, .05, .05]);
+  add(rig, new THREE.ConeGeometry(.06, .2, 6), toga, [.14, .2, .15], [1, 1, .5], [0, 0, .2]);
+  // The head: a helmet crest swept back, a wide mouth, turret eyes, and the sunglasses over them.
+  const head = new THREE.Group(); head.position.set(0, .5, .38); rig.add(head);
+  add(head, ball, skin, [0, 0, .06], [.11, .13, .16]);
+  add(head, cone, skin, [0, .15, -.06], [.09, .22, .12], [-.9, 0, 0]);
+  add(head, tube, dark, [0, -.06, .165], [.06, .005, .045]);                                // the mouth
+  for (const side of [-1, 1]) {
+    add(head, ball, skin, [side * .1, .04, .08], [.055, .055, .055]);                         // a turret eye, behind the glasses
+    // Sunglasses: a dark lens in a gold rim on the front of the face, and an arm back along the side of the head.
+    add(head, tube, lens, [side * .062, .045, .19], [.056, .012, .046], [Math.PI / 2, 0, 0]);
+    add(head, tube, frame, [side * .062, .045, .186], [.062, .01, .052], [Math.PI / 2, 0, 0]);
+    add(head, tube, frame, [side * .112, .05, .09], [.006, .2, .006], [Math.PI / 2, 0, side * .1]);
+  }
+  add(head, tube, frame, [0, .058, .205], [.006, .03, .006], [0, 0, Math.PI / 2]);           // the bridge
+  const tongueTip = add(head, tube, tongue, [0, -.04, .2], [.012, .001, .012], [Math.PI / 2, 0, 0]);
+  // A long clay pipe, a churchwarden, from the corner of his mouth: the stem out and down, the bowl turned up at its end.
+  const clay = mat(0xe8e1d0, { roughness: .9 }), ember = mat(0x5a2a14, { emissive: 0xff6a1a, emissiveIntensity: .8 });
+  const pipe = new THREE.Group(); pipe.name = 'Ed’s pipe'; head.add(pipe);
+  const stemFrom = new THREE.Vector3(.055, -.065, .16), stemWay = new THREE.Vector3(.3, -.28, .9).normalize(), stemTo = stemFrom.clone().addScaledVector(stemWay, .3);
+  const stem = add(pipe, tube, clay, [(stemFrom.x + stemTo.x) / 2, (stemFrom.y + stemTo.y) / 2, (stemFrom.z + stemTo.z) / 2], [.011, .3, .011]);
+  stem.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), stemWay);
+  add(pipe, tube, clay, [stemTo.x, stemTo.y + .03, stemTo.z], [.032, .07, .032]);
+  add(pipe, tube, dark, [stemTo.x, stemTo.y + .066, stemTo.z], [.024, .004, .024]);
+  const coal = add(pipe, ball, ember, [stemTo.x, stemTo.y + .067, stemTo.z], [.02, .008, .02]);
+  // Four short gripping legs, half a chameleon's usual length: he sits low, his belly all but on the ground.
+  const DROP = .17, hips = [];
+  for (const [x, z] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+    const hip = new THREE.Group(); hip.position.set(x * .11, .36 - DROP, z * .2); rig.add(hip); hips.push(hip);
+    add(hip, tube, skin, [x * .035, -.04, 0], [.035, .09, .035], [0, 0, x * .6]);
+    add(hip, tube, skin, [x * .06, -.12, z * .02], [.03, .09, .03], [z * .2, 0, -x * .15]);
+    for (const toe of [-1, 1]) add(hip, ball, skin, [x * .06, -.17, z * .02 + toe * .035], [.03, .02, .04]);
+  }
+  // The tail, curled in a spiral round a bottle of somebody else's wine.
+  const tail = new THREE.Group(); tail.position.set(0, .4, -.34); rig.add(tail);
+  const curl = [];
+  for (let k = 0; k < 22; k++) {
+    const t = k / 21, a = t * Math.PI * 2.2, r = .22 * (1 - t * .75);
+    curl.push(add(tail, ball, skin, [0, -r * Math.cos(a) + .02 - t * .05, -.12 - r * Math.sin(a) - t * .04], [.055 * (1 - t * .7), .055 * (1 - t * .7), .055 * (1 - t * .7)]));
+  }
+  // Everything but the legs sits lower by what the legs lost.
+  for (const child of rig.children) if (!hips.includes(child)) child.position.y -= DROP;
+  const bottle = new THREE.Group(); bottle.name = 'Ed’s bottle'; bottle.position.set(0, -.06, -.2); bottle.rotation.x = .5; tail.add(bottle);
+  add(bottle, tube, glass, [0, 0, 0], [.04, .2, .04]); add(bottle, tube, glass, [0, .15, 0], [.014, .1, .014]); add(bottle, tube, wine, [0, -.04, 0], [.042, .07, .042]);
+
+  // Smoke: wisps that rise from the bowl and thin out, and now and then a ring blown from the mouth.
+  const puff = new THREE.IcosahedronGeometry(1, 1), smoke = [], at = new THREE.Vector3();
+  for (let k = 0; k < 7; k++) {
+    const m = new THREE.Mesh(puff, new THREE.MeshBasicMaterial({ color: 0xd9d4dc, transparent: true, opacity: 0, depthWrite: false }));
+    m.name = 'pipe smoke'; group.add(m); smoke.push({ m, age: k / 7, from: new THREE.Vector3(), side: (k % 3 - 1) * .5 });
+  }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.05, .012, 6, 16), new THREE.MeshBasicMaterial({ color: 0xe3dee6, transparent: true, opacity: 0, depthWrite: false }));
+  ring.name = 'smoke ring'; group.add(ring);
+  const ringFrom = new THREE.Vector3();
+  let ringAge = Infinity, ringWait = 4;
+  const WISP = 3.2, RING = 2.4;
+  function smoking(time, dt, lit) {
+    if (!group.visible) return;
+    coal.material.emissiveIntensity = lit ? .5 + 1.4 * Math.pow(Math.max(0, Math.sin(time * .7)), 6) : 0;
+    coal.getWorldPosition(at); group.worldToLocal(at);            // brings the bowl's chain of joints up to date, and nothing else
+    for (const w of smoke) {
+      w.age += dt / WISP;
+      if (w.age >= 1) { w.age %= 1; w.from.copy(at); }
+      const t = w.age;
+      w.m.position.set(w.from.x + Math.sin(time * .8 + w.side * 4 + t * 3) * .05 * t + w.side * .04 * t, w.from.y + t * .55, w.from.z + t * .05);
+      w.m.scale.setScalar(.025 + t * .11);
+      w.m.material.opacity = lit ? .75 * Math.sin(Math.PI * Math.min(1, t * 1.4)) * (1 - t) : 0;
+      w.m.visible = lit && w.from.lengthSq() > 0;
+    }
+    // A ring every so often, blown from the front of the mouth, drifting forward and up and opening out.
+    ringWait -= dt;
+    if (lit && ringWait <= 0 && ringAge >= 1) { ringAge = 0; ringWait = 7 + Math.abs(Math.sin(time * 1.7)) * 6; head.localToWorld(ringFrom.set(0, -.05, .24)); group.worldToLocal(ringFrom); }
+    if (ringAge < 1) {
+      ringAge += dt / RING;
+      const t = Math.min(1, ringAge);
+      ring.position.set(ringFrom.x, ringFrom.y + t * .3, ringFrom.z + t * .35);
+      ring.scale.setScalar(1 + t * 2.2); ring.rotation.set(-.3, 0, t * .6);
+      ring.material.opacity = .6 * (1 - t);
+    }
+    ring.visible = ringAge < 1 && lit;
+  }
+
+  const unicycle = makeUnicycle(group, rig, hips, skin);
+  let hiccup = 0, flick = 0, drift = Math.random() * 10;
+  /** A sway, a hiccup, the odd flick of the tongue, colours drifting; a swig flushes him purple. Sober: grey and still. */
+  function animate(time, dt = 1 / 60, { sober = false, riding, speed = 0 } = {}) {
+    if (typeof riding === 'boolean' && riding !== unicycle.enabled) unicycle.setEnabled(riding);
+    // A frame's step can be zero or a hair negative (the first frame's stamp can predate the clock), or missing: keep it sane.
+    dt = Number.isFinite(dt) ? Math.min(Math.max(dt, 0), .1) : 0;
+    const sway = sober ? .01 : .07;
+    rig.rotation.z = Math.sin(time * 1.2) * sway;
+    rig.rotation.x = Math.sin(time * .8 + 1) * sway * .4;
+    if (!sober && hiccup <= 0 && Math.sin(time * .41) > .996) hiccup = .25;
+    hiccup = Math.max(0, hiccup - dt);
+    rig.position.y = hiccup > 0 ? Math.sin(hiccup / .25 * Math.PI) * .07 : 0;
+    if (!sober && flick <= 0 && Math.sin(time * .29 + 2) > .997) flick = .3;
+    flick = Math.max(0, flick - dt);
+    const out = flick > 0 ? Math.sin(flick / .3 * Math.PI) : 0;
+    tongueTip.scale.y = .001 + out * .5; tongueTip.position.z = .2 + out * .25;
+    tail.rotation.x = Math.sin(time * .9) * (sober ? .02 : .08);
+    head.rotation.y = Math.sin(time * .35) * (sober ? .05 : .25);
+    // His colours: drifting while drunk, a purple flush at each swig; flat grey sober.
+    drift = Number.isFinite(drift) ? drift + dt * .15 : 0;
+    const i = ((Math.floor(drift) % DRUNK.length) + DRUNK.length) % DRUNK.length, next = (i + 1) % DRUNK.length, swig = Math.pow(Math.max(0, Math.sin(time * .45)), 8);
+    if (sober) skin.color.lerp(SOBER, Math.min(1, dt * 2));
+    else skin.color.copy(DRUNK[i]).lerp(DRUNK[next], drift % 1).lerp(DRUNK[3], swig * .7);
+    bottle.rotation.x = .5 + swig * .9;
+    unicycle.update(time, dt, speed);
+    smoking(time, dt, !sober);
+  }
+  return { group, animate, setUnicycle: value => unicycle.setEnabled(value), get riding() { return unicycle.enabled; }, get colour() { return skin.color.getHexString(); }, get smoking() { return smoke.some(w => w.m.visible && w.m.material.opacity > 0); } };
+}
+
+/**
+ * A puff of purple smoke and a smell of spilt wine, where somebody was a moment ago. Both of them
+ * do it: it was the chameleon's, and Puck kept it when they went their separate ways.
+ */
+export function createPuffs(scene) {
+  const puffs = [], puffBall = new THREE.IcosahedronGeometry(1, 1);
+  function puff(at) {
+    const cloud = new THREE.Group(); cloud.position.copy(at); scene.add(cloud);
+    const parts = [];
+    for (let k = 0; k < 16; k++) {
+      const material = new THREE.MeshBasicMaterial({ color: k % 3 ? 0x9a5bb8 : 0xc9a0dc, transparent: true, opacity: .85, depthWrite: false });
+      const m = new THREE.Mesh(puffBall, material), a = k / 16 * Math.PI * 2;
+      m.position.set(Math.cos(a) * .15, .4 + (k % 4) * .15, Math.sin(a) * .15); m.scale.setScalar(.12);
+      cloud.add(m); parts.push({ m, v: new THREE.Vector3(Math.cos(a) * (.6 + (k % 5) * .15), .5 + (k % 3) * .35, Math.sin(a) * (.6 + (k % 4) * .15)) });
+    }
+    puffs.push({ cloud, parts, age: 0 });
+  }
+  function update(dt) {
+    for (let i = puffs.length - 1; i >= 0; i--) {
+      const p = puffs[i]; p.age += dt;
+      const t = p.age / .9;
+      for (const { m, v } of p.parts) { m.position.addScaledVector(v, dt); m.scale.setScalar(.12 + t * .45); m.material.opacity = Math.max(0, .85 * (1 - t)); }
+      if (t >= 1) { scene.remove(p.cloud); for (const { m } of p.parts) m.material.dispose(); puffs.splice(i, 1); }
+    }
+  }
+  return { puff, update, get puffing() { return puffs.length; } };
+}
+
+export function createEdView(scene, { heightAt }) {
+  const model = createEdModel();
+  scene.add(model.group);
+  model.group.scale.setScalar(1.35);
+  const puffs = createPuffs(scene);
+  /** Put him at one of his spots: `lift` raises him onto a branch or a wall. */
+  function place(spot, lift = 0) {
+    model.group.position.set(spot.x, heightAt(spot.x, spot.z) + lift, spot.z);
+    model.group.rotation.y = spot.yaw ?? 0;
+  }
+  function update(time, dt, state = {}) {
+    model.animate(time, dt, state);
+    puffs.update(dt);
+  }
+  return { group: model.group, place, setUnicycle: model.setUnicycle, puff: (at = model.group.position) => puffs.puff(at), update, get puffing() { return puffs.puffing; } };
+}

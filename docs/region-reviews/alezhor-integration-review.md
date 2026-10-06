@@ -97,7 +97,7 @@ the 4,785 reviewed roots, harvest/save identities, earlier stone contact and wil
 - At the original packet freeze no completed native acceptance or save/Continue journey
   was claimed. Subsequent Full/Fast and final visual acceptance results are recorded below. The exact water query is independent of scene mode; Fast-first shared ground
   and vegetation ordering were exercised by the composed Node fixture.
-- `src/alezhor-checks.js` and five separate native endpoint hooks are prepared for Full/Fast.
+- `src/dev/checks/alezhor-checks.js` and five separate native endpoint hooks are prepared for Full/Fast.
   They exercise real F8 readiness, a dry trail out/back, both banks, exact native tree/non-Y
   catalogs, actual ground rays, an ordinary partial typed harvest, departure/return, then
   isolated save and reload/Continue with exact inventory and remaining tree stock. Only the

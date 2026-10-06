@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { canStand, canSwim, moveCharacter } from '../src/game-state.js';
+import { canStand, canSwim, moveCharacter } from '../src/gameplay/movement/game-state.js';
 import {
   regions, regionAt, northernRoad, regionNpcPositions, journeySites, regionRepairBenches,
   SUVAL_ROAD, CALOSS, FRONTIER, ANCHORS, WORLD_BOUNDS, insideRegion,
-} from '../src/regions.js';
-import { toWorld, WORLD_SCALE, METRES_PER_HEX } from '../src/world-scale.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { REGION_IDS } from '../src/region-world.js';
-import { BUILD_STATUS } from '../src/build-status.js';
-import { CALOSS_BRIDGE } from '../src/world-terrain.js';
+} from '../src/world/terrain/regions.js';
+import { toWorld, WORLD_SCALE, METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { REGION_IDS } from '../src/world/terrain/region-world.js';
+import { BUILD_STATUS } from '../src/dev/tools/build-status.js';
+import { CALOSS_BRIDGE } from '../src/world/terrain/world-terrain.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
@@ -48,7 +48,7 @@ test('The authored playable regions carry the atlas into the world, with Drent o
 
 test('The whole road out of Drent is walkable in both directions, including the Caloss bridge', () => {
   // **With the Caloss span down again.** Six paces of it are in the river until somebody mends
-  // it (src/world-regions.js), and a road with a hole in it is the point of that, not a fault of
+  // it (src/world/terrain/world-regions.js), and a road with a hole in it is the point of that, not a fault of
   // this one: the break has its own law in tests/road-ambush.test.js. Everything below asks the
   // question this test was written to ask - whether the road itself runs unbroken bank to bank.
   assert.equal(world.setJourneySiteState('bridge-repair', true), true);
@@ -147,7 +147,7 @@ test('The river bank retargets fishing while preserving the original pond API', 
   assert.equal(canStand(upstream.x, upstream.z, world), false, 'the channel upstream of the bridge is water');
   assert.equal(canStand(downstream.x, downstream.z, world), false, 'the channel downstream of the bridge is water');
   // The crossing's own middle is the break now, so the lane is walked as far as that and no
-  // further; `canSwim` is what the channel answers, because it is water (src/game-state.js).
+  // further; `canSwim` is what the channel answers, because it is water (src/gameplay/movement/game-state.js).
   assert.equal(canSwim(upstream.x, upstream.z, world), true, 'the channel upstream cannot be swum');
   assert.equal(canSwim(downstream.x, downstream.z, world), true, 'the channel downstream cannot be swum');
   const damaged = world.colliders.filter(c => c.kind === 'bridge-damage');

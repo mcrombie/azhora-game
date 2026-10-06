@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAnimalHusbandry, validateHusbandrySnapshot } from '../src/animal-husbandry.js';
-import { createSkills } from '../src/skills.js';
-import { createBirding, gardenKeeperConversation, GARDEN_KEEPER } from '../src/birding.js';
+import { createAnimalHusbandry, validateHusbandrySnapshot } from '../src/gameplay/skills/nature/animal-husbandry.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createBirding, gardenKeeperConversation, GARDEN_KEEPER } from '../src/gameplay/skills/birding/birding.js';
 
 const sheep = { id: 'sheep-1', species: 'sheep', x: 2, z: 0 };
 const player = { x: 0, z: 0 };

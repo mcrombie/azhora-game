@@ -16,14 +16,14 @@ countries' scenery and wildlife.
   Alezhor delivery, on East Izol, on Celder). Work only there; do not commit, push or stash; never touch another
   checkout.
 - **Registered and wired** by the coordinator: South Ibenal **65**, North Ibenal **66** (provisional), stubs
-  `src/south-ibenal-world.js` / `src/north-ibenal-world.js` (`SOUTH_IBENAL`, `southIbenalOwns`, `..._ARRIVAL`,
+  `src/content/regions/south-ibenal/south-ibenal-world.js` / `src/content/regions/north-ibenal/north-ibenal-world.js` (`SOUTH_IBENAL`, `southIbenalOwns`, `..._ARRIVAL`,
   `..._LANDMARKS`, `..._TRAILS`, `..._VIEWS`, `southIbenalGround(x, z, incoming, before)`, `southIbenalTint`, and
   the same for North), `src/{south,north}-ibenal-scenery.js`, `src/{south,north}-ibenal-wildlife.js`.
 - **Lore may be rewritten in place** (the user's rule): minimally, in its own voice, only what the atlas contradicts;
   never commit there; never touch a lore file someone else has already modified (`git -C ..\world-builder status`).
-- Precedents in this worktree: `src/south-celder-world.js` (one plain over two countries, `celderLand`; seam tables
-  read edge by edge), `src/alezhor-world.js` (rivers continued from a neighbour's course end; river ground and chart
-  water), `src/east-izol-world.js`.
+- Precedents in this worktree: `src/content/regions/south-celder/south-celder-world.js` (one plain over two countries, `celderLand`; seam tables
+  read edge by edge), `src/content/regions/alezhor/alezhor-world.js` (rivers continued from a neighbour's course end; river ground and chart
+  water), `src/content/regions/east-izol/east-izol-world.js`.
 
 ## The atlas - measured
 
@@ -42,7 +42,7 @@ countries' scenery and wildlife.
   - Inside North Ibenal, one stream: (-24,101)|(-25,102) up to (-24,104)|(-25,104), six edges.
   - On the South Ibenal | North Ibenal line: (-29,105)|(-29,106), (-29,105)|(-30,106) - yours, both sides.
   - On the West Ibenwood | South Ibenal line: three edges, built by the forest as `ibenwood-west-stream`
-    (`src/ibenwood-rivers.js`, (-4550, 693) to (-4500, 837)): give it a real Ibenal bank at its level, never move it.
+    (`src/content/regions/ibenwood/ibenwood-rivers.js`, (-4550, 693) to (-4500, 837)): give it a real Ibenal bank at its level, never move it.
   - On the Alezhor | South Ibenal line: three edges, built by Alezhor as its west stream **8 m inside Alezhor's line**,
     its far bank risen to meet South Ibenal's outland. **Make exactly one side meet the other**: Alezhor's seam reads
     South Ibenal live (`groundBeforeAlezhor` includes your layer), so if both seams move, they chase each other.
@@ -80,10 +80,10 @@ and the towns are owned (keep a natural line of travel open along the corridor, 
 walkable; the hills cell (-21,99) under the South Oremindi is a foothill, not a mountain; vary every band's layout.
 Up to two test processes per agent; scoped world `[65, 66, 35, 33, 37, 64]`.
 
-**Ground agent owns**: `src/south-ibenal-world.js`, `src/north-ibenal-world.js`, both countries' rows in
-`src/region-layout.js`, `src/region-world.js`, `src/build-status.js`, `tests/{south,north}-ibenal-world.test.js`, their
-lines in `src/world-terrain.js`, the probes in `tests/southwest-world.test.js`, and only for the shared stream, Alezhor's
-three South Ibenal seam edges in `src/alezhor-world.js`. **Life agent owns**: `src/{south,north}-ibenal-scenery.js`,
+**Ground agent owns**: `src/content/regions/south-ibenal/south-ibenal-world.js`, `src/content/regions/north-ibenal/north-ibenal-world.js`, both countries' rows in
+`src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`, `src/dev/tools/build-status.js`, `tests/{south,north}-ibenal-world.test.js`, their
+lines in `src/world/terrain/world-terrain.js`, the probes in `tests/southwest-world.test.js`, and only for the shared stream, Alezhor's
+three South Ibenal seam edges in `src/content/regions/alezhor/alezhor-world.js`. **Life agent owns**: `src/{south,north}-ibenal-scenery.js`,
 `src/{south,north}-ibenal-wildlife.js`, `tests/ibenal-life.test.js`. The coordinator owns `src/world.js` and
 `src/main.js` (say what you need there: river ground, chart water, the `-wildlife` species).
 

@@ -26,7 +26,7 @@ coast hex is world `(0, 29)`.
 | `suvalHills` | `(-91.3, 410.7)` | East Suval |
 
 `worldBoundsFor(survey)` gives the world extent, and it is now the single source
-for `world.bounds` and for `WORLD_BOUNDS` in `src/road-checkpoint.js`:
+for `world.bounds` and for `WORLD_BOUNDS` in `src/app/saves/road-checkpoint.js`:
 `minX -844.0, maxX 144.0, minZ -208.8, maxZ 654.8` — about 990 m by 860 m.
 
 ### Tidehaven is carried over, not redrawn
@@ -120,12 +120,12 @@ the charts draw as the road.
 
 ## Terrain
 
-`src/world-terrain.js` holds the ground rules:
+`src/world/terrain/world-terrain.js` holds the ground rules:
 
 - Biome base level and relief are blended across the containing hex and its six
   neighbours, so regions meet without a seam (`terrainMix`).
 - Land and sea come from the authored atlas: every claimed hex near the playable
-  window is baked into `src/region-survey.js`, and a smoothed signed-distance
+  window is baked into `src/dev/tools/region-survey.js`, and a smoothed signed-distance
   field over that mask gives the coast. Everything else inside the world bounds
   is the Stills. Coastlines therefore follow the map rather than a drawn curve.
 - Tidehaven keeps its own height field (`villageBase`), blended out over the last
@@ -220,9 +220,9 @@ unchanged in every case.
    - **Two guards** at Elod's border post, `(-228, 296)` and `(-220, 288)`,
      neutral to both armies — the first people who are neither Legion nor rebel.
    - A survivor at the burned hamlet, `(-344, 208)`.
-   Add them to `src/journey-content.js`-style modules, not to `campaign*.js`.
+   Add them to `src/content/chapters/journey/journey-content.js`-style modules, not to `campaign*.js`.
 2. **Wolves in Luscia.** Add a fourth zone to `ROAD_LIFE_ZONES` in
-   `src/road-life.js` around `x ∈ [-430, -395], z ∈ [205, 240]` (clear of the
+   `src/content/regions/drent/road-life.js` around `x ∈ [-430, -395], z ∈ [205, 240]` (clear of the
    road and the relay), with the same scenery-only rules as the sheep. Update
    the count assertions in `tests/road-life.test.js`.
 3. **The Legion camp scene.** The palisade, tents, command tent, horse line and
@@ -235,40 +235,40 @@ unchanged in every case.
    together, and bump `ROAD_CHECKPOINT_VERSION`.
 5. **Biome polish.** Luscia's copses could use a second, shorter tree; East Suval
    wants heather ground cover distinct from grass; the Moros wants a wind pass on
-   its grass. All three hook into `scatterBlock` in `src/world-regions.js`.
+   its grass. All three hook into `scatterBlock` in `src/world/terrain/world-regions.js`.
 
 ## Other modules that had to move with the world
 
-- **`src/combat.js`** gained `retreatAxis` / `retreatLine` on an encounter, defaulting
+- **`src/gameplay/combat/combat.js`** gained `retreatAxis` / `retreatLine` on an encounter, defaulting
   to the old -Z behaviour. The Greenway ambush and the clearing raiders now retreat
   along +X, back toward Tidehaven.
-- **`src/autopilot.js`** takes its bell/ambush goal from `world.encounter` instead of a
+- **`src/gameplay/autoplay/autopilot.js`** takes its bell/ambush goal from `world.encounter` instead of a
   literal, and gained `clearLine()`: when the destination is on the road but the
   traveler has strayed off it and the straight line is blocked, it walks back to the
   road first. That is what lets it cross the Caloss bridge reliably.
-- **`src/road-audio.js`** keys the shore on Drent's east coast and the river on distance
+- **`src/world/environment/road-audio.js`** keys the shore on Drent's east coast and the river on distance
   to the Caloss crossing; the Caloss is audible from both banks.
-- **`src/road-life.js`** exports `ROAD_LIFE_ZONES` and moved its three flocks to the
+- **`src/content/regions/drent/road-life.js`** exports `ROAD_LIFE_ZONES` and moved its three flocks to the
   Moros, the Caloss bank and the East Suval hills.
-- **`src/road-verges.js`** places its botany by arc length along `routeJourney` instead
+- **`src/content/regions/drent/road-verges.js`** places its botany by arc length along `routeJourney` instead
   of by `z`, so it follows whatever shape the road has.
-- **`src/woodland-life.js`**, **`src/forest-story.js`**, **`src/forest-hideout.js`** and
-  **`src/regional-places.js`** / **`src/regional-life.js`** had their coordinate
+- **`src/world/life/woodland-life.js`**, **`src/content/quests/forest/forest-story.js`**, **`src/content/quests/forest/forest-hideout.js`** and
+  **`src/world/life/regional-places.js`** / **`src/world/life/regional-life.js`** had their coordinate
   constants converted.
-- **`src/autoplay-smoke.js`**: the anti-teleport check is now measured per *rendered*
+- **`src/dev/checks/autoplay-smoke.js`**: the anti-teleport check is now measured per *rendered*
   frame (as the road traversal already did) and allows the 3.05 m dodge lunge, which
   is an ordinary player action. It reports `maxMetresPerRenderedFrame` (0.37 m, the
   7.2 m/s cap) instead of a six-frame figure.
-- **`src/style.css`**: the opening panel did not fit the 900x640 compact window the
+- **`src/ui/styles/style.css`**: the opening panel did not fit the 900x640 compact window the
   checkpoint smoke captures. Its bottom offset and paragraph spacing were tightened
   by about 26 px in the <=1100 px media query.
 
 ## Files
 
-New: `src/region-survey.js` (generated), `scripts/build-region-survey.mjs`,
-`src/region-world.js`, `src/world-terrain.js`, `src/world-regions.js`,
+New: `src/dev/tools/region-survey.js` (generated), `scripts/build-region-survey.mjs`,
+`src/world/terrain/region-world.js`, `src/world/terrain/world-terrain.js`, `src/world/terrain/world-regions.js`,
 `tests/region-survey.test.js`.
 
-Rewritten: `src/world.js`, `src/regions.js`, `tests/regions-world.test.js`.
+Rewritten: `src/world.js`, `src/world/terrain/regions.js`, `tests/regions-world.test.js`.
 
 Originals of everything replaced or heavily edited are in `docs/rebuild-backup/`.

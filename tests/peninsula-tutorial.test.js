@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createPeninsulaTutorial, validatePeninsulaTutorialSnapshot, PENINSULA_TUTORIAL_ANCHORS as A,
-  PENINSULA_CHRIS_TASKS, insidePeninsulaTutorial, PENINSULA_FLIGHT_CEILING } from '../src/peninsula-tutorial.js';
+  PENINSULA_CHRIS_TASKS, insidePeninsulaTutorial, PENINSULA_FLIGHT_CEILING } from '../src/content/chapters/prologue/peninsula-tutorial.js';
 
 function finishLessons(t) {
   t.introduce('inventory'); t.noteInventoryInspected();

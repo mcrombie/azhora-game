@@ -1,221 +1,221 @@
-import {URUBOND,URUBOND_LANDMARKS,urubondTerrainSink} from './urubond-world.js';
-import {refineUrubondGroundSteps} from './urubond-ground.js';
-import {createUrubondScenerySteps} from './urubond-scenery.js';
-import { OUTER_NAMES, OUTER_LAKES, OUTER_LANDMARKS, OUTER_RIVERS, outerProfile, outerOwns, outerWaterAt } from './outer-regions-world.js';
-import { createOuterScenerySteps } from './outer-regions-scenery.js';
-import { ACOR_NAMES, ACOR_WATERS, ACOR_LANDMARKS, acorProfile, acorOwns, acorWaterAt } from './acor-world.js';
-import { createThalmagarFortressSteps } from './thalmagar-fortress-scenery.js';
-import { createAcorScenerySteps } from './acor-scenery.js';
-import { stageBuildSteps } from './build-steps.js';
-import { createRegionLoading } from './region-loading.js';
-import { createSceneryResidency } from './scenery-residency.js';
-import { createTerrainSeedLookup } from './terrain-seeds.js';
-import { createStreamedTerrain } from './streamed-terrain.js';
-import { IBENWOOD_ALEZHOR_GROUND_REGIONS, createIbenwoodAlezhorGroundSteps, combinedRiverIndex } from './ibenwood-alezhor-ground.js';
-import { alezhorSwimmingSurface } from './alezhor-water.js';
-import { appendWesternTerrainSamples, preservedTerrainTileRanges, extensionTerrainSeed } from './terrain-extension.js';
-import { deferredScenery } from './deferred-scenery.js';
-import { batchStaticScenery } from './static-scenery-batches.js';
-import { REGION_IDS, REGION_CELLS, SURVEY } from './region-world.js';
-import { PUETH_RIVER_PROFILES, puethRiverHalfWidth, TESSEN_DECK_Y, withoutIbenalLayers } from './world-terrain.js';
-import { TARVEL_BRIDGE } from './amod-world.js';
-import { TARVEL_DECK_Y } from './amod-terraces.js';
-import { LINK_BRIDGE } from './elagos-world.js';
-import { createRoadDistanceIndex } from './road-distance-index.js';
-import { yieldStartup, terrainCacheMatches } from './startup.js';
-import { createIbenwoodScenerySteps } from './ibenwood-scenery.js';
-import { groveGround } from './ibenwood-pilot.js';
-import { createIbenwoodRegionalScenerySteps } from './ibenwood-regional-scenery.js';
-import { createWalkSurfaces } from './walk-surfaces.js';
-import { createIbenwoodRiverSystem, createIbenwoodRiverScenerySteps } from './ibenwood-rivers.js';
-import { createAlezhorBankGround } from './alezhor-bank-ground.js';
-import { createRegionalFarmlandScenerySteps } from './regional-farmland-scenery.js';
-import { FARMSTEADS } from './regional-farmland.js';
+import {URUBOND,URUBOND_LANDMARKS,urubondTerrainSink} from './content/regions/urubond/urubond-world.js';
+import {refineUrubondGroundSteps} from './content/regions/urubond/urubond-ground.js';
+import {createUrubondScenerySteps} from './content/regions/urubond/urubond-scenery.js';
+import { OUTER_NAMES, OUTER_LAKES, OUTER_LANDMARKS, OUTER_RIVERS, outerProfile, outerOwns, outerWaterAt } from './content/regions/outer-regions/outer-regions-world.js';
+import { createOuterScenerySteps } from './content/regions/outer-regions/outer-regions-scenery.js';
+import { ACOR_NAMES, ACOR_WATERS, ACOR_LANDMARKS, acorProfile, acorOwns, acorWaterAt } from './content/regions/acor/acor-world.js';
+import { createThalmagarFortressSteps } from './content/regions/thalmagar/thalmagar-fortress-scenery.js';
+import { createAcorScenerySteps } from './content/regions/acor/acor-scenery.js';
+import { stageBuildSteps } from './world/loading/build-steps.js';
+import { createRegionLoading } from './world/loading/region-loading.js';
+import { createSceneryResidency } from './world/loading/scenery-residency.js';
+import { createTerrainSeedLookup } from './world/terrain/terrain-seeds.js';
+import { createStreamedTerrain } from './world/loading/streamed-terrain.js';
+import { IBENWOOD_ALEZHOR_GROUND_REGIONS, createIbenwoodAlezhorGroundSteps, combinedRiverIndex } from './content/regions/ibenwood/ibenwood-alezhor-ground.js';
+import { alezhorSwimmingSurface } from './content/regions/alezhor/alezhor-water.js';
+import { appendWesternTerrainSamples, preservedTerrainTileRanges, extensionTerrainSeed } from './world/terrain/terrain-extension.js';
+import { deferredScenery } from './world/loading/deferred-scenery.js';
+import { batchStaticScenery } from './world/scenery/static-scenery-batches.js';
+import { REGION_IDS, REGION_CELLS, SURVEY } from './world/terrain/region-world.js';
+import { PUETH_RIVER_PROFILES, puethRiverHalfWidth, TESSEN_DECK_Y, withoutIbenalLayers } from './world/terrain/world-terrain.js';
+import { TARVEL_BRIDGE } from './content/regions/amod/amod-world.js';
+import { TARVEL_DECK_Y } from './content/regions/amod/amod-terraces.js';
+import { LINK_BRIDGE } from './content/regions/ambron/elagos-world.js';
+import { createRoadDistanceIndex } from './world/terrain/road-distance-index.js';
+import { yieldStartup, terrainCacheMatches } from './app/startup/startup.js';
+import { createIbenwoodScenerySteps } from './content/regions/ibenwood/ibenwood-scenery.js';
+import { groveGround } from './content/regions/ibenwood/ibenwood-pilot.js';
+import { createIbenwoodRegionalScenerySteps } from './content/regions/ibenwood/ibenwood-regional-scenery.js';
+import { createWalkSurfaces } from './world/collision/walk-surfaces.js';
+import { createIbenwoodRiverSystem, createIbenwoodRiverScenerySteps } from './content/regions/ibenwood/ibenwood-rivers.js';
+import { createAlezhorBankGround } from './content/regions/alezhor/alezhor-bank-ground.js';
+import { createRegionalFarmlandScenerySteps } from './world/scenery/regional-farmland-scenery.js';
+import { FARMSTEADS } from './world/scenery/regional-farmland.js';
 // `WATERLINE` is the line the predicates judge wet by; `waterAt` below answers it for the sea
-// and each river's own surface for a river (src/game-state.js). game-state imports nothing, so
+// and each river's own surface for a river (src/gameplay/movement/game-state.js). game-state imports nothing, so
 // there is no cycle here.
-import { WATERLINE } from './game-state.js';
-import { FARM_FIRE } from './farming.js';
-import { AVREL_POND, avrelPondGround } from './avrel-pond.js';
-import { createVisualArtsScenery } from './visual-arts-view.js';
-import { SYLVIA_PATH } from './visual-arts.js';
+import { WATERLINE } from './gameplay/movement/game-state.js';
+import { FARM_FIRE } from './gameplay/skills/farming/farming.js';
+import { AVREL_POND, avrelPondGround } from './content/regions/drent/avrel-pond.js';
+import { createVisualArtsScenery } from './gameplay/skills/performance/visual-arts-view.js';
+import { SYLVIA_PATH } from './gameplay/skills/performance/visual-arts.js';
 import * as THREE from 'three';
-import {createPeninsulaTutorialScenery} from './peninsula-tutorial-scenery.js';
-import {WEST_OREMINDI_LANDMARKS,westOremindiOwns} from './west-oremindi-world.js';
-import {refineWestOremindiGroundSteps} from './west-oremindi-ground.js';
-import {createWestOremindiScenerySteps} from './west-oremindi-scenery.js';
-import {BALDRO_PATHS,baldroOwns,baldroWaterAt} from './baldro-world.js';
-import {refineBaldroGroundSteps} from './baldro-ground.js';
-import {buildBaldroScenerySteps} from './baldro-scenery.js';
-import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './regional-places.js';
-import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './regions.js';
-import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './forest-places.js';
-import { FOREST_HIDEOUT, createForestHideout } from './forest-hideout-world.js';
+import {createPeninsulaTutorialScenery} from './content/chapters/prologue/peninsula-tutorial-scenery.js';
+import {WEST_OREMINDI_LANDMARKS,westOremindiOwns} from './content/regions/west-oremindi/west-oremindi-world.js';
+import {refineWestOremindiGroundSteps} from './content/regions/west-oremindi/west-oremindi-ground.js';
+import {createWestOremindiScenerySteps} from './content/regions/west-oremindi/west-oremindi-scenery.js';
+import {BALDRO_PATHS,baldroOwns,baldroWaterAt} from './content/regions/baldro/baldro-world.js';
+import {refineBaldroGroundSteps} from './content/regions/baldro/baldro-ground.js';
+import {buildBaldroScenerySteps} from './content/regions/baldro/baldro-scenery.js';
+import { REGIONAL_PLACES, REGIONAL_NPC_POSITIONS, REGIONAL_ACTIVITY_SITES, REGIONAL_PATHS, regionalFeatureClear, createRegionalPlaces } from './world/life/regional-places.js';
+import { regions, regionAt, isOpenCountry, regionNpcPositions, journeySites, regionFirePits, regionRepairBenches, regionLandmarks } from './world/terrain/regions.js';
+import { forestPlaceDefinitions, forestPlacePaths, forestWoodcutter, forestFeatureClear, tintForestGround, createForestPlaces } from './content/quests/forest/forest-places.js';
+import { FOREST_HIDEOUT, createForestHideout } from './content/quests/forest/forest-hideout-world.js';
 import {
   VILLAGE, villageToWorld, worldToVillage, WORLD_BOUNDS, SEA_LEVEL, MAIN_ROAD, CALOSS_ROAD_FORK, SUVAL_ROAD, ONWARD_ROAD,
   CALOSS, CALOSS_BANK, WOOD_EDGE, FERNWAY_REST, FRONTIER, STORY_SITES, AVREL_CLEARING,
   calossDistance, landDistance, SOLIS, solisPoint,
-} from './region-world.js';
-import { villageWeight, villageBase, bedrockHeight, legacyIzolGroundHeight, legacyWesternGroundHeight, legacyCelderGroundHeight, legacyEastIzolGroundHeight, groundWithRiver, groundBeforeVarn, groundTint, calossSurface, puethRiverSurface, smooth, lerp } from './world-terrain.js';
-import { toWorld, WORLD_SCALE } from './world-scale.js';
-import { createSigns, SIGN_COLOURS } from './signs.js';
-import { buildMorosWorks } from './moros-works.js';
-import { OUTPOST_BENCH, OUTPOST_FIRE, STOCKADE_TRACK_BEND, STOCKADE_APPROACH, OUTPOST_CIRCUIT, STOCKADE_CIRCUIT, enclosureOf } from './outpost.js';
-import { WAYSIDE_LANDMARKS } from './wayside.js';
-import { buildFrontierWorks } from './frontier-works.js';
-import { buildPlaceWorks } from './place-works.js';
-import { PLACE_LANDMARKS } from './places.js';
-import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './frontier.js';
-import { SOLIS_ROAD } from './region-world.js';
-import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, SOLIS_STREETS, WEST_SUVAL_SEA } from './west-suval.js';
-import { SOLIS_HARBOR, SOLIS_HARBOR_PATHS, solisHarborDeckHeight } from './solis-harbor.js';
-import { atticDeckHeight } from './wine-attic.js';
-import { createJesseCarriageScenery } from './jesse-carriage-scenery.js';
-import { jesseWorkshopClear } from './jesse-carriage-world.js';
-import { createBrandyYard } from './brandy-yard.js';
-import { createBrandyHomeScenery } from './brandy-home-scenery.js';
-import { FAMILY_HOMES, MARK_HOME, MARK_HOME_PATH, familyHomeClear } from './family-homes.js';
-import { createFamilyHomeScenery } from './family-homes-scenery.js';
-import { createLighthouse } from './lighthouse-world.js';
-import { ELOD_LIGHT } from './rival-light.js';
-import { createSmugglersDoorScenery } from './smugglers-door-world.js';
-import { createWoodlot } from './woodlot-world.js';
-import { createHomestead } from './homestead-world.js';
-import { inKoopwood } from './woodcutting.js';
-import { forestTimber } from './wood-species.js';
-import { getTreeRegistry, registerWorldTree } from './tree-registry.js';
-import { NORTHERN_NAMES, NORTHERN_IDS, NORTHERN_LAKES, NORTHERN_LANDMARKS, northernProfile, northernCellAt, northernWaterAt, northernTint } from './northern-oremindi-world.js';
-import { refineNorthernGroundSteps } from './northern-oremindi-ground.js';
-import { createNorthernScenerySteps } from './northern-oremindi-scenery.js';
-import { createSouthOremindiScenerySteps } from './south-oremindi-scenery.js';
-import { createInquestHome } from './inquest-home-scenery.js';
-import { INQUEST_HOME, inquestHomeClear } from './inquest-home.js';
-import { createYunethreScenerySteps } from './yunethre-scenery.js';
-import { YUNETHRE_LANDMARKS } from './yunethre-world.js';
-import { refineSouthOremindiGroundSteps } from './south-oremindi-ground.js';
-import { SOUTH_OREMINDI_LAKES, SOUTH_OREMINDI_LANDMARKS, southOremindiOwns, southOremindiWaterAt } from './south-oremindi-world.js';
-import { createWestSuvalScenerySteps } from './west-suval-world.js';
-import { createWineryScenery } from './winery-world.js';
-import { buildBirdGarden, birdGardenSites, inBirdGarden } from './bird-garden.js';
-import { createRegionScenerySteps, regionClear } from './world-regions.js';
-import { createColliderGrid, watchColliderEdits } from './collider-grid.js';
-import { OPENING_FIGHT_GROUND } from './opening-fights.js';
-import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSEN_BRIDGE, PUETH_RIVERS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, puethRiverDistance } from './pueth-world.js';
-import { createPuethScenerySteps } from './pueth-scenery.js';
-import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './peblos-world.js';
-import { createPeblosScenerySteps } from './peblos-scenery.js';
-import { createFerryBoat } from './ferry-boat.js';
-import { PORT_CALOS, PORT_CALOS_QUAY, PORT_CALOS_PATHS, PORT_CALOS_LANDMARKS, PORT_CALOS_NPC_POSITIONS, inPortCalos, portCalosGround, portCalosDeckHeight } from './port-calos-world.js';
-import { createPortCalosScenery } from './port-calos-scenery.js';
-import { RENA_ROAD, RENA_LANDMARKS, RENA_NPC_POSITIONS } from './rena.js';
-import { buildRenaWorks } from './rena-works.js';
-import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LANDING, quayHeight as elodQuayHeight } from './east-suval.js';
-import { createEastSuvalScenerySteps } from './east-suval-world.js';
-import { createSouthSuvalScenerySteps } from './south-suval-scenery.js';
-import { createEastLotharnScenerySteps } from './east-lotharn-scenery.js';
-import { createWestLotharnScenerySteps } from './west-lotharn-scenery.js';
-import { createVarnScenerySteps } from './varn-scenery.js';
-import { createLotharnFortsScenerySteps } from './lotharn-forts-scenery.js';
-import { LOTHARN_FORT_LANDMARKS } from './lotharn-forts.js';
-import { VARN_ROAD, VARN_ROAD_HALF, VARN_LANDMARKS, varnTerrainSink } from './varn-world.js';
-import { unclimbableAt } from './no-climb-zones.js';
-import { createFeradomScenerySteps } from './feradom-scenery.js';
-import { feradomTerrainSink } from './feradom-world.js';
-import { FERADOM_LANDMARKS } from './feradom-forts.js';
-import { createAscarthScenerySteps } from './ascarth-scenery.js';
-import { ASCARTH_LANDMARKS } from './ascarth-world.js';
-import { PASS_ROAD_LINE as LOTHARN_ROAD_LINE, WORKINGS_TRACK, EAST_LOTHARN_LANDMARKS, lotharnTerrainSink } from './east-lotharn-world.js';
-import { createCaves } from './east-lotharn-caves.js';
-import { WEST_LOTHARN_LANDMARKS, westLotharnTerrainSink } from './west-lotharn-world.js';
-import { createWestLotharnCaves } from './west-lotharn-caves.js';
-import { createWestLotharnGroundSteps, WEST_LOTHARN_GROUND_REGIONS } from './west-lotharn-ground.js';
-import { createLegacyWesternGrid, createLegacyWesternGround } from './western-legacy-ground.js';
-import { createSuvalHighlandScenerySteps } from './suval-highlands-scenery.js';
-import { createSuvalGroundSurface, createSuvalHighlandGroundSteps, SUVAL_GROUND_REGIONS } from './suval-highland-ground.js';
-import { BAT_CAVE, IMLAMDRIS_REBUILD, suvalHighlandTerrainSink } from './suval-highlands.js';
-import { createIscareScenerySteps } from './iscare-scenery.js';
-import { ISCARE_RUIN_SITES } from './iscare-world.js';
-import { PASS_ROAD_LINE, SOUTH_SUVAL_LANDMARKS, SOUTH_SUVAL_CHART_WATERS, imlamdrisTerrainSink } from './south-suval-world.js';
-import { IZOL_LANDMARKS, IZOL_NPC_POSITIONS, IZOL_PATHS, IZOL_SEA, IZOL_QUAY, izolDeckHeight } from './izol-world.js';
-import { createIzolScenerySteps } from './izol-scenery.js';
-import { drapeRoadOnTerrain, terrainRoadHeight } from './terrain-road.js';
-import { treeGroundingOffset } from './tree-grounding.js';
-import { brandyHomeClear, brandyHomeGround } from './brandy-home-world.js';
-import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, CALOSS_ELAGOS_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WATERS, inElagosWater } from './elagos-world.js';
-import { AMBRON_ENCLOSURE, AMBRON_STREETS, ambronPoint, ambronDeckHeight } from './ambron.js';
-import { ELAGOS_NPC_POSITIONS } from './ambron-people.js';
-import { createElagosScenerySteps } from './elagos-scenery.js';
-import { AMOD_ROAD, AMOD_NPC_POSITIONS, AMOD_LANDMARKS, tarvelDistance } from './amod-world.js';
-import { amodTerrainSink } from './amod-terraces.js';
-import { createAmodScenerySteps } from './amod-scenery.js';
-import { WEST_REGION_LANDMARKS, westBareGround, westRiverDistance, trelossTerrainSink } from './west-regions.js';
-import { createMenoraScenerySteps } from './menora-scenery.js';
-import { createNylonScenerySteps } from './nylon-scenery.js';
-import { NYLON_PATHS, NYLON_LANDMARKS, nylonReserved, nylonHarborDeckHeight } from './nylon-city.js';
-import { createAevisScenerySteps } from './aevis-scenery.js';
-import { AEVIS_PATHS, AEVIS_LANDMARKS, aevisReserved, aevisDeckHeight } from './aevis-city.js';
-import { clearScatter } from './scenery-clearing.js';
-import { MENORA, MENORA_PATHS, MENORA_BUILDINGS, menoraDeckHeight } from './menora-city.js';
-import { CARICAS_TOWN, CARICAS_ROADS } from './caricas-settlement.js';
-import { createCaricasSettlementSteps } from './caricas-settlement-scenery.js';
-import { createWestScenerySteps } from './west-regions-scenery.js';
-import { createGalaScenerySteps } from './gala-scenery.js';
-import { GALA_LANDMARKS } from './gala-world.js';
-import { createOvesScenerySteps } from './oves-scenery.js';
-import { createMithalaScenerySteps } from './mithala-scenery.js';
-import { createMithalaWaterSteps, MITHALA_WATER_REGIONS, celderBorderWaterSurface } from './mithala-water.js';
-import { createSouthwestScenerySteps } from './southwest-scenery.js';
-import { OVES_LANDMARKS } from './oves-world.js';
-import { MITHALA_LANDMARKS } from './mithala-world.js';
-import { createMithalaCityScenerySteps } from './mithala-city-scenery.js';
-import { MITHALA_STREETS, MITHALA_CITY_LANDMARKS, mithalaCityReserved } from './mithala-city.js';
-import { SOUTHWEST_LANDMARKS } from './southwest-world.js';
-import { createSelemisScenery } from './selemis-scenery.js';
-import { SELEMIS_LANDMARKS } from './selemis-world.js';
-import { createTelemoniaScenerySteps } from './telemonia-scenery.js';
-import { createTelemoniaGroundSteps } from './telemonia-ground.js';
-import { createTelemoniaTownScenerySteps } from './telemonia-town-scenery.js';
-import { TELEMONIA_TOWN_LANDMARKS } from './telemonia-ways.js';
-import { createEastPyrosScenerySteps } from './east-pyros-scenery.js';
-import { EAST_PYROS_LANDMARKS, EAST_PYROS_POOLS, eastPyrosWaterAt } from './east-pyros-world.js';
-import { createNetherDesertScenerySteps } from './nether-desert-scenery.js';
-import { NETHER_DESERT_LANDMARKS } from './nether-desert-world.js';
-import { createLegemumScenerySteps } from './legemum-scenery.js';
-import { LEGEMUM_LANDMARKS } from './legemum-world.js';
-import { BABON_LANDMARKS, BABON_RIVERS, babonWaterAt, babonOwns } from './babon-world.js';
-import { createBabonScenerySteps } from './babon-scenery.js';
-import { refineBabonGroundSteps } from './babon-ground.js';
-import { createSouthCelderScenerySteps } from './south-celder-scenery.js';
-import { SOUTH_CELDER_LANDMARKS } from './south-celder-world.js';
-import { createNorthCelderScenerySteps } from './north-celder-scenery.js';
-import { NORTH_CELDER_LANDMARKS } from './north-celder-world.js';
-import { CANERD_LANDMARKS, CANERD_PATHS, canerdTerrainSink } from './canerd-world.js';
-import { refineCanerdGroundSteps } from './canerd-ground.js';
-import { createCanerdScenerySteps } from './canerd-scenery.js';
-import { PYRA, PYRA_LANDMARKS, pyraTerrainSink } from './pyra-world.js';
-import { refinePyraGroundSteps } from './pyra-ground.js';
-import { createPyraScenerySteps } from './pyra-scenery.js';
-import { SELAMUS_CANALS, SELAMUS_LANDMARKS, SELAMUS_MAP_BRIDGES, selamusTerrainSink, selamusReserved } from './selamus-city.js';
-import { refineSelamusGroundSteps } from './selamus-ground.js';
-import { createSelamusScenerySteps } from './selamus-scenery.js';
-import { createSelamusHarborSteps } from './selamus-harbor.js';
-import { createEastIzolScenerySteps } from './east-izol-scenery.js';
-import { EAST_IZOL_LANDMARKS } from './east-izol-world.js';
-import { createAlezhorScenerySteps } from './alezhor-scenery.js';
-import { ALEZHOR_LANDMARKS, alezhorMapWaters, alezhorRiverIndex } from './alezhor-world.js';
-import { createSouthIbenalScenerySteps } from './south-ibenal-scenery.js';
-import { SOUTH_IBENAL_LANDMARKS, ibenalMapWaters, ibenalRiverIndex } from './south-ibenal-world.js';
-import { createNorthIbenalScenerySteps } from './north-ibenal-scenery.js';
-import { NORTH_IBENAL_LANDMARKS } from './north-ibenal-world.js';
-import { createHenborthScenerySteps } from './henborth-scenery.js';
-import { HENBORTH_LANDMARKS } from './henborth-world.js';
-import { TELEMONIA_LANDMARKS, telemoniaTerrainSink } from './telemonia-world.js';
-import { DRENT_SITES, DRENT_NPC_POSITIONS, DRENT_LOCAL_PATHS, drentFeatureClear } from './drent-sites.js';
-import { createDrentCivilWarScenery } from './drent-scenery.js';
-import { createRoadAmbushScenery } from './road-ambush-scenery.js';
-import { createSpiderDenScenery, createNothomThicketScenery } from './spider-den-scenery.js';
-import { CAGNEY_WAVES } from './cagney-quest.js';
-import { createRoadSurfaceMask } from './path-junctions.js';
+} from './world/terrain/region-world.js';
+import { villageWeight, villageBase, bedrockHeight, legacyIzolGroundHeight, legacyWesternGroundHeight, legacyCelderGroundHeight, legacyEastIzolGroundHeight, groundWithRiver, groundBeforeVarn, groundTint, calossSurface, puethRiverSurface, smooth, lerp } from './world/terrain/world-terrain.js';
+import { toWorld, WORLD_SCALE } from './world/terrain/world-scale.js';
+import { createSigns, SIGN_COLOURS } from './world/scenery/signs.js';
+import { buildMorosWorks } from './content/regions/moros/moros-works.js';
+import { OUTPOST_BENCH, OUTPOST_FIRE, STOCKADE_TRACK_BEND, STOCKADE_APPROACH, OUTPOST_CIRCUIT, STOCKADE_CIRCUIT, enclosureOf } from './content/regions/drent/outpost.js';
+import { WAYSIDE_LANDMARKS } from './content/quests/roadside/wayside.js';
+import { buildFrontierWorks } from './content/regions/minora-frontier/frontier-works.js';
+import { buildPlaceWorks } from './world/scenery/place-works.js';
+import { PLACE_LANDMARKS } from './world/scenery/places.js';
+import { FRONTIER_ROUTE, FRONTIER_LANDMARKS, FRONTIER_GATE, FRONTIER_APPROACH } from './content/regions/minora-frontier/frontier.js';
+import { SOLIS_ROAD } from './world/terrain/region-world.js';
+import { WEST_SUVAL_LANDMARKS, SOLIS_ENCLOSURES, SOLIS_STREETS, WEST_SUVAL_SEA } from './content/regions/solis/west-suval.js';
+import { SOLIS_HARBOR, SOLIS_HARBOR_PATHS, solisHarborDeckHeight } from './content/regions/solis/solis-harbor.js';
+import { atticDeckHeight } from './content/quests/wine/wine-attic.js';
+import { createJesseCarriageScenery } from './content/quests/jesse/jesse-carriage-scenery.js';
+import { jesseWorkshopClear } from './content/quests/jesse/jesse-carriage-world.js';
+import { createBrandyYard } from './content/quests/brandy/brandy-yard.js';
+import { createBrandyHomeScenery } from './content/quests/brandy/brandy-home-scenery.js';
+import { FAMILY_HOMES, MARK_HOME, MARK_HOME_PATH, familyHomeClear } from './content/quests/homes/family-homes.js';
+import { createFamilyHomeScenery } from './content/quests/homes/family-homes-scenery.js';
+import { createLighthouse } from './content/quests/lighthouse/lighthouse-world.js';
+import { ELOD_LIGHT } from './content/quests/rival-light/rival-light.js';
+import { createSmugglersDoorScenery } from './content/quests/roadside/smugglers-door-world.js';
+import { createWoodlot } from './world/scenery/woodlot-world.js';
+import { createHomestead } from './content/quests/homes/homestead-world.js';
+import { inKoopwood } from './gameplay/skills/woodcutting/woodcutting.js';
+import { forestTimber } from './gameplay/skills/woodcutting/wood-species.js';
+import { getTreeRegistry, registerWorldTree } from './world/scenery/tree-registry.js';
+import { NORTHERN_NAMES, NORTHERN_IDS, NORTHERN_LAKES, NORTHERN_LANDMARKS, northernProfile, northernCellAt, northernWaterAt, northernTint } from './content/regions/northern-oremindi/northern-oremindi-world.js';
+import { refineNorthernGroundSteps } from './content/regions/northern-oremindi/northern-oremindi-ground.js';
+import { createNorthernScenerySteps } from './content/regions/northern-oremindi/northern-oremindi-scenery.js';
+import { createSouthOremindiScenerySteps } from './content/regions/south-oremindi/south-oremindi-scenery.js';
+import { createInquestHome } from './content/quests/homes/inquest-home-scenery.js';
+import { INQUEST_HOME, inquestHomeClear } from './content/quests/homes/inquest-home.js';
+import { createYunethreScenerySteps } from './content/regions/minora-frontier/yunethre-scenery.js';
+import { YUNETHRE_LANDMARKS } from './content/regions/minora-frontier/yunethre-world.js';
+import { refineSouthOremindiGroundSteps } from './content/regions/south-oremindi/south-oremindi-ground.js';
+import { SOUTH_OREMINDI_LAKES, SOUTH_OREMINDI_LANDMARKS, southOremindiOwns, southOremindiWaterAt } from './content/regions/south-oremindi/south-oremindi-world.js';
+import { createWestSuvalScenerySteps } from './content/regions/solis/west-suval-world.js';
+import { createWineryScenery } from './content/regions/winery/winery-world.js';
+import { buildBirdGarden, birdGardenSites, inBirdGarden } from './gameplay/skills/birding/bird-garden.js';
+import { createRegionScenerySteps, regionClear } from './world/terrain/world-regions.js';
+import { createColliderGrid, watchColliderEdits } from './world/collision/collider-grid.js';
+import { OPENING_FIGHT_GROUND } from './app/startup/opening-fights.js';
+import { HIDEOUT_SITE, hideoutToWorld, PUETH_ROAD, HIDEOUT_APPROACH_TRAIL, TESSEN_BRIDGE, PUETH_RIVERS, PUETH_NPC_POSITIONS, PUETH_LANDMARKS, puethRiverDistance } from './content/regions/pueth/pueth-world.js';
+import { createPuethScenerySteps } from './content/regions/pueth/pueth-scenery.js';
+import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './content/regions/peblos/peblos-world.js';
+import { createPeblosScenerySteps } from './content/regions/peblos/peblos-scenery.js';
+import { createFerryBoat } from './world/travel/ferry-boat.js';
+import { PORT_CALOS, PORT_CALOS_QUAY, PORT_CALOS_PATHS, PORT_CALOS_LANDMARKS, PORT_CALOS_NPC_POSITIONS, inPortCalos, portCalosGround, portCalosDeckHeight } from './content/regions/port-calos/port-calos-world.js';
+import { createPortCalosScenery } from './content/regions/port-calos/port-calos-scenery.js';
+import { RENA_ROAD, RENA_LANDMARKS, RENA_NPC_POSITIONS } from './content/quests/rena/rena.js';
+import { buildRenaWorks } from './content/quests/rena/rena-works.js';
+import { EAST_SUVAL_PLACES, ELOD_STANDS, EAST_SUVAL_STANDS, ELOD_QUAY, ELOD_LANDING, quayHeight as elodQuayHeight } from './content/regions/east-suval/east-suval.js';
+import { createEastSuvalScenerySteps } from './content/regions/east-suval/east-suval-world.js';
+import { createSouthSuvalScenerySteps } from './content/regions/south-suval/south-suval-scenery.js';
+import { createEastLotharnScenerySteps } from './content/regions/east-lotharn/east-lotharn-scenery.js';
+import { createWestLotharnScenerySteps } from './content/regions/west-lotharn/west-lotharn-scenery.js';
+import { createVarnScenerySteps } from './content/regions/varn/varn-scenery.js';
+import { createLotharnFortsScenerySteps } from './content/regions/west-lotharn/lotharn-forts-scenery.js';
+import { LOTHARN_FORT_LANDMARKS } from './content/regions/west-lotharn/lotharn-forts.js';
+import { VARN_ROAD, VARN_ROAD_HALF, VARN_LANDMARKS, varnTerrainSink } from './content/regions/varn/varn-world.js';
+import { unclimbableAt } from './gameplay/movement/no-climb-zones.js';
+import { createFeradomScenerySteps } from './content/regions/feradom/feradom-scenery.js';
+import { feradomTerrainSink } from './content/regions/feradom/feradom-world.js';
+import { FERADOM_LANDMARKS } from './content/regions/feradom/feradom-forts.js';
+import { createAscarthScenerySteps } from './content/regions/ascarth/ascarth-scenery.js';
+import { ASCARTH_LANDMARKS } from './content/regions/ascarth/ascarth-world.js';
+import { PASS_ROAD_LINE as LOTHARN_ROAD_LINE, WORKINGS_TRACK, EAST_LOTHARN_LANDMARKS, lotharnTerrainSink } from './content/regions/east-lotharn/east-lotharn-world.js';
+import { createCaves } from './content/regions/east-lotharn/east-lotharn-caves.js';
+import { WEST_LOTHARN_LANDMARKS, westLotharnTerrainSink } from './content/regions/west-lotharn/west-lotharn-world.js';
+import { createWestLotharnCaves } from './content/regions/west-lotharn/west-lotharn-caves.js';
+import { createWestLotharnGroundSteps, WEST_LOTHARN_GROUND_REGIONS } from './content/regions/west-lotharn/west-lotharn-ground.js';
+import { createLegacyWesternGrid, createLegacyWesternGround } from './content/regions/western-regions/western-legacy-ground.js';
+import { createSuvalHighlandScenerySteps } from './content/regions/suval-highlands/suval-highlands-scenery.js';
+import { createSuvalGroundSurface, createSuvalHighlandGroundSteps, SUVAL_GROUND_REGIONS } from './content/regions/suval-highlands/suval-highland-ground.js';
+import { BAT_CAVE, IMLAMDRIS_REBUILD, suvalHighlandTerrainSink } from './content/regions/suval-highlands/suval-highlands.js';
+import { createIscareScenerySteps } from './content/regions/iscare/iscare-scenery.js';
+import { ISCARE_RUIN_SITES } from './content/regions/iscare/iscare-world.js';
+import { PASS_ROAD_LINE, SOUTH_SUVAL_LANDMARKS, SOUTH_SUVAL_CHART_WATERS, imlamdrisTerrainSink } from './content/regions/south-suval/south-suval-world.js';
+import { IZOL_LANDMARKS, IZOL_NPC_POSITIONS, IZOL_PATHS, IZOL_SEA, IZOL_QUAY, izolDeckHeight } from './content/regions/izol/izol-world.js';
+import { createIzolScenerySteps } from './content/regions/izol/izol-scenery.js';
+import { drapeRoadOnTerrain, terrainRoadHeight } from './world/terrain/terrain-road.js';
+import { treeGroundingOffset } from './world/scenery/tree-grounding.js';
+import { brandyHomeClear, brandyHomeGround } from './content/quests/brandy/brandy-home-world.js';
+import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, CALOSS_ELAGOS_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WATERS, inElagosWater } from './content/regions/ambron/elagos-world.js';
+import { AMBRON_ENCLOSURE, AMBRON_STREETS, ambronPoint, ambronDeckHeight } from './content/regions/ambron/ambron.js';
+import { ELAGOS_NPC_POSITIONS } from './content/regions/ambron/ambron-people.js';
+import { createElagosScenerySteps } from './content/regions/ambron/elagos-scenery.js';
+import { AMOD_ROAD, AMOD_NPC_POSITIONS, AMOD_LANDMARKS, tarvelDistance } from './content/regions/amod/amod-world.js';
+import { amodTerrainSink } from './content/regions/amod/amod-terraces.js';
+import { createAmodScenerySteps } from './content/regions/amod/amod-scenery.js';
+import { WEST_REGION_LANDMARKS, westBareGround, westRiverDistance, trelossTerrainSink } from './content/regions/western-regions/west-regions.js';
+import { createMenoraScenerySteps } from './content/regions/minora-frontier/menora-scenery.js';
+import { createNylonScenerySteps } from './content/regions/nylon/nylon-scenery.js';
+import { NYLON_PATHS, NYLON_LANDMARKS, nylonReserved, nylonHarborDeckHeight } from './content/regions/nylon/nylon-city.js';
+import { createAevisScenerySteps } from './content/regions/aevis/aevis-scenery.js';
+import { AEVIS_PATHS, AEVIS_LANDMARKS, aevisReserved, aevisDeckHeight } from './content/regions/aevis/aevis-city.js';
+import { clearScatter } from './world/scenery/scenery-clearing.js';
+import { MENORA, MENORA_PATHS, MENORA_BUILDINGS, menoraDeckHeight } from './content/regions/minora-frontier/menora-city.js';
+import { CARICAS_TOWN, CARICAS_ROADS } from './content/regions/minora-frontier/caricas-settlement.js';
+import { createCaricasSettlementSteps } from './content/regions/minora-frontier/caricas-settlement-scenery.js';
+import { createWestScenerySteps } from './content/regions/western-regions/west-regions-scenery.js';
+import { createGalaScenerySteps } from './content/regions/gala/gala-scenery.js';
+import { GALA_LANDMARKS } from './content/regions/gala/gala-world.js';
+import { createOvesScenerySteps } from './content/regions/oves/oves-scenery.js';
+import { createMithalaScenerySteps } from './content/regions/mithala/mithala-scenery.js';
+import { createMithalaWaterSteps, MITHALA_WATER_REGIONS, celderBorderWaterSurface } from './content/regions/mithala/mithala-water.js';
+import { createSouthwestScenerySteps } from './content/regions/southwest/southwest-scenery.js';
+import { OVES_LANDMARKS } from './content/regions/oves/oves-world.js';
+import { MITHALA_LANDMARKS } from './content/regions/mithala/mithala-world.js';
+import { createMithalaCityScenerySteps } from './content/regions/mithala/mithala-city-scenery.js';
+import { MITHALA_STREETS, MITHALA_CITY_LANDMARKS, mithalaCityReserved } from './content/regions/mithala/mithala-city.js';
+import { SOUTHWEST_LANDMARKS } from './content/regions/southwest/southwest-world.js';
+import { createSelemisScenery } from './content/regions/selemis/selemis-scenery.js';
+import { SELEMIS_LANDMARKS } from './content/regions/selemis/selemis-world.js';
+import { createTelemoniaScenerySteps } from './content/regions/telemonia/telemonia-scenery.js';
+import { createTelemoniaGroundSteps } from './content/regions/telemonia/telemonia-ground.js';
+import { createTelemoniaTownScenerySteps } from './content/regions/telemonia/telemonia-town-scenery.js';
+import { TELEMONIA_TOWN_LANDMARKS } from './content/regions/telemonia/telemonia-ways.js';
+import { createEastPyrosScenerySteps } from './content/regions/east-pyros/east-pyros-scenery.js';
+import { EAST_PYROS_LANDMARKS, EAST_PYROS_POOLS, eastPyrosWaterAt } from './content/regions/east-pyros/east-pyros-world.js';
+import { createNetherDesertScenerySteps } from './content/regions/nether-desert/nether-desert-scenery.js';
+import { NETHER_DESERT_LANDMARKS } from './content/regions/nether-desert/nether-desert-world.js';
+import { createLegemumScenerySteps } from './content/regions/legemum/legemum-scenery.js';
+import { LEGEMUM_LANDMARKS } from './content/regions/legemum/legemum-world.js';
+import { BABON_LANDMARKS, BABON_RIVERS, babonWaterAt, babonOwns } from './content/regions/babon/babon-world.js';
+import { createBabonScenerySteps } from './content/regions/babon/babon-scenery.js';
+import { refineBabonGroundSteps } from './content/regions/babon/babon-ground.js';
+import { createSouthCelderScenerySteps } from './content/regions/south-celder/south-celder-scenery.js';
+import { SOUTH_CELDER_LANDMARKS } from './content/regions/south-celder/south-celder-world.js';
+import { createNorthCelderScenerySteps } from './content/regions/canerd/north-celder-scenery.js';
+import { NORTH_CELDER_LANDMARKS } from './content/regions/canerd/north-celder-world.js';
+import { CANERD_LANDMARKS, CANERD_PATHS, canerdTerrainSink } from './content/regions/canerd/canerd-world.js';
+import { refineCanerdGroundSteps } from './content/regions/canerd/canerd-ground.js';
+import { createCanerdScenerySteps } from './content/regions/canerd/canerd-scenery.js';
+import { PYRA, PYRA_LANDMARKS, pyraTerrainSink } from './content/regions/pyra/pyra-world.js';
+import { refinePyraGroundSteps } from './content/regions/pyra/pyra-ground.js';
+import { createPyraScenerySteps } from './content/regions/pyra/pyra-scenery.js';
+import { SELAMUS_CANALS, SELAMUS_LANDMARKS, SELAMUS_MAP_BRIDGES, selamusTerrainSink, selamusReserved } from './content/regions/selamus/selamus-city.js';
+import { refineSelamusGroundSteps } from './content/regions/selamus/selamus-ground.js';
+import { createSelamusScenerySteps } from './content/regions/selamus/selamus-scenery.js';
+import { createSelamusHarborSteps } from './content/regions/selamus/selamus-harbor.js';
+import { createEastIzolScenerySteps } from './content/regions/east-izol/east-izol-scenery.js';
+import { EAST_IZOL_LANDMARKS } from './content/regions/east-izol/east-izol-world.js';
+import { createAlezhorScenerySteps } from './content/regions/alezhor/alezhor-scenery.js';
+import { ALEZHOR_LANDMARKS, alezhorMapWaters, alezhorRiverIndex } from './content/regions/alezhor/alezhor-world.js';
+import { createSouthIbenalScenerySteps } from './content/regions/south-ibenal/south-ibenal-scenery.js';
+import { SOUTH_IBENAL_LANDMARKS, ibenalMapWaters, ibenalRiverIndex } from './content/regions/south-ibenal/south-ibenal-world.js';
+import { createNorthIbenalScenerySteps } from './content/regions/north-ibenal/north-ibenal-scenery.js';
+import { NORTH_IBENAL_LANDMARKS } from './content/regions/north-ibenal/north-ibenal-world.js';
+import { createHenborthScenerySteps } from './content/regions/henborth/henborth-scenery.js';
+import { HENBORTH_LANDMARKS } from './content/regions/henborth/henborth-world.js';
+import { TELEMONIA_LANDMARKS, telemoniaTerrainSink } from './content/regions/telemonia/telemonia-world.js';
+import { DRENT_SITES, DRENT_NPC_POSITIONS, DRENT_LOCAL_PATHS, drentFeatureClear } from './content/regions/drent/drent-sites.js';
+import { createDrentCivilWarScenery } from './content/regions/drent/drent-scenery.js';
+import { createRoadAmbushScenery } from './content/quests/road-ambush/road-ambush-scenery.js';
+import { createSpiderDenScenery, createNothomThicketScenery } from './content/quests/spider/spider-den-scenery.js';
+import { CAGNEY_WAVES } from './content/quests/cagney/cagney-quest.js';
+import { createRoadSurfaceMask } from './world/terrain/path-junctions.js';
 
 /**
  * The playable world of Drent, Luscia, the Moros Plain and East Suval.
@@ -252,7 +252,7 @@ export async function createWorldAsync(scene,{startup,cache,...options}={}) {
   if(cacheWrite){const saved=await cacheWrite;if(startup)startup.record.cacheSaved=saved;}
   return step.value;
 }
-function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, onTerrain=null, loadingMode="full", initialRegion=1, enabledRegions=null } = {}) {
+function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, onTerrain=null, loadingMode="full", initialRegion=1, enabledRegions=null, backdropBounds=null } = {}) {
   yield 'Preparing the world';
   const enabled=enabledRegions?new Set(enabledRegions.map(value=>typeof value==='number'?value:REGION_IDS[value]).filter(Boolean)):null;
   const enabledId=id=>!enabled||enabled.has(id);
@@ -365,7 +365,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     colliders.push(collider);
     return collider;
   }
-  // The goblin camp is authored in its own local metres too; it stands in the woods of southern Pueth (src/pueth-world.js).
+  // The goblin camp is authored in its own local metres too; it stands in the woods of southern Pueth (src/content/regions/pueth/pueth-world.js).
   const hideoutRoot = new THREE.Group();
   hideoutRoot.name = 'Goblin camp site';
   hideoutRoot.position.set(HIDEOUT_SITE.x, 0, HIDEOUT_SITE.z);
@@ -675,8 +675,8 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     if(i<addedColumns&&!terrainSeedAt)terrainSeed=extensionTerrainSeed(terrainXs[i],terrainZs[j]);
     if(terrainSeedAt)terrainSeed=terrainSeedAt(i,j);
     const x = terrainXs[i], z = terrainZs[j], index = j * columns + i;
-    // Amod's terraces and Imlamdris's are drawn by their own fine patches (src/amod-scenery.js,
-    // src/south-suval-scenery.js); the coarse grid is sunk out of sight beneath them.
+    // Amod's terraces and Imlamdris's are drawn by their own fine patches (src/content/regions/amod/amod-scenery.js,
+    // src/content/regions/south-suval/south-suval-scenery.js); the coarse grid is sunk out of sight beneath them.
     terrainPositions.set([x, groundHeight(x, z) - amodTerrainSink(x, z) - imlamdrisTerrainSink(x, z) - suvalHighlandTerrainSink(x, z) - lotharnTerrainSink(x, z) - westLotharnTerrainSink(x, z) - feradomTerrainSink(x, z) - varnTerrainSink(x, z) - telemoniaTerrainSink(x, z) - trelossTerrainSink(x, z) - canerdTerrainSink(x,z) - pyraTerrainSink(x,z) - selamusTerrainSink(x,z) - urubondTerrainSink(x,z), z], index * 3);
     groundTint(color, x, z, THREE);
     const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
@@ -696,9 +696,13 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   if(!fast&&!cacheHit)for(let j=0;j<rows;j++){for(let i=0;i<columns;i++)sampleTerrain(i,j);if(j%16===0)yield `Shaping terrain (${Math.round(j/rows*100)}%)`;}
   const terrainMaterial = material('#ffffff', { vertexColors: true, flatShading: true });
   const terrainRoot = new THREE.Group();terrainRoot.name='The ground of Azhora';world.add(terrainRoot);
+  // Distant silhouettes are separate from walkable ground: river refiners must
+  // never subdivide their vertical seam skirts or use them for foot placement.
+  const terrainBackdropRoot=new THREE.Group();terrainBackdropRoot.name='The Minora horizon';world.add(terrainBackdropRoot);
   if(fast){
-    streamTerrain=createStreamedTerrain({THREE,xs:terrainXs,zs:terrainZs,positions:terrainPositions,colors:terrainColors,sample:sampleTerrain,sampled,root:terrainRoot,material:terrainMaterial,cells:REGION_CELLS,ids:REGION_IDS,originColumn:addedColumns});
+    streamTerrain=createStreamedTerrain({THREE,xs:terrainXs,zs:terrainZs,positions:terrainPositions,colors:terrainColors,sample:sampleTerrain,sampled,root:terrainRoot,backdropRoot:terrainBackdropRoot,material:terrainMaterial,cells:REGION_CELLS,ids:REGION_IDS,originColumn:addedColumns});
     yield* streamTerrain.buildRegion(initialRegion);
+    if(backdropBounds){yield 'Preparing the Minora horizon';yield* streamTerrain.buildBackdrop(backdropBounds);}
     for(const id of Object.values(REGION_IDS))if(id!==initialRegion&&enabledId(id))loading.register({id:`terrain-${id}`,regions:[id],steps:()=>streamTerrain.buildRegion(id)});
     if(onTerrain)onTerrain({hit:cacheHit,partial:true});
   }
@@ -780,15 +784,22 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   const waterGeometry = new THREE.PlaneGeometry(seaWidth, seaDepth, Math.round(seaWidth / 32), Math.round(seaDepth / 32));
   waterGeometry.rotateX(-Math.PI / 2);
   const waterMaterial = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 }, shallow: { value: new THREE.Color('#65bdba') }, deep: { value: new THREE.Color('#328e9c') } },
-    vertexShader: `uniform float time; varying vec3 vWorld; varying float vWave;
+    fog: true,
+    uniforms: { ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog), time: { value: 0 }, shallow: { value: new THREE.Color('#65bdba') }, deep: { value: new THREE.Color('#328e9c') } },
+    vertexShader: `#include <fog_pars_vertex>
+      uniform float time; varying vec3 vWorld; varying float vWave;
       void main() { vec3 p=position; float w=sin(p.x*.12+time*.65)*.10+sin(p.z*.19+p.x*.035+time*.8)*.055;
-      p.y+=w; vWave=w; vec4 world=modelMatrix*vec4(p,1.); vWorld=world.xyz; gl_Position=projectionMatrix*viewMatrix*world; }`,
-    fragmentShader: `uniform float time; uniform vec3 shallow; uniform vec3 deep; varying vec3 vWorld; varying float vWave;
+      p.y+=w; vWave=w; vec4 world=modelMatrix*vec4(p,1.); vWorld=world.xyz; vec4 mvPosition=viewMatrix*world; gl_Position=projectionMatrix*mvPosition;
+      #include <fog_vertex>
+      }`,
+    fragmentShader: `#include <fog_pars_fragment>
+      uniform float time; uniform vec3 shallow; uniform vec3 deep; varying vec3 vWorld; varying float vWave;
       void main() { float band=sin(vWorld.x*.26+vWorld.z*.47+time*.7)*sin(vWorld.x*.45-vWorld.z*.1+time*.21);
       vec3 col=mix(shallow,deep,smoothstep(20.,150.,vWorld.x)); col+=vWave*.32;
       float sparkle=pow(max(0.,band),22.); col+=vec3(.21,.25,.20)*sparkle;
-      gl_FragColor=vec4(col,1.); }`,
+      gl_FragColor=vec4(col,1.);
+      #include <fog_fragment>
+      }`,
   });
   const water = new THREE.Mesh(waterGeometry, waterMaterial);
   water.name = 'The Stills';
@@ -1220,7 +1231,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // ---------------------------------------------------------------------------
   // Road signs, shared between Tidehaven and the regions
   // ---------------------------------------------------------------------------
-  // One sign language everywhere (src/signs.js): fingers point, square boards
+  // One sign language everywhere (src/world/scenery/signs.js): fingers point, square boards
   // name a place, plaques carry notices and painted stones mark a border.
   const signs = createSigns({ material, mesh, box, groundFor, pushFor,
     worldSpot: (parent, x, z) => (isLocal(parent) ? villageToWorld(x, z) : { x, z }) });
@@ -1240,7 +1251,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // The smithy is built here, not up with the cottages, because `signs` is declared above
   // this line and not above those: its board would be a temporal dead zone.
   /**
-   * The smithy on the south street (TIDEHAVEN_SMITHY, src/region-world.js, where the measurement
+   * The smithy on the south street (TIDEHAVEN_SMITHY, src/world/terrain/region-world.js, where the measurement
    * that chose the plot is written down). Modest and open-sided, as a village forge is: a
    * lean-to, a stone forge with its chimney and banked coals, an anvil on its stump, the quench
    * barrel, and a rack of bar stock. Drent is level 0, so what is sold here is what you landed
@@ -1268,7 +1279,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     const quench = along(-.2, 1.5); barrel(quench.x, quench.z, .78);
     const rack = along(-2.1, .9), rackY = localGround(rack.x, rack.z);
     for (const [dx, h] of [[-.22, 1.5], [0, 1.68], [.22, 1.4]]) box(iron, rack.x + dx, rackY + h / 2, rack.z, .05, h, .05);
-    // The board over the open side, in the sign language of the rest of Drent (src/signs.js).
+    // The board over the open side, in the sign language of the rest of Drent (src/world/scenery/signs.js).
     const board = along(1.6, -1.9);
     signs.hanging({ x: board.x, y: localGround(board.x, board.z) + 2.5, z: board.z, label: 'The Smithy', facing: turn, parent: villageRoot });
   }
@@ -1492,17 +1503,17 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // Measure every road before any scenery, so nothing is planted across one.
   measurePath(MAIN_ROAD, 4.2); measurePath(SUVAL_ROAD, 3.4); measurePath(SOLIS_ROAD, 4.2); measurePath(PUETH_ROAD, 4.2); measurePath(AMOD_ROAD, 4.2); measurePath(HIDEOUT_APPROACH_TRAIL, 1.85);
   measurePath(FOREST_HIDEOUT.trail.map(p => hideoutToWorld(p.x, p.z)), 1.85);
-  measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/rena.js)
+  measurePath(RENA_ROAD, 2.6);   // the old Rena road, off the main road at Drent's centre (src/content/quests/rena/rena.js)
   for (const path of IZOL_PATHS) measurePath(path.points, path.width);
   measurePath(AMBRON_ROAD, 4.6); measurePath(LAKE_ROAD, 3.6); for (const track of ELAGOS_ROADS.slice(2)) measurePath(track, track === CALOSS_ELAGOS_ROAD ? 4.2 : 2.6);
   for (const path of PORT_CALOS_PATHS) measurePath(path.points, path.width);
   for (const spur of roadSpurs) measurePath(spur, 2.2);
   measurePath(LOTHARN_ROAD_LINE, 4.4);
-  // The Varn road (src/varn-world.js) is deliberately not measured here: these lines are what the countries'
+  // The Varn road (src/content/regions/varn/varn-world.js) is deliberately not measured here: these lines are what the countries'
   // scatter keeps off, and a road told to Amod's would change which of its candidates are taken and so move
-  // every tree and stone after them. Its ground is cleared after the scatter is laid (src/scenery-clearing.js).
+  // every tree and stone after them. Its ground is cleared after the scatter is laid (src/world/scenery/scenery-clearing.js).
   measurePath(WORKINGS_TRACK, 2.2);
-  measurePath(PASS_ROAD_LINE, 4.2);   // Imlamdris's road through the hill pass (src/south-suval-world.js)
+  measurePath(PASS_ROAD_LINE, 4.2);   // Imlamdris's road through the hill pass (src/content/regions/south-suval/south-suval-world.js)
   for (const path of REGIONAL_PATHS) measurePath(path, 1.85);
   measurePath(SYLVIA_PATH.points, SYLVIA_PATH.width);
   measurePath(MARK_HOME_PATH, 1.1);
@@ -1565,7 +1576,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     groundHeight, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round, movingGroups,
   }),sharedFerry?{ferryBoat:sharedFerry.group,placeFerryBoat:sharedFerry.place}:{});
   const portCalos=yield* regionBuild('portCalos',[2],stage=>immediate(()=>createPortCalosScenery({parent:stage,heightAt:portGroundAt,colliders,signs})),{});
-  // East Suval (src/east-suval-world.js): Elod on its rock, the places along its
+  // East Suval (src/content/regions/east-suval/east-suval-world.js): Elod on its rock, the places along its
   // coast and its dry valleys, and the region's own limestone scatter.
   yield 'East Suval';
   const eastSuval=yield* regionBuild('eastSuval',[4],stage=>createEastSuvalScenerySteps({
@@ -1573,7 +1584,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     groundHeight, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round,
     roadDistance,
   }),{});
-  // South Suval (src/south-suval-scenery.js): the Stillwater, Imlamdris on its north-east shore,
+  // South Suval (src/content/regions/south-suval/south-suval-scenery.js): the Stillwater, Imlamdris on its north-east shore,
   // and the region's own scatter.
   yield 'South Suval';
   const southSuval=yield* regionBuild('southSuval',[18],stage=>createSouthSuvalScenerySteps({
@@ -1607,19 +1618,19 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     groundHeight, renderedGroundHeight: sharedWestGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), cylinder, round, roofGeometry, caves: lotharnCaves,
     unbuiltGround: groundBeforeVarn,
   }),{});
-  // The West Lotharn (src/west-lotharn-scenery.js): the massifs' own close-drawn ground, the courses
+  // The West Lotharn (src/content/regions/west-lotharn/west-lotharn-scenery.js): the massifs' own close-drawn ground, the courses
   // of cliff and the balds, the caves' rock, the four becks and the old forest to the tree line.
   yield 'West Lotharn';
   const westLotharn=yield* regionBuild('westLotharn',[27],stage=>createWestLotharnScenerySteps({
     root:stage, terrainRoot, material, mesh, box, post, pebble, wornPatch,
     groundHeight, renderedGroundHeight: treeGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), cylinder, round, roofGeometry, caves: westLotharnCaves, fineGround:westLotharnGround, legacyGroundHeight:legacyWesternWorldGround,
   }),{});
-  // Varn (src/varn-scenery.js): the Empire's fortress-city in Amod's notch, on the pass out of the East
+  // Varn (src/content/regions/varn/varn-scenery.js): the Empire's fortress-city in Amod's notch, on the pass out of the East
   // Lotharn. Built after both the countries it stands between, so that their scatter is already down
   // and what fell on its ground can be lifted off again without moving either country's seeded stream.
   yield 'Varn';
   const varn=yield* regionBuild('varn',[10, 20],stage=>createVarnScenerySteps({ root:stage, scene:world, material, groundHeight, colliders, treeRegistry }),{metrics:{}});
-  // The Ascarth Peninsula (src/ascarth-scenery.js): grass, scrub and stone on the finger, the wood on
+  // The Ascarth Peninsula (src/content/regions/ascarth/ascarth-scenery.js): grass, scrub and stone on the finger, the wood on
   // its interior hills, the green stone, and the rock fallen at the foot of its cliffs. Nobody's.
   yield 'South Oremindi ground';
   const oremindiGround=yield* regionBuild('oremindiGround',[37],stage=>refineSouthOremindiGroundSteps({THREE,terrainRoot,heightAt:groundHeight,coarseHeightAt:treeGroundAt}),{heightAt:groundHeight},built=>{southOremindiSurface=built.heightAt;});
@@ -1674,18 +1685,18 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // Both arrivals need it before scenery samples the intentionally sunk coarse mesh.
   const selamusGround=yield* regionBuild('selamusGround',[24, 54],stage=>refineSelamusGroundSteps({THREE,terrainRoot:stage,heightAt:groundHeight,coarseHeightAt:treeGroundAt}),{fineGroundHeight:()=>null},built=>{selamusSurface=built;});
   const ascarth=yield* regionBuild('ascarth',[23, 24],stage=>createAscarthScenerySteps({ root:stage, material, groundHeight, renderedGroundHeight:treeGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
-  // West Suval and Solis (src/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
+  // West Suval and Solis (src/content/regions/solis/west-suval-world.js): the city, its walls, the Coalition's camp and the road's country.
   yield 'West Suval';
   const westSuval=yield* regionBuild('westSuval',[5],stage=>createWestSuvalScenerySteps({ root:stage, material, mesh, box, post, pebble, rope, groundHeight, renderedGroundHeight:startingCountryGroundAt, legacyGroundHeight:legacyWesternWorldGround, colliders, wornPatch, roofGeometry, cylinder, round,
     wood, woodLight, darkWood, cream, movingGroups, roadDistance, sign: roadsideSign, signs, barrel }),{});
-  // Paradise Springs (src/winery-world.js): Lakota's old winery southeast of Port Calos.
+  // Paradise Springs (src/content/regions/winery/winery-world.js): Lakota's old winery southeast of Port Calos.
   const winery=yield* regionBuild('winery',[2],stage=>immediate(()=>createWineryScenery({ root:stage, material, mesh, box, post, barrel, groundHeight, colliders, cylinder, round, wornPatch, signs, movingGroups })),{});
-  // West Izol (src/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,
+  // West Izol (src/content/regions/izol/izol-scenery.js): Izolveth, its harbour and moles, the Coalition's camp above the town,
   // Ardveth, Kelvath Cove, the Sea Gate, the Sightstone and the island's own scatter.
   yield 'Izol';
   const izol=yield* regionBuild('izol',[8],stage=>createIzolScenerySteps({ root:stage, material, mesh, box, post, pebble, rope, cottage, barrel, crate, wornPatch, sign: roadsideSign,
     groundHeight, legacyGroundHeight:legacyIzolGroundHeight, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), wood, woodLight, darkWood, cream, roofGeometry, cylinder, round, movingGroups }),{});
-  // Elagos and Ambron (src/elagos-scenery.js): the lakes, the walled city on the narrows, and the lake country.
+  // Elagos and Ambron (src/content/regions/ambron/elagos-scenery.js): the lakes, the walled city on the narrows, and the lake country.
   yield 'Ambron and Elagos';
   const elagos=yield* regionBuild('elagos',[9],stage=>createElagosScenerySteps({ parent:stage, heightAt: groundHeight, colliders, signs, roadDistance }),{bridge:{...LINK_BRIDGE,deckY:LINK_BRIDGE.deckY},waterMaterial:{uniforms:{time:{value:0}}}});
   bridgeDecks.push(elagos.bridge);
@@ -1714,7 +1725,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     const city=yield* createNylonScenerySteps({parent:stage,heightAt,groundHeight,colliders});
     city.metrics.cleared=cleared;return city;
   },{metrics:{}});
-  // The Empire's forts on the other three ways south out of the two ranges (src/lotharn-forts-scenery.js):
+  // The Empire's forts on the other three ways south out of the two ranges (src/content/regions/west-lotharn/lotharn-forts-scenery.js):
   // one wall from cliff to cliff at each. Built after the mountains for the same reason Varn is, and after
   // the western country too: the Vastos Gate's yard stands on the tip of Vastos, whose scatter must be laid
   // before it can be lifted.
@@ -1723,16 +1734,16 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // Shared fine ground must be present before neighboring scenery in Fast mode.
   const telemoniaGround=yield* regionBuild('telemoniaGround',[22,25,26,55,57,59],stage=>createTelemoniaGroundSteps({root:stage,material,groundHeight,renderedGroundHeight:treeGroundAt}),{});
   const westFineGroundAt=(x,z)=>Math.max(sharedWestGroundAt(x,z),telemoniaGround.fineGroundHeight?.(x,z)??-Infinity);
-  // Gala (src/gala-scenery.js): its water, its dry wash, and what grows on the steppe, the maquis and
+  // Gala (src/content/regions/gala/gala-scenery.js): its water, its dry wash, and what grows on the steppe, the maquis and
   // the coast. Its own seeded stream, after the west's, so nothing already built moves for it.
   yield 'Gala';
   const galaScenery=yield* regionBuild('galaScenery',[22],stage=>createGalaScenerySteps({ root:stage, material, groundHeight, renderedGroundHeight:westFineGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round, terrainGrid:{xs:terrainXs,zs:terrainZs} }),{});
-  // Ovesos and the Oves Desert (src/oves-scenery.js): the Oveth's gallery and its reed, four dry
+  // Ovesos and the Oves Desert (src/content/regions/oves/oves-scenery.js): the Oveth's gallery and its reed, four dry
   // channels of gravel, the steppe's grass and scrub, and the desert's stone. Its own seeded stream,
   // after Gala's, so nothing already built moves for it. Nobody's.
   yield 'Oves';
   const ovesScenery=yield* regionBuild('ovesScenery',[25, 26],stage=>createOvesScenerySteps({ root:stage, material, groundHeight, renderedGroundHeight:westFineGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
-  // The Mithala plain (src/mithala-scenery.js): eight channels with their reed and their gallery of
+  // The Mithala plain (src/content/regions/mithala/mithala-scenery.js): eight channels with their reed and their gallery of
   // willow, poplar and alder, two braided reaches with silt bars between the threads, the tall
   // warm-season prairie grass and the forbs in it, the sedge of the fen margin going north, and the
   // Acorwood thickening over the north-eastern horizon. Its own seeded stream, after the Oves's, so
@@ -1740,7 +1751,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   yield 'Mithala';
   const mithalaWater=yield* regionBuild('mithalaWater',MITHALA_WATER_REGIONS,stage=>createMithalaWaterSteps({root:stage,colliders}),{metrics:{},update:()=>{}});
   const mithalaScenery=yield* regionBuild('mithalaScenery',[28, 29, 30, 31],stage=>createMithalaScenerySteps({ root:stage, water:mithalaWater, material, groundHeight, renderedGroundHeight:sharedWestGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
-  // Mithala (src/mithala-city.js, src/mithala-city-scenery.js): the river-city at the meeting of the arms, one district on
+  // Mithala (src/content/regions/mithala/mithala-city.js, src/content/regions/mithala/mithala-city-scenery.js): the river-city at the meeting of the arms, one district on
   // each of the four countries' hexes. Built after the plain, so the plain's scatter is down and what fell on the city's
   // ground is lifted off again (`clearMithalaPlainScatter`) without moving the Mithala's seeded stream by a draw.
   yield 'Mithala city';
@@ -1749,7 +1760,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     const city=yield* createMithalaCityScenerySteps({parent:stage,heightAt,groundHeight,colliders});
     city.metrics.cleared=cleared;return city;
   },{metrics:{},walkSurfaces:[],mapFeatures:[]},built=>outdoorWalkSurfaces.push(...built.walkSurfaces));
-  // The southwestern block (src/southwest-scenery.js): the Vaellir's gallery and its reed, two dry
+  // The southwestern block (src/content/regions/southwest/southwest-scenery.js): the Vaellir's gallery and its reed, two dry
   // washes and three shallow channels with nothing in any of them, the desert pavement the wind
   // has swept, the grass that has contracted into the Ganesh Plain's depressions, and one hex of
   // oak and pine at Navarth's tip. Its own seeded stream, after the Mithala's, so nothing already
@@ -1757,7 +1768,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   yield 'Southwestern country';
   const pyraGround=yield* regionBuild('pyraGround',PYRA.regions,stage=>refinePyraGroundSteps({THREE,terrainRoot:stage,heightAt:groundHeight,coarseHeightAt:treeGroundAt}),{fineGroundHeight:()=>null},built=>{pyraSurface=built;});
   const southwestScenery=yield* regionBuild('southwestScenery',[39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51],stage=>createSouthwestScenerySteps({ root:stage, material, groundHeight, renderedGroundHeight:treeGroundAt, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
-  // Selemis (src/selemis-scenery.js): the island's straw grass and aromatic scrub, the pale stone on
+  // Selemis (src/content/regions/selemis/selemis-scenery.js): the island's straw grass and aromatic scrub, the pale stone on
   // its tops, the pines leaning in the lee of its hills, the tamarisk and the wrack on its strand, the
   // stones in its two winter beds and the rock fallen at the foot of its cliffs. Its own seeded
   // stream, after the southwest's, so nothing already built moves for it. Nobody's.
@@ -1768,13 +1779,13 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     const built=yield* createSelamusScenerySteps({parent:stage,heightAt,colliders});built.metrics.cleared=cleared;return built;
   },{metrics:{},mapFeatures:[],walkSurfaces:[]},built=>outdoorWalkSurfaces.push(...built.walkSurfaces));
   const selamusHarbor=yield* regionBuild('selamusHarbor',[54],stage=>createSelamusHarborSteps({parent:stage,heightAt,colliders}),{metrics:{},walkSurfaces:[]},built=>outdoorWalkSurfaces.push(...built.walkSurfaces));
-  // Telemonia (src/telemonia-scenery.js): the highland's own finer ground, the terraces' walls and the
+  // Telemonia (src/content/regions/telemonia/telemonia-scenery.js): the highland's own finer ground, the terraces' walls and the
   // gullies' check-walls, the wall of Kethorn, bunch grass and wormwood and thorn, scrub oak and juniper
   // in the folds, the Belketh's wood and the stone. Its own seeded stream, after Selemis's, so nothing
   // already built moves for it. Stage 1: nothing planted and nobody's.
   yield 'Telemonia';
   const telemoniaScenery=yield* regionBuild('telemoniaScenery',[55],stage=>createTelemoniaScenerySteps({ root:stage, material, groundHeight, renderedGroundHeight:treeGroundAt, fineGround:telemoniaGround, colliders, dummy:new THREE.Object3D(), color:new THREE.Color(), round }),{});
-  // Telemonia, stage 2 (src/telemonia-town-scenery.js): Kethorn on its rock - the halls of the bands, the hall at the
+  // Telemonia, stage 2 (src/content/regions/telemonia/telemonia-town-scenery.js): Kethorn on its rock - the halls of the bands, the hall at the
   // end of the street, the granaries and the cisterns - the barley and the pulses on the Galmeth, the vine on the
   // terraces, and the field people's huts. Its own seeded stream, after stage 1's, so nothing already built moves.
   yield 'Kethorn';
@@ -1800,19 +1811,19 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   const northCelder=yield* regionBuild('northCelder',[REGION_IDS['North Celder']],stage=>createNorthCelderScenerySteps({parent:stage,heightAt:groundHeight,renderedGroundHeight:celderRenderedGround,candidateHeightAt:legacyCelderWorldGround,colliders}),{metrics:{}});
   const canerd=yield* regionBuild('canerd',[REGION_IDS['North Celder'],REGION_IDS['South Celder']],stage=>createCanerdScenerySteps({parent:stage,heightAt,renderedGroundHeight:celderRenderedGround,colliders}),{metrics:{},mapFeatures:[],walkSurfaces:[]},built=>outdoorWalkSurfaces.push(...built.walkSurfaces));
   paths.push(...CANERD_PATHS.map(p=>Object.assign([...p.points],{id:p.id,width:p.width})));
-  // East Izol (src/east-izol-scenery.js): pasture, maquis, rock and the headland coast.
+  // East Izol (src/content/regions/east-izol/east-izol-scenery.js): pasture, maquis, rock and the headland coast.
   yield 'East Izol';
   const eastIzol=yield* regionBuild('eastIzol',[REGION_IDS['East Izol']],stage=>createEastIzolScenerySteps({parent:stage,heightAt:groundHeight,candidateHeightAt:(x,z)=>{const legacy=legacyEastIzolGroundHeight(x,z),current=groundWithRiver(x,z);return legacy===current?groundHeight(x,z):legacy+(groundHeight(x,z)-current);},renderedGroundHeight:treeGroundAt,colliders}),{metrics:{}});
-  // Alezhor (src/alezhor-scenery.js).
+  // Alezhor (src/content/regions/alezhor/alezhor-scenery.js).
   yield 'Alezhor';
   const alezhor=yield* regionBuild('alezhor',[REGION_IDS['Alezhor']],stage=>createAlezhorScenerySteps({parent:stage,heightAt:groundHeight,legacyHeightAt:(x,z)=>withoutIbenalLayers(()=>legacyAlezhorBankHeight(x,z)),renderedGroundHeight:forestRenderedGround,colliders}),{metrics:{}});
-  // South Ibenal (src/south-ibenal-scenery.js).
+  // South Ibenal (src/content/regions/south-ibenal/south-ibenal-scenery.js).
   yield 'South Ibenal';
   const southIbenal=yield* regionBuild('southIbenal',[REGION_IDS['South Ibenal']],stage=>createSouthIbenalScenerySteps({parent:stage,heightAt:groundHeight,renderedGroundHeight:forestRenderedGround,colliders}),{metrics:{}});
-  // North Ibenal (src/north-ibenal-scenery.js).
+  // North Ibenal (src/content/regions/north-ibenal/north-ibenal-scenery.js).
   yield 'North Ibenal';
   const northIbenal=yield* regionBuild('northIbenal',[REGION_IDS['North Ibenal']],stage=>createNorthIbenalScenerySteps({parent:stage,heightAt:groundHeight,renderedGroundHeight:forestRenderedGround,colliders}),{metrics:{}});
-  // Henborth (src/henborth-scenery.js).
+  // Henborth (src/content/regions/henborth/henborth-scenery.js).
   yield 'Henborth';
   const henborth=yield* regionBuild('henborth',[REGION_IDS['Henborth']],stage=>createHenborthScenerySteps({parent:stage,heightAt:groundHeight,renderedGroundHeight:treeGroundAt,colliders}),{metrics:{}});
   // The built places: the Moros Plain's outpost, stockade, gate and wayside (see moros-works.js).
@@ -1821,24 +1832,24 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   buildMorosWorks({ parent: world, heightAt: groundHeight, colliders, signs, movingGroups, stakedProps, roadDistance });
   buildFrontierWorks({ parent: world, heightAt: groundHeight, colliders, signs });
   buildPlaceWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
-  // The three Renas: the razed town at Drent's centre, Applegarth, and Rena's own wayside (src/rena-works.js).
+  // The three Renas: the razed town at Drent's centre, Applegarth, and Rena's own wayside (src/content/quests/rena/rena-works.js).
   buildRenaWorks({ parent: world, heightAt: groundHeight, colliders, signs, roadDistance });
-  // Brandy Frank's dye yard, on the lane up to Saltwind Lookout (src/brandy-yard.js).
+  // Brandy Frank's dye yard, on the lane up to Saltwind Lookout (src/content/quests/brandy/brandy-yard.js).
   const jesseCarriage=createJesseCarriageScenery({parent:world,heightAt,colliders,movingGroups});
   createBrandyYard({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
   const brandyHome = createBrandyHomeScenery({ parent: world, cottage, material, mesh, box, post, round, cylinder, heightAt: groundHeight, colliders });
   const familyHomes=createFamilyHomeScenery({parent:world,heightAt:groundHeight,colliders,movingGroups});
-  // The two lights of this coast (src/lighthouse-world.js): Addison's on the West Suval head
+  // The two lights of this coast (src/content/quests/lighthouse/lighthouse-world.js): Addison's on the West Suval head
   // south of the winery lane, and her sister's across the water on the head below Elod, which
   // is taller, blacker, and has a derrick over the cliff for bringing up what the sea leaves.
   createLighthouse({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs });
   createLighthouse({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs }, ELOD_LIGHT,
     { stone: '#4a4a4f', stoneDark: '#343438', stoneLight: '#5e5e63', slate: '#26262a', door: '#2b2723' });
-  // Addison's father's door through the ridge between the two Suvals, and its hatch (src/rival-light.js).
+  // Addison's father's door through the ridge between the two Suvals, and its hatch (src/content/quests/rival-light/rival-light.js).
   createSmugglersDoorScenery({ root: world, groundHeight: heightAt });
-  // The Koopwood, Bowden Koop's woodlot, where woodcutting is learned (src/woodcutting.js, src/woodlot-world.js).
+  // The Koopwood, Bowden Koop's woodlot, where woodcutting is learned (src/gameplay/skills/woodcutting/woodcutting.js, src/world/scenery/woodlot-world.js).
   const woodlot = createWoodlot({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, signs, movingGroups });
-  // The traveler's house on the plot beside it, and the birdhouse posts in the Greenway (src/construction.js, src/homestead-world.js).
+  // The traveler's house on the plot beside it, and the birdhouse posts in the Greenway (src/gameplay/skills/woodcutting/construction.js, src/content/quests/homes/homestead-world.js).
   const homestead = createHomestead({ parent: world, material, mesh, box, post, round, cylinder, heightAt, colliders, movingGroups, reindex: () => { colliderIndex = null; } });
   addPath(MAIN_ROAD, 4.2);
   addPath(SUVAL_ROAD, 3.4);
@@ -2149,7 +2160,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   createSpiderDenScenery({ root: world, groundHeight });
   createNothomThicketScenery({ root: world, groundHeight, roadDistance });
   createRoadAmbushScenery({ root: world, groundHeight, roadDistance, colliders });
-  // Each of the three gangs on Cagney's road has its own cover (src/cagney-quest.js).
+  // Each of the three gangs on Cagney's road has its own cover (src/content/quests/cagney/cagney-quest.js).
   for (const wave of CAGNEY_WAVES) createRoadAmbushScenery({ root: world, groundHeight, roadDistance, colliders, name: 'Cagnapper ambush undergrowth',
     center: wave.center, forward: wave.forward, ambushers: wave.enemies, colliderKind: 'cagnapper-sapling' });
 
@@ -2292,7 +2303,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     for(const [index,object] of objects.entries()){
       if(index%64===0)yield;
       let excluded=false;
-      for(let parent=object;parent&&parent!==world;parent=parent.parent)if(parent===terrainRoot||parent.name.startsWith('Loading ')){excluded=true;break;}
+      for(let parent=object;parent&&parent!==world;parent=parent.parent)if(parent===terrainRoot||parent===terrainBackdropRoot||parent.name.startsWith('Loading ')){excluded=true;break;}
       if(excluded||object.material.isShaderMaterial)continue;
       const geometry=object.geometry;if(object.isInstancedMesh&&!object.boundingSphere)object.computeBoundingSphere();if(!geometry.boundingSphere)geometry.computeBoundingSphere();
       center.copy((object.isInstancedMesh?object.boundingSphere:geometry.boundingSphere).center).applyMatrix4(object.matrixWorld);
@@ -2340,7 +2351,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     ...SOUTH_SUVAL_CHART_WATERS,
   ]);
 
-  // Islands are land inside the chart's sea: the charts paint these over the water (src/local-map-data.js).
+  // Islands are land inside the chart's sea: the charts paint these over the water (src/ui/map/local-map-data.js).
   const mapLands = Object.freeze([...[SOLIS_HARBOR.ramp, ...SOLIS_HARBOR.decks].map(deck => Object.freeze({
     id: `solis-${deck.id}-land`, kind: 'polygon', region: 'West Suval',
     points: Object.freeze([[deck.minA, deck.minB], [deck.maxA, deck.minB], [deck.maxA, deck.maxB], [deck.minA, deck.maxB]]
@@ -2387,6 +2398,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   treeRegistry.configure({reindex:()=>{colliderIndex=null;}});
   const api = {
     loadingMode, loading, sceneryResidency:residency,
+    terrainBackdrop:()=>streamTerrain?.backdropCount()??0,
     enabledRegions:enabled?[...enabled]:null,isRegionEnabled:(x,z)=>enabledId(regionAt(x,z)?.id),
     updateStreaming(position){
       if(!residency)return;
@@ -2403,14 +2415,14 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     get mapBuildings(){return [...canerd.mapFeatures,...pyra.mapFeatures,...selamus.mapFeatures.filter(feature=>feature.kind==='building')].map(feature=>({...feature,kind:'house'}));},
     get mapBridges(){return selamus.metrics.bridges?[...bridgeDecks,...SELAMUS_MAP_BRIDGES]:bridgeDecks;},
     colliders,
-    /** Bowden's woodlot, whose trees fall and grow back (src/woodlot-world.js). */
+    /** Bowden's woodlot, whose trees fall and grow back (src/world/scenery/woodlot-world.js). */
     woodlot, treeRegistry,
-    /** The traveler's house and the birdhouse posts, built as Construction goes (src/homestead-world.js). */
+    /** The traveler's house and the birdhouse posts, built as Construction goes (src/content/quests/homes/homestead-world.js). */
     homestead,
     jesseCarriage,
     brandyHome,
     familyHomes,
-    /** The burial ground at the Lauvel, whose open grave is filled in if Sela's son is found (src/lauvel-burying.js). */
+    /** The burial ground at the Lauvel, whose open grave is filled in if Sela's son is found (src/content/regions/luscia/lauvel-burying.js). */
     lauvelField: regionScenery.lauvelField,
     /** The colliders that could reach within `reach` of a point; see src/collider-grid.js. */
     nearColliders: (x, z, reach = 0, out) => colliderGrid().near(x, z, reach, out),
@@ -2489,8 +2501,8 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     lotharnFortsMetrics: lotharnForts.metrics,
     telemoniaMetrics: telemoniaScenery.metrics,
     telemoniaTownMetrics: telemoniaTown.metrics,
-    // Faces no climber can hold, whatever the skill (src/climbing.js reads it): one table of them, a row to a
-    // place (src/no-climb-zones.js) - the rock Varn's walls are built into, the cliffs the pass forts stand
+    // Faces no climber can hold, whatever the skill (src/gameplay/movement/climbing.js reads it): one table of them, a row to a
+    // place (src/gameplay/movement/no-climb-zones.js) - the rock Varn's walls are built into, the cliffs the pass forts stand
     // between, and Kethorn's rock and its wall in Telemonia, whose gate is the only way onto the top.
     unclimbableAt,
     backdropMountains: Object.freeze(backdropMountains),
@@ -2509,7 +2521,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     eastSuvalMetrics: eastSuval.metrics,
     elodQuay: ELOD_QUAY,
     // Where a boat would put a traveler down if the sea route were ever switched
-    // on (src/east-suval.js, ELOD_SEA_ROUTE). Nothing sails there yet.
+    // on (src/content/regions/east-suval/east-suval.js, ELOD_SEA_ROUTE). Nothing sails there yet.
     elodLanding: ELOD_LANDING,
     placeFerryBoat: peblosScenery.placeFerryBoat,
     mapLands,
@@ -2575,7 +2587,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     encounter: { ...worldEncounter, radius: encounter.radius },
     northTrail: { ...worldNorthTrail, name: northTrail.name },
     // `westX` is where the wood ends: the line the old gate's barrier stood on, and still the
-    // line that says a traveler has walked out of Tidehaven (src/region-world.js, WOOD_EDGE).
+    // line that says a traveler has walked out of Tidehaven (src/world/terrain/region-world.js, WOOD_EDGE).
     border: { ...worldBorder, name: border.name, westX: WOOD_EDGE.westX,
       regionName: border.regionName, open: true, notice: border.notice },
     routeNorth: routeNorth.map(p => villageToWorld(p.x, p.z)),
@@ -2586,7 +2598,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     timberTrees: treeRegistry.trees,
     ringBell(time = worldTime) { bellStarted = time; },
     /**
-     * The arrival boat, for the opening sequence (src/opening-sequence.js): world metres and a world
+     * The arrival boat, for the opening sequence (src/app/startup/opening-sequence.js): world metres and a world
      * heading in. It is a child of the village root, so its own frame is the village's.
      */
     placeArrivalBoat(x, z, yaw) { const local = worldToVillage(x, z); arrivalBoat.position.x = local.x; arrivalBoat.position.z = local.z; arrivalBoat.rotation.y = yaw - VILLAGE.yaw; },
@@ -2749,7 +2761,10 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     // Shared legacy builders also publish metadata for distant regions. Keep that
     // metadata, but remove their off-route geometry and collisions from this build.
     world.updateMatrixWorld(true);const p=new THREE.Vector3(),outside=[];
-    world.traverse(o=>{if(!o.isMesh||o===terrainRoot||o.material?.isShaderMaterial)return;
+    world.traverse(o=>{if(!o.isMesh||o.material?.isShaderMaterial)return;
+      // Terrain is a continuous horizon, not an off-route prop. Its vertices
+      // use world coordinates, so the mesh origin cannot classify its region.
+      for(let parent=o;parent&&parent!==world;parent=parent.parent)if(parent===terrainRoot||parent===terrainBackdropRoot)return;
       o.getWorldPosition(p);if(!enabledId(regionAt(p.x,p.z)?.id)&&!o.isInstancedMesh)outside.push(o);});
     for(const o of outside)o.removeFromParent();
     for(let i=colliders.length-1;i>=0;i--)if(!enabledId(regionAt(colliders[i].x,colliders[i].z)?.id))colliders.splice(i,1);colliderIndex=null;
@@ -2759,8 +2774,8 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
 }
 
 /**
- * What the Mithala plain's own scatter (src/mithala-scenery.js) laid on the city's ground, lifted after the fact as Varn's,
- * Aevis's and Nylon's is (src/scenery-clearing.js), so the plain's seeded stream is the one it always was. `clearScatter`
+ * What the Mithala plain's own scatter (src/content/regions/mithala/mithala-scenery.js) laid on the city's ground, lifted after the fact as Varn's,
+ * Aevis's and Nylon's is (src/world/scenery/scenery-clearing.js), so the plain's seeded stream is the one it always was. `clearScatter`
  * judges an instance by where it stands, and the plain draws two things in three instances each, laid in step: a tree's
  * crown is three lobes, the last of them over its trunk, and a forb is three lobes round its middle, the last at it. Judged
  * lobe by lobe, a tree on the city's edge would keep a crown lobe over a lifted trunk, hanging in the air; so here a
@@ -2831,7 +2846,7 @@ function standingProps(paths, heightAt, colliders, created=null) {
     return best;
   };
   const box = new THREE.Box3(), size = new THREE.Vector3(), mid = new THREE.Vector3(), axes = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
-  const add = (x, z, r) => { if (toRoad(x, z) > PROP_SOLID.lane + r && heightAt(x, z) >= .45) {const prop={ x, z, r, kind: 'prop' };colliders.push(prop);created?.push(prop);} };
+  const add = (x, z, r) => { if (toRoad(x, z) > PROP_SOLID.lane + r && heightAt(x, z) >= .45) {const prop={ x, z, r, kind: 'prop', minY:box.min.y, maxY:box.max.y };colliders.push(prop);created?.push(prop);} };
   // A thin pole in a doorway or a lane would close it: one that close to a wall stays passable.
   const built = createColliderGrid(colliders.slice()), gapTo = (x, z, r) => {
     let gap = Infinity;

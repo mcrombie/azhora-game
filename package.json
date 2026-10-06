@@ -7,6 +7,12 @@
   "type": "module",
   "main": "main.cjs",
   "scripts": {
+    "check:layout": "node scripts/check-source-layout.mjs",
+    "check:modules": "node --experimental-vm-modules scripts/check-module-graph.mjs",
+    "prototype:climate": "node scripts/launch.cjs --climate-annex",
+    "test:climate:desktop": "node scripts/launch.cjs --smoke-test --climate-annex-checks",
+    "prototype:campaign": "node scripts/campaign-ui.cjs",
+    "test:campaign-ui": "node scripts/campaign-ui.cjs --test",
     "test:pyra": "node --test --test-isolation=none tests/pyra.test.js",
     "review:pyra": "node scripts/launch.cjs --smoke-test --fast-load --review-views=pyra,pyra-bridge,pyra-palace,pyra-stair,pyra-market --review-clean --review-size=1440x900",
     "test:canerd": "node scripts/run-tests.cjs tests/canerd-world.test.js tests/canerd-scenery.test.js tests/canerd-traversal.test.js",
@@ -102,6 +108,7 @@
     "test:strategy:desktop": "node scripts/launch.cjs --smoke-test --strategic-checks",
     "test:varn": "node scripts/run-tests.cjs tests/varn-world.test.js tests/lotharn-forts.test.js tests/town-life.test.js tests/climbing.test.js"
   },
+  "files": ["index.html", "main.cjs", "preload.cjs", "src/", "vendor/", "assets/", "scripts/", "!reference-private/**"],
   "devDependencies": {
     "electron": "32.3.3"
   }

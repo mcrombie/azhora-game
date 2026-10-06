@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint, SEARCH_REACH } from '../src/testing-travel.js';
-import { PLAYABLE_REGIONS } from '../src/region-layout.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regions } from '../src/region-world.js';
+import { travelCountries, travelPlaces, landingSpot, nearestPlace, parsePoint, SEARCH_REACH } from '../src/dev/tools/testing-travel.js';
+import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regions } from '../src/world/terrain/region-world.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BODY } from '../src/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 
 /** How far past the flat reach a wide ground's own radius lets the search go. */
 const RING_SLACK = 8;

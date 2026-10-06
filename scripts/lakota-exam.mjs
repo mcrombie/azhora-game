@@ -15,12 +15,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createBirding } from '../src/birding.js';
-import { createArchaeology, RENA_FIND_IDS } from '../src/archaeology.js';
-import { createWine } from '../src/wine.js';
-import { createCooking } from '../src/cooking.js';
-import { LAKOTA_KNOWS } from '../src/lakota-knows.js';
-import { LAKOTA_SHEET, MIND_MODEL, MIND_PRICES, OFFER_TOOL, lakotaRequest, lakotaState, readReply, replyCost, validOffers } from '../src/lakota-mind.js';
+import { createBirding } from '../src/gameplay/skills/birding/birding.js';
+import { createArchaeology, RENA_FIND_IDS } from '../src/gameplay/skills/nature/archaeology.js';
+import { createWine } from '../src/content/quests/wine/wine.js';
+import { createCooking } from '../src/gameplay/skills/crafting/cooking.js';
+import { LAKOTA_KNOWS } from '../src/content/quests/lakota/lakota-knows.js';
+import { LAKOTA_SHEET, MIND_MODEL, MIND_PRICES, OFFER_TOOL, lakotaRequest, lakotaState, readReply, replyCost, validOffers } from '../src/content/quests/lakota/lakota-mind.js';
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const args = process.argv.slice(2), dryRun = args.includes('--dry-run') || !process.env.ANTHROPIC_API_KEY;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createForestArrows, forestBodyHit } from '../src/forest-arrows.js';
-import { createColliderGrid } from '../src/collider-grid.js';
+import { createForestArrows, forestBodyHit } from '../src/gameplay/combat/forest-arrows.js';
+import { createColliderGrid } from '../src/world/collision/collider-grid.js';
 
 const point = (x, y = 1.3, z = 0) => ({ x, y, z });
 const body = (id, x, options = {}) => ({ id, ...point(x, 0), hp: 100, r: .3, minY: 0, maxY: 1.9, ...options });

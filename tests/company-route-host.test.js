@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCompanyRouteDriver } from '../src/company-route-host.js';
-import { createLivingStory } from '../src/living-story.js';
+import { createCompanyRouteDriver } from '../src/gameplay/company/company-route-host.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
 
 const point = (x, z = 0) => ({ x, z });
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);

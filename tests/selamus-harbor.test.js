@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { SEA_LEVEL, hexOwnerAt } from '../src/region-world.js';
-import { SELAMUS_BUILDINGS, selamusGround, selamusCanalAt, selamusLocal } from '../src/selamus-city.js';
-import { createWalkSurfaces, colliderOverlapsHeight } from '../src/walk-surfaces.js';
-import { SELEMIS_WILDLIFE_ZONES } from '../src/selemis-wildlife.js';
-import { ASCARTH_WILDLIFE_ZONES } from '../src/ascarth-wildlife.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { SEA_LEVEL, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { SELAMUS_BUILDINGS, selamusGround, selamusCanalAt, selamusLocal } from '../src/content/regions/selamus/selamus-city.js';
+import { createWalkSurfaces, colliderOverlapsHeight } from '../src/world/collision/walk-surfaces.js';
+import { SELEMIS_WILDLIFE_ZONES } from '../src/content/regions/selemis/selemis-wildlife.js';
+import { ASCARTH_WILDLIFE_ZONES } from '../src/content/regions/ascarth/ascarth-wildlife.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createSelamusHarbor, createSelamusHarborSteps, SELAMUS_BERTHS, SELAMUS_PIERS, selamusBerthPoint, selamusHullSamples } = await sourceModule('../src/selamus-harbor.js');
+const { createSelamusHarbor, createSelamusHarborSteps, SELAMUS_BERTHS, SELAMUS_PIERS, selamusBerthPoint, selamusHullSamples } = await sourceModule('../src/content/regions/selamus/selamus-harbor.js');
 const heightAt = (x, z) => selamusGround(x, z, groundWithRiver(x, z));
 const colliders = [], harbor = createSelamusHarbor({ parent: new THREE.Group(), heightAt, colliders });
 

@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { REGION_CELLS } from '../src/region-world.js';
-import { canStand } from '../src/game-state.js';
-import { DRENT_WILDLIFE_ZONES } from '../src/drent-wildlife.js';
+import { REGION_CELLS } from '../src/world/terrain/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { DRENT_WILDLIFE_ZONES } from '../src/content/regions/drent/drent-wildlife.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const world = createWorld(new THREE.Scene());
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const center = zone => ({ x: (zone.minX + zone.maxX) / 2, z: (zone.minZ + zone.maxZ) / 2 });

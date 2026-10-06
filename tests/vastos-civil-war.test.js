@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInventoryState } from '../src/inventory.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
 import { createVastosCivilWar, validateVastosCivilWarSnapshot, VASTOS_NPCS, VASTOS_ENDINGS,
-  VASTOS_PATHS, VASTOS_STRAYS, VASTOS_QUEST_ID } from '../src/vastos-civil-war.js';
-import { vastosConversation, vastosSiteConversation } from '../src/vastos-dialogue.js';
+  VASTOS_PATHS, VASTOS_STRAYS, VASTOS_QUEST_ID } from '../src/content/chapters/civil-war/vastos-civil-war.js';
+import { vastosConversation, vastosSiteConversation } from '../src/content/chapters/civil-war/vastos-dialogue.js';
 
 const recovery = ['find-stray-west', 'find-stray-east', 'find-stray-ridge', 'reopen-watering'];
 const claims = ['hear-republican', 'hear-monarchist'];

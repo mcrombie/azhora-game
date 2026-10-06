@@ -1,16 +1,16 @@
-import { QUEST_DONE } from '../src/game-state.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
+import { createInventoryState, INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
 import {
   createRenaLetters, validateRenaLettersSnapshot, LETTERS, LETTER_COUNT, EXCHANGES,
   LETTER_ITEM, LORN_ID, HESTA_ID, ARDRY_IDS, ARDRY_NAMES, letterById, REWARD_HOOK,
-} from '../src/rena-letters.js';
-import { RENA_NPCS, RENA_AMBIENT, renaConversation, ardryConversation, renaLines } from '../src/rena-people.js';
+} from '../src/content/quests/rena/rena-letters.js';
+import { RENA_NPCS, RENA_AMBIENT, renaConversation, ardryConversation, renaLines } from '../src/content/quests/rena/rena-people.js';
 
 const satchel = () => createInventoryState();
 

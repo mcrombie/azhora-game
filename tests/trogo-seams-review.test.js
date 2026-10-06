@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { TROGO_REVIEW_SEAMS, trogoReviewSeamWeight, SOUTHWEST_SEAM, TROGO_PATHS, TROGO_NORTH_LINK_WALK, trogoWay, TROGO_WAY } from '../src/southwest-world.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { SOUTHWEST_RIVERS } from '../src/west-regions.js';
-import { WEST_PROFILES } from '../src/west-ground.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { TROGO_REVIEW_SEAMS, trogoReviewSeamWeight, SOUTHWEST_SEAM, TROGO_PATHS, TROGO_NORTH_LINK_WALK, trogoWay, TROGO_WAY } from '../src/content/regions/southwest/southwest-world.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { SOUTHWEST_RIVERS } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES } from '../src/content/regions/western-regions/west-ground.js';
 
 test('both reproduced internal Trogo steps are continuous along their full atlas edges', t => {
   assert.equal(TROGO_REVIEW_SEAMS.length, 2);

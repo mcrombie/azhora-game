@@ -28,14 +28,14 @@ What the lore gives you, in short (verify it yourself):
 ## What to build
 
 - **The region.** Add `'Elagos'` to `PLAYABLE_REGIONS` with its own biome, terrain profile and region
-  card, regenerate `src/region-survey.js`, and take the region id the registry gives you. Read the
+  card, regenerate `src/dev/tools/region-survey.js`, and take the region id the registry gives you. Read the
   region's hexes from `assets/azhora-dev-regions.json`: the lakes, the shape and the size come from
   the atlas, not from imagination. `WORLD_BOUNDS` will grow; say by how much.
 - **Lake Ela and the narrows** as real water with a real shore, in the manner of the Caloss and the
-  Tessen (`src/pueth-world.js` shows how a river was taken from the map). The narrows are the reason
+  Tessen (`src/content/regions/pueth/pueth-world.js` shows how a river was taken from the map). The narrows are the reason
   the city exists: make the geography legible from the ground.
 - **Ambron.** A walled lake city at the narrows, to the shared fortification standard
-  (`src/fortification.js`, `src/signs.js`; Solis in `src/west-suval-world.js` is the worked example —
+  (`src/world/scenery/fortification.js`, `src/world/scenery/signs.js`; Solis in `src/content/regions/solis/west-suval-world.js` is the worked example —
   read it before you start). It should be visibly **bigger and older than Solis**: a causeway or
   bridge over the narrows, a toll house and its chain, quays and barge basins, warehouses, the
   Legate-General's seat, a market, temples, and streets whose stonework changes as you walk from the
@@ -48,11 +48,11 @@ What the lore gives you, in short (verify it yourself):
 - **The lake country around it**: three or four places with discovery text — a fishing village on
   Ela, an ice-road marker, a drowned causeway, a lakeside shrine — plus terrain and scatter. The rest
   of the region is terrain, scatter and landmarks.
-- **The chart**: add Elagos's named ground to `SUBREGIONS` in `src/map-fog.js` (areas do not overlap;
-  `tests/map-fog.test.js` checks), and an honest `BUILD_STATUS` entry in `src/build-status.js`.
+- **The chart**: add Elagos's named ground to `SUBREGIONS` in `src/ui/map/map-fog.js` (areas do not overlap;
+  `tests/map-fog.test.js` checks), and an honest `BUILD_STATUS` entry in `src/dev/tools/build-status.js`.
 - **Getting there is the lead's job.** Chapter 3's journey is not built. Leave a clear way in — the
   road up from the Moros arriving at a gate — and add a developer travel point
-  (`src/developer-mode.js`, `src/developer-atlas.js`) plus a testing-panel button so it can be visited.
+  (`src/dev/tools/developer-mode.js`, `src/dev/tools/developer-atlas.js`) plus a testing-panel button so it can be visited.
 
 ## Rules
 

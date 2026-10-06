@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createSkills, RUNESCAPE_TABLE, SKILLS } from '../src/skills.js';
-import { LANGUAGE_IDS, LANGUAGES, INTERPRETER, SIGN_READING_LEVEL, PHRASEBOOK_EXPOSURE } from '../src/languages.js';
+import { createSkills, RUNESCAPE_TABLE, SKILLS } from '../src/gameplay/skills/skills.js';
+import { LANGUAGE_IDS, LANGUAGES, INTERPRETER, SIGN_READING_LEVEL, PHRASEBOOK_EXPOSURE } from '../src/gameplay/skills/languages.js';
 import {
   createLinguist, renderLine, comprehension, proficiencyForExposure, exposureForProficiency,
   exposureWeight, validateLinguistSnapshot, LINGUIST_VERSION, LINGUIST_SKILL, MAX_PROFICIENCY, FLUENT_EXPOSURE,
   SPEAKER_CEILING, SAVED_SPEAKERS,
-} from '../src/linguist.js';
+} from '../src/gameplay/skills/language/linguist.js';
 
 const LINE = 'Chris Scotwood. Same boat, same coin, and I have the letter they gave us both — you take it, you are the one they wrote it about.';
 const SHORT = 'The army’s post is up the road in the Avrel clearing. Ask for the quartermaster, and show him 3 copper.';
@@ -132,7 +132,7 @@ test('Chris interprets what he knows, while he is beside you and still walking',
   assert.equal(linguist.interpreterNearby(near, { interpreter: null }), false);
   assert.equal(linguist.interpreterNearby(chris, { interpreter: chris, languageId: 'drentish' }), false, 'and he does not interpret himself');
   // The long road takes him off the clock and puts him at the traveler's shoulder
-  // (`with-traveler`, src/mercenaries.js). That is a phase this rule had never seen, and it needs
+  // (`with-traveler`, src/gameplay/company/mercenaries.js). That is a phase this rule had never seen, and it needs
   // no rule of its own: he is not mustered, and the host writes his real place onto the placement.
   const companion = { id: INTERPRETER.npcId, placement: { phase: 'with-traveler', x: 2.5, z: 0 } };
   assert.equal(linguist.interpreterNearby(near, { interpreter: companion, languageId: 'drentish' }), true,
@@ -180,7 +180,7 @@ test('signs are all or nothing, and turn over halfway', () => {
 
 test('the traveler’s own skill climbs with the tongues, and ninety-nine is the whole world', () => {
   // A stand-in skill sheet, so the arithmetic is checked whether or not
-  // src/skills.js has registered `linguist` yet; the real sheet is checked below.
+  // src/gameplay/skills/skills.js has registered `linguist` yet; the real sheet is checked below.
   const sheet = () => { let xp = 0, learned = false; return { known: () => learned, learn: () => { learned = true; return { ok: true }; },
     gain: (id, amount) => { assert.equal(id, LINGUIST_SKILL); xp += amount; return { ok: true, levelled: false }; }, total: () => xp }; };
   const heard = sheet(), linguist = createLinguist({ skills: heard });

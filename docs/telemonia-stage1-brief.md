@@ -27,7 +27,7 @@ and build nothing that makes it harder.
 
 Read first: the two lore files below in full; `docs/selemis-brief.md` and `docs/selemis-report.md`
 (the most recent region, and the shape your report should take); `docs/ascarth-report.md` and
-`docs/oves-report.md` (the built neighbours); `src/feradom-forts.js` and `src/climbing.js` (walls and
+`docs/oves-report.md` (the built neighbours); `src/content/regions/feradom/feradom-forts.js` and `src/gameplay/movement/climbing.js` (walls and
 cliffs that actually stop a walker); `docs/known-failing.md` in your worktree.
 
 ## What the user said — this paragraph is the specification
@@ -79,7 +79,7 @@ give the ground:
   (south, unbuilt), East Pyros 8 (west, unbuilt).**
 - Rivers: **none inside.** The atlas draws small-stream edges on the Oves border (5) and the Gala
   border (7). Both are already built by their own countries — Gala's is the Treloss
-  (`GALA_TELEMONIA_STREAM` in `src/west-regions.js`). Join them; do not rebuild them.
+  (`GALA_TELEMONIA_STREAM` in `src/content/regions/western-regions/west-regions.js`). Join them; do not rebuild them.
 
 ## Stage 1: what to build
 
@@ -90,7 +90,7 @@ give the ground:
 2. **The rim.** High, broken rock: ridges with a north-east to south-west grain, cliff bands, narrow
    valleys. The user's words are "rockier and more elevated ... rock based defenses". **The cliffs
    must actually stop a walker** — outside climbing terrain a traveler simply walks up a cliff, so use
-   the climbing rule (`src/climbing.js`) or an equivalent and say which. Put **the Rothkar**, the
+   the climbing rule (`src/gameplay/movement/climbing.js`) or an equivalent and say which. Put **the Rothkar**, the
    highest point of the rim, where the ground argues for it, and say why there.
 3. **The passes.** Few, and real: the only ways through the rim on foot. At least one must reach the
    Galmeth from the Gala side and one from the Oves side, because the built world lies there and stage
@@ -113,14 +113,14 @@ give the ground:
 
 ## Also in this job — three fixes the user approved
 
-- `src/campaign-world.js`: Telemonia's entry is `'wild'` with sand goblins and hill bandits. Replace it
+- `src/content/chapters/civil-war/campaign-world.js`: Telemonia's entry is `'wild'` with sand goblins and hill bandits. Replace it
   with the kingdom: a polity for the Telemon (seat Kethorn), the region controlled by it, level 3
   kept, and a role line that says what it is.
 - The same file marks the region **Gala** as `'pyrosi'`. That is a mistake: there are two Galas. The
   walled Pyrosi capital is in West Pyros; the Lizeem's Gala is its own Mittoli-speaking city of
   brokers and assessors, "under Aevis's suzerainty more often than not" (`gala.md`). Give it a polity
   of its own, derived from that file, and label the choice.
-- `src/languages.js`: Kellith's `where` still says "valley halls, Zorkys among them". Zorkys is not in
+- `src/gameplay/skills/languages.js`: Kellith's `where` still says "valley halls, Zorkys among them". Zorkys is not in
   Telemonia and Matt is not Telemon. Make `where` Telemonia's own; **leave Matt's tongue alone** (it
   changes in a later job) and say so in the report.
 

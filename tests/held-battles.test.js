@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import * as borderChapter from '../src/border-chapter.js';
-import { borderEncounter, BORDER_ENCOUNTER_ID } from '../src/border-chapter.js';
-import { aftermathEncounter, AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
-import { regionLevel } from '../src/region-levels.js';
+import * as borderChapter from '../src/content/chapters/chapter-one/border-chapter.js';
+import { borderEncounter, BORDER_ENCOUNTER_ID } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { aftermathEncounter, AFTERMATH_VARIANTS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 
@@ -37,15 +37,15 @@ test('the set-piece battles take their country’s level, like every other fight
   // and calls a missing one nought. So `level: 0` is the hold under another name and deleting the
   // field is the lift - which is also why a harness that set `getLevel` and left the field alone
   // measured the held fight twice and called one of them level 2.
-  assert.match(source('combat.js'), /!Number\.isFinite\(asked\.level\) && getLevel\s*\?\s*\{ \.\.\.asked, level: getLevel\(asked\.center\) \}/,
+  assert.match(source('gameplay/combat/combat.js'), /!Number\.isFinite\(asked\.level\) && getLevel\s*\?\s*\{ \.\.\.asked, level: getLevel\(asked\.center\) \}/,
     'the country is asked for only when the fight authored no level');
   // And the countries in question are the ones the lift was ruled for.
   assert.equal(regionLevel('Moros Plain'), 2, 'the stockade’s ground');
   for (const spec of Object.values(AFTERMATH_VARIANTS))
     assert.equal(regionLevel(spec.region), 2, `${spec.title}: ${spec.region}`);
   // The reasons are written where somebody will read them.
-  assert.match(source('border-chapter.js'), /The hold is lifted/);
-  assert.match(source('aftermath-chapter.js'), /No level of its own/);
+  assert.match(source('content/chapters/chapter-one/border-chapter.js'), /The hold is lifted/);
+  assert.match(source('content/chapters/chapter-one/aftermath-chapter.js'), /No level of its own/);
 });
 
 test('every fight takes the country it happens in, and nobody authors a level', () => {
@@ -64,8 +64,8 @@ test('every fight takes the country it happens in, and nobody authors a level', 
   // are the ally *kinds'* own levels, which is a different idea the user ruled on - a country
   // scales its dangers, never your side - and `tests/companions.test.js` holds those.
   const authored = [];
-  for (const file of ['border-chapter.js', 'aftermath-chapter.js', 'main.js', 'moros-chapter.js',
-    'forest-hideout.js', 'luscia-chapter.js', 'ogre-toll.js']) {
+  for (const file of ['content/chapters/chapter-one/border-chapter.js', 'content/chapters/chapter-one/aftermath-chapter.js', 'main.js', 'content/chapters/civil-war/moros-chapter.js',
+    'content/quests/forest/forest-hideout.js', 'content/chapters/civil-war/luscia-chapter.js', 'ogre-toll.js']) {
     let text = '';
     try { text = source(file); } catch { continue; }
     // A sparring bout is the one fight that authors a level on purpose: a friend is not a danger

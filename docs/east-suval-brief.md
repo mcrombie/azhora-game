@@ -1,9 +1,9 @@
 # Brief: build East Suval and Elod, the city that will not let the war in
 
 East Suval is already in the game as a **shut gate and nothing behind it**: Elod's border post on
-the stone road (`src/closed-border.js`, `tests/closed-border.test.js`, `tests/elodi-guard.test.js`,
-the chart areas `suval-border-post`, `waystation`, `elod` in `src/map-fog.js`, and the honest
-`edge` entry in `src/build-status.js`). Your job is to build what is behind it: the stone country of
+the stone road (`src/world/travel/closed-border.js`, `tests/closed-border.test.js`, `tests/elodi-guard.test.js`,
+the chart areas `suval-border-post`, `waystation`, `elod` in `src/ui/map/map-fog.js`, and the honest
+`edge` entry in `src/dev/tools/build-status.js`). Your job is to build what is behind it: the stone country of
 East Suval and the Elodi city of **Elod**.
 
 **The closed border stays closed.** It is a deliberate feature of Chapters 1–2 — the traveler walks
@@ -52,7 +52,7 @@ say so in your report.
 ## What to build
 
 - **The region.** `'East Suval'` is already in `PLAYABLE_REGIONS` (id 4) with a `stone-hills` biome
-  in `src/region-layout.js`. Give it the country the lore describes: limestone ridges and grey rock,
+  in `src/world/terrain/region-layout.js`. Give it the country the lore describes: limestone ridges and grey rock,
   thin scrub, aromatic low plants, dry terraces, stone field walls, cisterns, and an exposed east
   coast with harder weather than the west. Read its hexes from `assets/azhora-dev-regions.json`;
   the coastline and extent come from the atlas, not from invention. Report any `WORLD_BOUNDS` growth.
@@ -82,22 +82,22 @@ say so in your report.
   will not save them.
 - **The border, from the inside.** The gate the player was turned away from should be visible from
   the other side, with the ditch, the guards in light black armour, and their own reasons. Keep
-  `src/closed-border.js`'s behaviour intact.
+  `src/world/travel/closed-border.js`'s behaviour intact.
 - **The road and the coast**: three or four more places with discovery text — the roofless waystation
   is already charted at (-274, 560) and could gain a keeper; a fishing settlement on the exposed east
   coast; a terraced valley or a cistern village inland; a lighthouse the Confederation allocates to
   Elod and Elod maintains scrupulously because it is the one obligation it accepts.
-- **The chart**: add East Suval's named ground to `SUBREGIONS` in `src/map-fog.js` (areas must not
-  overlap; `tests/map-fog.test.js` checks it) and update `src/build-status.js` honestly.
+- **The chart**: add East Suval's named ground to `SUBREGIONS` in `src/ui/map/map-fog.js` (areas must not
+  overlap; `tests/map-fog.test.js` checks it) and update `src/dev/tools/build-status.js` honestly.
 
 ## Getting in
 
 The gate stays shut for Chapters 1–2. Provide:
-1. A developer travel point (`src/developer-mode.js`, `src/developer-atlas.js`) plus a testing-panel
+1. A developer travel point (`src/dev/tools/developer-mode.js`, `src/dev/tools/developer-atlas.js`) plus a testing-panel
    button, as the other regions have.
 2. One lore-honest route the lead can enable later — the obvious candidate is **by sea into the
    harbour quarter**, since Elod tolerates foreigners at the quay and nowhere else, and the game
-   already has a ferryman and a pier (`src/ferry.js`). Build the quay and the arrival point; leave
+   already has a ferryman and a pier (`src/world/travel/ferry.js`). Build the quay and the arrival point; leave
    the passage itself stubbed and say exactly what the lead must wire up.
 
 ## Rules
@@ -112,7 +112,7 @@ The gate stays shut for Chapters 1–2. Provide:
   exact anchors with a Python script that asserts each anchor occurs once and writes nothing if one
   fails.
 - Performance: Elod must not cost more in draw calls than Solis (about 95 at its gate). Merge static
-  scenery into vertex-coloured batches as `src/west-suval-world.js` and `src/peblos-scenery.js` do,
+  scenery into vertex-coloured batches as `src/content/regions/solis/west-suval-world.js` and `src/content/regions/peblos/peblos-scenery.js` do,
   instance the scatter, keep shadow casters down. Measure and report.
 - `npm test` stays green — including every existing closed-border and Elodi-guard test. Add tests for
   the region (membership, outline, water where the atlas says water), the city (quay walkable, stands

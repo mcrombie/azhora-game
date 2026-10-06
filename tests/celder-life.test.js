@@ -10,19 +10,19 @@ import { scopedWorld } from './scoped-world.js';
  * countries, so that it runs in a minute rather than the full world's three.
  */
 const THREE = await sourceModule('../vendor/three.module.js');
-const { REGION_CELLS, REGION_IDS, regionAt, WORLD_BOUNDS } = await sourceModule('../src/region-world.js');
-const { groundWithRiver, legacyCelderGroundHeight } = await sourceModule('../src/world-terrain.js');
-const { canStand, canSwim } = await sourceModule('../src/game-state.js');
-const { timberForSpecies } = await sourceModule('../src/wood-species.js');
-const { SOUTH_CELDER_WILDLIFE_ZONES, southCelderWildlifeClear } = await sourceModule('../src/south-celder-wildlife.js');
-const { NORTH_CELDER_WILDLIFE_ZONES, northCelderWildlifeClear } = await sourceModule('../src/north-celder-wildlife.js');
-const SOUTH = await sourceModule('../src/south-celder-world.js');
-const NORTH = await sourceModule('../src/north-celder-world.js');
-const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
-const { createSouthCelderScenery, celderTrailDistance, celderWaterAt, readCelderGround } = await sourceModule('../src/south-celder-scenery.js');
-const { finishBuild } = await sourceModule('../src/build-steps.js');
-const { createNorthCelderScenery } = await sourceModule('../src/north-celder-scenery.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
+const { REGION_CELLS, REGION_IDS, regionAt, WORLD_BOUNDS } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver, legacyCelderGroundHeight } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { canStand, canSwim } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { timberForSpecies } = await sourceModule('../src/gameplay/skills/woodcutting/wood-species.js');
+const { SOUTH_CELDER_WILDLIFE_ZONES, southCelderWildlifeClear } = await sourceModule('../src/content/regions/south-celder/south-celder-wildlife.js');
+const { NORTH_CELDER_WILDLIFE_ZONES, northCelderWildlifeClear } = await sourceModule('../src/content/regions/canerd/north-celder-wildlife.js');
+const SOUTH = await sourceModule('../src/content/regions/south-celder/south-celder-world.js');
+const NORTH = await sourceModule('../src/content/regions/canerd/north-celder-world.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
+const { createSouthCelderScenery, celderTrailDistance, celderWaterAt, readCelderGround } = await sourceModule('../src/content/regions/south-celder/south-celder-scenery.js');
+const { finishBuild } = await sourceModule('../src/world/loading/build-steps.js');
+const { createNorthCelderScenery } = await sourceModule('../src/content/regions/canerd/north-celder-scenery.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
 
 const ZONES = [...SOUTH_CELDER_WILDLIFE_ZONES, ...NORTH_CELDER_WILDLIFE_ZONES];
 const ground = ZONES.filter(zone => !zone.air && !zone.sea);
@@ -258,7 +258,7 @@ test('the quick ones cannot be run down either: the hares on their legs, the her
 
 /**
  * **The cattle law, for the frostback.** `tests/west-life.test.js` writes it for longhorns and the Nethrani beast,
- * and the controller already answers a frostback the cattle way (`CATTLE`, src/west-regions-life.js): "too big to
+ * and the controller already answers a frostback the cattle way (`CATTLE`, src/content/regions/western-regions/west-regions-life.js): "too big to
  * bolt". So a herd here is held to it as cattle are: it never flees, it turns to face whoever comes and gives
  * ground, and somebody running can still get up to it.
  */

@@ -24,7 +24,7 @@ marks (26 marks, sub-pixel residuals) and overlaying the atlas grid.
 
 ## The trade is a game correction, not a World Builder edit
 
-`src/game-atlas-adjustments.js` gets a third documented correction, **`mithala-city-quarters-v1`**:
+`src/world/terrain/game-atlas-adjustments.js` gets a third documented correction, **`mithala-city-quarters-v1`**:
 
 - **(9,86), (10,86)**: North Mithala → East Mithala (both `plains`)
 - **(5,88), (6,88)**: East Mithala → North Mithala (both `grassland`)
@@ -53,7 +53,7 @@ Hexes are 100 m flat to flat (circumradius 57.735), pointy-top in world X/Z; nor
 The four together are about 200 × 290 m: Ambron's footprint, about four times Aevis.
 
 **The meeting of the arms, (−1700, −1414), is exactly the corner shared by the Fork, the Quays and
-the Ford.** The water runs on hex edges (`src/west-regions.js`):
+the Ford.** The water runs on hex edges (`src/content/regions/western-regions/west-regions.js`):
 
 - **The North Braid** (`MITHALA_NORTH_BRAID`, small, wadeable, half-width 2.6 → 4.4): along the
   Fork's north-west edge (against 5,88), its north-east edge (against the Braid Bank) and its east
@@ -97,13 +97,13 @@ they keep out water, not people.
 
 ## How it is built (the Nylon and Aevis pattern)
 
-- **`src/mithala-city.js`**: the pure layout and the single source of truth. District platforms,
+- **`src/content/regions/mithala/mithala-city.js`**: the pure layout and the single source of truth. District platforms,
   flood banks, the curtain and its gates, bridges, the ford, streets, building footprints with
   heights, the tower and its stair, the gauge, the quay and boats, reservations
   (`inMithalaCity`, `mithalaCityReserved(x, z, margin)`), the ground function
   (`mithalaCityGround(x, z, base)`), deck heights for bridges and quay, and landmarks.
-  `src/aevis-city.js` and `src/nylon-city.js` show the shape.
-- **`src/mithala-city-scenery.js`**: merged meshes. Load budget under Nylon's 434k vertices (aim
+  `src/content/regions/aevis/aevis-city.js` and `src/content/regions/nylon/nylon-city.js` show the shape.
+- **`src/content/regions/mithala/mithala-city-scenery.js`**: merged meshes. Load budget under Nylon's 434k vertices (aim
   300k) and under 60 merged meshes; it loads with the Mithala regions.
 - **Hooks**: the terrain chain (platforms, banks, ford paving), trees, scatter and wildlife kept off
   reserved ground, the map badge "Mithala" (a city), the travel arrival at the Ford, review views.

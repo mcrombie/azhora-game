@@ -6,15 +6,15 @@ import { gzipSync } from 'node:zlib';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
-import { GALA_WILDLIFE_ZONES } from '../src/gala-wildlife.js';
-import { ASCARTH_WILDLIFE_ZONES } from '../src/ascarth-wildlife.js';
-import { OVES_WILDLIFE_ZONES } from '../src/oves-wildlife.js';
-import { SELEMIS_WILDLIFE_ZONES } from '../src/selemis-wildlife.js';
-import { hexOwnerAt } from '../src/region-world.js';
-import { aevisReserved } from '../src/aevis-city.js';
-import { createWoodcutting } from '../src/woodcutting.js';
-import { createSkills, MAX_XP } from '../src/skills.js';
-import { canStand } from '../src/game-state.js';
+import { GALA_WILDLIFE_ZONES } from '../src/content/regions/gala/gala-wildlife.js';
+import { ASCARTH_WILDLIFE_ZONES } from '../src/content/regions/ascarth/ascarth-wildlife.js';
+import { OVES_WILDLIFE_ZONES } from '../src/content/regions/oves/oves-wildlife.js';
+import { SELEMIS_WILDLIFE_ZONES } from '../src/content/regions/selemis/selemis-wildlife.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { aevisReserved } from '../src/content/regions/aevis/aevis-city.js';
+import { createWoodcutting } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { createSkills, MAX_XP } from '../src/gameplay/skills/skills.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 import { telemoniaGeometryHash } from './telemonia-geometry-hash.js';
 
 const baseline = process.env.AZHORA_CAPTURE_R9 === '1';
@@ -218,7 +218,7 @@ test('coastal harvest saves control the same registered tree and restore its exa
 });
 
 test('coastal wildlife keeps physical homes and water or air heights while visible ground feet follow terrain triangles', async t => {
-  const { createWestLife } = await sourceModule('../src/west-regions-life.js');
+  const { createWestLife } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
   const life = createWestLife(scene, world, { zones }), actors = life.state().creatures, initial = life.snapshot(), gaps = [];
   assert.equal(actors.length, zones.reduce((sum, zone) => sum + zone.sites.length, 0));
   for (const zone of zones) {

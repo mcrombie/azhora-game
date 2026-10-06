@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { VILLAGE_CAT, CAT_FAVOURITES, CAT_WILL_EAT, CAT_SENSES, createVillageCat } from '../src/village-cat.js';
+import { VILLAGE_CAT, CAT_FAVOURITES, CAT_WILL_EAT, CAT_SENSES, createVillageCat } from '../src/content/characters/village-cat.js';
 
 const sequence = values => { let i = 0; return () => values[i++ % values.length]; };
 const far = { player: { x: 200, z: 200 } };
@@ -132,9 +132,9 @@ test('it only sets off for a place it can see, and sits down where it is when so
 
 test('the harbour cat’s places are in Tidehaven, on open ground, clear of people, and joined by clear lines', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
-  const { canStand } = await import('../src/game-state.js');
-  const { clearLine } = await import('../src/autopilot.js');
-  const { bodyWorld } = await import('../src/bodies.js');
+  const { canStand } = await import('../src/gameplay/movement/game-state.js');
+  const { clearLine } = await import('../src/gameplay/autoplay/autopilot.js');
+  const { bodyWorld } = await import('../src/gameplay/combat/bodies.js');
   // The cat hops crates and rails, as in the game: it plans by everything but the props.
   const built = createWorld(new THREE.Scene()), world = bodyWorld(built, { ignore: ['prop'] });
   const people = Object.values(built.npcPositions);
@@ -150,7 +150,7 @@ test('the harbour cat’s places are in Tidehaven, on open ground, clear of peop
 });
 
 test('the cat is a small four-legged tabby that holds every pose it is asked for', async () => {
-  const { createCat } = await sourceModule('../src/characters.js');
+  const { createCat } = await sourceModule('../src/content/characters/characters.js');
   for (const variant of [0, 1]) {
     const cat = createCat({ variant });
     assert.equal(cat.group.name, `cat-${variant}`);

@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
 import {
   createOgreToll, validateOgreSnapshot, OGRE_ENCOUNTER, OGRE_NPC, OGRE_TOLL, OGRE_BOUNTY,
   OGRE_CHALLENGE, OGRE_TOPIC_IDS, ogreTopicLines, ogreTopicLabel, ogreGreeting,
   OGRE_VICTORY, OGRE_RETURNED, OGRE_SITE,
-} from '../src/amod-ogre.js';
-import { AMOD_NPCS, AMOD_NPC_IDS, amodAmbientLines, amodConversation } from '../src/amod-people.js';
-import { OGRE_STAND, TOLL_STONE } from '../src/amod-world.js';
-import { hexOwnerAt } from '../src/region-world.js';
+} from '../src/content/regions/amod/amod-ogre.js';
+import { AMOD_NPCS, AMOD_NPC_IDS, amodAmbientLines, amodConversation } from '../src/content/regions/amod/amod-people.js';
+import { OGRE_STAND, TOLL_STONE } from '../src/content/regions/amod/amod-world.js';
+import { hexOwnerAt } from '../src/world/terrain/region-world.js';
 
 const DT = 1 / 60;
 const world = () => ({ bounds: { minX: -960, maxX: -560, minZ: -700, maxZ: -320 }, colliders: [], heightAt: () => 17 });
@@ -182,11 +182,11 @@ test('kept out of reach he charges, and the charge is beaten by stepping aside',
   assert.ok(back.struck >= aside.struck, `backing straight out of it is not the answer (${back.struck} against ${aside.struck})`);
   // And the charge never fires in a melee: the dwell has to be unbroken, and it is counted in the
   // one branch where he is neither swinging nor getting over a swing.
-  const source = readFileSync(fileURLToPath(new URL('../src/combat.js', import.meta.url)), 'utf8');
+  const source = readFileSync(fileURLToPath(new URL('../src/gameplay/combat/combat.js', import.meta.url)), 'utf8');
   assert.match(source, /timers\.awayFor = dist > profile\.charge\.from \? \(timers\.awayFor \?\? 0\) \+ dt : 0;/);
   assert.match(source, /if \(timers\.awayFor >= profile\.charge\.after && timers\.cooldown <= 0 && !someoneAttacking\)/);
   // The picture says which it is: the lane is drawn long and narrow for a rush.
-  const view = readFileSync(fileURLToPath(new URL('../src/combat-view.js', import.meta.url)), 'utf8');
+  const view = readFileSync(fileURLToPath(new URL('../src/gameplay/combat/combat-view.js', import.meta.url)), 'utf8');
   assert.match(view, /item\.tell\.scale\.set\(enemy\.charging\?\.42:1,1,enemy\.charging\?2\.1:1\);/);
 });
 

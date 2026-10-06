@@ -1,19 +1,19 @@
 import test from 'node:test';
-import { keepsNpc } from '../src/cast.js';
+import { keepsNpc } from '../src/content/characters/cast.js';
 import assert from 'node:assert/strict';
-import { ARI, ARI_STAND, SUNFLOWER_ROWS, ARI_GARDEN_SUPPLIES } from '../src/ari-garden.js';
-import { createSunflowerLesson, validateSunflowerLesson, sunflowerConversation, SUNFLOWER_LESSON_XP } from '../src/sunflower-lesson.js';
-import { createFarming, CROPS, WATERING_XP, FARMER } from '../src/farming.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { QUEST_DONE, canStand } from '../src/game-state.js';
-import { regionAt } from '../src/region-world.js';
-import { PORT_CALOS_NPC_IDS, portCalosConversation } from '../src/port-calos-people.js';
-import { markerFor } from '../src/quest-markers.js';
-import { createQuestTracker } from '../src/quest-tracker.js';
+import { ARI, ARI_STAND, SUNFLOWER_ROWS, ARI_GARDEN_SUPPLIES } from '../src/content/quests/ari/ari-garden.js';
+import { createSunflowerLesson, validateSunflowerLesson, sunflowerConversation, SUNFLOWER_LESSON_XP } from '../src/content/quests/skill-lessons/sunflower-lesson.js';
+import { createFarming, CROPS, WATERING_XP, FARMER } from '../src/gameplay/skills/farming/farming.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { QUEST_DONE, canStand } from '../src/gameplay/movement/game-state.js';
+import { regionAt } from '../src/world/terrain/region-world.js';
+import { PORT_CALOS_NPC_IDS, portCalosConversation } from '../src/content/regions/port-calos/port-calos-people.js';
+import { markerFor } from '../src/gameplay/quests/quest-markers.js';
+import { createQuestTracker } from '../src/gameplay/quests/quest-tracker.js';
 import { sourceModule } from './module-loader.js';
 
 const first = SUNFLOWER_ROWS[0].id, second = SUNFLOWER_ROWS[1].id;
@@ -140,7 +140,7 @@ test('Ari and both beds occupy reachable village ground without Port Calos dupli
   assert.equal(regionAt(ARI_STAND.x, ARI_STAND.z).name, 'Drent');
   assert.ok(Math.hypot(ARI_STAND.x - FARMER.x, ARI_STAND.z - FARMER.z) < 200);
   const THREE = await import('../vendor/three.module.js');
-  const { buildRenaWorks } = await sourceModule('../src/rena-works.js');
+  const { buildRenaWorks } = await sourceModule('../src/content/quests/rena/rena-works.js');
   const colliders = [], parent = new THREE.Group();
   buildRenaWorks({ parent, heightAt: () => 2, colliders, signs: { border() {}, place() {}, direction() {} } });
   const world = { colliders, heightAt: () => 2, bounds: { minX: -2000, maxX: 2000, minZ: -2000, maxZ: 2000 } };
@@ -151,7 +151,7 @@ test('Ari and both beds occupy reachable village ground without Port Calos dupli
 test('sunflowers have tall stems, golden petals and dark seedheads, then disappear at harvest', async () => {
   const { farming, lesson } = fixture(); lesson.accept(); farming.sow(first, 'sunflower', 0); farming.water(first, 1);
   const THREE = await import('../vendor/three.module.js');
-  const { createFarmingView } = await sourceModule('../src/farming-view.js');
+  const { createFarmingView } = await sourceModule('../src/gameplay/skills/farming/farming-view.js');
   const view = createFarmingView({ scene: new THREE.Scene(), world: { heightAt: () => 2 }, farming });
   const name = SUNFLOWER_ROWS[0].name;
   const petals = view.group.getObjectByName(`${name} golden sunflower petals`);

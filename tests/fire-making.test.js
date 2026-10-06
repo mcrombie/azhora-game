@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, FIRE_MAKING_XP, fireMakingStands, validateFireMakingSnapshot, fireMakingConversation } from '../src/fire-making.js';
-import { createSkills } from '../src/skills.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createCampcraft } from '../src/campcraft.js';
-import { createCooking } from '../src/cooking.js';
-import { createRoadsideLessons, jojoCookingChoice } from '../src/roadside-lessons.js';
-import { farmingConversation } from '../src/farming-conversation.js';
-import { createFarming, FARMER } from '../src/farming.js';
-import { SMITH_NPC, smithConversation } from '../src/smith.js';
+import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, FIRE_MAKING_XP, fireMakingStands, validateFireMakingSnapshot, fireMakingConversation } from '../src/gameplay/skills/crafting/fire-making.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { createCooking } from '../src/gameplay/skills/crafting/cooking.js';
+import { createRoadsideLessons, jojoCookingChoice } from '../src/content/regions/drent/roadside-lessons.js';
+import { farmingConversation } from '../src/gameplay/skills/farming/farming-conversation.js';
+import { createFarming, FARMER } from '../src/gameplay/skills/farming/farming.js';
+import { SMITH_NPC, smithConversation } from '../src/content/quests/roadside/smith.js';
 import { sourceModule } from './module-loader.js';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 function fixture() {
   const inventory = createInventoryState(), events = [], skills = createSkills({ onEvent: event => events.push(event) });
@@ -95,7 +95,7 @@ test('Martin teaches Smithing and awards repair XP only for actual wear', () => 
   assert.equal(f.skills.xp('smithing'), 18, 'an undamaged blade cannot be farmed for XP');
 });
 test('Martin has spectacles and cropped black hair; Lee Anne has cropped blonde hair', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const martin = createCharacter({ role: SMITH_NPC.modelRole, look: SMITH_NPC.look });
   assert.ok(martin.group.getObjectByName('Spectacles'));
   assert.equal(SMITH_NPC.look.hairStyle, 'cropped'); assert.equal(SMITH_NPC.look.hair, 0x171615);

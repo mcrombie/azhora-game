@@ -1,5 +1,5 @@
-import { CAT, LIZ } from '../src/cat-quest.js';
-import { TROY, CLUES } from '../src/murder-quest.js';
+import { CAT, LIZ } from '../src/content/quests/roadside/cat-quest.js';
+import { TROY, CLUES } from '../src/content/quests/roadside/murder-quest.js';
 
 // Launch the actual F8 button and observe ordinary rendered frames. No quest
 // actions, NPC relocation, combat outcomes or testimony are injected here.

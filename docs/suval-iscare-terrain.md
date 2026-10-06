@@ -14,7 +14,7 @@ Implemented for the 27 September 2026 vigilante quest. The user's war chronology
 - East Suval's sealed border now has varied cliff shoulders, exposed strata and needles, stepped wall heights, and four winding false approaches. Two terminate in rockfalls; two reveal barred posterns. They stay outside the country and have clear retreat routes. Existing gates and the authorized smugglers' door retain their positions. See `docs/east-suval-border-variety.md`.
 - The Sultana's Solis berth now sits beyond the timber pier instead of overlapping it. Its arrival/departure route bends around the offshore shoal; the complete hull retains enough draft along its approach.
 
-The shared pure API is `src/suval-highlands.js`:
+The shared pure API is `src/content/regions/suval-highlands/suval-highlands.js`:
 
 | Export | Meaning |
 | --- | --- |

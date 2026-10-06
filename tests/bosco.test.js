@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { BOSCO, BOSCO_HAUNTS, BOSCO_DYES, BOSCO_GREETS, BOSCO_PETS, BOSCO_FACTS,
-  createBosco, boscoConversation, validateBoscoSnapshot } from '../src/bosco.js';
-import { BRANDY, BRANDY_ON_BOSCO, BRANDY_YARD, YARD_LAYOUT, yardPoint, brandyConversation } from '../src/brandy.js';
+  createBosco, boscoConversation, validateBoscoSnapshot } from '../src/content/quests/bosco/bosco.js';
+import { BRANDY, BRANDY_ON_BOSCO, BRANDY_YARD, YARD_LAYOUT, yardPoint, brandyConversation } from '../src/content/quests/brandy/brandy.js';
 
 function talk(conversation, npc, context) {
   const screens = [], acted = [];
@@ -125,8 +125,8 @@ test('the dog survives a save', () => {
 
 // He wants three things, and they are always the same three things.
 test('beef: he asks for beef, takes anything, and never raises the discrepancy', async () => {
-  const { BOSCO_BEEF, BOSCO_TAKES, BOSCO_WANTS } = await import('../src/bosco.js');
-  const { INVENTORY_ITEMS } = await import('../src/inventory.js');
+  const { BOSCO_BEEF, BOSCO_TAKES, BOSCO_WANTS } = await import('../src/content/quests/bosco/bosco.js');
+  const { INVENTORY_ITEMS } = await import('../src/gameplay/inventory/inventory.js');
   assert.deepEqual([...BOSCO_WANTS], ['beef', 'walk', 'pets']);
   assert.ok(INVENTORY_ITEMS[BOSCO_BEEF], 'the beef is a real thing you can carry');
   for (const id of BOSCO_TAKES) assert.ok(INVENTORY_ITEMS[id], `${id} is a real item`);
@@ -139,7 +139,7 @@ test('beef: he asks for beef, takes anything, and never raises the discrepancy',
   assert.match(beef.line, /enormous care/);
   assert.deepEqual(taken, [BOSCO_BEEF]);
   // Anything else on the list goes down just as fast and he says nothing about it.
-  const { BOSCO_FOOD_GIVEN } = await import('../src/bosco.js');
+  const { BOSCO_FOOD_GIVEN } = await import('../src/content/quests/bosco/bosco.js');
   const other = bosco.feed('smoked-sausage', { take: () => true });
   assert.equal(other.beef, false);
   assert.ok(BOSCO_FOOD_GIVEN.includes(other.line), 'and he does not raise it');
@@ -184,7 +184,7 @@ test('a walk: he leaves the yard, follows anywhere, and comes home', () => {
 });
 
 test('what he wants is offered when it can be, and asked about when it cannot', async () => {
-  const { BOSCO_BEEF } = await import('../src/bosco.js');
+  const { BOSCO_BEEF } = await import('../src/content/quests/bosco/bosco.js');
   const bosco = createBosco({ random: fixed(.5) });
   const empty = talk(boscoConversation, npc, { bosco, carrying: [] });
   assert.equal(empty.has('feed-bosco'), false);
@@ -204,7 +204,7 @@ test('what he wants is offered when it can be, and asked about when it cannot', 
 });
 
 test('John sells a piece out of the barrel, and knows exactly who it is for', async () => {
-  const { JOHN, BEEF_PRICE, johnConversation } = await import('../src/salt-sultan.js');
+  const { JOHN, BEEF_PRICE, johnConversation } = await import('../src/content/quests/salt/salt-sultan.js');
   const context = { salt: { met: true, visits: 0, edTold: false, port: { id: 'tidehaven', name: 'Tidehaven', edge: 'quay' } } };
   const broke = talk(johnConversation, { id: JOHN.id }, { ...context, coppers: BEEF_PRICE - 1 });
   assert.equal(broke.has('john-beef'), false);

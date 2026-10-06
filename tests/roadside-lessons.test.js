@@ -1,16 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoadsideLessons, validateRoadsideLessons, SANDWICH_ITEM } from '../src/roadside-lessons.js';
-import { createSkills } from '../src/skills.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createConsumables } from '../src/consumables.js';
-import { createCooking, RECIPES } from '../src/cooking.js';
-import { createGeology, SPECIMEN_ITEM } from '../src/geology.js';
-import { createGlunWoodcutting } from '../src/glun-woodcutting.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createJourney } from '../src/journey.js';
-import { createWeapons } from '../src/weapons.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
+import { createRoadsideLessons, validateRoadsideLessons, SANDWICH_ITEM } from '../src/content/regions/drent/roadside-lessons.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createConsumables } from '../src/gameplay/inventory/consumables.js';
+import { createCooking, RECIPES } from '../src/gameplay/skills/crafting/cooking.js';
+import { createGeology, SPECIMEN_ITEM } from '../src/gameplay/skills/nature/geology.js';
+import { createGlunWoodcutting } from '../src/content/quests/skill-lessons/glun-woodcutting.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
 
 function fixture() {
   const inventory = createInventoryState(), events = [];

@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
-import { createCombat, ENEMY_KINDS } from '../src/combat.js';
-import { BODY } from '../src/bodies.js';
-import { createCorpses, corpseLoot } from '../src/corpses.js';
+import { createCombat, ENEMY_KINDS } from '../src/gameplay/combat/combat.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { createCorpses, corpseLoot } from '../src/gameplay/combat/corpses.js';
 import { sourceModule } from './module-loader.js';
 
-const { createKaylaBear } = await sourceModule('../src/kayla-character.js');
-const { createCombatView } = await sourceModule('../src/combat-view.js');
-const { createCorpseView } = await sourceModule('../src/corpse-view.js');
-const { groundShadow } = await sourceModule('../src/characters.js');
+const { createKaylaBear } = await sourceModule('../src/content/quests/kayla/kayla-character.js');
+const { createCombatView } = await sourceModule('../src/gameplay/combat/combat-view.js');
+const { createCorpseView } = await sourceModule('../src/gameplay/combat/corpse-view.js');
+const { groundShadow } = await sourceModule('../src/content/characters/characters.js');
 const world = { bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, colliders: [], heightAt: () => 0 };
 const bear = { id: 'kayla-fight', npcId: 'kayla', name: 'Kayla', kind: 'bear', x: 0, z: 0, hp: 450 };
 const encounter = { id: 'bear-check', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: 4 }, retreatZ: 15, enemies: [bear] };

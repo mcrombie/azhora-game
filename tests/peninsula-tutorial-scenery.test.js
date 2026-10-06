@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { villageToWorld } from '../src/region-world.js';
-import { moveCharacter } from '../src/game-state.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { PENINSULA_TUTORIAL_ANCHORS as A, PENINSULA_TUTORIAL_PATHS, PENINSULA_HOME_ROUTE, PENINSULA_CHRIS_TASKS, peninsulaWoodcuttingRoute, peninsulaFishingRoute, PENINSULA_FERRY_LANDING } from '../src/peninsula-tutorial.js';
-import { GLUN_WOOD_LESSON } from '../src/glun-woodcutting.js';
+import { villageToWorld } from '../src/world/terrain/region-world.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { PENINSULA_TUTORIAL_ANCHORS as A, PENINSULA_TUTORIAL_PATHS, PENINSULA_HOME_ROUTE, PENINSULA_CHRIS_TASKS, peninsulaWoodcuttingRoute, peninsulaFishingRoute, PENINSULA_FERRY_LANDING } from '../src/content/chapters/prologue/peninsula-tutorial.js';
+import { GLUN_WOOD_LESSON } from '../src/content/quests/skill-lessons/glun-woodcutting.js';
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createPeninsulaTutorialScenery, tutorialSceneryClearAt } = await sourceModule('../src/peninsula-tutorial-scenery.js');
-const { createTutorialBoundaryVisuals } = await sourceModule('../src/tutorial-boundary-visuals.js');
+const { createPeninsulaTutorialScenery, tutorialSceneryClearAt } = await sourceModule('../src/content/chapters/prologue/peninsula-tutorial-scenery.js');
+const { createTutorialBoundaryVisuals } = await sourceModule('../src/world/environment/tutorial-boundary-visuals.js');
 
 test('The peninsula teachers, trail and exit stand on actual dry ground; swimming has real water', () => {
   for (const id of ['arrival', 'jojo', 'chris', 'walkingEnd', 'bear', 'ryan', 'jess', 'glun', 'dummy', 'cookfire', 'gate', 'graduation']) {

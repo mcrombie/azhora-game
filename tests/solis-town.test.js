@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SOLIS_NPCS, SOLIS_NPC_IDS, SOLIS_TOWNSFOLK_IDS, solisConversation, townsfolkLines, captainLines } from '../src/solis-town.js';
-import { createWestSuvalHost } from '../src/west-suval-host.js';
-import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, BORDER_ARRIVAL_RADIUS, MARCH } from '../src/border-chapter.js';
-import { createAftermathChapter, AFTERMATH_VARIANTS } from '../src/aftermath-chapter.js';
-import { AFTERMATH_SITES, AFTERMATH_ARENAS } from '../src/aftermath-sites.js';
-import { isOut, stakeOf, occupationControl } from '../src/occupation.js';
-import { SOLIS_SQUARE, SOLIS_APPROACH, SOLIS_STANDS } from '../src/west-suval.js';
-import { SOLIS, solisPoint } from '../src/region-world.js';
+import { SOLIS_NPCS, SOLIS_NPC_IDS, SOLIS_TOWNSFOLK_IDS, solisConversation, townsfolkLines, captainLines } from '../src/content/regions/solis/solis-town.js';
+import { createWestSuvalHost } from '../src/content/regions/solis/west-suval-host.js';
+import { createBorderChapter, BORDER_NPCS, BORDER_ENCOUNTER_ID, BORDER_ARENA, BORDER_ARRIVAL_RADIUS, MARCH } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { createAftermathChapter, AFTERMATH_VARIANTS } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { AFTERMATH_SITES, AFTERMATH_ARENAS } from '../src/content/chapters/chapter-one/aftermath-sites.js';
+import { isOut, stakeOf, occupationControl } from '../src/gameplay/company/occupation.js';
+import { SOLIS_SQUARE, SOLIS_APPROACH, SOLIS_STANDS } from '../src/content/regions/solis/west-suval.js';
+import { SOLIS, solisPoint } from '../src/world/terrain/region-world.js';
 
 const byId = id => SOLIS_NPCS.find(npc => npc.id === id);
 const talk = (npc, extra = {}) => {

@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {writeFileSync} from 'node:fs';
-import {colliderOverlapsHeight} from '../src/walk-surfaces.js';
+import {colliderOverlapsHeight} from '../src/world/collision/walk-surfaces.js';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { MAIN_ROAD } from '../src/region-world.js';
-import { MENORA, MENORA_GATES, MENORA_PATHS, MENORA_BRIDGES, MENORA_NPC_ANCHORS, MENORA_BUILDINGS } from '../src/menora-city.js';
-import { CARICAS_TOWN, CARICAS_ROADS, CARICAS_GUARD_POSTS } from '../src/caricas-settlement.js';
-import { FARMSTEADS, REGIONAL_FARM_ROWS } from '../src/regional-farmland.js';
-import { YUNETHRE_PATHS, YUNETHRE_ARRIVAL, YUNETHRE_CAMP, YUNETHRE_RAID_ROUTE, YUNETHRE_WILDLIFE_ZONES } from '../src/yunethre-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { MAIN_ROAD } from '../src/world/terrain/region-world.js';
+import { MENORA, MENORA_GATES, MENORA_PATHS, MENORA_BRIDGES, MENORA_NPC_ANCHORS, MENORA_BUILDINGS } from '../src/content/regions/minora-frontier/menora-city.js';
+import { CARICAS_TOWN, CARICAS_ROADS, CARICAS_GUARD_POSTS } from '../src/content/regions/minora-frontier/caricas-settlement.js';
+import { FARMSTEADS, REGIONAL_FARM_ROWS } from '../src/world/scenery/regional-farmland.js';
+import { YUNETHRE_PATHS, YUNETHRE_ARRIVAL, YUNETHRE_CAMP, YUNETHRE_RAID_ROUTE, YUNETHRE_WILDLIFE_ZONES } from '../src/content/regions/minora-frontier/yunethre-world.js';
 let built;
 async function world(){if(!built){const {createWorld}=await sourceModule('../src/world.js');built=createWorld(new THREE.Scene());recordDiagnostics(built);}return built;}
 function blocked(w,x,z,r=.4){return !canStand(x,z,w,r,w.heightAt(x,z));}

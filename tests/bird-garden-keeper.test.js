@@ -4,10 +4,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { GARDEN_KEEPER, BIRD_WATCHER, GARDEN_BIRDS, JEAN_STAND } from '../src/birding.js';
-import { MERCENARY_ROSTER, ARRIVALS, createMercenaryCompany } from '../src/mercenaries.js';
-import { villageToWorld } from '../src/region-world.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { GARDEN_KEEPER, BIRD_WATCHER, GARDEN_BIRDS, JEAN_STAND } from '../src/gameplay/skills/birding/birding.js';
+import { MERCENARY_ROSTER, ARRIVALS, createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
+import { villageToWorld } from '../src/world/terrain/region-world.js';
 
 const root = new URL('../', import.meta.url);
 const file = rel => readFileSync(fileURLToPath(new URL(rel, root)), 'utf8');
@@ -47,7 +47,7 @@ test('Lakota is not in Drent until he walks into it', () => {
 });
 
 test('the garden is Jean’s everywhere the game says so, and Lakota teaches none of it', () => {
-  const main = file('src/main.js'), birding = file('src/birding.js');
+  const main = file('src/main.js'), birding = file('src/gameplay/skills/birding/birding.js');
   assert.match(main, /world\.npcPositions\[GARDEN_KEEPER\.id\]=\{x:JEAN_STAND\.x,z:JEAN_STAND\.z\}/, 'Jean uses her roadside stand');
   assert.doesNotMatch(main, /npcData\.push\(\{\.\.\.BIRD_WATCHER/, 'Lakota is not pushed in as a villager any more');
   assert.doesNotMatch(main, /function placeLakota/, 'and is not walked between a pier and a garden');
@@ -67,7 +67,7 @@ test('the garden is Jean’s everywhere the game says so, and Lakota teaches non
 test('nothing left in the game teaches birding in Lakota’s name', () => {
   const stale = [/Speak with Lakota to learn birding/, /Lakota’s garden/, /Lakota's garden/, /Ansel in Tidehaven/,
     /the birder (of|in) Tidehaven/, /Tidehaven’s bird-watcher/, /Lakota[^.]{0,30}teaches (?:it|birding)[^.]{0,20}bird/i];
-  const names = ['index.html', 'README.md', ...readdirSync(fileURLToPath(new URL('src/', root))).filter(n => n.endsWith('.js')).map(n => `src/${n}`)];
+  const names = ['index.html', 'README.md', ...readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(n => n.endsWith('.js')).map(n => `src/${n}`)];
   for (const name of names) {
     const text = file(name);
     for (const pattern of stale) assert.doesNotMatch(text, pattern, `${name} still sends the player to Lakota for birding`);

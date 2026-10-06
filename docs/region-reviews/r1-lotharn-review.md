@@ -194,7 +194,7 @@ comparative performance measurements.
 
 ## Full and Fast native journey and checkpoint evidence
 
-`src/r1-journey-checks.js` drives the actual developer-travel loading path,
+`src/dev/checks/r1-journey-checks.js` drives the actual developer-travel loading path,
 ordinary W-key border and chamber movement, and the production checkpoint and
 Continue paths. The driver visits Kemrath, crosses East/West Lotharn, crosses
 West Lotharn/Yunethre, travels to Vastos and back twice, enters the eastern

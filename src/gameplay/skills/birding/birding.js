@@ -1,0 +1,541 @@
+/**
+ * Birding, the first of the traveler's skills. Every kind of bird observed for the
+ * first time is worth experience.
+ *
+ * **Jean** keeps the bird garden on the eastern side of Tidehaven. She teaches
+ * the skill from the first morning, knows the birds that actually visit her garden
+ * (GARDEN_BIRDS), and lends a hummingbird feeder. Her odd little observations come
+ * from patient watching. She supplies its sugar water herself; Lysa can still fill
+ * a feeder carried from an older save when she is present in the village.
+ *
+ * **Lakota** was both and is now the seventh hired sword to come up the road
+ * (src/gameplay/company/mercenaries.js), so he is not in the village at all until he walks into
+ * it. What he keeps is everything that was ever his: the red-tail on his glove,
+ * the list of a hundred and six, what is on his mind, and the two other skills he
+ * can start you on. None of it is offered up front. It is further down his
+ * conversation and you reach it by knowing him (src/content/quests/lakota/lakota.js).
+ *
+ * Pure: no DOM, no three. The birds themselves are drawn and moved by
+ * `src/content/regions/drent/drent-birds.js`.
+ */
+export const BIRDING_VERSION = 1;
+export const BIRDING_SKILL = 'birding';
+export const BIRDING_KEY = 'KeyB';
+export const SKILLS_KEY = 'KeyK';
+export const BIRD_CALL_KEY = 'KeyH';
+export const JEAN_STAND = Object.freeze({ x: -52, z: 28, yaw: Math.PI / 2 });
+
+// Drawn from Michael's sketch: cream collared shirt, spiky hair, and a red-tailed hawk on his
+// glove (src/content/quests/lakota/lakota-hawk.js). His id is his place in the company now, so that everything already
+// written against BIRD_WATCHER.id follows him onto the road without being rewritten.
+export const BIRD_WATCHER = Object.freeze({ id: 'merc-lakota', name: 'Lakota', role: 'Birder', modelRole: 'bird-watcher', color: 0xe4d8bd });
+
+/**
+ * Jean: long blonde hair, a weathered gardening dress, and a notebook full of bird gossip.
+ * Keep the original garden-keeper ID so saves, the feeder and skill markers remain compatible.
+ */
+export const GARDEN_KEEPER = Object.freeze({ id: 'garden-keeper', name: 'Jean', role: 'Birding teacher',
+  modelRole: 'garden-keeper', color: 0x7d8a63, hat: false,
+  look: Object.freeze({ hair: 0xc6a15d, hairStyle: 'long', straightHair: true, slight: true }) });
+
+export const FEEDER_ITEM = 'hummingbird-feeder';
+export const FILLED_FEEDER_ITEM = 'sugar-water-feeder';
+export const FEEDER_STAGES = Object.freeze(['none', 'lent', 'filled', 'hung']);
+
+const species = (id, entry) => Object.freeze({ id, ...entry });
+export const BIRD_SPECIES = Object.freeze({
+  cardinal: species('cardinal', {
+    name: 'Cardinal', xp: 15, spook: 6.5, group: 'village',
+    note: 'Red all over, with a pointed crest and a black mask around a thick orange bill. The hen is buff-brown with red in her crest, wings and tail. A pair keeps to the hedges and fences and is rarely far apart.',
+    hint: 'A flash of red along the fences and the garden on the western side of the village.',
+    lore: 'The red one is the cock. The brown one with red in her wings is his hen, and she sings as well as he does, which nobody believes until they hear her.',
+  }),
+  wren: species('wren', {
+    name: 'Wren', xp: 20, spook: 5, group: 'village',
+    note: 'Small and round, rusty brown above and warm buff below, with a long white stripe over the eye and a tail cocked straight up. A song far too loud for the size of it.',
+    hint: 'Something small and very loud on the barrels behind the cottages east of the square.',
+    lore: 'The wren sings as if it owns the village. It owns the barrels, at least. It will nest in a hat if you leave one on a peg.',
+  }),
+  titmouse: species('titmouse', {
+    name: 'Titmouse', xp: 15, spook: 5.5, group: 'village',
+    note: 'Soft grey above and pale below, with peach along the flanks, a pointed grey crest, a black spot above a stubby bill, and big dark eyes.',
+    hint: 'A grey bird with a crest, calling where the village meets the woods along the eastern fence.',
+    lore: 'Titmice call the same two notes over and over, and they are the first to scold an owl. Where you find one, you usually find a few.',
+  }),
+  crow: species('crow', {
+    name: 'Crow', xp: 10, spook: 10, group: 'field',
+    note: 'Black from bill to feet, big, with a heavy bill. Crows walk rather than hop, work a field together and keep one of their number looking up.',
+    hint: 'Black birds walking the field behind the western cottages.',
+    lore: 'Crows know faces. Be civil to them. Tobin shouted at one once, and they still follow him down to the boats.',
+  }),
+  hummingbird: species('hummingbird', {
+    name: 'Hummingbird', xp: 30, spook: 3, group: 'garden',
+    note: 'Hardly longer than a thumb: a green back, a pale belly and a bill like a needle. The cock has a throat that flashes ruby when the light catches it. It hovers at a flower as if hung on a thread.',
+    hint: 'Jean says they come only to flowers and to sugar water.',
+    lore: 'They come a long way to get here and they will fight anything for a feeder, even each other. Mostly each other.',
+  }),
+  robin: species('robin', {
+    name: 'Robin', xp: 12, spook: 7, group: 'village',
+    note: 'Grey-brown above and brick-orange from throat to belly, with a white ring round the eye and a bright yellow bill. It runs three steps on the grass, stops dead, and puts its head to one side.',
+    hint: 'On the open grass of the green, running and stopping and running again.',
+    lore: 'That head-tilt is not listening. It is looking: one eye down at the turf for the worm it already knows is there.',
+  }),
+  chickadee: species('chickadee', {
+    name: 'Chickadee', xp: 15, spook: 4, group: 'village',
+    note: 'Tiny, with a black cap pulled down over white cheeks, a black bib, grey wings and buff flanks. It never sits still for longer than it takes to look at it.',
+    hint: 'The smallest thing in the hedge by the garden, and the boldest.',
+    lore: 'They will come nearer than any other bird here. Stand still with your hand out and one of them will do the arithmetic and decide you are furniture.',
+  }),
+  mockingbird: species('mockingbird', {
+    name: 'Mockingbird', xp: 20, spook: 6, group: 'village',
+    note: 'Plain grey above, pale below, long-tailed and long-legged, with white flashes that open in the wing when it flies. It sings other birds\u2019 songs one after another, three times each.',
+    hint: 'Singing from the top of a post by the square, and not singing anything of its own.',
+    lore: 'Count the repeats. Three of a wren, three of a cardinal, three of a cart axle it heard on Tuesday. They sing half the night in spring and nobody thanks them for it.',
+  }),
+  'mourning-dove': species('mourning-dove', {
+    name: 'Mourning dove', xp: 12, spook: 8, group: 'village',
+    note: 'Soft fawn, small-headed, with a long pointed tail and black spots on the wing. Its wings whistle when it goes up, which is the only loud thing about it.',
+    hint: 'On the cottage roofs and the track, walking with its head going.',
+    lore: 'That mournful hooing gets mistaken for an owl every year by somebody. The whistle is the wings, not the bird.',
+  }),
+  'blue-jay': species('blue-jay', {
+    name: 'Blue jay', xp: 15, spook: 8, group: 'village',
+    note: 'Blue above and pale below, with a crest, a black necklace across the throat, and white bars and spots in the blue of the wing and tail. Loud, and aware of being loud.',
+    hint: 'Blue and shouting where the village gives way to the wood.',
+    lore: 'They imitate a hawk to clear a feeder, then eat at it alone. They also bury acorns by the hundred and forget enough of them to plant a wood.',
+  }),
+  goldfinch: species('goldfinch', {
+    name: 'Goldfinch', xp: 20, spook: 6, group: 'field',
+    note: 'The cock is hot yellow with a black cap and black wings barred white; the hen is a dull olive. They fly in deep bounds and call on every rise of it.',
+    hint: 'Yellow birds working the thistles at the edge of the western field.',
+    lore: 'They nest later than anything else here because they wait for thistledown to line it with. Patience, or fussiness, depending who you ask.',
+  }),
+  catbird: species('catbird', {
+    name: 'Catbird', xp: 20, spook: 5, group: 'village',
+    note: 'Slate grey all over with a neat black cap and, when it turns, a patch of rust under the tail. Heard far more often than seen.',
+    hint: 'Something mewing like a cat from inside the thicket behind the cottages.',
+    lore: 'It is a bird. It is always a bird. Every year somebody goes looking for a kitten in that bramble and comes back thoughtful.',
+  }),
+  'downy-woodpecker': species('downy-woodpecker', {
+    name: 'Downy woodpecker', xp: 20, spook: 5, group: 'wood',
+    note: 'Small, chequered black and white, with a short stubby bill and a white stripe down the back. The cock has a red patch on the back of his head; the hen has none.',
+    hint: 'Working the smaller branches in the Greenway wood, tapping as it goes.',
+    lore: 'The little one with the short bill is the downy. There is a bigger one with a longer bill that looks the same and is not, and people argue about it in this village more than you would think.',
+  }),
+  'red-bellied-woodpecker': species('red-bellied-woodpecker', {
+    name: 'Red-bellied woodpecker', xp: 20, spook: 6, group: 'wood',
+    note: 'A ladder of black and white bars across the back, pale below, with a red cap that runs down the back of the neck. Climbs in jerks and calls a rolling churr.',
+    hint: 'Barred black and white on the big trunks of the Greenway, with red on its head.',
+    lore: 'The red belly it is named for is a faint wash you will see about twice in your life. Whoever named it was holding a dead one.',
+  }),
+  'pileated-woodpecker': species('pileated-woodpecker', {
+    name: 'Pileated woodpecker', xp: 30, spook: 9, group: 'wood',
+    note: 'As big as a crow, black with white stripes up the neck and a flaming red crest. It chops long rectangular holes in dead wood and you can hear the blows from a field away.',
+    hint: 'Deep in the Greenway, where something is hitting a dead tree like a man with an axe.',
+    lore: 'Find a hole the shape of a brick and you have found where one has been. They take carpenter ants out of standing timber and leave the tree the better for it.',
+  }),
+  nuthatch: species('nuthatch', {
+    name: 'Nuthatch', xp: 20, spook: 4, group: 'wood',
+    note: 'Blue-grey above, white below, with a black cap and a long straight bill, going down the trunk head first as if that were the obvious way to do it.',
+    hint: 'On the trunks in the Greenway, upside down.',
+    lore: 'Going down head first it sees what the birds going up have missed. The whole trade is in the direction.',
+  }),
+  'wood-thrush': species('wood-thrush', {
+    name: 'Wood thrush', xp: 25, spook: 7, group: 'wood',
+    note: 'Warm rusty head and back, white below with heavy round black spots. Quiet on the leaf litter, and then not quiet at all.',
+    hint: 'On the floor of the Greenway wood, turning leaves over.',
+    lore: 'It sings two notes at once \u2014 it has the throat for it \u2014 and there is no better sound in this country at dusk. Lakota has been known to stop work for it.',
+  }),
+  'barred-owl': species('barred-owl', {
+    name: 'Barred owl', xp: 35, spook: 12, group: 'wood',
+    note: 'Big, round-headed and earless, streaked brown and cream, with black eyes rather than yellow ones. It sits against a trunk in daylight and is usually found by the noise the little birds make about it.',
+    hint: 'The titmice and the jays are mobbing something in the Greenway, and it is not you.',
+    lore: 'Who cooks for you. Who cooks for you all. Say it aloud in the wood at dusk and you may get an answer, which people find less charming than they expect.',
+  }),
+  bluebird: species('bluebird', {
+    name: 'Bluebird', xp: 20, spook: 7, group: 'field',
+    note: 'Deep blue above, rust across the throat and breast, white under the tail. It sits on a fence, drops straight into the grass, and goes back up with something.',
+    hint: 'On the field fences out past the Caloss gate, facing the grass.',
+    lore: 'They want short grass and a hole to nest in, and they have less of both every year. Put up a box with the right sized hole and you will have them for life.',
+  }),
+  'red-winged-blackbird': species('red-winged-blackbird', {
+    name: 'Red-winged blackbird', xp: 15, spook: 6, group: 'water',
+    note: 'The cock is black with a scarlet shoulder edged yellow, which he opens like a flag when he sings; the hen is brown and streaked and looks like another bird entirely.',
+    hint: 'Shouting from the reeds at Willowmere, on the top of a cattail.',
+    lore: 'He has a marsh three yards wide and he will fight a heron over it. The brown one on the nest is the reason.',
+  }),
+  heron: species('heron', {
+    name: 'Heron', xp: 25, spook: 14, group: 'water',
+    note: 'Tall as a child, blue-grey, with a dagger of a bill and a black plume behind the eye. It stands in the shallows without moving, and in flight it folds its neck back and trails its legs.',
+    hint: 'Standing in the shallow end of Willowmere, not moving at all.',
+    lore: 'Everything about it is waiting. When it finally goes, it is so fast that people who watched the whole thing still miss it.',
+  }),
+  kingfisher: species('kingfisher', {
+    name: 'Kingfisher', xp: 25, spook: 11, group: 'water',
+    note: 'Big-headed and short-tailed, blue-grey above and white below, with a ragged crest and a heavy black bill. It rattles as it goes along the water, hovers, and drops.',
+    hint: 'A rattle going down the river at the Caloss bank, faster than you can turn round.',
+    lore: 'It hangs over the water, folds, and goes in like a thrown knife. The hen is the brighter of the two, which is the wrong way round for most birds here.',
+  }),
+  mallard: species('mallard', {
+    name: 'Mallard', xp: 12, spook: 8, group: 'water',
+    note: 'The drake has a bottle-green head, a white ring, a chestnut breast and a curl of black at the tail; the duck is streaked brown with a blue patch in the wing. Both tip up to feed and neither is embarrassed about it.',
+    hint: 'On Willowmere, tipped up with their tails in the air.',
+    lore: 'Feed them bread and you will do them no good at all. Feed them nothing and they will still be there tomorrow.',
+  }),
+  gull: species('gull', {
+    name: 'Gull', xp: 12, spook: 7, group: 'water',
+    note: 'Grey wings, white body, a dark hood in summer and a smudge behind the eye out of it, with red at the bill and a laughing call that gives it its name.',
+    hint: 'On the landing, waiting for the boats like everybody else.',
+    lore: 'They follow the boats in and they know the sound of a gutting knife from the other end of the village. Nothing here is wasted, which is mostly their doing.',
+  }),
+  'turkey-vulture': species('turkey-vulture', {
+    name: 'Turkey vulture', xp: 15, spook: 14, group: 'field',
+    note: 'Black-brown and huge, with a small bare red head, wings held up in a shallow V and silver-lined underneath, and a way of rocking on the air without ever flapping. On the ground it stands with its wings spread out to dry.',
+    hint: 'Standing in the Avrel fields with its wings open, out past the farmsteads.',
+    lore: 'It finds its work by smell, which almost no bird can do. Ugly at ten paces and the best flier in this country at a hundred.',
+  }),
+});
+
+/**
+ * The birds of Drent in the order the journal lists them: the four anybody starts
+ * on, then the rest of this country's common birds, then the hummingbird,
+ * which has to be earned.
+ */
+export const DRENT_BIRDS = Object.freeze(Object.keys(BIRD_SPECIES));
+/** Where each kind is looked for, which is how the journal groups them. */
+export const BIRD_GROUPS = Object.freeze(['village', 'wood', 'field', 'water', 'garden']);
+/**
+ * The birds that actually come to Jean's garden, measured against BIRD_HABITATS in
+ * src/content/regions/drent/drent-birds.js: the chickadees on the fence beyond it and the catbird in its brambles
+ * overlap the garden itself, and the wren on the barrels behind is 0.9 m off it. Nothing else in
+ * the village comes within fourteen metres. The hummingbird is the fourth and comes only to the
+ * feeder, which is why it is counted apart.
+ */
+export const GARDEN_BIRDS = Object.freeze(['chickadee', 'catbird', 'wren']);
+
+/** How far off a bird can be observed; practice lets the traveler see well from farther away. */
+export const observeRange = level => Math.min(30, 18 + 2 * Math.max(0, (Number(level) || 1) - 1));
+
+export const BIRDING_LESSON = Object.freeze([
+  'Find a bird, then stop before it minds you. Every kind has its own distance: a crow will not let you near, and a hummingbird hardly cares.',
+  'When you have it in view and it is sitting still, press B and look at it properly: the shape, the bill, what it is doing. The first time you really see a kind of bird, you do not forget it.',
+  'Start in my garden back in Tidehaven: chickadees on the fence, the catbird in the brambles, and the wren on the barrels behind. Past that the village has its own — cardinals on the western fences, titmice where the woods begin, crows in the field. Your journal keeps your birds. K opens it.',
+  'Keep observing as you travel. Patient repeat observations earn a little experience too. At Birding level 2, Actions (U) lets you imitate the call of a familiar bird nearby. Nearby birds may turn toward you in response. That is learned behaviour, not Animal Sorcery.',
+]);
+
+export function validateBirdingSnapshot(data, { allowMissing = true } = {}) {
+  if (data === undefined) return allowMissing;
+  if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== BIRDING_VERSION) return false;
+  if (typeof data.met !== 'boolean' || !FEEDER_STAGES.includes(data.feeder)) return false;
+  if (!data.seen || typeof data.seen !== 'object' || Array.isArray(data.seen)) return false;
+  if (data.practice !== undefined) {
+    const p = data.practice, times = values => values && typeof values === 'object' && !Array.isArray(values)
+      && Object.entries(values).every(([id, at]) => Object.hasOwn(BIRD_SPECIES, id) && Number.isFinite(at) && at >= 0);
+    if (!p || !times(p.observed) || !times(p.called) || (p.lastCall !== null && (!Number.isFinite(p.lastCall) || p.lastCall < 0))) return false;
+  }
+  return Object.entries(data.seen).every(([id, count]) => Object.hasOwn(BIRD_SPECIES, id) && Number.isInteger(count) && count >= 1 && count <= 1e6);
+}
+
+export function createBirding({ skills, onEvent = () => {} } = {}) {
+  const state = { met: false, seen: {}, feeder: 'none' };
+  let practice = { observed: {}, called: {}, lastCall: null };
+  const stamped = now => Number.isFinite(now) && now >= 0;
+
+  function meet() {
+    const first = !state.met;
+    state.met = true;
+    const learned = skills?.learn?.(BIRDING_SKILL) ?? { ok: false };
+    if (first) onEvent({ type: 'birding-learned' });
+    // `first` last: this is the teacher's own first time, not the skill's (src/gameplay/skills/skills.js).
+    return { ok: true, ...learned, first };
+  }
+
+  /** The traveler has looked properly at a bird of kind `id`. */
+  function observe(id, { now } = {}) {
+    // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
+    // teacher is still worth meeting; she is no longer the door.
+    const bird = BIRD_SPECIES[id];
+    if (!bird) return { ok: false, reason: 'That is not a bird anyone here can name.' };
+    const first = !state.seen[id];
+    state.seen[id] = (state.seen[id] ?? 0) + 1;
+    const repeat = stamped(now) && (practice.observed[id] === undefined || now - practice.observed[id] >= 30);
+    const xp = first ? bird.xp : repeat ? 3 : 0;
+    if (stamped(now) && (first || repeat)) practice.observed[id] = now;
+    const gained = xp ? skills?.gain?.(BIRDING_SKILL, xp) ?? { ok: false } : null;
+    const level = skills?.level?.(BIRDING_SKILL) ?? 1;
+    onEvent({ type: 'bird-observed', id, first });
+    return { ok: true, first, species: bird, count: state.seen[id], xp, level, levelled: !!gained?.levelled };
+  }
+
+  function call(id, { now } = {}) {
+    if ((skills?.level?.(BIRDING_SKILL) ?? 1) < 2) return { ok: false, reason: 'Bird calls open at Birding level 2.' };
+    if (!Object.hasOwn(BIRD_SPECIES, id) || !state.seen[id]) return { ok: false, reason: 'Observe this kind of bird before imitating its call.' };
+    if (!stamped(now)) return { ok: false, reason: 'You cannot call a bird while the world is paused.' };
+    if (practice.lastCall !== null && now - practice.lastCall < 8) return { ok: false, reason: 'Wait a moment and listen for an answer.' };
+    practice.lastCall = now;
+    const earns = practice.called[id] === undefined || now - practice.called[id] >= 30;
+    const xp = earns ? 2 : 0;
+    if (earns) { practice.called[id] = now; skills?.gain?.(BIRDING_SKILL, xp); }
+    const level = skills?.level?.(BIRDING_SKILL) ?? 2;
+    onEvent({ type: 'bird-called', id });
+    return { ok: true, id, species: id, range: Math.min(30, 14 + level * 2), duration: Math.min(12, 4 + level), xp };
+  }
+
+  function lendFeeder(inventory) {
+    if (!state.met) return { ok: false, reason: 'Jean has not met you yet.' };
+    if (state.feeder !== 'none') return { ok: false, reason: 'Jean has already lent you her feeder.' };
+    if (!inventory?.add?.(FEEDER_ITEM, 1)) return { ok: false, reason: 'There is no room in your satchel for the feeder.' };
+    state.feeder = 'lent';
+    return { ok: true, reason: '' };
+  }
+
+  /** Jean (or Lysa when present) fills the feeder with sugar water. Atomic: the empty one is only taken if the full one fits. */
+  function fillFeeder(inventory) {
+    if (state.feeder !== 'lent' || !inventory?.has?.(FEEDER_ITEM)) return { ok: false, reason: 'You have no empty feeder to fill.' };
+    if (!inventory.remove(FEEDER_ITEM, 1)) return { ok: false, reason: 'You have no empty feeder to fill.' };
+    if (!inventory.add(FILLED_FEEDER_ITEM, 1)) { inventory.add(FEEDER_ITEM, 1); return { ok: false, reason: 'There is no room in your satchel.' }; }
+    state.feeder = 'filled';
+    return { ok: true, reason: '' };
+  }
+
+  function hangFeeder(inventory) {
+    if (state.feeder !== 'filled' || !inventory?.has?.(FILLED_FEEDER_ITEM)) return { ok: false, reason: 'You need the feeder filled with sugar water first. Jean can fill it with sugar water.' };
+    if (!inventory.remove(FILLED_FEEDER_ITEM, 1)) return { ok: false, reason: 'You need the filled feeder.' };
+    state.feeder = 'hung';
+    return { ok: true, reason: '' };
+  }
+
+  const seenCount = () => Object.keys(state.seen).length;
+
+  /** The feeder errand while it is under way: what the side-quest banner says, and where it points. */
+  function task() {
+    if (!state.met || state.feeder === 'none' || state.seen.hummingbird) return null;
+    const title = 'Jean’s hummingbirds';
+    if (state.feeder === 'lent') return { title, stage: 'lent', target: GARDEN_KEEPER.id, detail: 'Ask Jean to fill the feeder with sugar water, then carry it to the hook in her garden.' };
+    if (state.feeder === 'filled') return { title, stage: 'filled', target: 'feeder-hook', detail: 'Hang the filled feeder on the hook by the red flowers in Jean’s garden.' };
+    return { title, stage: 'hung', target: 'feeder-hook', detail: 'Stand back from the feeder and wait. Press B when the hummingbird is hovering.' };
+  }
+
+  function view() {
+    return {
+      met: state.met, feeder: state.feeder, seenCount: seenCount(), total: DRENT_BIRDS.length,
+      entries: DRENT_BIRDS.map(id => ({ id, seen: !!state.seen[id], count: state.seen[id] ?? 0, name: state.seen[id] ? BIRD_SPECIES[id].name : 'An unknown bird',
+        detail: state.seen[id] ? BIRD_SPECIES[id].note : BIRD_SPECIES[id].hint })),
+      task: task(),
+    };
+  }
+
+  function snapshot() { return { version: BIRDING_VERSION, met: state.met, seen: { ...state.seen }, feeder: state.feeder,
+    ...(Object.keys(practice.observed).length || practice.lastCall !== null ? { practice: { observed: { ...practice.observed }, called: { ...practice.called }, lastCall: practice.lastCall } } : {}) }; }
+
+  function restore(data) {
+    state.met = false; state.seen = {}; state.feeder = 'none';
+    practice = { observed: {}, called: {}, lastCall: null };
+    if (!validateBirdingSnapshot(data, { allowMissing: false })) return false;
+    state.met = data.met; state.seen = { ...data.seen }; state.feeder = data.feeder;
+    practice = data.practice ? { observed: { ...data.practice.observed }, called: { ...data.practice.called }, lastCall: data.practice.lastCall } : { observed: {}, called: {}, lastCall: null };
+    return true;
+  }
+
+  return {
+    meet, observe, call, lendFeeder, fillFeeder, hangFeeder, task, view, snapshot, restore,
+    get met() { return state.met; }, get feeder() { return state.feeder; }, get seen() { return { ...state.seen }; },
+    hasSeen: id => !!state.seen[id], seenCount,
+  };
+}
+
+/** What Lakota says of his red-tailed hawk (she flies in src/gameplay/movement/hawk-flight.js). */
+export const RED_TAIL_LINES = Object.freeze([
+  'A red-tailed hawk. You know her by the tail: brick red on top, once they are past their first year. Before that it is brown and barred like everything else in the wood.',
+  'That scream you hear in every story with a hawk or an eagle in it? That is a red-tail. The eagles get the credit for it.',
+  'I did not train her to hunt for me. She hunts for herself, off the fence posts along the road: voles, mice, the odd snake. She comes back to the glove because it is warm and I keep the crows off her.',
+  'When the sun has warmed the green she goes up and circles. She is not showing off. She is riding the warm air up so she does not have to flap. Watch her for a while; you will learn more about the wind than any sailor can tell you.',
+]);
+
+/**
+ * Lakota's other enthusiasms. Birds first, always; but also the great old lizards
+ * the birds came from, wine, digging, chocolate, the thinking machines he is sure
+ * are coming, and a growing suspicion about the nature of the world itself.
+ */
+export const LAKOTA_TOPICS = Object.freeze([
+  Object.freeze({ id: 'dinosaurs', label: 'The great old lizards?', lines: Object.freeze([
+    'Dinosaurs. I call them that; nobody else calls them anything, because nobody else has noticed them. Terrible lizards, bigger than a house, and gone before there was a sea where the sea is.',
+    'Look at a heron’s foot. Three toes forward, scales up the shin, a claw on each. Now look at the track in the threshold slab at Rena. The birds are what is left of them. I would stake my list on it.',
+    'There is a jaw on KAT’s mantel at Vaervelm Caelazh that I dug out of the bottom of her vineyard. She thinks it is a cow. It is not a cow.',
+  ]) }),
+  Object.freeze({ id: 'digging', label: 'What is the best thing you ever dug up?', lines: Object.freeze([
+    'A jaw, at the bottom of KAT’s vineyard, as long as my arm and full of teeth like steak knives. I carried it up the hill in my shirt and she made me wash it before it came in the cabin.',
+    'Second best: a whistle made from a swan’s wing bone, at the edge of an old camp by the Caloss. I blew it. It still worked. I am not sure it should have.',
+  ]) }),
+  Object.freeze({ id: 'wine', label: 'Which wine is best?', lines: Object.freeze([
+    'Norton. Everybody pretends to prefer the Viognier because it is pretty. Norton is the vine that was here first, growing wild up the trees before anybody planted a row, and it tastes like it: dark, wild, a little rude.',
+    'KAT will pour you the Viognier first. Let her. Then ask for the Norton, and watch her decide whether she likes you.',
+  ]) }),
+  Object.freeze({ id: 'chocolate', label: 'What is that in your coat pocket?', lines: Object.freeze([
+    'Chocolate. The southern ships bring it in cakes as bitter as bark. Grate it into hot milk with a pinch of chilli and a spoon of honey and you will understand why their kings drank it before battles.',
+    'I keep a cake of it in my coat for owl nights. An owl will make you wait till the small hours, and chocolate is the only thing that makes waiting feel like a choice.',
+  ]) }),
+  Object.freeze({ id: 'machines', label: 'Do you believe in thinking machines?', lines: Object.freeze([
+    'Have you noticed that everybody in Tidehaven has exactly three things to say, and says them the same way every time? Somebody wrote them.',
+    'I think there are minds that are not people: made, not born, built out of rules and a great deal of reading, doing half the talking in this village. I call them artificial intelligences, because I like to be precise about what frightens me.',
+    'Eren laughs at me. But Eren tells every single person who comes up the Greenway to “watch the windup, dodge to the side”, in exactly those words. Every one.',
+  ]) }),
+  Object.freeze({ id: 'game', label: 'You seem distracted.', lines: Object.freeze([
+    'Some days I think the world is only put there as you walk into it. The road ahead is not quite finished until somebody looks at it, and the far hills are painted on.',
+    'Birds never land on the roofs. Not once. I have watched for years. A real world would have a pigeon on every ridge.',
+    'And when I dream, I dream of somebody at a desk in a lit room, pressing keys, watching me. When you move, do you ever feel your legs are being … steered?',
+    'Never mind. Look, a wren.',
+  ]) }),
+]);
+
+/** Archaeology and wine, as Lakota teaches them. */
+export const LAKOTA_ARCHAEOLOGY_PITCH = Object.freeze([
+  'I dig. Old towns and older bones, whatever the ground is keeping. A birder is only somebody who looks properly; a digger is somebody who looks properly at what has stopped moving.',
+  'The ruins of Rena, in the forest at the heart of Drent. The town was burned eighty years ago and nobody has ever sat down and read it. I have pegged the places worth your time.',
+  'Go and read five of them for me, write them up, and bring me your notes. Do not take anything. A thing out of the ground is a thing with its story cut off.',
+]);
+export const LAKOTA_WINE_PITCH = Object.freeze([
+  'Wine. Before I came here I worked a cellar at Vaervelm Caelazh, southeast of Port Calos in Luscia. Paradise Springs, in plain words: the good green place, where the water endures. A log cabin that was the first house on the land, a great hall, a spring that has never once failed, eight grapes on the slope, and the best Norton on this coast.',
+  'Tasting is only looking properly again, with your nose and your mouth. Look at the colour. Swirl it. Smell it like you mean it. Then a small mouthful, held. There, you know how.',
+  'Go and see KAT or MAT there. The winery is one hex southeast of Port Calos. Take the lane from the southern street; it leads to the cabin and the vines.',
+]);
+
+/**
+ * Jean at the garden: the first Birding lesson, her observations and the hummingbird feeder.
+ * The lesson and her eccentric conversation are available from the first morning.
+ */
+export function gardenKeeperConversation(npc, context) {
+  const { birding, husbandry = null, openDialogue, closeDialogue, act } = context;
+  if (npc.id !== GARDEN_KEEPER.id) return false;
+  const again = () => gardenKeeperConversation(npc, context);
+  const husbandryChoice = { id: 'learn-husbandry', label: husbandry?.taught ? 'Remind me how to care for livestock.' : 'Teach me Animal Husbandry.',
+    action: () => { closeDialogue(); act('learn-husbandry'); } };
+  const sorceryChoice = { id: 'jean-animal-sorcery', label: 'Is this the same as animal magic?', action: () => openDialogue(npc, [
+    'Birding is watching wild birds. Husbandry is caring for livestock. The habits overlap, but a bird does not owe you obedience and a sheep is not a spell.',
+    'Liz keeps bees across the Tessen in Pueth. She knows Animal Sorcery. Patient observation is a good foundation for that, but her magic is a separate lesson. Ask her about it when you go north.',
+  ], null, 'Back to our conversation', { onComplete: again }) };
+  const leave = { id: 'leave-garden-keeper', label: birding.met ? 'Good watching.' : 'Another time.', action: closeDialogue };
+  if (!birding.met) {
+    openDialogue(npc, [
+      'Hold that thought. The wren is scolding the watering can again. It knows the can cannot answer, which I consider rather unfair. There, in the hedge. Did you see it?',
+      'I am Jean. I keep the bird garden back in Tidehaven and an entirely unofficial account of its residents. The catbird has three neighbours, two enemies and a very high opinion of itself.',
+      'Three kinds visit my garden regularly, and a fourth comes for the flowers. You are going to see a great deal of country. I can teach you Birding, so those little movements in the trees become birds you actually know.',
+      'We begin by standing still. Very advanced work. The bench has mastered it, and you can too.',
+    ], null, 'Back to the road', { choices: [
+      { id: 'learn-birding', label: 'Teach me Birding.', action: () => { closeDialogue(); act('learn-birding'); } },
+      husbandryChoice, sorceryChoice, leave,
+    ] });
+    return true;
+  }
+  const gardenSeen = GARDEN_BIRDS.filter(id => birding.hasSeen(id)).length, hummingbird = birding.hasSeen('hummingbird');
+  const line = hummingbird ? 'The hummingbird! Splendid. I shall put a star beside today. Not for you, for the bird. You may have a small star as well.'
+    : birding.feeder === 'hung' ? 'Feeder is up. Now go and stand well back from it and be boring for a while. Watch for something like a large bee that stops dead in the air.'
+    : birding.feeder === 'filled' ? 'All filled, then. Hang it on the hook by the red flowers and step away — properly away, not two paces away looking hopeful.'
+    : birding.feeder === 'lent' ? 'Bring me the empty feeder and I will fill it. Four parts water to one of sugar, boiled and cooled. Never honey. We are inviting hummingbirds, not making trouble for their stomachs.'
+    : gardenSeen === GARDEN_BIRDS.length ? 'All three of the garden ones. That is better than most people who have lived here their whole lives, including me for the first nine years.'
+    : gardenSeen ? `${gardenSeen} of the three that come to this garden. Keep your distance and keep looking.`
+    : 'Anything yet? Stop before they mind you, and press B while one is sitting still.';
+  const seen = GARDEN_BIRDS.concat('hummingbird').filter(id => birding.hasSeen(id));
+  openDialogue(npc, [line], null, 'Back to the road', { choices: [
+    husbandryChoice, sorceryChoice,
+    ...(birding.feeder === 'lent' ? [{ id: 'fill-feeder', label: 'Could you fill the feeder?', action: () => { closeDialogue(); act('fill-feeder'); } }] : []),
+    { id: 'jean-garden', label: 'Do all the birds have stories?', action: () => openDialogue(npc, [
+      'Of course. I write down who arrives, who quarrels, and who borrows nesting material without asking. The observations are accurate. The scandal is mostly mine.',
+      'Keep an eye on the shape, the way a bird moves, and where it chooses to sit. A name comes afterwards. You can learn a great deal before you know what to call something.',
+    ], null, 'Back to our conversation', { onComplete: again }) },
+    { id: 'birding-hints', label: 'What should I look for?', action: () => {
+      const unseen = DRENT_BIRDS.filter(id => !birding.hasSeen(id) && (id !== 'hummingbird' || birding.feeder === 'none'));
+      openDialogue(npc, unseen.length ? unseen.slice(0, 6).map(id => BIRD_SPECIES[id].hint)
+        : ['You have everything that comes to Tidehaven. Drent has a good deal more than these, and I am told the world has more than Drent. I would not know. I have a garden.'],
+        null, 'Back to our conversation', { onComplete: again });
+    } },
+    ...(seen.length ? [{ id: 'birding-lore', label: 'Tell me about the birds in your garden.', action: () => openDialogue(npc, seen.map(id => BIRD_SPECIES[id].lore), null, 'Back to our conversation', { onComplete: again }) }] : []),
+    ...(birding.feeder === 'none' ? [{ id: 'ask-hummingbirds', label: 'Is there anything harder to see?', action: () => openDialogue(npc, [
+      'Hummingbirds. Green, smaller than your thumb, and they will not touch seed like a sensible bird. Flowers, and sugar water.',
+      'Borrow my feeder: glass bottle, red cap. Ask me to fill it before you hang it up. Four parts water to one of sugar, boiled and cooled. Not honey. Honey spoils in the sun and sickens them.',
+      'Then hang it on the hook by the red flowers and wait. They are bold little things, but they are not that bold.',
+    ], null, 'Back to our conversation', { choices: [
+      { id: 'take-feeder', label: 'May I borrow your feeder?', action: () => { closeDialogue(); act('take-feeder'); } },
+      { id: 'decline-feeder', label: 'Maybe later.', action: again },
+    ] }) }] : []),
+    { id: 'birding-lesson', label: 'Tell me again how it is done.', action: () => openDialogue(npc, [...BIRDING_LESSON], null, 'Back to our conversation', { onComplete: again }) },
+    leave,
+  ] });
+  return true;
+}
+
+/**
+ * Lakota on the road. He introduces himself as what the contract says he is, and is plainly not
+ * that, and the traveler has to say so before anything of his opens up. `lakota` is
+ * src/content/quests/lakota/lakota.js; `travelChoice` keeps companionship visible in both introductions;
+ * `mercenaryChoices` are the style and trade lines every hired sword carries,
+ * handed in by the host so this module does not have to know about weapons.
+ */
+export function birdWatcherConversation(npc, context) {
+  const { birding, lakota = null, openDialogue, closeDialogue, act,
+    archaeology = null, wine = null, cooking = null, travelChoice = null, mercenaryChoices = [] } = context;
+  if (npc.id !== BIRD_WATCHER.id) return false;
+  const again = () => birdWatcherConversation(npc, context);
+  const known = !lakota || lakota.met;
+  const leave = { id: 'leave-bird-watcher', label: known ? 'Good watching.' : 'Another time.', action: closeDialogue };
+  if (!known) {
+    // A hired sword on a road with everybody else, who says so, and is obviously nothing of the kind.
+    openDialogue(npc, [
+      'Wait. Wait. Do not move your left foot. … Right, it has gone. That was a redstart and you very nearly stood in its breakfast.',
+      'Lakota. I am on the same contract you are, before you ask, and yes, I am aware I do not look like it. The Empire is paying eleven of us to walk to a plain. I intend to walk there slowly.',
+      'The one on the glove is a red-tail. She came to me as a fledgling with a broken wing and when it mended she declined to leave. We have an arrangement.',
+    ], null, 'Back to the road', { choices: [
+      ...(travelChoice?[travelChoice]:[]),
+      { id: 'lakota-know', label: 'You are not really a mercenary, are you?', action: () => { closeDialogue(); act('know-lakota'); } },
+      ...mercenaryChoices,
+      leave,
+    ] });
+    return true;
+  }
+  const seen = DRENT_BIRDS.filter(id => birding.hasSeen(id));
+  const line = seen.length >= 12 ? `${seen.length} kinds. You have been looking properly, which is more than I can say for anybody else on this road.`
+    : seen.length ? `${seen.length} so far. Keep at it. The list is the point; the birds do not care either way.`
+    : birding.met ? 'Jean taught you, then. She knows every feather in that village. Some of her stories are inventions, but her observations never are.'
+    : 'You have not learned to look yet. Jean stands beside the main road just beyond Officer Glun. She will show you how.';
+  const choices = [
+    ...(travelChoice?[travelChoice]:[]),
+    ...(seen.length ? [{ id: 'birding-lore', label: 'Tell me about the birds I have seen.', action: () => openDialogue(npc, seen.map(id => BIRD_SPECIES[id].lore), null, 'Back to our conversation', { onComplete: again }) }] : []),
+    { id: 'ask-hawk', label: 'About the hawk on your glove.', action: () => openDialogue(npc, [...RED_TAIL_LINES], null, 'Back to our conversation', { onComplete: again }) },
+    ...(archaeology && archaeology.task()?.stage === 'report' ? [{ id: 'report-rena', label: 'I have my notes from Rena.', action: () => { closeDialogue(); act('report-rena'); } }] : []),
+    ...(archaeology && !archaeology.met ? [{ id: 'learn-archaeology', label: 'You said you dig, too?', action: () => openDialogue(npc, [...LAKOTA_ARCHAEOLOGY_PITCH], null, 'Back to our conversation', { choices: [
+      { id: 'accept-rena', label: 'Teach me. I will go to Rena.', action: () => { closeDialogue(); act('learn-archaeology'); } },
+      { id: 'decline-rena', label: 'Another time.', action: again },
+    ] }) }] : []),
+    ...(wine && !wine.met ? [{ id: 'learn-wine', label: 'Tell me about wine.', action: () => openDialogue(npc, [...LAKOTA_WINE_PITCH], null, 'Back to our conversation', { choices: [
+      { id: 'accept-wine', label: 'I will look for Vaervelm Caelazh.', action: () => { closeDialogue(); act('learn-wine'); } },
+      { id: 'decline-wine', label: 'Maybe after the war.', action: again },
+    ] }) }] : []),
+    ...(cooking ? [{ id: 'feeling-bad', label: 'Honestly, Lakota? It has been a bad day.', action: () => { closeDialogue(); act('hot-chocolate'); } }] : []),
+    ...(cooking && cooking.cups > 0 && !cooking.knows('hot-chocolate') ? [{ id: 'ask-recipe', label: 'How do you make that hot chocolate?', action: () => { closeDialogue(); act('learn-hot-chocolate'); } }] : []),
+    { id: 'lakota-mind', label: 'What else is on your mind?', action: () => {
+      const topics = () => openDialogue(npc, ['Birds, mostly. But since you ask.'], null, 'Back to our conversation', { choices: [
+        ...LAKOTA_TOPICS.map(topic => ({ id: `topic-${topic.id}`, label: topic.label, action: () => openDialogue(npc, [...topic.lines], null, 'Back', { onComplete: topics }) })),
+        { id: 'topics-done', label: 'Back to birds.', action: again },
+      ] });
+      topics();
+    } },
+    { id: 'birding-lesson', label: 'How is it done, properly?', action: () => openDialogue(npc, [...BIRDING_LESSON], null, 'Back to our conversation', { onComplete: again }) },
+    // He is a hired sword as well as everything else, and answers for his staff like the rest of them.
+    ...mercenaryChoices,
+    leave,
+  ];
+  openDialogue(npc, [line], null, 'Back to the road', { choices });
+  return true;
+}
+
+/** Lysa's part in the errand: a choice to add to her conversation while the traveler carries the empty feeder. */
+export function lysaFeederChoice(npc, { birding, inventory, openDialogue, act, back }) {
+  if (birding.feeder !== 'lent' || !inventory?.has?.(FEEDER_ITEM)) return null;
+  return { id: 'fill-feeder', label: 'Jean says you keep sugar. Could you fill her feeder?', action: () => {
+    const result = act('fill-feeder');
+    openDialogue(npc, result?.ok ? [
+      'Jean’s old bottle! She leaves one here in case she runs short of sugar. The birds have her very well organised.',
+      'Four of water to one of sugar, boiled and cooled. She will have told you that, and she will have told you not honey. There. Carry it upright, or the wasps will follow you all the way back to her.',
+    ] : [result?.reason || 'Not just now.'], null, 'Back to our conversation', { onComplete: back });
+  } };
+}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 
-const { createHorse } = await sourceModule('../src/characters.js');
+const { createHorse } = await sourceModule('../src/content/characters/characters.js');
 
 test('a horse stands at the height of a rider’s shoulder, hooves at the ground, saddled or bare', () => {
   for (const [variant, saddled] of [[0, false], [1, true], [2, true]]) {

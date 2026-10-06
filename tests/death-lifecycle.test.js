@@ -19,12 +19,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCompanions, RUNG_AT, REGARD } from '../src/companions.js';
-import { createFallen } from '../src/bystanders.js';
-import { createLivingStory } from '../src/living-story.js';
+import { createCompanions, RUNG_AT, REGARD } from '../src/gameplay/company/companions.js';
+import { createFallen } from '../src/gameplay/combat/bystanders.js';
+import { createLivingStory } from '../src/gameplay/company/living-story.js';
 import { hostFunction } from './host-function.js';
-import { createMercenaryCompany, MERCENARY_ROSTER, mercenaryById } from '../src/mercenaries.js';
-import { createMorosChapter, morosConversation, musterVoices, MOROS_LEGATE_ID, MARSHAL_WRITES, marshalAsks } from '../src/moros-chapter.js';
+import { createMercenaryCompany, MERCENARY_ROSTER, mercenaryById } from '../src/gameplay/company/mercenaries.js';
+import { createMorosChapter, morosConversation, musterVoices, MOROS_LEGATE_ID, MARSHAL_WRITES, marshalAsks } from '../src/content/chapters/civil-war/moros-chapter.js';
 
 const main = () => readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
 const ROSTER = MERCENARY_ROSTER.map(man => man.id);
@@ -111,7 +111,7 @@ test('a dead man has no placement, and is in neither count at the muster', () =>
 });
 
 test('nobody dead is today\u2019s clock, to the digit', () => {
-  // The rule every addition to src/mercenaries.js has kept. An undefined list, an empty one and
+  // The rule every addition to src/gameplay/company/mercenaries.js has kept. An undefined list, an empty one and
   // rubbish in the list are all the company this game has always had.
   const today = buildCompany([], undefined);
   for (const dead of [undefined, [], null, ['', 7, {}]]) {
@@ -245,7 +245,7 @@ test('nobody can die in a fight the player is being taught alone in', () => {
   const source = main();
   // Two authored fights by name, the straw post, which is a phase of its own and has no allies
   // to lose, and a bout with a teacher, which is a fight nobody can die in at all
-  // (`bout`, src/combat.js, docs/combat-brief.md phase 7) - and Alex's, which is a bout too.
+  // (`bout`, src/gameplay/combat/combat.js, docs/combat-brief.md phase 7) - and Alex's, which is a bout too.
   assert.match(source, /const TEACHING_FIGHTS=new Set\(\[GREENWAY_RAID\.id,AVREL_RAID\.id,SPARRING_ID,ALEX_BOUT_ID\]\);/);
   assert.match(source, /const SPARRING_ID='sparring-bout';/, 'and the bout is one of them');
   const teaching = new Set(['greenway-test', 'avrel-test', 'sparring-bout']);

@@ -2,7 +2,7 @@
 
 4 October 2026. Main desktop checkout on `a2e49c3` with the reviewed, mirrored ground corrections. These checks exercise shared Suval, Telemonia and West Lotharn terrain and West Izol's shore. They do not certify every environment or cover Claude's unintegrated Celder/East Izol deliveries.
 
-The driver is `src/regional-ground-checks.js`, exposed only by the existing test harness. Run `node scripts/launch.cjs --smoke-test --fast-load --regional-ground-checks`; omit `--fast-load` for Full. The launcher uses its isolated smoke checkpoint, reloads the renderer and calls Continue. The user's normal save is not used.
+The driver is `src/dev/checks/regional-ground-checks.js`, exposed only by the existing test harness. Run `node scripts/launch.cjs --smoke-test --fast-load --regional-ground-checks`; omit `--fast-load` for Full. The launcher uses its isolated smoke checkpoint, reloads the renderer and calls Continue. The user's normal save is not used.
 
 ## Fast result
 

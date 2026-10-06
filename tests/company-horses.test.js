@@ -7,18 +7,18 @@ import { sourceModule } from './module-loader.js';
 import {
   COATS, coatFor, RIDE_FILE, PICKET, STAGGER, staggerFor,
   companyHorses, ridePace, picketSpots,
-} from '../src/company-horses.js';
-import { COMPANION_REACH, companionPace } from '../src/long-road.js';
-import { createRiding, RIDE, DEVELOPER_HORSE_SPEED } from '../src/riding.js';
-import { createCompanions, COMPANION_IDS } from '../src/companions.js';
-import { createMercenaryCompany } from '../src/mercenaries.js';
-import { createFallen } from '../src/bystanders.js';
-import { BODY } from '../src/bodies.js';
+} from '../src/gameplay/company/company-horses.js';
+import { COMPANION_REACH, companionPace } from '../src/content/chapters/journey/long-road.js';
+import { createRiding, RIDE, DEVELOPER_HORSE_SPEED } from '../src/gameplay/movement/riding.js';
+import { createCompanions, COMPANION_IDS } from '../src/gameplay/company/companions.js';
+import { createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
+import { createFallen } from '../src/gameplay/combat/bystanders.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
 import { hostFunction } from './host-function.js';
-import { peninsulaCompanyStamp } from '../src/peninsula-company.js';
+import { peninsulaCompanyStamp } from '../src/content/chapters/prologue/peninsula-company.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
-const { createHorse } = await sourceModule('../src/characters.js');
+const { createHorse } = await sourceModule('../src/content/characters/characters.js');
 
 test('when you ride, only companions with claimed remounts ride with you', () => {
   const walking = ['merc-gotwood', 'merc-jerry', 'merc-christin'];
@@ -147,13 +147,13 @@ test('a coat apiece, fixed by the man, and nothing named', () => {
     assert.equal(coatFor(id), coatFor(id), 'and the same one every load');
   }
   // Natural colours only, and every one of them is a coat the model can actually paint.
-  const characters = source('characters.js');
+  const characters = source('content/characters/characters.js');
   for (const coat of COATS) assert.match(characters, new RegExp(`\\n  ${coat}: Object\\.freeze\\(`), `characters.js paints ${coat}`);
   assert.ok(!COATS.includes('developer'), 'the testing panel’s purple is not a company coat');
   // More than one man, more than one colour: a company is not ten identical horses.
   assert.ok(new Set(COMPANION_IDS.map(coatFor)).size >= 4);
   // Nothing names them. The only horse in the game with a name is the traveler's own.
-  assert.doesNotMatch(source('company-horses.js'), /name:/);
+  assert.doesNotMatch(source('gameplay/company/company-horses.js'), /name:/);
 });
 
 test('a fight, a ferry and a reload all take the company down, because they take him down', () => {
@@ -196,8 +196,8 @@ test('a company mounts as a company, and the host draws and collides with it', (
   assert.doesNotMatch(main, /companyHorseActors[\s\S]{0,400}figureDetail/);
   assert.match(main, /escorting:!!npc\.escorting\|\|!!npc\.walkingWith/, 'and the men are still exempt');
   // Bede Harrow, once, in his own voice, and nothing else is said about any of it.
-  assert.match(source('ostler.js'), /OSTLER_COMPANY_LINE/);
-  assert.equal((source('ostler.js').match(/export const OSTLER_COMPANY_LINE/g) ?? []).length, 1, 'the shared remount explanation has one declaration');
+  assert.match(source('content/quests/roadside/ostler.js'), /OSTLER_COMPANY_LINE/);
+  assert.equal((source('content/quests/roadside/ostler.js').match(/export const OSTLER_COMPANY_LINE/g) ?? []).length, 1, 'the shared remount explanation has one declaration');
 });
 
 test('what ten horses cost in meshes', () => {

@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAutopilot, planGoal, chooseReply } from '../src/autopilot.js';
-import { createCombat } from '../src/combat.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { moveCharacter, QUEST_DONE } from '../src/game-state.js';
-import { createChartLesson } from '../src/chart-lesson.js';
-import { GUARD_SECONDS, lessonStage, instructorConversation } from '../src/instructor.js';
+import { createAutopilot, planGoal, chooseReply } from '../src/gameplay/autoplay/autopilot.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { moveCharacter, QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { createChartLesson } from '../src/ui/map/chart-lesson.js';
+import { GUARD_SECONDS, lessonStage, instructorConversation } from '../src/gameplay/skills/instructor.js';
 
 test('autoplay completes real strike, held shield and dodge practice with solid bodies before reading and reporting the chart', () => {
   const position = { x: 0, z: 5 }, training = { x: 0, z: 0 }, instructor = { x: 2.2, z: 0 };

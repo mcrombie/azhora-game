@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createElvenRanger } = await sourceModule('../src/ibenwood-defense-view.js');
+const { createElvenRanger } = await sourceModule('../src/content/regions/ibenwood/ibenwood-defense-view.js');
 
 test('elven rangers retain visible pointed ears, short hair and bare heads after geometry batching', () => {
   const ranger = createElvenRanger(), head = ranger.group.getObjectByName('Head');

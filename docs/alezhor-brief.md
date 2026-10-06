@@ -16,12 +16,12 @@ water) and the **life agent** (scenery, wildlife). One writer per file.
 - **The World Builder repository is read-only.** Where the lore and the atlas disagree, the atlas wins; report the
   discrepancy and your proposed wording in your final message.
 - **Alezhor is registered and wired** (the coordinator's, uncommitted): runtime ID **64**, provisional. Stubs as for
-  East Izol: `src/alezhor-world.js` (`ALEZHOR`, `alezhorOwns`, `ALEZHOR_ARRIVAL`, `ALEZHOR_LANDMARKS`, `ALEZHOR_TRAILS`,
-  `ALEZHOR_VIEWS`, `alezhorGround(x, z, incoming, before)`, `alezhorTint(x, z)`), `src/alezhor-scenery.js`
-  (`createAlezhorScenerySteps`), `src/alezhor-wildlife.js` (`ALEZHOR_WILDLIFE_ZONES`). Keep every name and signature.
-  The newest precedents, in this worktree: `src/south-celder-world.js` (`celderSeamMove`, border streams built by a
+  East Izol: `src/content/regions/alezhor/alezhor-world.js` (`ALEZHOR`, `alezhorOwns`, `ALEZHOR_ARRIVAL`, `ALEZHOR_LANDMARKS`, `ALEZHOR_TRAILS`,
+  `ALEZHOR_VIEWS`, `alezhorGround(x, z, incoming, before)`, `alezhorTint(x, z)`), `src/content/regions/alezhor/alezhor-scenery.js`
+  (`createAlezhorScenerySteps`), `src/content/regions/alezhor/alezhor-wildlife.js` (`ALEZHOR_WILDLIFE_ZONES`). Keep every name and signature.
+  The newest precedents, in this worktree: `src/content/regions/south-celder/south-celder-world.js` (`celderSeamMove`, border streams built by a
   neighbour; read its seam tables **edge by edge**, as `29ca691` made them - never all at once on the first touch: the
-  intake review measures first-touch cost in the renderer) and `src/east-izol-world.js`.
+  intake review measures first-touch cost in the renderer) and `src/content/regions/east-izol/east-izol-world.js`.
 - **Two neighbours are being corrected while you work**: ChatGPT's R4 review is changing Navarth's and the Ganesh
   Desert's borders in its own worktree. Meet every neighbour's ground **live** (`before(x, z)`, read at runtime, as
   the Celder seam does) and never hard-code a neighbour's height, so your seam follows their corrections.
@@ -44,14 +44,14 @@ water) and the **life agent** (scenery, wildlife). One writer per file.
 - **Neighbours by shared edges**: **South Ibenwood 13 (built)**, **West Ibenwood 10 (built)**, **Navarth 5 (built)**,
   **Ganesh Desert 3 (built)**, South Ibenal 3 (unbuilt), the sea 22.
 - **Water** (atlas river edges):
-  - **The gold river** (medium): South Ibenwood's `ibenwood-central-south-river` (`src/ibenwood-rivers.js`) ends at the
+  - **The gold river** (medium): South Ibenwood's `ibenwood-central-south-river` (`src/content/regions/ibenwood/ibenwood-rivers.js`) ends at the
     border at about (-3950, 866); the atlas carries it on along the edge (-30,116)|(-31,116), inside Alezhor, to the
     sea. **Its Alezhor reach is yours**: from the Ibenwood course's own end, at its own level and width, to an estuary.
   - **The west stream** (small): West Ibenwood's `ibenwood-west-stream` comes down to about (-4500, 837); the atlas
     runs it along the South Ibenal border, (-36,115)|(-36,116), (-36,116)|(-37,116), (-37,116)|(-37,117), to the sea.
     Build it as Alezhor's bank of a border stream (South Ibenal is unbuilt: feather to what is there).
   - **The Alezhor Water** (small): built by the southwest's builder as Navarth's and the Ganesh's own
-    (`ALEZHOR_WATER` in `src/west-regions.js`, 36 points from (-3500, 953) to the gulf at (-3718, 1194), along the
+    (`ALEZHOR_WATER` in `src/content/regions/western-regions/west-regions.js`, 36 points from (-3500, 953) to the gulf at (-3718, 1194), along the
     Navarth | Alezhor and Ganesh | Alezhor edges). **Give it a real Alezhor bank** at the water's level - no buried
     water, no cliff bank, no step in the water - and never move it (the Celder brief's border-stream rule).
 
@@ -73,13 +73,13 @@ water) and the **life agent** (scenery, wildlife). One writer per file.
   strip), the **great river otter** and smaller otters in the forest-margin watercourses, forest birds in the tree
   cover and coastal birds near the sea, a north-south migration route along the coastal plain. Also the Iberos coast
   section for seabirds and the open-ocean shore. No stock.
-- Language (`alezhor.md`, Language): Forest Mittoli, registered as `spoken('ibnael')`. `src/languages.js` asks whoever
+- Language (`alezhor.md`, Language): Forest Mittoli, registered as `spoken('ibnael')`. `src/gameplay/skills/languages.js` asks whoever
   builds Alezhor to revisit Cape Heth's stand-in tongue; that is ChatGPT's (review group R6): report, do not edit.
 
 ## The ground agent
 
-**You own**: `src/alezhor-world.js`, Alezhor's rows in `src/region-layout.js`, `src/region-world.js`,
-`src/build-status.js`, `tests/alezhor-world.test.js`, the Alezhor lines in `src/world-terrain.js`, the Alezhor probes
+**You own**: `src/content/regions/alezhor/alezhor-world.js`, Alezhor's rows in `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`,
+`src/dev/tools/build-status.js`, `tests/alezhor-world.test.js`, the Alezhor lines in `src/world/terrain/world-terrain.js`, the Alezhor probes
 in `tests/southwest-world.test.js`, and only where a seam needs it the neighbours' border-water lines. Byte-preserving
 edits on your own lines (mixed line endings: never `sed -i`; Git Bash heredocs eat backslashes).
 
@@ -95,8 +95,8 @@ edits on your own lines (mixed line endings: never `sed -i`; Git Bash heredocs e
 
 ## The life agent
 
-**You own**: `src/alezhor-scenery.js`, `src/alezhor-wildlife.js`, `tests/alezhor-life.test.js`, and in
-`src/west-regions-life.js` only what a new species needs.
+**You own**: `src/content/regions/alezhor/alezhor-scenery.js`, `src/content/regions/alezhor/alezhor-wildlife.js`, `tests/alezhor-life.test.js`, and in
+`src/content/regions/western-regions/west-regions-life.js` only what a new species needs.
 
 1. **Scenery**: cool Mediterranean grassland and plain; local woodland in folds and along the river margins (not
    forest); the tree line's edge habitat where the Ibenwood begins (match the built forest's species at the line);

@@ -3,32 +3,32 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/region-layout.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { RIVER_EDGES } from '../src/region-rivers.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { PLAYABLE_REGIONS, REGION_BIOMES } from '../src/world/terrain/region-layout.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { RIVER_EDGES } from '../src/world/terrain/region-rivers.js';
 import {
   REGION_CELLS, REGION_IDS, REGION_TERRAIN, WORLD_BOUNDS, hexOwnerAt, hexCentre, regions, insideRegion,
-} from '../src/region-world.js';
+} from '../src/world/terrain/region-world.js';
 import {
   WEST_LOTHARN, WEST_LOTHARN_CLIMATE, WEST_LOTHARN_KOPPEN, COLD_HEAD_HEX, WEST_LOTHARN_BOX,
   PEAKS, PEAK_TOPS, BANDS, BALD, TREE_LINE, LONG_VALLEY, LONG_VALLEY_DIVIDE, NORTH_VALLEY, NOTCH, COL,
   longValleyFloor, northValleyFloor, notchFloor, westLotharnShare, peakLiftAt, peakUplift, onBald, onRamp,
   pointOn, nearestOn, WEST_LOTHARN_LANDMARKS,
-} from '../src/west-lotharn-world.js';
-import { KEMRATH, kemrathFloor } from '../src/east-lotharn-world.js';
+} from '../src/content/regions/west-lotharn/west-lotharn-world.js';
+import { KEMRATH, kemrathFloor } from '../src/content/regions/east-lotharn/east-lotharn-world.js';
 import {
   WEST_LOTHARN_WATERS, KEMRATH_REACH, KEMRATH_WATER, MENETH_BECKS, WEST_REGION_NAMES, courseDistance,
-} from '../src/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/west-ground.js';
-import { WEST_LOTHARN_WILDLIFE_ZONES } from '../src/west-lotharn-wildlife.js';
-import { DEFAULT_SKY, regionSky } from '../src/region-sky.js';
-import { SUBREGIONS } from '../src/map-fog.js';
-import { regionBuildStatus } from '../src/build-status.js';
-import { regionLevel } from '../src/region-levels.js';
-import { REGION_LANGUAGE } from '../src/languages.js';
-import { DEV_WORLD_DESTINATIONS } from '../src/developer-atlas.js';
-import { isClimbTerrain } from '../src/climbing.js';
+} from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import { WEST_LOTHARN_WILDLIFE_ZONES } from '../src/content/regions/west-lotharn/west-lotharn-wildlife.js';
+import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
+import { SUBREGIONS } from '../src/ui/map/map-fog.js';
+import { regionBuildStatus } from '../src/dev/tools/build-status.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { REGION_LANGUAGE } from '../src/gameplay/skills/languages.js';
+import { DEV_WORLD_DESTINATIONS } from '../src/dev/tools/developer-atlas.js';
+import { isClimbTerrain } from '../src/gameplay/movement/climbing.js';
 
 /**
  * The West Lotharn Mountains: the spine of the range, and the taller half of it (the user,
@@ -40,7 +40,7 @@ import { isClimbTerrain } from '../src/climbing.js';
  * anybody (docs/west-lotharn-brief.md).
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const world = createWorld(new THREE.Scene());
 const g = world.groundHeight;
 const own = (x, z) => hexOwnerAt(x, z) === WEST_LOTHARN;

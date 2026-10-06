@@ -4,17 +4,17 @@ import { existsSync, readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 
 /**
- * North Ibenal's ground (src/north-ibenal-world.js): the atlas's thirty-four hexes, the corridor's plain laid on them
- * (`ibenalLand`, src/south-ibenal-world.js, whose tests hold the plain, its streams, its borders and its built world),
+ * North Ibenal's ground (src/content/regions/north-ibenal/north-ibenal-world.js): the atlas's thirty-four hexes, the corridor's plain laid on them
+ * (`ibenalLand`, src/content/regions/south-ibenal/south-ibenal-world.js, whose tests hold the plain, its streams, its borders and its built world),
  * and what this country has of its own: the last stream's deeper vale, the colder rockier coast, the Oremindi's foot,
  * the foothill on the hills cell and the Narrows. Pure functions only.
  */
-const { REGION_IDS, REGION_TERRAIN, hexAt, hexCentre, landDistance } = await sourceModule('../src/region-world.js');
-const { groundWithRiver: ground, groundBeforeNorthIbenal: before, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES } = await sourceModule('../src/world-terrain.js');
-const { WATERLINE } = await sourceModule('../src/game-state.js');
-const { regionBuildStatus } = await sourceModule('../src/build-status.js');
-const S = await sourceModule('../src/south-ibenal-world.js');
-const N = await sourceModule('../src/north-ibenal-world.js');
+const { REGION_IDS, REGION_TERRAIN, hexAt, hexCentre, landDistance } = await sourceModule('../src/world/terrain/region-world.js');
+const { groundWithRiver: ground, groundBeforeNorthIbenal: before, GROUND_TINT_FAMILIES, SHORE_TINT_FAMILIES } = await sourceModule('../src/world/terrain/world-terrain.js');
+const { WATERLINE } = await sourceModule('../src/gameplay/movement/game-state.js');
+const { regionBuildStatus } = await sourceModule('../src/dev/tools/build-status.js');
+const S = await sourceModule('../src/content/regions/south-ibenal/south-ibenal-world.js');
+const N = await sourceModule('../src/content/regions/north-ibenal/north-ibenal-world.js');
 const { NORTH_IBENAL, NORTH_IBENAL_CELLS, NORTH_IBENAL_CLIMATE, NORTH_IBENAL_ARRIVAL, NORTH_IBENAL_LANDMARKS, NORTH_IBENAL_TRAILS,
   NORTH_IBENAL_VIEWS, NORTH_IBENAL_RESERVED, IBENAL_FOOTHILL, IBENAL_NARROWS, northIbenalGround, northIbenalTint, northIbenalShoreTint,
   northIbenalOwns, northIbenalWrites, northIbenalCover } = N;

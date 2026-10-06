@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createDwarf, DWARF_PROPORTIONS } = await sourceModule('../src/dwarf-model.js');
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createDwarf, DWARF_PROPORTIONS } = await sourceModule('../src/world/actors/dwarf-model.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 const bounds = actor => { actor.group.updateWorldMatrix(true, true); return new THREE.Box3().setFromObject(actor.group).getSize(new THREE.Vector3()); };
 

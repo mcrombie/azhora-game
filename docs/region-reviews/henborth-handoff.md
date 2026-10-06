@@ -25,12 +25,12 @@ The build was stopped once, near completion, for the user's assessment, and resu
 | Arrival (F8) | (-2400, -1700) |
 | Landmarks / views | 12 / 8 (seven at walker's height, including `henborth-wildlife` at the frostback band, and one overview) |
 
-**New files**: `src/henborth-world.js`, `src/henborth-scenery.js`, `src/henborth-wildlife.js`, `tests/henborth-world.test.js`, `tests/henborth-life.test.js`, `docs/henborth-brief.md`, `docs/region-reviews/routes/henborth-ways.json`, this report.
+**New files**: `src/content/regions/henborth/henborth-world.js`, `src/content/regions/henborth/henborth-scenery.js`, `src/content/regions/henborth/henborth-wildlife.js`, `tests/henborth-world.test.js`, `tests/henborth-life.test.js`, `docs/henborth-brief.md`, `docs/region-reviews/routes/henborth-ways.json`, this report.
 
 **Registration and wiring** (small, line-ending-preserving edits):
-- Registration: the survey generator and the regenerated survey; `src/region-layout.js`, `src/region-world.js`, `src/developer-atlas.js`, `src/build-status.js` (`environment`), `src/languages.js` (`mittoli`), `src/map-fog.js`, `tests/test-manifest.json`.
-- Wiring: `src/world-terrain.js` (the outermost layer and its `groundBefore`), `src/world.js` (the scenery step under its own label, `Henborth`), `src/main.js` (views; the `-wildlife` view frames a frostback).
-- `src/west-regions-life.js` gains the three new animals' rigs, their pace rows and the marmot's burrow behaviour (+16 lines, by CR count).
+- Registration: the survey generator and the regenerated survey; `src/world/terrain/region-layout.js`, `src/world/terrain/region-world.js`, `src/dev/tools/developer-atlas.js`, `src/dev/tools/build-status.js` (`environment`), `src/gameplay/skills/languages.js` (`mittoli`), `src/ui/map/map-fog.js`, `tests/test-manifest.json`.
+- Wiring: `src/world/terrain/world-terrain.js` (the outermost layer and its `groundBefore`), `src/world.js` (the scenery step under its own label, `Henborth`), `src/main.js` (views; the `-wildlife` view frames a frostback).
+- `src/content/regions/western-regions/west-regions-life.js` gains the three new animals' rigs, their pace rows and the marmot's burrow behaviour (+16 lines, by CR count).
 - `tests/mithala-world.test.js` counts Henborth's edges: West Mithala 8, North Mithala 6.
 - The world box does not move.
 

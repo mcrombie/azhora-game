@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   BIRD_ON_THE_WING, BIRD_VIEW_HALF_ANGLE, findBird, birdBearing, birdDirection, birdNearness, birdQuarter, birdWords,
-} from '../src/bird-finder.js';
-import { BIRD_SPECIES, DRENT_BIRDS, observeRange } from '../src/birding.js';
+} from '../src/gameplay/skills/birding/bird-finder.js';
+import { BIRD_SPECIES, DRENT_BIRDS, observeRange } from '../src/gameplay/skills/birding/birding.js';
 
-/** A settled bird, as src/drent-birds.js reports one in state().birds. */
+/** A settled bird, as src/content/regions/drent/drent-birds.js reports one in state().birds. */
 const bird = (id, x, z, extra = {}) => ({ id, species: 'wren', variant: 'wren', x, y: 1.2, z, yaw: 0, action: 'peck', perched: false, visible: true, ...extra });
 const at = (x, z) => ({ x, z });
 /** Facing +Z, which is the world's zero heading: the traveler's right hand is then -X. */

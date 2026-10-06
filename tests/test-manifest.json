@@ -1,4 +1,7 @@
 [
+  "tests/climate-annex.test.js",
+  "tests/private-reference.test.cjs",
+  "tests/chapter-one.test.js",
   "tests/terrain-seeds.test.js",
   "tests/scenery-residency.test.js",
   "tests/timber-coverage.test.js",
@@ -495,5 +498,6 @@
   "tests/mithala-city.test.js",
   "tests/mithala-city-scenery.test.js",
   "tests/mithala-city-buildings.test.js",
-  "tests/mithala-city-world.test.js"
+  "tests/mithala-city-world.test.js",
+  "tests/campaign-map.test.js"
 ]

@@ -17,7 +17,7 @@ for, finished one level down from where it was left.
 **It is a bird.** Specifically: a plover-shaped ground bird of the open desert floor, about a gull's bulk,
 held level and long-legged, sand and grey-buff, with a **pale powdery ridge along the spine and over the
 shoulders**, a short straight bill for picking insects off the surface, and a rig of its own in
-`src/west-regions-life.js` (`ghubr`, with a `BIRD_RIG` row, a `FLIES` membership and the four pace rows).
+`src/content/regions/western-regions/west-regions-life.js` (`ghubr`, with a `BIRD_RIG` row, a `FLIES` membership and the four pace rows).
 One range, `ganesh-ghubr`, three birds, on the Ganesh Desert's northern margin.
 
 ### Every line of lore it is derived from
@@ -54,7 +54,7 @@ this bird in. That is what made the sentence buildable rather than impossible:
 - `zone.shade` (5 m) is how far the shade of its own patch of perennial scrub reaches from the spot it
   keeps. **Beyond it the bird's idle choice is always a walk** — never `graze`, which is the standing-still
   action — and the further out it is the more that walk points back at the shade, so what it works is a
-  circuit off its own bush and back to it rather than a line away (`tickGround`, `src/west-regions-life.js`).
+  circuit off its own bush and back to it rather than a line away (`tickGround`, `src/content/regions/western-regions/west-regions-life.js`).
 - **The shade is measured, not asserted.** The Ganesh's only shade is the perennial scrub, which stands in
   the sediment pockets the wind has not swept. `ganeshLie` reads **.004, .014 and .018** at the three home
   spots where the country's own figure runs to about a half; `tests/southwest-world.test.js` holds all
@@ -83,7 +83,7 @@ legs in under the shell, and shuts. It stays shut while anybody is that close an
 last time they were, and opens again when they have gone. It never turns to face anybody, never gives
 ground, never hides, and is in plain view the whole time. There is simply nothing there to take hold of.
 
-- `SHUT = { notice: 7, hold: 2.6 }` and a species branch in `tickGround` (`src/west-regions-life.js`).
+- `SHUT = { notice: 7, hold: 2.6 }` and a species branch in `tickGround` (`src/content/regions/western-regions/west-regions-life.js`).
 - `WALK['canyon-tortoise']` is **.11 m/s**, under a third of the next slowest animal in the game (the
   Nethrani beast's .38), and it has **no `RUN` row at all**, because it has no run.
 - Shut is the whole of its acting in `render`: head and legs drawn in under the dome and scaled down, so
@@ -156,7 +156,7 @@ nothing to catch.
 **The method is job 1's, exactly**: a name is a word out of the tongue's own lexicon used as a name — as
 the Vaellir is `pyrosi.roots.river` (*vaellir*, "river") and the Malhat is `maroshi.roots.salt` (*malhat*,
 "salt") — or it is a root and an ending both taken from the profile's own lists. Nothing is coined to sound
-right. The lexicons are `LANGUAGES.*.roots` in `src/languages.js`, each `from` a profile in
+right. The lexicons are `LANGUAGES.*.roots` in `src/gameplay/skills/languages.js`, each `from` a profile in
 `world-builder/azhoran_language_profiles.py`.
 
 **A finding first, because it changes the count: two of the five are one river.** `GALA_DESERT_STREAM` (the
@@ -187,14 +187,14 @@ says what language that name is in and that nobody can read it.
 border stream — was checked and rejected: `gala.md` makes Gala Mittoli-speaking and Gala's own builder said
 so at `GALA_LANDMARKS`, and both forms the root yields are taken, *Verath* being the Oremindi sacred system
 with a lore file of its own. And *trelith* itself, the plain Mittoli word for "border", is a person in this
-game (Captain Nessa Trelith, `src/batman.js`) — no reason to refuse a word, but a reason to take the other
+game (Captain Nessa Trelith, `src/content/quests/batman/batman.js`) — no reason to refuse a word, but a reason to take the other
 ending the profile offers.
 
-**Where the names were changed:** `src/west-regions.js` (both `river()` names and the section's whole
-argument), `src/oves-world.js` (two comments and the Wedge's Point landmark), `src/map-fog.js` (the
-`oves-apex` chart area), `src/region-world.js` (two comments and the Oves Desert's region description),
-`src/oves-scenery.js` and `src/gala-scenery.js` (two comments each), `src/gala-world.js` (the country's own
-header and the Braided Mouths' description), `src/build-status.js` (Gala's and the Oves Desert's prose),
+**Where the names were changed:** `src/content/regions/western-regions/west-regions.js` (both `river()` names and the section's whole
+argument), `src/content/regions/oves/oves-world.js` (two comments and the Wedge's Point landmark), `src/ui/map/map-fog.js` (the
+`oves-apex` chart area), `src/world/terrain/region-world.js` (two comments and the Oves Desert's region description),
+`src/content/regions/oves/oves-scenery.js` and `src/content/regions/gala/gala-scenery.js` (two comments each), `src/content/regions/gala/gala-world.js` (the country's own
+header and the Braided Mouths' description), `src/dev/tools/build-status.js` (Gala's and the Oves Desert's prose),
 `docs/gala-report.md` and `docs/oves-report.md` (the two open questions, answered in place),
 `docs/design-answers.md`. **The lore was not touched**: it does not name any of the five, so there was
 nothing in it to update, and the names are the game's reading of the profiles rather than a lore claim.
@@ -203,7 +203,7 @@ nothing in it to update, and the names are the game's reading of the profiles ra
 
 ## 4. `groundTint` is a table, at both levels
 
-**The top level was already one** — job 4 did it in `e030e72`: `GROUND_TINTS` in `src/world-terrain.js`,
+**The top level was already one** — job 4 did it in `e030e72`: `GROUND_TINTS` in `src/world/terrain/world-terrain.js`,
 four families (`gala`, `oves`, `mithala`, `southwest`) walked in order, with `GROUND_TINT_FAMILIES` exported
 and a guard in `tests/southwest-world.test.js` that every family must move the colour of the screen
 somewhere in its own country. I verified it and left it alone.
@@ -243,13 +243,13 @@ and **not one answer differed**. `tests/drawn-ground.test.js` passes unchanged, 
 
 ## Files touched
 
-`src/west-regions-life.js` (two new rigs, a `BIRD_RIG` row, `SHUT`, the tortoise branch, the shade rule,
-`FLIES`, four pace tables, `settle`, `render`, `shutFor`) · `src/southwest-wildlife.js` (two new ranges;
-four refusal notes answered in place) · `src/southwest-world.js` (`SOUTHWEST_TINTS` and its two new
-exports) · `src/world-terrain.js` (the `GROUND_TINTS` note) · `src/west-regions.js` (three river names and
-their arguments) · `src/oves-world.js` · `src/oves-scenery.js` · `src/gala-world.js` ·
-`src/gala-scenery.js` · `src/region-world.js` · `src/map-fog.js` (CRLF kept: 331 CRLF / 52 LF, as found) ·
-`src/build-status.js` (two countries' animals, two countries' water) · `src/main.js` (three review views;
+`src/content/regions/western-regions/west-regions-life.js` (two new rigs, a `BIRD_RIG` row, `SHUT`, the tortoise branch, the shade rule,
+`FLIES`, four pace tables, `settle`, `render`, `shutFor`) · `src/content/regions/southwest/southwest-wildlife.js` (two new ranges;
+four refusal notes answered in place) · `src/content/regions/southwest/southwest-world.js` (`SOUTHWEST_TINTS` and its two new
+exports) · `src/world/terrain/world-terrain.js` (the `GROUND_TINTS` note) · `src/content/regions/western-regions/west-regions.js` (three river names and
+their arguments) · `src/content/regions/oves/oves-world.js` · `src/content/regions/oves/oves-scenery.js` · `src/content/regions/gala/gala-world.js` ·
+`src/content/regions/gala/gala-scenery.js` · `src/world/terrain/region-world.js` · `src/ui/map/map-fog.js` (CRLF kept: 331 CRLF / 52 LF, as found) ·
+`src/dev/tools/build-status.js` (two countries' animals, two countries' water) · `src/main.js` (three review views;
 LF kept in that region, the file's 250 CRLF lines untouched) · `tests/west-life.test.js` (the law, two new
 tests, three new measurements in `chase`) · `tests/southwest-world.test.js` (the counts, the ghubr's two
 measurements, the tortoise's basin and span, the tint table's guard) · `docs/gala-report.md` ·
@@ -278,7 +278,7 @@ command-line limit.
 | **languages** | 16 / 16 |
 | **regional-wildlife** | 7 / 8 — fails on the `Iscare Archipeligo` line, which the brief names as pre-existing |
 
-And the region tests for everything touched — `src/west-regions-life.js` and `src/west-regions.js` are
+And the region tests for everything touched — `src/content/regions/western-regions/west-regions-life.js` and `src/content/regions/western-regions/west-regions.js` are
 imported by two dozen files between them, so every test that builds the west's animals or reads its water
 was run: **ascarth-world 10/10, caricas-world 8/8, drent-wildlife 4/4, eer-world 12/12, feradom-wildlife
 3/3, feradom-world 14/14, isareos-world 9/9, mithala-world 14/14, nesdor-world 8/8, nethereum-world 9/9,

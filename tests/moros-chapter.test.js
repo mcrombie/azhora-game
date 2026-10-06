@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createInventoryState } from '../src/inventory.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
 import { MOROS_GATE_ID, MOROS_LEGATE_ID, MOROS_PAY, MOROS_SITES, MOROS_SITE_ACTIONS, createMorosChapter, morosConversation, validateMorosSnapshot,
-  MUSTER_PLACES, MUSTER_GREETINGS, MUSTER_AFTER, MUSTER_FULL, musterVoices, musterArrivalLine } from '../src/moros-chapter.js';
-import { LONG_ROAD_SPINE } from '../src/long-road.js';
-import { MERCENARY_ROSTER, CROMB } from '../src/mercenaries.js';
-import { createCampaign } from '../src/campaign.js';
+  MUSTER_PLACES, MUSTER_GREETINGS, MUSTER_AFTER, MUSTER_FULL, musterVoices, musterArrivalLine } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { LONG_ROAD_SPINE } from '../src/content/chapters/journey/long-road.js';
+import { MERCENARY_ROSTER, CROMB } from '../src/gameplay/company/mercenaries.js';
+import { createCampaign } from '../src/content/chapters/civil-war/campaign.js';
 
 function fixture({ token = true } = {}) {
   const inventory = createInventoryState(), events = [];

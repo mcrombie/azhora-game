@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRiding, validateRidingSnapshot, steer, drive, dismountSpot, RIDE, RIDING_KEYS, RIDING_LESSON, DEVELOPER_HORSE_SPEED } from '../src/riding.js';
+import { createRiding, validateRidingSnapshot, steer, drive, dismountSpot, RIDE, RIDING_KEYS, RIDING_LESSON, DEVELOPER_HORSE_SPEED } from '../src/gameplay/movement/riding.js';
 
 const open = () => true;
 const yard = { x: -400, z: 230 };

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { TALKING_TREE, TREE_NOTICE, TREE_WATCH, TREE_REST, createTalkingTree, validateTalkingTreeSnapshot, treeLines } from '../src/talking-tree.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { TALKING_TREE, TREE_NOTICE, TREE_WATCH, TREE_REST, createTalkingTree, validateTalkingTreeSnapshot, treeLines } from '../src/content/quests/forest/talking-tree.js';
 
 const at = (distance, angle = 0) => ({ x: TALKING_TREE.x + Math.sin(angle) * distance, z: TALKING_TREE.z + Math.cos(angle) * distance });
 const run = (tree, player, seconds, step = .1) => { let view; for (let t = 0; t < seconds; t += step) view = tree.update(step, player); return view; };

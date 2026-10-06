@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createCombat, MAX_ALLIES } from '../src/combat.js';
-import { BORDER_ENCOUNTER_ID, borderEncounter, borderConversation, BORDER_SIDES } from '../src/border-chapter.js';
-import { AFTERMATH_VARIANTS, AFTERMATH_IDS, aftermathEncounter, aftermathConversation, createAftermathChapter } from '../src/aftermath-chapter.js';
-import { FILE_FLOOR, FILL_KIND, FILL_LOOK, FILL_ARMS, ARMY_BATTLE_IDS, isArmyBattle, fillCount, fillFor, fillLines } from '../src/file-fill.js';
-import { MERCENARY_ARMS } from '../src/companions.js';
-import { maxHealth } from '../src/combat-skills.js';
+import { createCombat, MAX_ALLIES } from '../src/gameplay/combat/combat.js';
+import { BORDER_ENCOUNTER_ID, borderEncounter, borderConversation, BORDER_SIDES } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { AFTERMATH_VARIANTS, AFTERMATH_IDS, aftermathEncounter, aftermathConversation, createAftermathChapter } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { FILE_FLOOR, FILL_KIND, FILL_LOOK, FILL_ARMS, ARMY_BATTLE_IDS, isArmyBattle, fillCount, fillFor, fillLines } from '../src/gameplay/combat/file-fill.js';
+import { MERCENARY_ARMS } from '../src/gameplay/company/companions.js';
+import { maxHealth } from '../src/gameplay/combat/combat-skills.js';
 import { placeFor } from './fights-with-company.test.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
@@ -157,9 +157,9 @@ test('the dead among the fill cost nothing anywhere', async () => {
   // never a card, never a name the Marshal is owed.
   assert.match(main, /if\(e\.type==='ally-down'&&\(companions\.walksWith\(e\.id\)\|\|fileOrder\.includes\(e\.id\)\)\)\{/, 'only a companion or the landing mate is mourned');
   assert.match(main, /fileOrder=company\.companionIds\?\?\(company\.companionId\?\[company\.companionId\]:\[\]\);/, 'the company file contains named companions, not fill soldiers');
-  assert.match(source('companions.js'), /const known = id => COMPANION_IDS\.includes\(id\);/);
-  const { COMPANION_IDS, createCompanions } = await import('../src/companions.js');
-  const { createFallen } = await import('../src/bystanders.js');
+  assert.match(source('gameplay/company/companions.js'), /const known = id => COMPANION_IDS\.includes\(id\);/);
+  const { COMPANION_IDS, createCompanions } = await import('../src/gameplay/company/companions.js');
+  const { createFallen } = await import('../src/gameplay/combat/bystanders.js');
   for (const man of fillFor({ walking: 0 })) {
     assert.ok(!COMPANION_IDS.includes(man.id), `${man.id} is not one of the ten`);
     const fallen = createFallen();
@@ -189,7 +189,7 @@ test('his captain says so, in his own voice, and only when it is happening', () 
   assert.match(fillLines('coalition', 2)[0], /valley/i, 'Voss speaks for the valley companies');
   assert.match(fillLines('empire', 2)[0], /mine/, 'and Brulan for his own');
   // Said by the man who already gives him the word before that battle, and by nobody new.
-  const border = source('border-chapter.js'), after = source('aftermath-chapter.js');
+  const border = source('content/chapters/chapter-one/border-chapter.js'), after = source('content/chapters/chapter-one/aftermath-chapter.js');
   assert.match(border, /\.\.\.fill, \.\.\.line\], null, 'Back to the line'/, 'the captain at the line says it');
   // The commander at the rally says it, after the fine steel his side owes the traveler.
   assert.match(after, /openDialogue\(npc, \[\.\.\.gift, \.\.\.chapter\.orders, \.\.\.fill\]/, 'and the commander at the rally');
@@ -199,7 +199,7 @@ test('his captain says so, in his own voice, and only when it is happening', () 
 
 test('it is a rule about the army’s battles and touches nothing else', () => {
   // No encounter level moved, and no other fight gained anybody.
-  const fill = source('file-fill.js');
+  const fill = source('gameplay/combat/file-fill.js');
   // The men it adds carry one pair of numbers, written down in one place, and it moves no
   // *fight's* level anywhere: how hard a battle is stayed where it was, which is the country's.
   assert.equal((fill.match(/level: \d/g) ?? []).length, 1, 'the fill’s level is one number in one place');
@@ -221,7 +221,7 @@ test('it is a rule about the army’s battles and touches nothing else', () => {
 
 /**
  * **The fill comes in the way the company comes, not through the battle's own ally list.** The
- * hunter's warning: `ALLY_SPOTS` in src/border-chapter.js has five places and the side already
+ * hunter's warning: `ALLY_SPOTS` in src/content/chapters/chapter-one/border-chapter.js has five places and the side already
  * uses four, so a fill of two or more handed to `borderEncounter` would be silently sliced off -
  * the traveler would be told six and given one, and nothing would say so. It goes through
  * `getAllies` instead, which is how the companions already arrive and which has `MAX_ALLIES` of
@@ -245,9 +245,9 @@ test('a fill of six for a lone traveler is six men actually on the field', () =>
     assert.ok(man.hp > 0 && man.active, `${man.id} is standing`);
   }
   // And the battle's own five places are untouched by any of it: the fill never went near them.
-  const spots = source('border-chapter.js').match(/const ALLY_SPOTS = \[\[[^\]]*\](?:, \[[^\]]*\])*\]/);
+  const spots = source('content/chapters/chapter-one/border-chapter.js').match(/const ALLY_SPOTS = \[\[[^\]]*\](?:, \[[^\]]*\])*\]/);
   assert.ok(spots, 'the side still has its own places');
   assert.equal((spots[0].match(/\[-/g) ?? []).length, 5, 'five of them, as it always had');
-  assert.doesNotMatch(source('file-fill.js'), /ALLY_SPOTS|borderEncounter\(/, 'and the fill knows nothing about them');
+  assert.doesNotMatch(source('gameplay/combat/file-fill.js'), /ALLY_SPOTS|borderEncounter\(/, 'and the fill knows nothing about them');
   assert.doesNotMatch(source('main.js'), /borderEncounter\(side,\[\.\.\.borderAllies/, 'the host does not push it through them either');
 });

@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { WALL_DAMAGE, WALL_STATES, wallStateAt, towerState, buildingState, SUN_HORSE_GATE, RUINED_BUILDINGS, BUILDING_DAMAGE, SACK_MEMORIES, sackRefersToPlan } from '../src/solis-sack.js';
-import { SOLIS_BUILDINGS, SOLIS_FACES, SOLIS_GATES, FORT, facePoint, fortColliders, wallRuns } from '../src/west-suval.js';
-import { SOLIS_TOWNSFOLK_IDS, townsfolkLines } from '../src/solis-town.js';
-import { solisPoint } from '../src/region-world.js';
+import { WALL_DAMAGE, WALL_STATES, wallStateAt, towerState, buildingState, SUN_HORSE_GATE, RUINED_BUILDINGS, BUILDING_DAMAGE, SACK_MEMORIES, sackRefersToPlan } from '../src/content/regions/solis/solis-sack.js';
+import { SOLIS_BUILDINGS, SOLIS_FACES, SOLIS_GATES, FORT, facePoint, fortColliders, wallRuns } from '../src/content/regions/solis/west-suval.js';
+import { SOLIS_TOWNSFOLK_IDS, townsfolkLines } from '../src/content/regions/solis/solis-town.js';
+import { solisPoint } from '../src/world/terrain/region-world.js';
 
 test('the sack names only walls, towers and houses Solis has', () => {
   assert.ok(sackRefersToPlan());

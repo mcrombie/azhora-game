@@ -10,7 +10,7 @@ Build that: the player should arrive expecting a capital and find something else
 - `geography/regions/izol.md` — the island, the confederation, the goddess at its centre, the coast
   as the productive zone, the three isolated inland peaks, the Izoli Channel. Read all of it.
 - Anything under `peoples/` and `culture/` that touches the Izoli or the Iberos Sea.
-- `src/campaign-world.js` already names **Izolveth**, "the Izoli port that shelters the Coalition
+- `src/content/chapters/civil-war/campaign-world.js` already names **Izolveth**, "the Izoli port that shelters the Coalition
   army", in West Izol, and the Izoli Republic as the faction that raised the war.
 Everything you invent must sit on what the lore says. Where it is silent, invent in its voice and say
 so in your report.
@@ -18,17 +18,17 @@ so in your report.
 ## What to build
 
 - **The region.** Add `'West Izol'` to `PLAYABLE_REGIONS` with its own biome, terrain profile and
-  region card, regenerate `src/region-survey.js`, and take the id the registry gives you. Read the
+  region card, regenerate `src/dev/tools/region-survey.js`, and take the id the registry gives you. Read the
   region's hexes from `assets/azhora-dev-regions.json`: the coastline, the size and the inland rise
   come from the atlas. `WORLD_BOUNDS` will grow; say by how much. The sea matters here: shore, water
-  and a horizon that reads, as Peblos did (`src/peblos-world.js`, `src/peblos-scenery.js`).
+  and a horizon that reads, as Peblos did (`src/content/regions/peblos/peblos-world.js`, `src/content/regions/peblos/peblos-scenery.js`).
 - **Izolveth**, the port: a working harbour on one of the coastal flats the lore describes — moles and
   a harbour mouth, quays with the Coalition's ships and their contingents' banners, warehouses, a
   fish market, ropewalks and a sail loft, the town climbing the slope behind, and a **council house
   that is plainly not a palace**: a hall where the confederation's towns send representatives, with
   the goddess's shrine beside it because the lore puts the theology at the centre of the politics.
   Walls only if the lore supports them; this is a port, not a fortress — the fortification standard
-  (`src/fortification.js`) is there if you need a sea wall or a harbour boom.
+  (`src/world/scenery/fortification.js`) is there if you need a sea wall or a harbour boom.
 - **The army it shelters.** The Coalition's soldiers are quartered here: Izoli spearmen, Suvali
   companies, Ambroni rebels, and the rest of the alliance the game already names
   (`COALITION_MEMBERS`). Camps, drill ground, hospital, and the friction of an army billeted on a
@@ -39,11 +39,11 @@ so in your report.
 - **The coast and the interior**: three or four places with discovery text — a second, smaller town
   or fishing village, a headland shrine, a boatyard, the road inland toward the peaks — plus terrain,
   scatter and landmarks. The interior is thinly settled; do not over-build it.
-- **The chart**: add West Izol's named ground to `SUBREGIONS` in `src/map-fog.js` (areas must not
-  overlap; `tests/map-fog.test.js` checks) and an honest `BUILD_STATUS` entry in `src/build-status.js`.
+- **The chart**: add West Izol's named ground to `SUBREGIONS` in `src/ui/map/map-fog.js` (areas must not
+  overlap; `tests/map-fog.test.js` checks) and an honest `BUILD_STATUS` entry in `src/dev/tools/build-status.js`.
 - **Getting there is the lead's job.** Chapter 3's voyage is not built. Leave a clear way in — a quay
   where a ship would put the traveler ashore — and add a developer travel point
-  (`src/developer-mode.js`, `src/developer-atlas.js`) plus a testing-panel button so it can be visited.
+  (`src/dev/tools/developer-mode.js`, `src/dev/tools/developer-atlas.js`) plus a testing-panel button so it can be visited.
 
 ## Rules
 

@@ -4,9 +4,9 @@ import { readFileSync } from 'node:fs';
 import { sourceModule } from './module-loader.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
-const { createCharacter, BUCKLER_NAME, tunicForRole, skinForRole } = await sourceModule('../src/characters.js');
-const { createLazyCharacter } = await sourceModule('../src/lazy-character.js');
-const { createStandIn } = await sourceModule('../src/figure-stand-in.js');
+const { createCharacter, BUCKLER_NAME, tunicForRole, skinForRole } = await sourceModule('../src/content/characters/characters.js');
+const { createLazyCharacter } = await sourceModule('../src/world/loading/lazy-character.js');
+const { createStandIn } = await sourceModule('../src/world/actors/figure-stand-in.js');
 
 // Exercise the composition root's actual LOD transition without a DOM/WebGL
 // launch. The function only needs these three geometry/look dependencies.

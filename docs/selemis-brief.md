@@ -19,19 +19,19 @@ road, no people, no ship, no quest. One region, eight hexes, and the first islan
   derive it from the lore and label it yours, or leave it open and report it. Do not settle it quietly.
 - This machine: `npm test` cannot run (command line too long). Big heredocs fail in Git Bash and
   backslashes inside python heredocs get eaten — write scripts to a file and run the file. Global
-  `autocrlf=true`; `src/main.js`, `src/world.js`, `src/map-fog.js` and `src/developer-atlas.js` are
+  `autocrlf=true`; `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` and `src/dev/tools/developer-atlas.js` are
   CRLF and must stay CRLF. Three.js is vendored (`vendor/`); there is no `node_modules`.
 
 Read first: `docs/southwest-finish-brief.md` and `docs/southwest-4-brief.md` (the standing rules as
 the last block ran them), `docs/ascarth-brief.md` + `docs/ascarth-report.md` (the country across the
 channel, and the nearest precedent in every sense), `docs/suval-iscare-terrain.md` and
-`src/iscare-world.js` (the only islands built so far), and `docs/swimming.md`.
+`src/content/regions/iscare/iscare-world.js` (the only islands built so far), and `docs/swimming.md`.
 
 ## What the atlas says — measured, so you need not re-derive it
 
 - The atlas region is **`Selemi`** (`assets/azhora-dev-regions.json`): that is the registration key,
   as `Iscare Archipeligo` keeps the atlas's spelling. The place is called **Selemis** and the people
-  the Selemi; `src/campaign-world.js` already carries a polity `selemis` with `regions: ['Selemi']`.
+  the Selemi; `src/content/chapters/civil-war/campaign-world.js` already carries a polity `selemis` with `regions: ['Selemi']`.
 - **Eight hexes**: (-9,133) (-8,133) / (-9,134) (-8,134) (-7,134) / (-9,135) (-8,135) (-7,135).
   All `grassland`. All **`Csa`** per hex in `world-builder/map/resources/examples/azhora.wwmap`
   (`hexes["q,r"].climate` — that file, never `azhora.cmap.json`, whose one code per region is a
@@ -61,7 +61,7 @@ crescent; a channel "narrow but not trivial — enough that a fleet can cross it
 that an army can wade", across which "on a clear day you can read smoke from the other shore".
 
 **Nearly everything else in the lore is the city, and the city is not yours.** It fills the crescent
-headland to headland; in the game's own story (`src/izol-world.js`, `docs/izol-and-the-triumvirate.md`)
+headland to headland; in the game's own story (`src/content/regions/izol/izol-world.js`, `docs/izol-and-the-triumvirate.md`)
 it was taken in 979 and an Izoli general sits in it. All of that is owned content. Build the ground
 it stands on — the harbour's water and shore, the headlands, the hills behind — so that the city has
 somewhere true to go later, say in the report where it would stand, and build nothing that
@@ -70,10 +70,10 @@ contradicts the story.
 ## The work
 
 1. **Register `Selemi` as id 52, appended last.** The pipeline: `scripts/build-region-survey.mjs`
-   (PLAYABLE) -> regenerate `src/region-survey.js` and run `scripts/build-region-rivers.mjs` (both
-   generated, never hand-edited) -> `src/region-layout.js` (REGION_BIOMES, PLAYABLE_REGIONS — same
-   order as REGION_IDS, which is now a guard) -> `src/region-world.js` (REGION_IDS, REGION_TERRAIN,
-   REGION_TEXT) -> `src/world.js` / `src/world-terrain.js`, plus build status, region level,
+   (PLAYABLE) -> regenerate `src/dev/tools/region-survey.js` and run `scripts/build-region-rivers.mjs` (both
+   generated, never hand-edited) -> `src/world/terrain/region-layout.js` (REGION_BIOMES, PLAYABLE_REGIONS — same
+   order as REGION_IDS, which is now a guard) -> `src/world/terrain/region-world.js` (REGION_IDS, REGION_TERRAIN,
+   REGION_TEXT) -> `src/world.js` / `src/world/terrain/world-terrain.js`, plus build status, region level,
    developer atlas, map fog, sky, and whatever else Southern Ascarth is registered in. **`groundTint`
    is a table now** — a country's tint is a row, and a missing row should be loud.
 2. **Terrain and water**: the island's shape and shores, the harbour bay, the two headlands, the
@@ -90,7 +90,7 @@ contradicts the story.
    by 290 m that is tight**, and shore and sea birds may be the honest answer; measure before you
    promise a ground animal a range.
 6. **Getting there and getting off.** Do **not** change the swim rule (`canSwim`, `moveCharacter`
-   in `src/game-state.js`). Measure the channel as you build it and answer with numbers: **can a
+   in `src/gameplay/movement/game-state.js`). Measure the channel as you build it and answer with numbers: **can a
    traveler swim from the Ascarth tip to Selemis, and back?** Whether they should is the user's
    decision, not yours — the lore gives a fleet a crossing and denies an army a ford, and says
    nothing about one swimmer. Either way somebody set down on the island (F8) must be able to
@@ -98,12 +98,12 @@ contradicts the story.
 7. **Names**: there is **no Selemi profile** in `world-builder/azhoran_language_profiles.py`
    (sixteen profiles: mittoli, moreshi, pyrosi, grassic, ibnael, elodi, elagosi, kellith, boueni,
    crefs, tennoca, disht, groga, lothi, mujahal, rov — and an alias table; read it). Find out from
-   `the_selemi.md` and `src/languages.js` what the Selemi speak. A name must be derivable from a
+   `the_selemi.md` and `src/gameplay/skills/languages.js` what the Selemi speak. A name must be derivable from a
    profile's lexicon or morphology; if none can be honestly derived, **leave the feature
    descriptive and say so**.
 
-Follow the trio the Ascarths use: `src/selemis-world.js`, `src/selemis-scenery.js`,
-`src/selemis-wildlife.js`, `tests/selemis-world.test.js` (listed in `package.json`'s `scripts.test`
+Follow the trio the Ascarths use: `src/content/regions/selemis/selemis-world.js`, `src/content/regions/selemis/selemis-scenery.js`,
+`src/content/regions/selemis/selemis-wildlife.js`, `tests/selemis-world.test.js` (listed in `package.json`'s `scripts.test`
 after `tests/trogo-undergrowth.test.js`). Match the surrounding code's density and idiom.
 
 ## Tests — and a machine that is busy as you start

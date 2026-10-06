@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { SKILL_IDS, SKILLS, createSkills, skillTip } from '../src/skills.js';
-import { SKILL_ICONS, skillIconSVG } from '../src/skill-icons.js';
-import { hiddenSkillsIn } from '../src/game-mode.js';
+import { SKILL_IDS, SKILLS, createSkills, skillTip } from '../src/gameplay/skills/skills.js';
+import { SKILL_ICONS, skillIconSVG } from '../src/ui/skills/skill-icons.js';
+import { hiddenSkillsIn } from '../src/app/game-mode.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 const HEAD = '<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">';
@@ -12,7 +12,7 @@ const HEAD = '<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-
 test('every skill and specialization has its own mark, drawn the way the satchel draws its items', () => {
   // The registry keeps every skill in the build, so a save that holds any of their experience
   // still validates. What the sheet draws is a mode's business (tests/game-mode.test.js).
-  // Twenty-two about the world, seven about fighting, and six about sorcery (src/sorcery.js) -
+  // Twenty-two about the world, seven about fighting, and six about sorcery (src/gameplay/magic/sorcery.js) -
   // of which three can be taught, one teacher each: Ben fire, Troy mind, Liz beast. Time is the
   // sixth, begun for Subtractidaughter and reserved.
   assert.equal(SKILL_IDS.length, 38, 'twenty-four of the world, one guarded specialization, seven of fighting, six of sorcery');

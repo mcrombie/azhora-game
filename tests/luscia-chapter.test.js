@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import {
   createLusciaChapter, validateLusciaSnapshot, lusciaConversation,
   LUSCIA_NPCS, LUSCIA_SITES, LUSCIA_SITE_ACTIONS, LUSCIA_WOLVES, LUSCIA_REWARD_ITEM, LUSCIA_REWARD_COINS,
-} from '../src/luscia-chapter.js';
-import { createInventoryState, INVENTORY_ITEMS } from '../src/inventory.js';
-import { createCombat } from '../src/combat.js';
-import { createCampaign } from '../src/campaign.js';
-import { regionNpcPositions } from '../src/regions.js';
-import {toWorld} from '../src/world-scale.js';
+} from '../src/content/chapters/civil-war/luscia-chapter.js';
+import { createInventoryState, INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
+import { createCombat } from '../src/gameplay/combat/combat.js';
+import { createCampaign } from '../src/content/chapters/civil-war/campaign.js';
+import { regionNpcPositions } from '../src/world/terrain/regions.js';
+import {toWorld} from '../src/world/terrain/world-scale.js';
 
 function fixture({ started = true } = {}) {
   const inventory = createInventoryState();

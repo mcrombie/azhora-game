@@ -1,15 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCrime } from '../src/crime.js';
-import { createCorpses } from '../src/corpses.js';
-import { createRoadCheckpoint } from '../src/road-checkpoint.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
-import { QUEST_DONE } from '../src/game-state.js';
-import { METRES_PER_HEX } from '../src/world-scale.js';
-import { createSkills, RUNESCAPE_TABLE } from '../src/skills.js';
-import { maxHealth } from '../src/combat-skills.js';
+import { createCrime } from '../src/gameplay/law/crime.js';
+import { createCorpses } from '../src/gameplay/combat/corpses.js';
+import { createRoadCheckpoint } from '../src/app/saves/road-checkpoint.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
+import { METRES_PER_HEX } from '../src/world/terrain/world-scale.js';
+import { createSkills, RUNESCAPE_TABLE } from '../src/gameplay/skills/skills.js';
+import { maxHealth } from '../src/gameplay/combat/combat-skills.js';
 
 function fixture() {
   const inventory=createInventoryState();

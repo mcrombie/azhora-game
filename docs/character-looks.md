@@ -31,7 +31,7 @@ test. Section 3 says what that costs and what it gives up.
 
 ### How a person is made
 
-`createCharacter({ role, tunic, skin, look, armed })` in `src/characters.js` (3,354
+`createCharacter({ role, tunic, skin, look, armed })` in `src/content/characters/characters.js` (3,354
 lines; `createCharacter` itself is 1,544 of them) builds one flat-shaded figure from
 boxes, spheres and cylinders. `role` selects a chain of `if (isCustodian) … else if
 (isClerk) …` blocks that add the role's clothes, hair, props and a role-keyed idle in
@@ -55,7 +55,7 @@ budgets the tests hold: local workers **18 draws / 4,200 triangles**, soldiers *
 Counted by regex over every `person(`, `soldier(`, `post(`, `outsider(` and
 `modelRole:` declaration in `src/` (the script and its output are not committed;
 the method is in the report to the lead). Not counted: the traveler, animals,
-Batman, Ed, the hawk, and thirteen unnamed wall figures in `src/town-life.js`.
+Batman, Ed, the hawk, and thirteen unnamed wall figures in `src/world/life/town-life.js`.
 
 | | |
 | --- | --- |

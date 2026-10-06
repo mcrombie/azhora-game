@@ -6,7 +6,7 @@ one language, the Legion's camp on the Moros is a real timber fort built to the
 shared fortification standard, and East Suval is closed behind Elod's stone
 frontier.
 
-## One sign language (`src/signs.js`)
+## One sign language (`src/world/scenery/signs.js`)
 
 Four board shapes, four meanings, one lettering atlas, one set of woods:
 
@@ -87,7 +87,7 @@ After: `tests/artifacts/towns-review/after-places-1.png` (farmsteads, gatehouse)
   stable yard is dressed round the stand the lead placed — stable, trough,
   hitching rail, paddock fence — with nothing within 6 m of the stand or the
   hitch, and a "The Stable Yard" notice.
-- **The three workyards** (`src/regional-places.js`) are drawn where their
+- **The three workyards** (`src/world/life/regional-places.js`) are drawn where their
   people stand: the Mill Commons, the Landing Workshop and the Waystation
   Shelter each have a frame (offset, yaw) that carries their scenery, colliders
   and branch shapes from the pre-rebuild coordinates to the reserved ground.
@@ -97,7 +97,7 @@ After: `after-places-1.png`, `after-places-2.png`, `after-places-5.png`.
 
 ## The Moros Plain
 
-**The Ambroni outpost** (`src/outpost.js`, `src/moros-works.js`), a real timber
+**The Ambroni outpost** (`src/content/regions/drent/outpost.js`, `src/content/regions/moros/moros-works.js`), a real timber
 fort at the exact centre of the plain, replacing the 30 × 26 m ring of stakes:
 
 | Measure | The outpost | The border stockade |
@@ -122,7 +122,7 @@ the horse line, and the mess awning with its benches and cooking tripod.
   east of the main gate is free of new colliders for 70 m beyond the gate's own
   ditch (tested), the gate passage is walkable, and the gate guards' posts and
   every quest stand are where they were.
-- **Both garrisons** (`src/town-life.js`, stakes through `src/occupation.js`):
+- **Both garrisons** (`src/world/life/town-life.js`, stakes through `src/gameplay/company/occupation.js`):
   the Legion (`holds: 'empire'`) — Legionary Varus at the rear gate, Armourer
   Petrus at the smithy, Cook Albus at the mess, Optio Sextus Rufio on the parade
   ground, and the pickets Nerva and Stavro on the road; the Coalition
@@ -143,7 +143,7 @@ After: `after-moros-1.png`, `after-moros-2.png`, `after-people-1.png`.
 
 ## East Suval, closed
 
-- **Elod's frontier** (`src/frontier.js`, `src/frontier-works.js`) in grey
+- **Elod's frontier** (`src/content/regions/minora-frontier/frontier.js`, `src/content/regions/minora-frontier/frontier-works.js`) in grey
   stone where the branch road reaches the border: a gatehouse with the gate
   **shut** (its own colliders across the passage), flanking towers, and a wall
   with its ditch running out of sight along the whole Luscian border, from the
@@ -153,7 +153,7 @@ After: `after-moros-1.png`, `after-moros-2.png`, `after-people-1.png`.
 - **Pickets' watch posts** every 118 m along the rest of East Suval's land
   border (9 of them), each a post platform with a black pennant, set 7 m inside
   and stopping where the coast begins.
-- **The `elodi-guard` look** (`src/characters.js`): black lamellar over dark
+- **The `elodi-guard` look** (`src/content/characters/characters.js`): black lamellar over dark
   cloth, a black hood under a light open helm, soft boot wraps, a long knife, a
   small round shield, and a short spear or a bow; leaner and a little taller
   than a legionary, with a captain's cloak and silver clasp for the officer.
@@ -163,14 +163,14 @@ After: `after-moros-1.png`, `after-moros-2.png`, `after-people-1.png`.
   lines that explain Elod's neutrality and why this border is watched hardest,
   three guards on the ground (one with a bow) and seven figures on the walls.
 - **Entry is refused everywhere, not only on the road**
-  (`src/closed-border.js`, pure and tested): a move that would carry the player
+  (`src/world/travel/closed-border.js`, pure and tested): a move that would carry the player
   from outside East Suval to inside it is undone, with a rate-limited toast
   (one every 6 s) that the Elodi pickets turn the traveler back. Moves within,
   out of and along the border are untouched, so a tester dropped inside by the
   F8 tools can still move about.
 - The branch road (`world.suvalRoute`) now ends at the frontier's approach; the
   traversal smoke holds into the shut gate and asserts it never enters the
-  region (`eastSuvalClosed`). `src/region-world.js`'s region card and the old
+  region (`eastSuvalClosed`). `src/world/terrain/region-world.js`'s region card and the old
   border post's description say the border is closed; the README's region table
   says so too. Elod itself is untouched: no build-out.
 - Room is left for the Luscian rangers: a cold camp (`RANGER_HIDE`, "A Cold
@@ -179,7 +179,7 @@ After: `after-moros-1.png`, `after-moros-2.png`, `after-people-1.png`.
 After: `tests/artifacts/towns-review/after-places-3.png`, `after-people-1.png`
 (the shut gate with its guard), `after-signs-2.png` (the notice and stone).
 
-## The fortification standard (`src/fortification.js`, `src/fortworks.js`)
+## The fortification standard (`src/world/scenery/fortification.js`, `src/world/scenery/fortworks.js`)
 
 `FORT_STANDARD` holds the measures both sides build to (wall 4.8 m, walk 3.3 m,
 tower platform 6.6 m projecting 1.2 m, one tower per 30–45 m, gates 4.6 m,
@@ -201,7 +201,7 @@ to end with the real movement code (and asserts the frontier's shut gate cannot
 be walked), and checks the standard's own measures, the tower spacing and the
 clear quadrant outside the outpost's main gate.
 
-## People (`src/town-life.js`)
+## People (`src/world/life/town-life.js`)
 
 Twenty new speaking people with two or more lines each, one hook each in
 `main.js` (registration, conversation, the frame pass). Six townsfolk and
@@ -218,30 +218,30 @@ belongs to.
 
 ## Animals
 
-`src/road-life.js` gains three world zones so each region carries two or three
+`src/content/regions/drent/road-life.js` gains three world zones so each region carries two or three
 flocks: the shepherd's fold's sheep on the Moros (5), the Avrel sheep (4) and
 the ferry's birds at the Caloss crossing (3). Twenty-three creatures in all,
 each with a unique id.
 
 ## Files
 
-New: `src/signs.js`, `src/scenery-builder.js`, `src/fortification.js`,
-`src/fortworks.js`, `src/outpost.js`, `src/moros-works.js`, `src/wayside.js`,
-`src/frontier.js`, `src/frontier-works.js`, `src/closed-border.js`,
-`src/places.js`, `src/place-works.js`, `src/town-life.js`,
+New: `src/world/scenery/signs.js`, `src/world/scenery/scenery-builder.js`, `src/world/scenery/fortification.js`,
+`src/world/scenery/fortworks.js`, `src/content/regions/drent/outpost.js`, `src/content/regions/moros/moros-works.js`, `src/content/quests/roadside/wayside.js`,
+`src/content/regions/minora-frontier/frontier.js`, `src/content/regions/minora-frontier/frontier-works.js`, `src/world/travel/closed-border.js`,
+`src/world/scenery/places.js`, `src/world/scenery/place-works.js`, `src/world/life/town-life.js`,
 `tests/fortifications.test.js`, `tests/signs.test.js`,
 `tests/closed-border.test.js`, `tests/elodi-guard.test.js`,
 `tests/town-life.test.js`, `tests/places.test.js`, this report.
 
 Changed: `src/world.js` (signs, the three scenery calls, the stockade spur, the
 outpost's bench and fire, `stakedProps`, `suvalRoute`, `closedFrontier`, the new
-landmarks), `src/world-regions.js` (clearings for every new place; the old camp
+landmarks), `src/world/terrain/world-regions.js` (clearings for every new place; the old camp
 palisade, tents, command tent, standard, stockade ring and Moros gate posts
-removed), `src/region-world.js` (landmark and region descriptions),
-`src/characters.js` (the `elodi-guard` role), `src/main.js` (six short hooks),
-`src/regional-places.js` (the workyard frames), `src/road-life.js` (three
-flocks), `src/road-traversal.js` (the branch road now ends at the shut gate),
-`src/woodland-progress.js` (the outpost's fire is a known fire; the discovery
+removed), `src/world/terrain/region-world.js` (landmark and region descriptions),
+`src/content/characters/characters.js` (the `elodi-guard` role), `src/main.js` (six short hooks),
+`src/world/life/regional-places.js` (the workyard frames), `src/content/regions/drent/road-life.js` (three
+flocks), `src/world/travel/road-traversal.js` (the branch road now ends at the shut gate),
+`src/content/chapters/journey/woodland-progress.js` (the outpost's fire is a known fire; the discovery
 limit grows to 160), `README.md`, `package.json`, and the tests
 `regions-world`, `regional-places`, `road-life`.
 
@@ -302,7 +302,7 @@ camera).
   calls, 836 k triangles, no errors). An earlier run failed with *"Completed
   road checkpoint did not save"*: the outpost's mess fire was a fire the
   checkpoint did not know, and the discovery list had outgrown its limit. Both
-  fixed in `src/woodland-progress.js` (the fire is a known fire; the limit is
+  fixed in `src/content/chapters/journey/woodland-progress.js` (the fire is a known fire; the limit is
   160), and the smoke has passed since.
 - `npm run test:road`: **pass** (`ok: true`, 7 550 m walked, 1 060 s, no errors,
   `eastSuvalClosed: true`): the branch road is walked to Elod's gate, the

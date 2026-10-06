@@ -47,6 +47,6 @@ The pure controller tests cover movement, pause, stamina, experience, boosts, fa
 
 Separate worktree `../azhora-game-south-suval`, branch `east-lotharn`, commit `b108263`, contains East Lotharn terrain, ramps, eight caves and an older automatic scrambling rule. It has not been merged into this worktree.
 
-Both versions define `src/climbing.js` and `createClimbing`, but their APIs differ. The older rule uses `mayStep`, `pace`, `climbed` and `slip`; the Suval controller uses `probe`, `grab`, `tick`, `view` and `release`. Their `main.js`, movement integration and climbing tests also overlap.
+Both versions define `src/gameplay/movement/climbing.js` and `createClimbing`, but their APIs differ. The older rule uses `mayStep`, `pace`, `climbed` and `slip`; the Suval controller uses `probe`, `grab`, `tick`, `view` and `release`. Their `main.js`, movement integration and climbing tests also overlap.
 
 Before a future merge, give the older policy its own module and name, then choose whether to replace it with the skill-based controller. Its cliffs were designed to require ramps and caves: enabling free climbing there would change that design. Preserve cave-floor movement and the local horse restrictions rather than applying surface climbing to cave roofs or replacing those rules accidentally.

@@ -20,7 +20,7 @@ have to ask again. Newest first. Where an answer supersedes the spoken brief
   prevent. It is **not** the Moroshé bovid, which is somebody's stock and stays unbuilt.
 - **The canyon tortoise: build it, and let it withdraw.** The blocker was the west's first law, that
   nothing in it can be walked down. The decision: **the law assumed every animal flees, and a tortoise
-  does not - it stops and shuts.** So the behaviour is built (`SHUT`, `src/west-regions-life.js`) and
+  does not - it stops and shuts.** So the behaviour is built (`SHUT`, `src/content/regions/western-regions/west-regions-life.js`) and
   **the law was changed to ask the right question** rather than exempting the animal with a flag, which
   the user explicitly rejected: `tests/west-life.test.js` now asks of an animal that shuts whether
   walking it down *got anybody anything*, and chooses that half by what the animal did in the chase
@@ -28,7 +28,7 @@ have to ask again. Newest first. Where an answer supersedes the spoken brief
 - **Five watercourses: derive the names from the language profiles.** Three were named and two were
   not, and both outcomes are the lore's. Gala's Telemonia border stream is **the Treloss** and the one
   chain that Gala and the Oves Desert each built a reach of is **the Caelin**, both from the `mittoli`
-  profile's own roots and endings (`src/languages.js`: `roots.border` *trelith*, `roots.flow` *caelin*,
+  profile's own roots and endings (`src/gameplay/skills/languages.js`: `roots.border` *trelith*, `roots.flow` *caelin*,
   `roots.river` *caeloss*). **Gala's distributary and Ovesos's Dry Gully stay descriptive**: `gala.md`
   says the names of Gala's small rivers are from a pre-Mittoli layer nobody can gloss, and a dry cut
   with no water in it has no word in a water-administration vocabulary. A name that cannot be derived
@@ -56,7 +56,7 @@ finishes the southwest quarter: thirteen countries, three hundred and twenty-two
   darkest in the game — because job 1 measured that a near-white haze is over half of every pixel
   past a hundred and fifty metres, and what this actually is, is the lore's own fog: "warm and thick
   and close", cloud sitting inside a canopy.
-- **The second is `src/undergrowth.js`, shaped exactly like `src/climbing.js`.** It owns no input, no
+- **The second is `src/world/scenery/undergrowth.js`, shaped exactly like `src/gameplay/movement/climbing.js`.** It owns no input, no
   rendering and no saved state; it gates movement through the `canTraverse` hook `moveCharacter`
   already takes; it is composed with `canWalkSlope` in one line of `src/main.js`; and **it applies
   only inside a named region set**, because the rest of Azhora has thicket sitting on the autoplays'
@@ -293,7 +293,7 @@ leaves the Ibenwood forest belt unbuilt for now.
   and its agriculture is bottomland. Nineteen claims across four lore files, adjusted in place.
 - **One name is coined and it is not an invention.** This is the first block in the west whose
   people's tongue is actually in `azhoran_language_profiles.py`, so the great river is **the
-  Vaellir**, which is `src/languages.js`'s own Pyrosi word for a river, used the way an Avon is a
+  Vaellir**, which is `src/gameplay/skills/languages.js`'s own Pyrosi word for a river, used the way an Avon is a
   river. Two new dialects, both the lore's: `west-pyrosi` for Navarth and West Pyros (Navarth gets no
   dialect of its own because its lore makes it scrupulous about the centre's forms, not divergent
   from them), and `ganesh`, the contact speech of the Moreshi/Mittoli junction the plain sits on,
@@ -515,7 +515,7 @@ for a while.
 
 **Time Sorcery is begun, and not learnable by the traveler yet.**
 
-What was built to those (src/rival-light.js, src/rival-light-host.js; my choices are marked):
+What was built to those (src/content/quests/rival-light/rival-light.js, src/content/quests/rival-light/rival-light-host.js; my choices are marked):
 the spirit is **Sovik** (name from the Elodi profile's sun root, *sov*); he replaces the
 stepped lens the earlier version of this quest had, and the boat crossing is gone. The passage
 is an old smugglers' door through the limestone ridge between West and East Suval, east of
@@ -1088,7 +1088,7 @@ chose: a climbing rule with cliffs; peaks of about 400 m; caves empty, to explor
   Upper Olveth), the pass road, the inn and the iron workings are unchanged.
 - The faces are cliff bands: courses 36 m high at 70-80 degrees with ledges between them, and a
   flat grass bald on each summit. Forest on the ledges up to about 280 m.
-- **Climbing rule** (src/climbing.js), in the East Lotharn only: ground up to about 35 degrees is
+- **Climbing rule** (src/gameplay/movement/climbing.js), in the East Lotharn only: ground up to about 35 degrees is
   walked; 35-50 degrees is climbed, slower, costing wind by the metre risen, with no wind back
   until the climb stops, and cannot be started winded; steeper cannot be climbed and a traveler
   standing on it slides down; down is always open. A horse stops at 35 degrees. It is not
@@ -1097,7 +1097,7 @@ chose: a climbing rule with cliffs; peaks of about 400 m; caves empty, to explor
 - **Passages up**: every summit is reached only by its way - ramps cut slantwise across each cliff
   (about 40 degrees, a climb) joined by ledge paths round the mountain. Without the ways nobody
   gets above ~140 m on any massif (tests/east-lotharn-peaks.test.js proves both).
-- **Caves** (src/east-lotharn-caves.js): four chimneys, each bypassing a cliff band from one ledge
+- **Caves** (src/content/regions/east-lotharn/east-lotharn-caves.js): four chimneys, each bypassing a cliff band from one ledge
   to the next; three chambers (a passage and a room); and the passage to Upper Olveth, through the
   ridge between Kemrath and Olveth's head. A cave is walked on its own floor from mouth to mouth
   (the surface above is still ground); inside, the camera stays in the passage, the daylight goes
@@ -1114,7 +1114,7 @@ One job and one module family, because the two countries share thirteen hex edge
 and a boundary that is a lawsuit in the lore rather than a line on the ground.
 
 - **Region ids 25 and 26**, in that order after Southern Ascarth (24), in every ordered list. Both
-  were already in `PLAYABLE` and in `src/region-survey.js`; the survey was **not** regenerated.
+  were already in `PLAYABLE` and in `src/dev/tools/region-survey.js`; the survey was **not** regenerated.
 - **Nothing that belongs to anybody**: no Water Council and no water right, no Branch Court, no King
   Melos, no Middle Reach dispute, no market town, no mill, no irrigated grain and no channel dug to
   water it, no Sorten grazing, no herding community and none of its stock, no Telemon route, no well
@@ -1272,7 +1272,7 @@ East Lotharn's pass road, its inn and its iron workings were built to an earlier
 copied**, and nothing here belongs to anybody.
 
 - **Region id 27**, after `'Oves Desert': 26`, in every ordered list. It was not in the survey, so
-  `PLAYABLE` in `scripts/build-region-survey.mjs` gained it and `src/region-survey.js` was
+  `PLAYABLE` in `scripts/build-region-survey.mjs` gained it and `src/dev/tools/region-survey.js` was
   regenerated (twelve lines; `LAND_HEXES` unchanged).
 - **The world box did not grow**, which is a first for a region this size: forty-eight hexes and not
   one new number in `tests/region-layout.test.js`, `tests/isareos-world.test.js`,
@@ -1294,7 +1294,7 @@ copied**, and nothing here belongs to anybody.
   middle of a country, so **the Kemrath reach** takes the water on at exactly that level
   (`headOf: 'kemrath-water'`; the hand-over is 44.271 m on both sides), turns north because west of
   the col the ground climbs at once, and carries it down **the notch** to the Mithala margin.
-  Nothing in `src/east-lotharn-world.js` was touched.
+  Nothing in `src/content/regions/east-lotharn/east-lotharn-world.js` was touched.
 - **The long valley** is the atlas's own: eleven `hills` hexes in an unbroken chain across the whole
   country, 953 m, flat-floored, with a divide a fifth of the way along it and a beck leaving each
   end. **The north valley** drains the massif to the Mithala plain. No pass and no road: the atlas
@@ -1462,7 +1462,7 @@ read - terrain, climate, water, scenery and wildlife, and nothing that belongs t
   only two dry winter beds; and seabirds and dolphins with no land animal (a hare's range was measured
   and fits; none was added, because the lore gives the island no land animal).
 - **Two names taken from the Selemi lexicon and none coined**: the bay is the Seloca (a harbour) and
-  the channel the Nocveth (a crossing), both `LANGUAGES.selemi.roots` in `src/languages.js`, which
+  the channel the Nocveth (a crossing), both `LANGUAGES.selemi.roots` in `src/gameplay/skills/languages.js`, which
   derives that tongue from the World Builder's `tennoca` profile.
 - **The swim crossing was measured and not decided.** The channel is 59.7-61.0 m of water shore to
   shore at its three pinches, six metres deep. Under the swim rule as it stands a level-1 swimmer
@@ -1561,8 +1561,8 @@ daughter. Elle is her other daughter."
   every twenty-two.
 - Michael, Ava and Elle can be talked to about the show. Kayla has a new "Are you with a
   circus?" question.
-- Code: src/bear-circus.js (who, acts, camp, dialogue), src/kayla-character.js (looks and acts),
-  src/bear-family.js (camp, file and show; save version 2, and older saves put the circus in camp).
+- Code: src/content/quests/bear-family/bear-circus.js (who, acts, camp, dialogue), src/content/quests/kayla/kayla-character.js (looks and acts),
+  src/content/quests/bear-family/bear-family.js (camp, file and show; save version 2, and older saves put the circus in camp).
   Review views `bear-circus` and `bear-circus-close`.
 
 
@@ -1602,3 +1602,109 @@ north, east, west and south districts, the user took every recommendation in two
 - **Districts**: the Fork (West), the Braid Bank (North), the Quays (East) and the Ford (South).
 - **Gates**: open from the start; only the king's hall stays shut until it has people.
 - **Scope**: the city first and the people later.
+
+### 2026-10-05 Live campaign and the opening political situation
+
+The user requests a campaign view that follows the active world as quests, units and elapsed game time change it. A readily accessible geopolitical view is the next design priority; direct government remains part of the larger vision. Faction turns and decision cadence are still undecided. Continuous progression with periodic faction decisions is a proposal, not a confirmed turn system. See [the opening design](campaign-opening-design.md) and the revised [strategic layer](strategic-layer-brainstorm.md).
+
+The campaign interface must use the **existing main world map**, preserving its geography and interactive pan and zoom. The main map stays visible and is where interaction occurs. **Do not use Frontier Command's UI** as the campaign interface; its backend logic may be useful. During development the **whole map is always visible**, starting at the whole-atlas view, and **fog of war is deferred**. Development visibility must remain separate from saved exploration and reward state.
+
+The user further specifies **two modes over one ongoing world**: campaign government in the style of the cited 4X games, and embodied **hero mode**, which replaces a separate tactical battle mode. The player can switch between them or spend a session in campaign mode while the hero remains in a room. The campaign therefore runs while its interface is open, subject to explicit shared pause controls. The hero stays physically present and vulnerable; conquest can expose them to death, but a map ownership change alone does not establish that they died.
+
+Unobserved battles may progress statistically without full physical simulation. If the hero walks or flies into an ongoing battle, it should load so they can participate. The proposed handoff preserves elapsed progress, surviving participants, casualties and supplies, with one resolver owning any given participant. Leaving returns the current state to statistical simulation. Completed battles remain completed; switching modes or reloading must not reroll committed losses. Exact battle rates, time speeds, unattended hero behavior, capture/death outcomes and faction decision intervals remain open.
+
+- **Ambron** ostensibly holds Elagos, Drent, Amod, Pueth, Luscia, Moros Plain, Vastos, Meneth, Peblos and both Lotharn regions. Only Elagos and Drent are stable. Amod and Pueth have rebellious instability associated with the silver-grade political quest context; Luscia, Moros Plain, Vastos, Meneth and Peblos are destabilized. Both Lotharns are in open rebellion, with other factions' units to be specified. These conditions do not automatically remove the provinces from the Empire.
+- **Minoran League** declared independence from Ambron within the past year, after the old king died, and has little military strength. Its five regions are Isareos, Caricas, Nethereum, Ovesos and Nesdor. Minora is its capital in Isareos.
+- **Cedric** ruled poorly after the old king. Republicans replaced him with Willard, his younger half-brother and the constitutional monarch in the existing settlement. Cedric fled with his elite guard, infiltrated Minora and seized the city and League government by surprise. At game start **Wilhelm, the Blood Prince, has just arrived with his army to reinforce Cedric**. Their later outcomes are not decided.
+- **Caricas, Nethereum, Ovesos and Nesdor** each wage a separate independence rebellion against the now Cedric-controlled League. They try to coordinate despite losing their common political center. Do not treat them as one new government or assume Cedric controls all their territory. His capture of Minora does not establish control of all Isareos.
+- **Goblinland**, after the later same-day corrections, is a loose confederation of four independent allied factions in Orgmala, North Gorgi Mountains, South Gorgi Mountains and Gorgiwood. Eshtor Plateau belongs to the separate undead faction below; the earlier fifth-region and single-faction allocations are superseded.
+- **Stone Fist** remains the acknowledged superior of Ambron, Mithala and Celder, despite little practical sway over these distant crowns. Ambron is stronger than Lond, maintains formal allegiance for Cref tradition and has adopted southern ways. This supersedes the older current-state assumption of an Ambron-appointed steward governing Stonefist.
+
+The dictated names "Amil" and "Play" are provisionally Amod and Pueth, and "Moros, Planitia" is provisionally Moros Plain; no separate Planitia region exists in the atlas. The newest phrase "Valdemar's father" does not by itself revise the established family tree. Precise event intervals and these transcription details remain open. The [royal history](the-war-and-the-house-of-ambron.md) records the revised sequence without an invented new ancestor or exact journey duration. This update changes design documents, not runtime faction control or existing save data.
+
+### 2026-10-05 Thalmagar crisis and concealed undead vassals
+
+The [crisis and Forsaken Citadel design](thalmagar-crisis-design.md) records the user's later additions:
+
+- **Thalmagar** is the overarching enemy of the resistance campaign and a necromancer. Early and middle campaign behavior is mustering, fortification and cautious expansion, followed by a major middle-to-late offensive. The main quest requires sufficient collective resistance: the hero wins support through local service and politics, and chooses whether to ally with or conquer neighboring powers as the world changes. The later same-day discussion reserves serving him as a future alternate player path.
+- Thalmagar seeks alliance with or control over factions among **centaurs, elves, dwarves and goblins**. The particular member factions and starting commitments are not all assigned. His creation of the undead is a proposed origin; his own undead nature and detailed backstory remain open.
+- **Blood Plague** is a working name for the fictional affliction that kills and produces cognizant, rotting undead. The undead have a distinct race/faction system. Transmission, cures, timing and magical obedience remain unspecified.
+- **Forsaken Citadel** is a small walled town and exceptionally tall, many-storied tower at an ancient haunted site on **Eshtor Plateau**, abandoned for centuries before the duke's occupation. It is not in North Ganun. Its ruler retains the working title **Duke of North Ganun**, has relocated here and publicly claims it for Ganun. In fact he rules a separate undead faction and is secretly Thalmagar's vassal. He is undead, practices necromancy and works to spread the plague. The Citadel is design only; its exact site and structure remain unbuilt.
+- **Acor Wetlands** is disputed between **Acreland**, the existing Acorwood faction, **Endevor**, and **Thalmagar's Empire**. The user explicitly confirmed that Vandor means Endevor. No sole effective controller is assigned.
+- **Wilhelm is secretly undead and a secret vassal of Thalmagar.** His soldiers are disguised undead infiltrators capable of appearing as soldiers or civilians. There are observable indications, but they can pass convincingly in human society. This does not make Cedric's original guard undead. After Cedric's already completed seizure, an internal undead coup in Minora is planned for the first few campaign cycles. Exact timing, potential prevention, Cedric's fate and wider control after it remain open.
+- **Secret vassals currently established, including the later same-day addition:** the Eshtor undead duke at the Forsaken Citadel, Wilhelm, and the North Gorgi goblin faction. Eshtor, the Citadel and its duke describe one establishment, not separate extra vassals. These vassals are not placed beneath one another. More hidden vassals may be added.
+- **Full geography and hidden diplomacy coexist.** The ordinary diplomatic view does not initially expose those vassal ties. Hero exploration and investigation can discover the true factions and their superior; such exposure without hero investigation is intended to be difficult. A developer truth inspector may show secret records separately, without revealing them in-world.
+
+Necromantic raising must be an explicit persistent transformation of the same person, retaining the death event. It is not a scene-reset revival or a duplicate living actor. Concrete coalition commitments, the evidence system and preparation-based crisis pacing are implementation proposals; exact rates, triggers and final victory conditions remain open.
+
+### 2026-10-05 Northern silver quests and early undead expansion
+
+Northern Azhora will have gradually available silver-grade political quests addressing the growing influence behind the Forsaken Citadel. The Eshtor undead lord's first major human targets are **Witherst and Riesov**. They come under pressure early in the campaign, while help from more distant human kingdoms is needed for a sustained response.
+
+The early quests concern local people, danger, plague activity and expansion; **Thalmagar is not immediately revealed as the overarching enemy**. Hero investigation can progressively uncover the undead faction and hidden vassal relationship. The [northern silver quest design](northern-silver-quests-design.md) proposes six relief, route, witness, defense, political evidence and distant-court hooks. Their titles, precise sites and rewards are proposals, not existing playable content. Regional outcomes, evidence and actual aid remain distinct from automatic province capture or an entire kingdom joining an alliance.
+
+The user's next clarification makes these opportunities **time-sensitive and genuinely losable**. As communities fall and their people become hostile undead, their former quests disappear and familiar people can become enemies. Territorial conquest alone does not instantly convert everyone. Evacuation and resistance can save people; retaking a town does not automatically cure its population or restore old quests. New follow-ups must be authored separately. Infection, death, raising, allegiance and quest loss are persistent events, with journal knowledge limited to what the hero has learned.
+
+The undead advance is **slow and persistent**: Witherst and Riesov first, then East Ganun and the rest of Ganun, with Thoth another opening through West Witherst. The Eshtor faction, all four Goblinland members and both Baldro dwarf states maintain mutual peace against perceived human expansion. The duke therefore directs conquest toward humans. Peace is distinct from military passage, shared command or vassalage. Ignoring the threat entirely can eventually allow it to overrun the northern human kingdoms.
+
+### 2026-10-05 Goblin confederation and the intended invasion
+
+**Goblinland has four independent allied governments**, with little coordination: Orgmala, North Gorgi, South Gorgi and Gorgiwood. The latest dictated East Gorgy is provisionally matched to the existing South Gorgi Mountains; North Gorgon and Gorgywood Mountains match North Gorgi Mountains and Gorgiwood. No new atlas regions are added. All four want to invade Lond, but its wealth and strength make periodic raiding their ordinary behavior for much of the campaign. Lond's strength in this northern comparison does not undo Ambron's previously established greater overall power.
+
+**North Gorgi is secretly Thalmagar's vassal** and spends a long campaign preparation period building a powerful goblin/orc army. The other three members remain independent allies, without automatic allegiance to Thalmagar. Ideally for him, the Eshtor undead have secured much of northern Azhora when this army becomes ready, letting it march through friendly territory toward the south.
+
+The user confirmed **North Lond → West Lond → East Endevor → South Endevor → Acor Wetlands** as the intended corridor. From North Gorgi, an intermediate goblin region such as Gorgiwood or South Gorgi is required to reach North Lond. Eastern conquests in Riesov and Ganun do not themselves clear this route; control, access and usable crossings must exist where the army actually marches. Acor Wetlands starts disputed, not already secured for Thalmagar.
+
+The invasion targets **Mithala and Celder**, then the main army pushes toward **Yunethre, Isareos and Minora**, with **Ambron** the later, hardest major objective. Smaller columns secure mountain approaches and continuing raiders pressure other regions. The user confirmed Nethri as Yunethre, Sarios as Isareos, and Hitasarios/Hirasarious as probably another mention of Isareos, not a separate place. Minora is a city within Isareos, while Ambron is within Elagos; Meneth is a geographic connection between those regions. Specific passes and army subdivisions remain to be designed.
+
+Ambron's fall should be close to defeat, but no automatic loss condition is fixed. A prepared player can repel the offensive and gradually push back, potentially against a dominant worldwide enemy. The player's strategic work throughout early and middle play is to curb Thalmagar's subordinate factions, preserve potential allies and build resistance while southern conflicts continue. Wilhelm's early internal coup is distinct from the intended middle-game revelation of his Thalmagar allegiance; hero investigation can expose him sooner.
+
+The option to **serve Thalmagar and potentially win on his side** is retained for later design. The campaign currently being developed assumes resistance to him.
+
+### 2026-10-05 Authored scenario within the live campaign
+
+The user clarifies that this is an intended event progression inside a dynamic 4X-style campaign, alongside the hero mode that is Azhora's main embodied game. The scenario supplies the arc: northern undead pressure and ordinary goblin raids, the long North Gorgi muster and southern infiltration, the major invasion, and resistance or counteroffensive. Hero actions and faction simulation change the route, strength, timing, knowledge and surviving participants. This design is recorded in the [campaign scenario phases](campaign-opening-design.md#an-authored-scenario-in-a-dynamic-world).
+
+Preparation periods, conditions, warning evidence and saved outcomes are proposed event-system fields. Exact rates, dates and the ability to delay, redirect or prevent particular events remain open. A scheduled army-readiness event does not automatically conquer its route, replace defeated troops or undo saved quest outcomes. This is a design update, not implementation of the scenario or its quests.
+
+### 2026-10-05 Continuing world after the ultimate crisis
+
+The user wants the potential for an **indefinitely continuing live world**, including after Thalmagar is defeated. They could leave it unfolding, check on its geopolitical and personal developments occasionally, and potentially blog about the history. Completing the authored main quest should not exhaust every event or automatically stop the simulation. Hero play and campaign intervention can remain available in the same surviving world.
+
+This remains **speculative design**, not a claim that unlimited meaningful simulation has been implemented or solved. The [living-world continuation design](living-world-continuation-design.md) proposes ongoing faction autonomy, recovery, succession, changing relationships and institutions, new disputes and stories grounded in persistent people and conditions. The aftermath preserves the war's outcomes; it does not reset borders, resurrect casualties, cure all undead or repeat the same ultimate crisis by default.
+
+A proposed observer mode and factual dated chronicle would make unattended developments readable, with possible local export for the user's own blog. Automatic public posting is not requested. Whether the game runs only while open, continues in the background, advances while closed, or eventually uses a hosted simulation remains undecided. Hero mortality, unattended decisions, time acceleration, resource use and long-term save/history storage need design and testing.
+
+### 2026-10-05 UI prototype and the Blood Prince's island
+
+The user requests a **UI-only prototype**, with a way to launch and test it, rather than implementation of the campaign systems. It uses the existing authored atlas, full geographic visibility, clickable political information and explicitly scripted sample developments. The playable game and saves stay separate.
+
+The Blood Prince's existing Thalmagar vassal establishment is now a second territorial undead faction in **West Ithzel**. Wilhelm previously controlled the entire island but left with his main army. The human Lower King has returned to **East Ithzel** and leads the restoration against the remaining western undead. The latest balance is **roughly 50/50**, with early hero intervention able to tip the outcome. Eshtor is the stronger undead faction; Wilhelm's island receives less support while he focuses south.
+
+An undead island victory can bring pressure into Ganun sooner than Eshtor's advance; the crossing, forces and specific pace are not set. Either side's resolution of the island war precedes Wilhelm's major southern commitment. He has already arrived at Minora; the exact relation between this new condition and the earlier planned first-cycles coup remains to be authored. This adds territory to Wilhelm's existing allegiance, not another unrelated secret vassal.
+
+The user now specifies **Minora in Isareos as the player's campaign starting location**. The UI preview follows that ruling. Moving the actual adventure opening, its tutorial and saves is outside this UI-only request.
+
+### 2026-10-06 Minimal informational campaign map
+
+The player remains one character; the campaign view is primarily informational. The user rejects the separate Campaign/Hero/Observe tabs and excess interface clutter. Remove the bottom timeline/chronicle for now. Retain selection, faction information and quests. Direct influence through the map is a possible middle-to-late development feature, not current scope.
+
+Replace the earlier Realms/Control/Unrest views with **Geopolitical / Regions / Stability**. Geopolitical shows factions' current combined territory, country names and outer boundaries, without individual region names or internal regional borders. Lond's five regions form one Lond area; losing East Lond shrinks it. If Undeadland captures North Riesov, that region joins Eshtor Plateau under one Undeadland label. Regional geography remains intact beneath these changing country assignments.
+
+Regions shows the authored region names and borders. Stability uses the regional view with condition colors. The minimal UI-only prototype includes isolated ownership snapshots under Preview tools solely to test those changes, without a live simulation, timeline or gameplay commands. Secret vassal relationships are not automatically exposed by geographical control.
+
+### 2026-10-06 Thalmagar's starting territory
+
+**Cudon** and **Lesser Oremindi Mountains** belong directly to Thalmagar's Empire from the opening, alongside Cape Thalmagar, Urubond and Narcosh. These use the existing atlas spellings for the user's Kudon and Lesser Ormindy Mountains. The geopolitical prototype reflects this starting ownership.
+
+### 2026-10-06 Chapter 1 and the normal map
+
+Use the existing Chapter 1 for the campaign-map quest example. Successful monarchist service alongside the Ambroni army conquers Solis, transferring **West Suval to Ambron**. Successful rebel/republican/Coalition service transfers **Moros Plain to Izol**, representing the Coalition. West Suval starts in Coalition hands as a distinct country allied with Izol. The outcomes are alternatives; a newly conquered province is not automatically stable.
+
+Access the map through the existing **M** key. Its default remains **Regions**, preserving the familiar map; switch to **Geopolitical** or **Stability** within that same interface. This supersedes the earlier geopolitical-default prototype. Country inspection and Chapter 1 links remain informational. Standalone outcome previews stay separate from gameplay choices. The in-game display reads the existing chapter completion at the final report; further battle or campaign systems are not part of this UI change.
+
+### 2026-10-06 Discovery limits and the missing conquest
+
+The user's correction supersedes the implementation described above: the in-game geopolitical map must respect explored territory. Only developer reveal-all can expose the full atlas. Faction labels and inspectors must also avoid disclosing unexplored holdings. Stability follows the same knowledge limit.
+
+Chapter 1 must retain the post-battle conquest of Solis. Winning the field does not give Ambron West Suval; the player follows up with the army, assaults Solis, and actually takes it. The existing Solis and Coalition Moros-outpost aftermath encounters are reconnected between the commander report and final city report. Territorial control follows their cleared assault record. Old saves that reached the final report without this capture resume the unfinished conquest rather than grandfathering an unearned territorial gain.

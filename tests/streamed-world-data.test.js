@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createWoodcutting } from '../src/woodcutting.js';
-import { createWalkSurfaces } from '../src/walk-surfaces.js';
+import { createWoodcutting } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { createWalkSurfaces } from '../src/world/collision/walk-surfaces.js';
 
 const pine = id => ({ id, species: 'loblolly-pine', x: 50, z: 0 });
 const skills = { level: () => 99, gain: () => ({ level: 99 }) };

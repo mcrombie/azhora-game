@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WOOD_SPECIES } from '../src/wood-species.js';
-import { TREE_KINDS, createWoodcutting, woodcuttingInteractionLabel } from '../src/woodcutting.js';
-import { createSkills, SKILLS } from '../src/skills.js';
-import { INVENTORY_ITEMS } from '../src/inventory.js';
+import { WOOD_SPECIES } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { TREE_KINDS, createWoodcutting, woodcuttingInteractionLabel } from '../src/gameplay/skills/woodcutting/woodcutting.js';
+import { createSkills, SKILLS } from '../src/gameplay/skills/skills.js';
+import { INVENTORY_ITEMS } from '../src/gameplay/inventory/inventory.js';
 
 test('every timber-producing species has a harvesting recipe and skill guide entry', () => {
   for (const timber of Object.values(WOOD_SPECIES).filter(t => t.log)) {

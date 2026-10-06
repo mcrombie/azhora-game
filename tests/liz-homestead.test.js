@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { LIZ, LIZ_STAND, CAT, createCatQuest } from '../src/cat-quest.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { LIZ, LIZ_STAND, CAT, createCatQuest } from '../src/content/quests/roadside/cat-quest.js';
 import { LIZ_CLEARING, LIZ_COTTAGE, LIZ_MAILBOX, LIZ_SKEPS, LIZ_WOOD_HIVES, LIZ_GARDEN, LIZ_HOME_PATHS,
-  PUETH_NPC_POSITIONS, puethRiverDistance } from '../src/pueth-world.js';
+  PUETH_NPC_POSITIONS, puethRiverDistance } from '../src/content/regions/pueth/pueth-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene=new THREE.Scene(),world=createWorld(scene);

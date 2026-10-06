@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { FAMILY_HOMES, MARK_HOME, MARK_HOME_PATH, familyHomeForResident, familyHomeLines } from '../src/family-homes.js';
-import { ARI_HOME } from '../src/ari-home.js';
-import { APPLEGARTH_BUILDINGS } from '../src/rena.js';
-import { canStand } from '../src/game-state.js';
+import { FAMILY_HOMES, MARK_HOME, MARK_HOME_PATH, familyHomeForResident, familyHomeLines } from '../src/content/quests/homes/family-homes.js';
+import { ARI_HOME } from '../src/content/quests/ari/ari-home.js';
+import { APPLEGARTH_BUILDINGS } from '../src/content/quests/rena/rena.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
 
 test('the requested households reuse cottages and retain their distinct family relationships', () => {
   const residents=FAMILY_HOMES.flatMap(home=>home.residents);
@@ -26,7 +26,7 @@ test('the requested households reuse cottages and retain their distinct family r
 
 test('each home has its own named, grounded mailbox and lightweight distinct scenery',async()=>{
   const THREE=await sourceModule('../vendor/three.module.js');
-  const {createFamilyHomeScenery}=await sourceModule('../src/family-homes-scenery.js');
+  const {createFamilyHomeScenery}=await sourceModule('../src/content/quests/homes/family-homes-scenery.js');
   const parent=new THREE.Group(),colliders=[],movingGroups=new Set();
   const heightAt=(x,z)=>2+x*.001+z*.0005;
   const result=createFamilyHomeScenery({parent,colliders,heightAt,movingGroups});

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand, canSwim } from '../src/game-state.js';
+import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
 
 /**
  * The west's animals with somebody among them.
@@ -27,7 +27,7 @@ import { canStand, canSwim } from '../src/game-state.js';
  * rather than of anything flagged on a range. Nothing is exempted and no animal is skipped.
  */
 const { createWorld } = await sourceModule('../src/world.js');
-const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { WEST_LIFE_ZONES, createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const world = createWorld(new THREE.Scene());
 const WALK = 4.2, RUN = 7.2, HZ = 60;
 // Everything a traveler could walk up to. A hawk holds its circle thirty metres up and Eer's

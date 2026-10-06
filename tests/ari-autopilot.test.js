@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createAriAutopilot } from '../src/ari-autopilot.js';
-import { ARI, ARI_STAND, SUNFLOWER_ROWS } from '../src/ari-garden.js';
-import { createSunflowerLesson, sunflowerConversation, SUNFLOWER_QUEST_ID, SUNFLOWER_LESSON_XP } from '../src/sunflower-lesson.js';
-import { createFarming, CROPS, WATERING_XP, WATERED_GROWTH } from '../src/farming.js';
-import { farmRowConversation } from '../src/farming-conversation.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createSkills } from '../src/skills.js';
-import { BODY, bodyWorld } from '../src/bodies.js';
-import { moveCharacter } from '../src/game-state.js';
+import { createAriAutopilot } from '../src/gameplay/autoplay/ari-autopilot.js';
+import { ARI, ARI_STAND, SUNFLOWER_ROWS } from '../src/content/quests/ari/ari-garden.js';
+import { createSunflowerLesson, sunflowerConversation, SUNFLOWER_QUEST_ID, SUNFLOWER_LESSON_XP } from '../src/content/quests/skill-lessons/sunflower-lesson.js';
+import { createFarming, CROPS, WATERING_XP, WATERED_GROWTH } from '../src/gameplay/skills/farming/farming.js';
+import { farmRowConversation } from '../src/gameplay/skills/farming/farming-conversation.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createSkills } from '../src/gameplay/skills/skills.js';
+import { BODY, bodyWorld } from '../src/gameplay/combat/bodies.js';
+import { moveCharacter } from '../src/gameplay/movement/game-state.js';
 
 const gap = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const still = { forward: 0, side: 0, run: false };

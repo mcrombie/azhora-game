@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { VASTOS_NPCS } from '../src/vastos-civil-war.js';
-import { FARMER } from '../src/farming.js';
-import { FERRY_HOST_IDS } from '../src/ferry.js';
-import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY_STANDS } from '../src/winery.js';
-import { IMANI } from '../src/vineyard.js';
-import { KATY } from '../src/katy.js';
-import { BATSMASHER } from '../src/batman-quest.js';
-import { LUSCIA_PROPHET } from '../src/luscia-prophet.js';
-import { WILLOWMERE_FAMILY } from '../src/willowmere-family.js';
-import { TRIMMED, KEEP_IDS, QUEST_IDS, OWN_IDS, SMITH_IDS, DROP_IDS, SOLDIER_ROLES, keepsNpc, trimCast } from '../src/cast.js';
+import { VASTOS_NPCS } from '../src/content/chapters/civil-war/vastos-civil-war.js';
+import { FARMER } from '../src/gameplay/skills/farming/farming.js';
+import { FERRY_HOST_IDS } from '../src/world/travel/ferry.js';
+import { VINTNER, CELLAR_HAND, WINEMAKER, WINERY_STANDS } from '../src/content/regions/winery/winery.js';
+import { IMANI } from '../src/content/quests/wine/vineyard.js';
+import { KATY } from '../src/content/quests/roadside/katy.js';
+import { BATSMASHER } from '../src/content/quests/batman/batman-quest.js';
+import { LUSCIA_PROPHET } from '../src/content/regions/luscia/luscia-prophet.js';
+import { WILLOWMERE_FAMILY } from '../src/content/quests/homes/willowmere-family.js';
+import { TRIMMED, KEEP_IDS, QUEST_IDS, OWN_IDS, SMITH_IDS, DROP_IDS, SOLDIER_ROLES, keepsNpc, trimCast } from '../src/content/characters/cast.js';
 
 /**
  * The user, 22 September 2026: take out everybody who is not in a quest, except the soldiers and
@@ -43,7 +43,7 @@ test('three are dropped by name, because the soldier rule or an old errand would
   assert.equal(keepsNpc({ id: 'meadow-courier', modelRole: 'legion-officer' }, { trimmed: true }), false,
     'the quartermaster has no errand and no clearing to keep');
   assert.equal(keepsNpc({ id: 'ridge-keeper', modelRole: 'rise-custodian' }, { trimmed: true }), false,
-    'the keeper of the rise had one errand and it is off the slate (src/quest-slate.js)');
+    'the keeper of the rise had one errand and it is off the slate (src/gameplay/quests/quest-slate.js)');
   assert.equal(keepsNpc({ id: 'warden', modelRole: 'legion-soldier' }, { trimmed: true }), false,
     'the waykeeper is built as a legionary and must still be taken out');
   assert.equal(keepsNpc({ id: 'warden', modelRole: 'legion-soldier' }, { trimmed: false }), true,
@@ -58,7 +58,7 @@ test('with the switch off nobody is taken out at all', () => {
 
 test('every id on the list is somebody the world actually places', async () => {
   const { scopedWorld } = await import('./scoped-world.js');
-  const { VASTOS_POSITIONS } = await sourceModule('../src/vastos-camp.js');
+  const { VASTOS_POSITIONS } = await sourceModule('../src/content/chapters/civil-war/vastos-camp.js');
   const world = await scopedWorld(new THREE.Scene(), [1]);
   // The world places most of them; the rest are pushed in by their own module in the host, so
   // this checks the ones it can and holds the shape of the list for the others.
@@ -75,7 +75,7 @@ test('every id on the list is somebody the world actually places', async () => {
     'aftermath-tribune', 'aftermath-captain', 'aftermath-envoy', 'post-camp-legate',
     'solis-captain', 'coalition-envoy', 'coalition-captain', 'battle-tribune', 'courier-satchel',
     'lauvel-bearer-front', 'lauvel-bearer-back', 'lauvel-seeker',   // the burying party, laid by the chapter
-    'kayla', 'kayla-cub', 'kayla-michael', 'kayla-ava', 'kayla-elle', 'smedley']);   // the bear circus (src/bear-circus.js)
+    'kayla', 'kayla-cub', 'kayla-michael', 'kayla-ava', 'kayla-elle', 'smedley']);   // the bear circus (src/content/quests/bear-family/bear-circus.js)
   const strangers = [...QUEST_IDS, ...SMITH_IDS, ...OWN_IDS, ...DROP_IDS].filter(id => !known.has(id));
   assert.deepEqual(strangers, [], 'the list names somebody the game does not have');
   assert.equal(typeof TRIMMED, 'boolean');
@@ -92,7 +92,7 @@ test('the winery retains exactly Rob, MAT and KAT, while Katy remains elsewhere 
 });
 
 test('KAT keeps her original hair while Rob and MAT render their requested cropped colors',async()=>{
-  const {createCharacter}=await sourceModule('../src/characters.js');
+  const {createCharacter}=await sourceModule('../src/content/characters/characters.js');
   const make=npc=>createCharacter({role:npc.modelRole,tunic:npc.color,skin:npc.skin,look:npc.look});
   const hasColor=(group,hex)=>{
     const expected=new THREE.Color(hex);let found=false;

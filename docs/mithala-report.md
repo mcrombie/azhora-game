@@ -65,7 +65,7 @@ five `hills` hexes the map actually draws**, from (3,93) through (4,92) and (5,9
 
 Three test files and one comment moved with the rename: `tests/region-survey.test.js` (three
 references and the "held atlas" helper), `tests/south-suval-world.test.js`, and the header of
-`src/south-suval-world.js`.
+`src/content/regions/south-suval/south-suval-world.js`.
 
 ---
 
@@ -73,7 +73,7 @@ references and the "held atlas" helper), `tests/south-suval-world.test.js`, and 
 
 Read per hex from the World Builder map (`azhora.wwmap`, `hexes[key].climate`, `koppen-v1` — not
 `azhora.cmap.json`, whose one-code-per-region field is a default): **`Dfa` on all 116 authored
-hexes**, 33 + 28 + 23 + 32. `MITHALA_CLIMATE` in `src/mithala-world.js` records every one and the
+hexes**, 33 + 28 + 23 + 32. `MITHALA_CLIMATE` in `src/content/regions/mithala/mithala-world.js` records every one and the
 test holds them to the map hex for hex whenever the map is on the machine to ask. For context, the
 whole of this quarter of the continent reads the same: Henborth `Dfa` × 27 on the western border,
 North Celder `Dfa` × 33 + `Dfc` × 1, the Acor Wetlands one step colder at `Dfb` × 21 + `Dsb` × 4.
@@ -120,7 +120,7 @@ will show most, and the lore is unusually specific:
 * the **black migratory geese** going north through the fen margin, and the frostbacks going north
   into Henborth "only when the thaw and summer moisture make the upland pasture worth the risk".
 
-A note is written into the header of `src/mithala-world.js` saying all of this in one line, because
+A note is written into the header of `src/content/regions/mithala/mithala-world.js` saying all of this in one line, because
 nothing else in the game will need it sooner.
 
 ---
@@ -303,7 +303,7 @@ exactly this reason.
 The atlas draws **sixty-one new river edges** across the four countries in thirteen chains, which is
 the largest piece of authored water in the game after the Lizeem itself. `RIVER_REGIONS` in
 `scripts/build-region-rivers.mjs` gained all four names at once (the four western regions were added
-together for the same reason) and `src/region-rivers.js` went from 133 edges to **194**.
+together for the same reason) and `src/world/terrain/region-rivers.js` went from 133 edges to **194**.
 
 **Measured before the names were added**: of the twenty-one chains that existed, not one loses its
 region key, changes a single point, or gains a confluence. The nearest built water is the East
@@ -466,7 +466,7 @@ world-wide job. It was not attempted.
 
 ## What grows
 
-`src/mithala-scenery.js`, one seeded stream of its own drawn after the West Lotharn's, so nothing
+`src/content/regions/mithala/mithala-scenery.js`, one seeded stream of its own drawn after the West Lotharn's, so nothing
 already built anywhere else moves for it. Everything is placed on these four countries' own hexes.
 
 | | count |
@@ -635,25 +635,25 @@ The three things worth recording, because a later builder will wonder:
 `scripts/build-region-survey.mjs` PLAYABLE + `WINDOW.minR` 90 → 79 + `ENCLOSED_LAKES` →
 `ENCLOSED_HEXES` → `node scripts/build-region-survey.mjs` ·
 `scripts/build-region-rivers.mjs` RIVER_REGIONS → `node scripts/build-region-rivers.mjs` ·
-`src/region-layout.js` PLAYABLE_REGIONS + four REGION_BIOMES ·
-`src/region-world.js` REGION_IDS 28–31, four REGION_TERRAIN, four REGION_TEXT (subtitle, spawn,
+`src/world/terrain/region-layout.js` PLAYABLE_REGIONS + four REGION_BIOMES ·
+`src/world/terrain/region-world.js` REGION_IDS 28–31, four REGION_TERRAIN, four REGION_TEXT (subtitle, spawn,
 description, palette with the shared sky, `npcIds: []`, eighteen landmarks between them) ·
-`src/languages.js` (`mithali` and four `spoken` entries) ·
-`src/developer-atlas.js` (four anchors, one middle hex each) ·
-`src/map-fog.js` (seventeen areas; the least contained, the meeting's, is 64 % inside its own country
+`src/gameplay/skills/languages.js` (`mithali` and four `spoken` entries) ·
+`src/dev/tools/developer-atlas.js` (four anchors, one middle hex each) ·
+`src/ui/map/map-fog.js` (seventeen areas; the least contained, the meeting's, is 64 % inside its own country
 and the rest 76 % or better) ·
-`src/build-status.js` (four `early` entries) ·
-`src/west-regions.js` (`chainBetween`, eight courses, two braids, `WEST_RIVERS`, `WEST_REGION_NAMES`) ·
-`src/west-ground.js` (`mithalaGround` wrapping `westGround` and `baseBeforeWater`, which is how it
-reaches `src/world-terrain.js`'s chain — the West Lotharn's own hook, and a wrapper rather than an
+`src/dev/tools/build-status.js` (four `early` entries) ·
+`src/content/regions/western-regions/west-regions.js` (`chainBetween`, eight courses, two braids, `WEST_RIVERS`, `WEST_REGION_NAMES`) ·
+`src/content/regions/western-regions/west-ground.js` (`mithalaGround` wrapping `westGround` and `baseBeforeWater`, which is how it
+reaches `src/world/terrain/world-terrain.js`'s chain — the West Lotharn's own hook, and a wrapper rather than an
 addend because the swale reshapes the ground it is handed) ·
-`src/world-terrain.js` (`mithalaTint` in `groundTint`) ·
+`src/world/terrain/world-terrain.js` (`mithalaTint` in `groundTint`) ·
 `src/world.js` (scenery, landmarks, metrics, update) ·
-`src/mithala-world.js`, `src/mithala-scenery.js`, `src/mithala-wildlife.js` ·
-`src/west-regions-life.js` (the frostback rig, four behaviour tables, the zones) ·
+`src/content/regions/mithala/mithala-world.js`, `src/content/regions/mithala/mithala-scenery.js`, `src/content/regions/mithala/mithala-wildlife.js` ·
+`src/content/regions/western-regions/west-regions-life.js` (the frostback rig, four behaviour tables, the zones) ·
 `tests/mithala-world.test.js` · `package.json` · this report · `docs/design-answers.md`.
 
-`src/region-levels.js` already carried all four (3, 3, 4, 4) and was not touched.
+`src/world/terrain/region-levels.js` already carried all four (3, 3, 4, 4) and was not touched.
 
 ---
 
@@ -715,7 +715,7 @@ none, because the plain is a long way from every one of them.
 
 `tests/isareos-world.test.js` failed on "1 things of Isareos's stand on Isamouth's ground". Traced:
 growing the world north moves `landDistance` by a fraction of a metre a long way off, which re-rolled
-one seeded scatter stream, and **`src/west-regions-scenery.js` checked `atIsamouth` for a thorn
+one seeded scatter stream, and **`src/content/regions/western-regions/west-regions-scenery.js` checked `atIsamouth` for a thorn
 thicket's parent bush but not for its three or four members**, which are thrown up to five metres out
 from it. A parent standing just outside the 62 m circle put one member 60.7 m from its centre. It had
 never happened; it would have happened to whoever next changed the world. The check is now made for

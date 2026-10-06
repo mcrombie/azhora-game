@@ -4,11 +4,11 @@ import {
   NYLON, NYLON_AREA, NYLON_OUTLINE, NYLON_GATES, NYLON_BUILDINGS, NYLON_PATHS,
   NYLON_LANDMARKS, NYLON_HARBOR_WALLS, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, NYLON_HARBOR, inNylon, nylonGround, nylonReserved, nylonHarborDeckHeight,
   nylonSegmentDistance, nylonRiverClearance,
-} from '../src/nylon-city.js';
-import { SOLIS, hexOwnerAt, landDistance } from '../src/region-world.js';
-import { LIZEEM_REACH, EER_CHANNELS } from '../src/west-regions.js';
-import { MENORA } from '../src/menora-city.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+} from '../src/content/regions/nylon/nylon-city.js';
+import { SOLIS, hexOwnerAt, landDistance } from '../src/world/terrain/region-world.js';
+import { LIZEEM_REACH, EER_CHANNELS } from '../src/content/regions/western-regions/west-regions.js';
+import { MENORA } from '../src/content/regions/minora-frontier/menora-city.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
 const samples = building => [-1, 0, 1].flatMap(a => [-1, 0, 1].map(b => ({ x: building.x + a * building.width / 2, z: building.z + b * building.depth / 2 })));
 const insideBuilding = (point, building, margin = 0) => Math.abs(point.x - building.x) < building.width / 2 + margin && Math.abs(point.z - building.z) < building.depth / 2 + margin;

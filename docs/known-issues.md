@@ -28,7 +28,7 @@ somewhere between fine and ten metres wrong.
 
 **Cause.** Two different surfaces:
 
-- `heightAt` is analytic. `AMBRON_TERRACE` (`src/region-world.js`) is a pad at level 17.2 with a
+- `heightAt` is analytic. `AMBRON_TERRACE` (`src/world/terrain/region-world.js`) is a pad at level 17.2 with a
   30 m feather, and near the wall it goes from lake level to city level over a very short run.
 - The terrain *mesh* is a grid built by `axisSamples` in `src/world.js`. That function only
   spaces vertices 2.5 m apart inside one fine band — the one around Tidehaven and the Avrel
@@ -72,7 +72,7 @@ by the wreck of a courier's cart, and there is no way through on the track.
 
 **Measured.** The spur is `roadSpurs[0]` in `src/world.js` (`[at(-236, 30), at(-248, 16),
 at(-252, 8)]`), drawn 2.2 m wide, 27.4 m long. The cart is the "Tumbled courier cart" in
-`src/world-regions.js`, at authored `(-248, 14)`, with a collider of radius 2.3 m.
+`src/world/terrain/world-regions.js`, at authored `(-248, 14)`, with a collider of radius 2.3 m.
 
 | | |
 |---|---|
@@ -95,7 +95,7 @@ scenery that blocks a road for no stated reason and steps into a field to get ro
 **Ways out:**
 
 1. Move the cart about 2 m off the line, so it lies beside the track with its wheels in the verge.
-   One coordinate in `src/world-regions.js`. Keeps the picture, loses the obstruction.
+   One coordinate in `src/world/terrain/world-regions.js`. Keeps the picture, loses the obstruction.
 2. Bend the spur round it, which is what a track past a wreck would actually do: one more vertex
    in `roadSpurs[0]`. Keeps the obstruction, and the detour becomes the road.
 3. Leave it and give it a reason — a line from Corvan's post, or the courier it belonged to.
@@ -115,7 +115,7 @@ stand on and read it from:
 
 | post | at | its foot | nearest standable ground | placed by |
 |---|---|---|---|---|
-| The Quay | -19, 617 (Elod, East Suval) | 7.44 m | **3.5 m away, 1.37 m below** | `src/east-suval-world.js:289`, `sign(S.x + 2.6, S.z + 5.2, ...)` |
+| The Quay | -19, 617 (Elod, East Suval) | 7.44 m | **3.5 m away, 1.37 m below** | `src/content/regions/east-suval/east-suval-world.js:289`, `sign(S.x + 2.6, S.z + 5.2, ...)` |
 | The Stair | -1234, 409 (Elagos) | 13.81 m | 2.5 m away, level | `src/elagos-*` |
 
 The Quay's post is inside a house: the collider is a 3.48 m circle at (-18, 615.5) and the post
@@ -123,7 +123,7 @@ is 1.92 m from its centre, so 1.56 m of wall stands through it. Every other post
 within 2 m of ground a traveler can stand on.
 
 **Why they are left alone.** The Quay is inside Elod, and the Elodi border is shut for the whole
-main quest (`src/closed-border.js`): nothing behind it is reachable except with the F8 tools, so
+main quest (`src/world/travel/closed-border.js`): nothing behind it is reachable except with the F8 tools, so
 the post cannot be seen in ordinary play, and moving it is a decision about Elod's harbour
 quarter rather than a slip to correct. The Stair is in Ambron, which is being rebuilt as a lake
 city; its ground is moving anyway.
@@ -251,7 +251,7 @@ controls, including:
 - `Elod · East Suval, behind the gate` — into the region the main quest spends its length keeping shut
 - travel to Peblos, Izolveth, Luscia, the Moros Plain, East Suval and Elagos · Ambron
 
-`src/build-status.js` describes several of those as unfinished in its own words — East Suval is
+`src/dev/tools/build-status.js` describes several of those as unfinished in its own words — East Suval is
 "a way in… No quest, no trade, no interiors." The tools are a door straight into them.
 
 **What is not wrong.** Two things worth saying, because they are the parts that would actually
@@ -332,7 +332,7 @@ game to mend one place.
 1. Move her. The nearest ground that is both reachable and has room to be spoken in is **6.25 m**
    away, around (-208.1, 701.4), in the lane between the second and third huts. There are 3,831
    reachable, roomy spots within twenty metres, so this is one coordinate in
-   `EAST_SUVAL_STANDS` (`src/east-suval.js:291`) once somebody chooses. Not guessed at here
+   `EAST_SUVAL_STANDS` (`src/content/regions/east-suval/east-suval.js:291`) once somebody chooses. Not guessed at here
    because which of those spots is *her* spot is a staging choice: she is a terrace farmer, and
    the lane between the huts is not the terrace.
 2. Thin the scatter at Sevenwalls, so the hamlet has gaps between its buildings. Keeps her where
@@ -384,7 +384,7 @@ The measurements below are what it was.
 
 
 A mercenary who has landed but not yet set off stands in the `landing` phase, and
-`placements()` (`src/mercenaries.js`) puts him in a ring around the traveler's own landing
+`placements()` (`src/gameplay/company/mercenaries.js`) puts him in a ring around the traveler's own landing
 point: `x = start.x + sin(index * 1.9) * (2.2 + index * 0.3)`. `src/main.js:196` passes
 `landing: world.spawn`. The ring therefore grows with a man's place in the roster, from 2.2 m
 for the first to 4.9 m for the tenth.
@@ -416,11 +416,11 @@ standable to exactly 2.2 m, so he is on the edge of it.
 **What it looks like in play** depends on where the traveler is, and both readings are wrong.
 Past the 180 m view range `src/main.js:2559` snaps a man to his home, so he is teleported onto
 the seabed (invisible, since he is also hidden at that range). Inside it, the steering loop
-walks him there with `stepAround` (`src/bodies.js:60`), which moves through `moveCharacter` and
+walks him there with `stepAround` (`src/gameplay/combat/bodies.js:60`), which moves through `moveCharacter` and
 so will not enter water, and he presses against the pier edge without ever reaching the spot the
 game says he is at.
 
-**Not new.** `git log` on `src/mercenaries.js`: the roster went from eleven to ten at `dff10f0`,
+**Not new.** `git log` on `src/gameplay/company/mercenaries.js`: the roster went from eleven to ten at `dff10f0`,
 so it shrank rather than grew and the ring's reach came down with it. The formula and the spawn
 are untouched, so this has been true since the company was added at `7d76316`.
 
@@ -456,9 +456,9 @@ Kristen.
 
 - `route: 'shore'` — `createMercenaryCompany` takes a `shore` point, and Ed the Word waits on
   the strand the sea put him on rather than among the people who came off boats.
-- `swims` — `WORD_SWIMS` in `src/word-arrival.js` is what makes his arrival a crossing to watch
+- `swims` — `WORD_SWIMS` in `src/content/quests/roadside/word-arrival.js` is what makes his arrival a crossing to watch
   rather than a man appearing on the sand when the ship lets him go.
-- `route: 'wild'` — Mus walks a line of his own, `src/wild-route.js`, by way out 1 below:
+- `route: 'wild'` — Mus walks a line of his own, `src/content/quests/roadside/wild-route.js`, by way out 1 below:
   `placements()` picks the polyline and `mercenaryProgress` is untouched, because it was already
   written in distance along *a* path. **1,598 m of authored line, 1,714 m with the muster leg,
   against the road's 1,295, at 0.88 m/s against his own 1.42**, so he musters between minute 32.7
@@ -483,10 +483,10 @@ What follows is what it was.
 **Half resolved.** `route: 'shore'` is read: `createMercenaryCompany` takes a `shore` point, and
 a man whose route is the shore waits there instead of among the people who came off boats. Ed the
 Word comes out of the water onto the strand north of the pier and stands on it, which is where
-`src/word-arrival.js` puts him and what `tests/word-arrival.test.js` and
+`src/content/quests/roadside/word-arrival.js` puts him and what `tests/word-arrival.test.js` and
 `tests/nobody-sealed-in.test.js` check.
 
-`swims` is read too, as of 2026-09-21: `WORD_SWIMS` in `src/word-arrival.js` is what makes his
+`swims` is read too, as of 2026-09-21: `WORD_SWIMS` in `src/content/quests/roadside/word-arrival.js` is what makes his
 arrival a crossing to watch rather than a man appearing on the sand when the ship lets him go.
 Nobody on the roster is authored without it, but the flag now means something.
 
@@ -494,14 +494,14 @@ What follows is still true of `route: 'wild'` — Mus walks the road like everyb
 
 
 `MERCENARY_ROSTER` gives each man a `route`: the `merc()` factory defaults it to `'road'`
-(`src/mercenaries.js:47`), Ed the Word is authored `route: 'shore', swims: true` (line 78) and
+(`src/gameplay/company/mercenaries.js:47`), Ed the Word is authored `route: 'shore', swims: true` (line 78) and
 Mus is authored `route: 'wild'` (line 120). The doc comment above the roster says "`route` is
 how they get to the muster" (line 66).
 
 **Nothing reads it.** Grepping the whole of `src/` and `tests/` for a read of the field: the
 only hits are the two authored entries, the factory default and that comment. The three modules
-that import from `src/mercenaries.js` — `src/main.js`, `src/road-checkpoint.js` and the two test
-files — never mention it. (`src/salt-sultan.js` has a `route` of its own, on a sea port, which
+that import from `src/gameplay/company/mercenaries.js` — `src/main.js`, `src/app/saves/road-checkpoint.js` and the two test
+files — never mention it. (`src/content/quests/salt/salt-sultan.js` has a `route` of its own, on a sea port, which
 is unrelated.)
 
 **So everyone walks the road.** `mercenaryProgress()` and `placements()` take no branch on
@@ -539,9 +539,9 @@ reworded, and `tests/regions-world.test.js` asserts the old wording is gone. The
 it as an unlabelled stroke, so there was no label text to change. What follows is kept as the
 record of why, and quotes the wording as it was.
 
-`FRONTIER` (`src/region-world.js:544`, "The Moros Horizon", region name "The open road west
+`FRONTIER` (`src/world/terrain/region-world.js:544`, "The Moros Horizon", region name "The open road west
 across the Moros") was the end of the built world: a rope fence west of the army camp, built by
-`src/world-regions.js:690` as posts every 8 m over 344 m of z with rope between them, and one
+`src/world/terrain/world-regions.js:690` as posts every 8 m over 344 m of z with rope between them, and one
 collider 0.2 m thick by 344 m long (`kind: 'frontier'`). Since `bd2d213` there is a country west
 of it.
 
@@ -566,7 +566,7 @@ are standable at 38 of the 44 samples; the other six are water or scatter, not t
 (there is no Nesdor Way yet). Nesdor has no people placed. All five of Nesdor's landmarks (the
 Flats, the Braided Water, the Valley Head, the Carica Corridor, the Upper Carica) are west of
 it. Nothing ever opens or removes it: the only reader of `world.frontier` is the minimap
-(`src/minimap.js:230`), which draws it.
+(`src/ui/map/minimap.js:230`), which draws it.
 
 **What the player meets.** Walking west off the plain, the region card fires "Nesdor" between
 12 and 85+ metres *before* a rope line that says the world ends here, and a ten-second walk
@@ -625,7 +625,7 @@ Nesdor's outline ends at z = 953; walkable ground the card calls Nesdor runs a k
 south. West Izol is an island on the far side of the map, and its name is what the card shows
 at (−1146, 1964).
 
-**Why the card says anything.** `regionAt` (`src/region-world.js:663`) is total: a point whose
+**Why the card says anything.** `regionAt` (`src/world/terrain/region-world.js:663`) is total: a point whose
 hex has no owner is given the nearest region rather than none. Inside the outlines that is
 harmless — on owned ground the hex owner and the polygon agree at 62,249 of 62,249 samples in
 the west, and the softened chart border never strays more than 3.1 m from the hex outline. Off
@@ -667,12 +667,12 @@ Which of the three is right depends on whether the map's edge is meant to be wal
 so it is not guessed at here.
 
 **Resolved, option 3.** `regionAt` no longer guesses: a point whose hex no region owns answers
-`OPEN_COUNTRY` (`src/region-world.js`), a region-shaped sentinel with id 0 and the name
+`OPEN_COUNTRY` (`src/world/terrain/region-world.js`), a region-shaped sentinel with id 0 and the name
 "Open country", so every one of its twenty-seven readers goes on working and none of them
 borrows a neighbour's name. The region card names it and says OUTSIDE EVERY BORDER THE ATLAS
 DRAWS, the kicker says NO COUNTRY CLAIMS THIS, the minimap carries `open`, the map tutorial's
 first-province check wants an id above nought so that walking off the atlas is not arriving
-somewhere, and the chart of countries (`src/cartography.js`) never records it, because it is not
+somewhere, and the chart of countries (`src/ui/map/cartography.js`) never records it, because it is not
 a country. Scenery batching keeps its old district for it (`?.id || 1`). The ground itself did
 not change.
 
@@ -769,8 +769,8 @@ and the hail is not a toast, it is `openDialogue`, which sets `mode='dialogue'` 
 
 | | |
 |---|---|
-| `HAIL_FROM` (`src/lauvel-burying.js:41`) | (−685.09, 325.72), reach **34 m** |
-| `courier-satchel` (`src/luscia-chapter.js:32`) | (−678.29, 297.92) |
+| `HAIL_FROM` (`src/content/regions/luscia/lauvel-burying.js:41`) | (−685.09, 325.72), reach **34 m** |
+| `courier-satchel` (`src/content/chapters/civil-war/luscia-chapter.js:32`) | (−678.29, 297.92) |
 | where the walkthrough stands | (−677.79, 297.12) |
 | between them | **29.5 m** — inside her call |
 
@@ -801,7 +801,7 @@ warps in and reads the same frame sees the stale line.
 - `src/main.js`: the panel and its words are now one decision. `const prompting = …;
   show('interaction',prompting);` and, after everything that writes the label,
   `if(!prompting)$('interaction-label').textContent='';`.
-- `src/road-smoke.js`: the cart step hears her out first, the way a player does, and its failure
+- `src/dev/checks/road-smoke.js`: the cart step hears her out first, the way a player does, and its failure
   message names the mode.
 - `tests/prompt-priority.test.js`: the panel and the words are decided by one value and the clear
   is the last word on the label.
@@ -861,7 +861,7 @@ water (below). Worth knowing before anybody "fixes" the toast as dead code.
 
 ### The finding: the 45 m leash hands a swimmer a full bar of wind
 
-`src/combat.js:715–722` ends a fight when the traveler is 45 m from its centre, and it does it
+`src/gameplay/combat/combat.js:715–722` ends a fight when the traveler is 45 m from its centre, and it does it
 with `restorePlayer()` — full health **and full stamina**. Stamina is wind, and wind is the entire
 currency of the swimming design (`docs/swimming.md`'s crossing table is tuned on it).
 
@@ -991,7 +991,7 @@ saves. There are four of them and they stand alone.
 
 Everyone else matches by construction: the figure is built with `tunic: npc.color`, and where an
 entry names no colour both sides now ask one exported question (`tunicForRole`, `skinForRole` in
-`src/characters.js`, which were `createCharacter`'s own parameter defaults and still are), so they
+`src/content/characters/characters.js`, which were `createCharacter`'s own parameter defaults and still are), so they
 cannot drift.
 
 ---
@@ -1030,11 +1030,11 @@ mark over the 64 m one. If anybody can spare a third, the same bearing at 59 m (
 
 That is the one thing Mus would never say. His own second line, four words earlier in the same
 file, is *"I do not use the road. It goes where everybody knows it goes."* The whole of
-`src/wild-route.js` exists because the user ruled that he does not use it.
+`src/content/quests/roadside/wild-route.js` exists because the user ruled that he does not use it.
 
-**Cause.** `mercenaryLines` (`src/mercenaries.js:490`) picks a line by `placement.phase`, and a
+**Cause.** `mercenaryLines` (`src/gameplay/company/mercenaries.js:490`) picks a line by `placement.phase`, and a
 wild man's phase is `walking` for the whole of his 1,702 m — `createMercenaryCompany` gives him no
-stops, so he can never report `stopped`. His roster row (`src/mercenaries.js:130`) answers
+stops, so he can never report `stopped`. His roster row (`src/gameplay/company/mercenaries.js:130`) answers
 `walking` with the road line, because when it was written the road was the only thing he could be
 walking on.
 
@@ -1050,7 +1050,7 @@ walking on.
 
 So the likeliest place in the game to meet Mus is Rena — which has the archaeology digs and Rena's
 letters in it, and is somewhere a player has reason to stand about. He has a prompt there
-(mercenaries are ordinary talkers, ranked `passing` by `src/prompt-priority.js`), he answers F,
+(mercenaries are ordinary talkers, ranked `passing` by `src/ui/dialogue/prompt-priority.js`), he answers F,
 and the first thing he says is the road.
 
 *Smallest repair:* a `walking` line for a man with no road under him. It is his roster row and one
@@ -1060,7 +1060,7 @@ string — the builder's, not mine.
 
 ## Twenty-nine metres of Mus's line are ground he cannot stand on
 
-`src/wild-route.js`'s header says every metre was authored against the built world: *"A\* over
+`src/content/quests/roadside/wild-route.js`'s header says every metre was authored against the built world: *"A\* over
 ground `canStand` accepts, with the main road fenced off at 40 m, then simplified to the fewest
 waypoints that keep both rules."* Walked a metre at a time with `canStand` and a person's radius:
 
@@ -1119,7 +1119,7 @@ word-to-word (`src/main.js:3484`). Checked and cleared.
 
 **Read this before tidying `combat.revive()`.**
 
-`revive()` (`src/combat.js:791`) sets the phase to `peaceful`, empties the enemies, clears the
+`revive()` (`src/gameplay/combat/combat.js:791`) sets the phase to `peaceful`, empties the enemies, clears the
 allies and restores the player — and deliberately or not, it **leaves `state.encounterId` naming
 the fight that is over**. Reported here earlier as harmless: `#encounter-status` is hidden outside
 a fight and every other reader sits inside an event handler, so nothing shows it.
@@ -1252,10 +1252,10 @@ It is not even a frame mix-up: comparing her world position against the raw auth
 32.53 m, so both readings agree she is far outside. The nearest bird ground she comes to at all is
 `green-robins` at 10.2 m against a 6 m radius — 4.2 m clear.
 
-**And a stand cannot take a perch from anybody.** `habitatSpots` (`src/drent-birds.js:500`)
+**And a stand cannot take a perch from anybody.** `habitatSpots` (`src/content/regions/drent/drent-birds.js:500`)
 applies `avoid` — which `main.js:947` fills with every NPC's position — only to the **ground**
 foraging spots, at 1.6 m. `habitat.perches` are mapped through unconditionally. So the worry
-written at `src/rena.js:192-194`, *"nothing sits inside a bird's home ground … which would take its
+written at `src/content/quests/rena/rena.js:192-194`, *"nothing sits inside a bird's home ground … which would take its
 perches away"*, describes something the code cannot do. What a stand can take is ground spots.
 
 **Nothing takes any.** Built the world and ran `habitatSpots` for every habitat twice, once with
@@ -1272,7 +1272,7 @@ measuring this starts from the right two.
 
 ## Three of the seven Arms skills can never be capped, because they take no source
 
-`ARMS.ceiling` (`src/combat-skills.js:60`) is the rule that nobody reaches 60 by hitting straw:
+`ARMS.ceiling` (`src/gameplay/combat/combat-skills.js:60`) is the rule that nobody reaches 60 by hitting straw:
 `post: 5`, `sparring: 20`, and no ceiling at all in a real fight. `pay(id, amount, source)`
 honours it, and `dealt()` takes a `source` and passes it through. **The other three payers do
 not.**
@@ -1321,7 +1321,7 @@ Driven on the pure module.
 - **Playing as somebody else.** Nothing in the snapshot is keyed to a player; restored into a
   game started as anybody, the row ripens on time.
 - **The checkpoint layer cannot reject it.** `validateFarmingSnapshot` refuses a snapshot whose
-  `sownAt` is later than the clock, which is right — and `src/road-checkpoint.js:148` passes the
+  `sownAt` is later than the clock, which is right — and `src/app/saves/road-checkpoint.js:148` passes the
   **saved** `playSeconds`, not the live one, so a fresh session loading an old save can never
   fail that check.
 
@@ -1337,7 +1337,7 @@ doing its job.
 - Each corner sits in **its own chart hex**: standing on the pier makes only the pier walked, and
   so for the Weatherhead and the Koopwood. Swept every point of a 140 × 200 m box over the
   village at 2 m: **no single spot ever counts for more than one corner.**
-- `reveal` (`src/map-fog.js:139-151`) adds **only the hex under the point** — no ring, no radius.
+- `reveal` (`src/ui/map/map-fog.js:139-151`) adds **only the hex under the point** — no ring, no radius.
   Walking all three gives the chart exactly three cells.
 - **Asking the way does not reveal fog.** `wayfindingChoice` (`src/main.js:2833`) calls
   `cartography.hear(name)`, which feeds the cartography skill's knowledge of a *region name*.
@@ -1370,7 +1370,7 @@ is what the comment beside it says.
 
 **What remains: 13 m.** They are all on the **muster leg** — the straight line
 `createMercenaryCompany` appends from his last authored waypoint to `ANCHORS.legionCamp`, which
-`src/wild-route.js` does not author and so did not fix. It runs (−996.5, 554.9) to (−991.1,
+`src/content/quests/roadside/wild-route.js` does not author and so did not fix. It runs (−996.5, 554.9) to (−991.1,
 569.9), a few metres of something solid on the approach to the camp. Small, and it is at the end
 where he is arriving anyway, but the file's promise covers the whole line a man walks.
 
@@ -1378,7 +1378,7 @@ where he is arriving anyway, but the file's promise covers the whole line a man 
 
 ## Jerry calls her Christin at the muster (fixed)
 
-One line in `src/moros-chapter.js` — what Jerry says when he walks into the camp behind you —
+One line in `src/content/chapters/civil-war/moros-chapter.js` — what Jerry says when he walks into the camp behind you —
 still used her old spelling: *"Here before us. Christin owes me nothing and is somehow still
 pleased."* She is **Kristen** on screen everywhere else; `christin` and `merc-christin` are ids,
 and ids never change once a save has written them.
@@ -1393,7 +1393,7 @@ Nothing was looking, because every test that knew her knew her by id.
 
 ## A man says he saw you at a stop you were never at
 
-`notice()` (`src/long-road.js:374`) records, for each of the ten, **the stop the traveler was
+`notice()` (`src/content/chapters/journey/long-road.js:374`) records, for each of the ten, **the stop the traveler was
 nearest to** when they passed within 40 m or shared a named ground. `nearestStop` (`:259`) has no
 radius: it returns the nearest of all sixteen spine stops however far away it is.
 
@@ -1477,7 +1477,7 @@ Measured on the pure modules. Nothing retuned.
 
 ### Why the traveler cannot answer it
 
-The Arms table is a **straight line from level 1 to 99** (`along`, `src/combat-skills.js:82`). One
+The Arms table is a **straight line from level 1 to 99** (`along`, `src/gameplay/combat/combat-skills.js:82`). One
 level is **+2.04 % damage** and **+3.0 health**. The country is **+45 % enemy health** and
 **+30 % enemy damage per level**. So:
 
@@ -1517,7 +1517,7 @@ traveler finishes the Drent raids, the Bramble camp and the Lauvel wolves at **4
 100 % health**, at every level — and loses the border battle **0 of 40** (and 3 of 40 even at
 level 0, before any of this).
 
-That gap is not the country's doing. It is `src/combat.js:403-412`: a landed blow staggers an
+That gap is not the country's doing. It is `src/gameplay/combat/combat.js:403-412`: a landed blow staggers an
 enemy, resets its recovery and pushes `nextAttackerAt` by 0.35 s — **unless the kind has `poise`**.
 Goblins and wolves have none, so a swing every 0.3 s holds them permanently staggered and they
 never wind up. Soldiers have poise, so they cannot be held, and they answer.
@@ -1599,9 +1599,9 @@ survives about a fifth of.
 ### One asymmetry for phase 3 to know about
 
 **An ally's health is not scaled by the country; the blow that kills him is.** `countryHealth` is
-applied in the *enemies* loop of `encounterConfig` (`src/combat.js:124`) and nowhere else, so at
+applied in the *enemies* loop of `encounterConfig` (`src/gameplay/combat/combat.js:124`) and nowhere else, so at
 level 2 the man you are fighting has 190 and the man beside you still has 90 — while `hurtAlly`
-(`src/combat.js:647`) scales what hits him by `countryDamage`, ×1.60.
+(`src/gameplay/combat/combat.js:647`) scales what hits him by `countryDamage`, ×1.60.
 
 It does not show in the rows above (3.3 allies still standing at level 2 against 3.5 at level 0),
 and the reason it does not is worth saying plainly: **the allies are not surviving because they
@@ -1615,7 +1615,7 @@ its ground; today it is of its enemies only, and your own side is standing on th
 
 ## The recognised teachers never say their line: thirteen lines wired to nothing
 
-`src/long-road.js` exports three things for the traveler who already has a skill a stop teaches:
+`src/content/chapters/journey/long-road.js` exports three things for the traveler who already has a skill a stop teaches:
 `knowsAlready` (`:587`), `RECOGNISED` (`:595`, thirteen lines, one per spine teacher) and
 `recognisedAt` (`:611`). The design is in `docs/drent-long-road.md` §10: *"the teacher takes one
 recognising branch — 'you have done this before' — the first-find step is waived, the stop counts,
@@ -1643,7 +1643,7 @@ stops the moment they step ashore:
 | Cromb, Chris, Ed | — / linguist / swimming | nothing |
 
 And the stop is *closed*, not shortened: `done(state)` is re-derived from the skill being known
-(`src/long-road.js:270` — "nothing here is remembered"), so the stop is ticked before the teacher
+(`src/content/chapters/journey/long-road.js:270` — "nothing here is remembered"), so the stop is ticked before the teacher
 is met. Being closed, it is never `longWayNext()`, so the teacher never wears the open gold, so
 the player is never pointed at them at all. Play as Lakota and Perrin is an ordinary villager with
 no mark and nothing to say about birds — `markerFor` also drops his green leaf, because
@@ -1746,7 +1746,7 @@ the skills that own them.
 
 ### Chris's five sittings
 
-Five drills, one closing each leg but the harbour's (`DRILL_COUNT`, `src/long-road.js:37`), six
+Five drills, one closing each leg but the harbour's (`DRILL_COUNT`, `src/content/chapters/journey/long-road.js:37`), six
 lines apiece, `DRILL_EXPOSURE = 35` — **175 taught**, which is what `docs/languages.md:286` says
 and what makes the army's signs readable about as the traveler leaves Drent.
 
@@ -1801,11 +1801,11 @@ That matters for what to build next, so it is written down rather than folded aw
 
 ### What was built
 
-`src/frame-errors.js`, pure, and three places that now look:
+`src/dev/tools/frame-errors.js`, pure, and three places that now look:
 
 1. **`state().frameErrors`** — `{ count, first: { message, at, frame } }`, plain JSON on its way
    out of the page.
-2. **`src/road-smoke.js`** asks at **every `arrive()`** — thirty-odd points down the road — and
+2. **`src/dev/checks/road-smoke.js`** asks at **every `arrive()`** — thirty-odd points down the road — and
    names the message, the stack line and the frame number when it fires.
 3. **`main.cjs`** asks before it photographs: the named-views loop checks before every
    `capturePage`, and the draw review checks before it files anything. A picture of a broken
@@ -1887,7 +1887,7 @@ same frame. The first man through sets it from *his own* position; the other nin
 a copy of it. So for the whole of any fight, and everywhere in Pueth and Peblos, **all ten are
 told to stand on one spot**.
 
-They are solid to one another (`src/bodies.js`), so nothing merges — they shove at that point and
+They are solid to one another (`src/gameplay/combat/bodies.js`), so nothing merges — they shove at that point and
 keep shoving, because the home is recomputed to the same place every frame. Ten men treading on
 each other for the length of a fight, just outside the box.
 
@@ -1900,7 +1900,7 @@ The keep-out itself is right: the tutorial raid's box reaches **24.2 m** from it
 if(!canStand(x,z,world)){const spot=escortSpotFor({x:p.x,z:p.z,yaw},…);if(spot){x=spot.x;z=spot.z;}}
 ```
 
-`escortSpotFor` (`src/mercenaries.js:509`) walks a fixed list of offsets and returns **the first
+`escortSpotFor` (`src/gameplay/company/mercenaries.js:509`) walks a fixed list of offsets and returns **the first
 standable one**. It takes no place in the file, so every man who falls back to it gets the *same*
 answer. Measured in **Nothom square, 2 of 10** find no `fileSpot` and fall through to it —
 and both land on the same stone.
@@ -1965,7 +1965,7 @@ counting you, and the rest are somewhere on a road."*
 
 ### And the lines are written for men who were somewhere else
 
-`notice()` (`src/long-road.js`) records only `walking` and `stopped` placements, so a companion is
+`notice()` (`src/content/chapters/journey/long-road.js`) records only `walking` and `stopped` placements, so a companion is
 **never noticed**: `seenAt` is empty for all nine however far they walked with you. At a full
 muster that makes **9 of 10 company lines** fall back to *"somewhere back down that road"* —
 
@@ -2026,7 +2026,7 @@ are within a stride of the road:
 | `silas-stream` | 5 | yes | **13** | Drent / **none** |
 | `hollis-bridge` | 5 | yes | **2** | Luscia / caloss-crossing |
 
-**Silas really is in no named ground**, exactly as `src/long-road.js` claims. The nearest
+**Silas really is in no named ground**, exactly as `src/content/chapters/journey/long-road.js` claims. The nearest
 subregion centre is `caloss-bank` at **89 m against a 70 m reach**; then `caloss-crossing` at 106
 against 55, and `avrel` at 107 against 75. He is outside all of them, so the only way a man is
 noticed going past him is the forty metres — which is what the comment beside him says.
@@ -2064,7 +2064,7 @@ put Mus in a river.**
 
 ## Walk to the border battle with three companions and it will not start
 
-**`encounterConfig` refuses any encounter with more than six allies** (`src/combat.js:135`):
+**`encounterConfig` refuses any encounter with more than six allies** (`src/gameplay/combat/combat.js:135`):
 
 ```js
 if (!Array.isArray(config.allies) || config.allies.length > 6) return null;
@@ -2191,7 +2191,7 @@ some of the company to be elsewhere.
 ### A correction to my own first pass
 
 My first run carried a column called *player killed* which matched *enemies down* exactly in every
-row. It was wrong: an ally's strike calls the same `hurtEnemy` (`src/combat.js:753`), which emits
+row. It was wrong: an ally's strike calls the same `hurtEnemy` (`src/gameplay/combat/combat.js:753`), which emits
 the same `hit` event, so I was counting every kill and calling it the player's. The passenger
 control replaced it and is the honest measure. That is the fifth time a probe of mine has modelled
 the game from outside and believed itself; the rule in this ledger keeps earning its place.
@@ -2472,7 +2472,7 @@ has to decide which of the two goes first in the frame.
   a fact about the man and not about whether he is moving.
 - **A fight, water and the ferry all bring the company down, and none of them needed a line.** The
   fight unseats him (`main.js:4052`), the ferry **refuses** while he is mounted
-  (`src/ferry.js:122`, "Not with the horse"), and a horse will not enter water at all - so in all
+  (`src/world/travel/ferry.js:122`, "Not with the horse"), and a horse will not enter water at all - so in all
   three the traveler is on his feet and the one rule puts the company on theirs.
 - **Chris rides.** The host reads the *placed file* and not the companions list, which is the one
   place the landing mate would otherwise have fallen through.
@@ -2499,7 +2499,7 @@ has to decide which of the two goes first in the frame.
 
 ## The shield's guard: read closely, and one thing worth knowing
 
-Every condition the brief asks for is in one predicate, `guarding()` (`src/combat.js:376`): a
+Every condition the brief asks for is in one predicate, `guarding()` (`src/gameplay/combat/combat.js:376`): a
 shield in hand, an active fight, an **idle** body, alive, and wind to pay. The catching branch
 (`:525`) returns before the line that sets `player.action='hurt'` and before `moveCharacter`, so it
 never rocks him, and it sets no invulnerability - a dodge is still the only thing that makes a blow
@@ -2531,8 +2531,8 @@ how far the two at the rail lean, when the village says its five things. The men
 were not: `src/main.js` handed the hull `elapsed`, the **session** clock, which starts at nought
 every time the game is opened. So `crewPose`'s `sway`, the helmsman's `turn` and the sail man's
 `lift` were different at the same second of the same arrival after a reload - up to **0.26 rad, 15
-degrees, of helmsman**. `src/rebel-crew.js` says in as many words that a reload mid-arrival shows
-the right pose "without anything being saved", and `src/word-arrival.js:111` repeats it; it was
+degrees, of helmsman**. `src/content/quests/roadside/rebel-crew.js` says in as many words that a reload mid-arrival shows
+the right pose "without anything being saved", and `src/content/quests/roadside/word-arrival.js:111` repeats it; it was
 true of her hull and false of everybody on it. One token, and
 `tests/rebel-crew.test.js` now pins the clock and measures what the wrong one was worth.
 
@@ -2547,7 +2547,7 @@ inside her deckhouse.
 | | |
 |---|---|
 | `rebel-helm` | z = **−4.44** (`−L × .74`), feet at `DECK_Y` **1.16** |
-| the rebel deckhouse (`src/salt-ship.js:168`) | centred z = −3.72, **z −4.98 to −2.46**, y **1.205 to 2.155**, with a tarpaulin over it at 2.2 |
+| the rebel deckhouse (`src/content/quests/salt/salt-ship.js:168`) | centred z = −3.72, **z −4.98 to −2.46**, y **1.205 to 2.155**, with a tarpaulin over it at 2.2 |
 
 So he stands 0.54 m inside its after end, and his legs and hips are inside a solid box whose roof
 cuts him at the chest. `tests/rebel-crew.test.js` checks every man against her **bulwarks** - beam
@@ -2565,7 +2565,7 @@ under the break of it. Both change the picture the user has seen.
 In the same shot Ed appears to be **standing upright on the water** rather than swimming. He is
 not: `swimmerAt(WORD_SHIP.drops)` answers `swimming: true`, the host sinks him to
 `WATERLINE − SWIM.sink` and passes `swimming: true` to his animator. What the picture shows is the
-swim stroke **at stride phase 0**, which `src/characters.js:801` makes: `reach = sin(0) = 0` for
+swim stroke **at stride phase 0**, which `src/content/characters/characters.js:801` makes: `reach = sin(0) = 0` for
 both arms, so `arm = −.58`, `armOut = ±.46`, `hip = −.22`, `knee = .3` - arms out at the sides,
 legs straight, chest back. A frozen review stops `walkTime`, so an NPC is photographed at whatever
 phase the clock is on, and phase nought of a swim looks like a man standing.
@@ -2618,7 +2618,7 @@ the first man is placed, and `refreshCompanyHorses` reads the same function to d
 out of step and every snapping path — `settleMercenaries`, a load, a story start, every review
 view — gets it for nothing.
 
-`fileSpotFor` (`src/company-horses.js`) and the per-man fallback ring now honour **a room on the
+`fileSpotFor` (`src/gameplay/company/company-horses.js`) and the per-man fallback ring now honour **a room on the
 entry**: `Number.isFinite(other.room) ? other.room : room`. A man needs `BODY.person + BODY.horse`
 = 0.80 m from a horse's centre and `BODY.person * 2` = 0.68 from another man, and a ridden horse
 is no obstacle at all because its man already is, at a rider's own footprint.
@@ -2650,9 +2650,9 @@ He was inside her stern deckhouse with the roof cutting him off at the chest. Th
 moved, lowered or shortened: **her stern house is his steering platform**, which is what a low
 poop is.
 
-The numbers are now one description, `REBEL_STERN_HOUSE` in `src/salt-sultan.js`, beside the hull
+The numbers are now one description, `REBEL_STERN_HOUSE` in `src/content/quests/salt/salt-sultan.js`, beside the hull
 — because a thing that stands on her deck is something anybody standing on her deck has to know
-about. `src/salt-ship.js` builds the house from it, `src/rebel-crew.js` exports `POOP_Y` (2.25, the
+about. `src/content/quests/salt/salt-ship.js` builds the house from it, `src/content/quests/roadside/rebel-crew.js` exports `POOP_Y` (2.25, the
 top of the tarpaulin) and `overTheHouse(x, z)`, and a man's row carries his own `y`, which is
 `DECK_Y` for the four on the deck and `POOP_Y` for the one at the tiller.
 
@@ -2717,19 +2717,19 @@ the atlas being English anyway.
 `waymarker-before`. Corvan's four lines, the quest panel, the region card, the two toasts and the
 key strip are all plain English, and there is no aside.
 
-**One line fixed, because it is unambiguous.** `src/journey-content.js:105` — Corvan's first
+**One line fixed, because it is unambiguous.** `src/content/chapters/journey/journey-content.js:105` — Corvan's first
 line began *"the letter of introduction?"*, lower case, and reads on screen as a fragment with its
 opening words missing. Capitalised, and nothing else about it touched.
 
 **Reported, not fixed:**
 
 - **The lettering atlas still carries every foreign word in normal mode.** `FOREIGN_SIGN_LABELS`
-  is computed at module load in `src/signs.js`, with no mode in sight, and `SIGN_LABELS` is both
+  is computed at module load in `src/world/scenery/signs.js`, with no mode in sight, and `SIGN_LABELS` is both
   sets. Nothing can show them — `signText` answers the plain label with no reader — so this is
   cost and not copy: the atlas is taller than a normal-mode game needs. **The sign atlas is
   another agent's ground**, so it is written down here.
-- **Two lines gloss a place name with "in your tongue"** — `src/wine-attic.js:121` ("Tharganhom.
-  The Wine Attic, in your tongue.") and `src/wine.js:226` ("This is Paradise Springs. In your
+- **Two lines gloss a place name with "in your tongue"** — `src/content/quests/wine/wine-attic.js:121` ("Tharganhom.
+  The Wine Attic, in your tongue.") and `src/content/quests/wine/wine.js:226` ("This is Paradise Springs. In your
   tongue, …"). Left alone on purpose: a foreign *name* having a meaning is true in both modes,
   and these are about a name and not about what the speaker is speaking. Worth a glance from
   whoever owns the copy.
@@ -2796,7 +2796,7 @@ the picture `docs/companions.md` describes, and it had never been seen.
 ## The hold, lifted — and what the day after is with a company
 
 The user's ruling: **"Lift it to level 2."** The measuring came first, because the constant also
-held the four day-after fights (`src/aftermath-chapter.js`) and nobody had ever run one with a
+held the four day-after fights (`src/content/chapters/chapter-one/aftermath-chapter.js`) and nobody had ever run one with a
 company.
 
 ### Two faults in my own harness, found before any number was believed
@@ -3087,7 +3087,7 @@ check is done and Mern's half is not.**
 
 The fill is ordinary soldiers of the side's own ally kind, handed in where the companions are
 handed in. **Not into the encounter's authored list**, because `ALLY_SPOTS`
-(`src/border-chapter.js:64`) has **five places** and the side already uses four - a fill of two
+(`src/content/chapters/chapter-one/border-chapter.js:64`) has **five places** and the side already uses four - a fill of two
 would overflow it and `borderEncounter` would silently slice it off. *That is worth knowing before
 the builder wires it: either the fill goes through `getAllies` like the company, or `ALLY_SPOTS`
 has to grow.*
@@ -3123,7 +3123,7 @@ read as six in the file beyond the side's own four.
 - **`sitting still` tracks `won` in every row.** At the floor the traveler can stand there and his
   side wins anyway, so this measurement cannot certify "hard but winnable" - only "winnable".
 - **No ally of any kind ever dies. Not one, in any row.** Driven directly: over a whole fight the
-  enemies emitted **3 `player-hit` and 0 `ally-hit`**. `enemyTarget` (`src/combat.js:942`) picks
+  enemies emitted **3 `player-hit` and 0 `ally-hit`**. `enemyTarget` (`src/gameplay/combat/combat.js:942`) picks
   the nearest of the player and the allies, and this driver holds the checkpoint while its own
   line is still coming up - so it is the nearest thing to every soldier on the field, takes every
   blow, and dies or does not while nobody behind it is touched.
@@ -3145,7 +3145,7 @@ Until somebody writes that, the floor is measured and the *feel* of the floor is
 
 ## Not hunted this round
 
-**Bows (phase 6, `src/archery.js`) were not started.** The round ran out on the floor measurement
+**Bows (phase 6, `src/gameplay/combat/archery.js`) were not started.** The round ran out on the floor measurement
 and its two false starts. Nothing in this ledger says anything about arrows; the whole list the
 coordinator set - arrows through walls and people, friendly fire, shooting into an arena from
 outside it, the quiver across a save, the bow in a teaching fight or a bout, drawing while mounted
@@ -3165,7 +3165,7 @@ cause and are on this branch (`d10a6c3`); the rest are reported and untouched.
 
 ## An arrow goes through everybody except an enemy (no friendly fire, and no opinion in the code)
 
-**`updateArrows` (`src/combat.js`) looks for a hit in `state.enemies` and in nothing else.** There
+**`updateArrows` (`src/gameplay/combat/combat.js`) looks for a hit in `state.enemies` and in nothing else.** There
 is no test against `state.allies` and none against the traveler, so an arrow - the traveler's or
 Jerry's - passes through every friendly body on the field and carries on.
 
@@ -3194,7 +3194,7 @@ in a scrum is very often straight down the traveler's back.
 ## An arrow has no height, so nothing about the ground can stop one
 
 `arrow.y` is set once to `BOW.height` (1.25) and never read again. Neither `updateArrows` nor
-`src/archery.js` calls `heightAt` anywhere. Driven: with the world's floor set to 50 m everywhere,
+`src/gameplay/combat/archery.js` calls `heightAt` anywhere. Driven: with the world's floor set to 50 m everywhere,
 the arrow still flies 18 m at y = 1.25 and hits. So an arrow crosses a rise, a bank, a terrace wall
 and the far side of a ravine without noticing, and a shot downhill flies level over the target's
 head as far as the two-dimensional sweep is concerned. Only `nearColliders` - props, buildings,
@@ -3206,7 +3206,7 @@ authored fight is on flat ground; the standoff below is not.
 ## Stand twelve metres out of the arena and eight soldiers cannot answer
 
 **The arena bounds the enemy and does not bound the traveler.** An enemy chasing the traveler
-steers to a point clamped into a box of 8 m across the arena by 16 m along it (`src/combat.js:906`).
+steers to a point clamped into a box of 8 m across the arena by 16 m along it (`src/gameplay/combat/combat.js:906`).
 The traveler is bounded only by the retreat line along the arena's own axis, and by the 45 m leash
 from the centre. **Across** the arena there is nothing at all between 8 m and 45 m - and the bow
 carries 34.
@@ -3240,14 +3240,14 @@ end. All three are decisions, so none was taken here.
 ## The bow can never touch the straw post
 
 The practice dummy exists only while `state.phase === 'practice'` (`startPractice`), and a draw
-needs `state.phase === 'active'` (`drawing()`, `src/combat.js:469`). So holding the button at the
+needs `state.phase === 'active'` (`drawing()`, `src/gameplay/combat/combat.js:469`). So holding the button at the
 post does nothing, `combat.drawn` stays 0 and no arrow is ever loosed at it. And a bow cannot be
 swung either - `beginAttack` refuses a `ranged` weapon - so **a traveler holding a bow cannot make a
 mark on the post at all**, and `practice-hit` (which is what pays Blades) never fires.
 
 Nobody meets this in the arc as it stands: the post is quest stage 2 and Jerry's bow comes much
 later. It matters if anybody ever wants target practice, which is exactly what the builder is
-putting in `src/teachers.js` - so this is a note for them rather than a fault to repair here.
+putting in `src/gameplay/skills/teachers.js` - so this is a note for them rather than a fault to repair here.
 
 ## Letting go is the shot, and so is everything else that stops the game
 
@@ -3464,7 +3464,7 @@ four approaches: standing 3 m east gives the prompt but puts the camera where Me
 3.5 m east loses the prompt (the talk radius is between 3.0 and 3.5 m) and shows the smithy's wall;
 standing north puts the camera **inside** the smithy; standing south-east at 2.8 m gives the prompt
 with the traveler's own body exactly between the camera and him. That is a note for whoever owns
-`src/smith.js`: he wants a metre of clear ground and a stand that faces the street.
+`src/content/quests/roadside/smith.js`: he wants a metre of clear ground and a stand that faces the street.
 
 **Buying from him in a render is not done.** The buying panel opens from a dialogue, and
 `stand-at:` only stands - showing it needs a composed view of its own in the review switch, like
@@ -3584,7 +3584,7 @@ shield), the side's own four, 40 seeds, the same validated driver that keeps its
 front rank.
 
 **A correction to the harness first.** One row printed a total of nought enemies, which made no
-sense. A **retreat** empties `state.enemies` (`src/combat.js:1112`), and the driver can walk itself
+sense. A **retreat** empties `state.enemies` (`src/gameplay/combat/combat.js:1112`), and the driver can walk itself
 out of a fight by following a line that wanders. Retreats and two-minute stalemates are now counted
 as their own columns instead of hiding among the losses.
 
@@ -3657,7 +3657,7 @@ numbers for both levers, lone traveler, 40 seeds:
 **The honest single lever is B at level 15 / toughness 12.** It keeps six men and keeps the cost -
 5.9 of 6 still die - removes every stalemate, and leaves the traveler at 59 % health having done
 all of it. And it keeps an assigned man **strictly weaker than the weakest companion**, which is
-what `src/file-fill.js` says they are for: Altun is level 20 / toughness 17, and 20/17 for the fill
+what `src/gameplay/combat/file-fill.js` says they are for: Altun is level 20 / toughness 17, and 20/17 for the fill
 would make an assigned stranger exactly as good as a man who chose to walk with you.
 
 **Lever A cannot do the same job.** Floor 8 clears the stalemates but only reaches 29/40 with eight
@@ -3704,8 +3704,8 @@ between them (plain: 0.7 of 8). Training the fill did not hand the battle to the
 
 ## B. The battle grows with the company
 
-`BORDER_LINE` in src/border-chapter.js: companions 0-6 meet eight, and above the floor one more
-soldier a companion, to twelve. **Twelve is `encounterConfig`'s own cap** (src/combat.js refuses a
+`BORDER_LINE` in src/content/chapters/chapter-one/border-chapter.js: companions 0-6 meet eight, and above the floor one more
+soldier a companion, to twelve. **Twelve is `encounterConfig`'s own cap** (src/gameplay/combat/combat.js refuses a
 fight with more than twelve enemies), so a full company meets the largest line the game will lay.
 
 | walking with him | the line | won | health | seconds | swings | blows taken | companions dead |

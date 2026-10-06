@@ -101,7 +101,7 @@ Elapsed times above are observations, not isolated performance benchmarks.
 
 ## Native driver and verified ordinary-input routes
 
-`src/east-izol-checks.js` is a separate driver, now wired and run by root in the
+`src/dev/checks/east-izol-checks.js` is a separate driver, now wired and run by root in the
 main desktop checkout. It uses the same hook contract as
 `runRegionalGroundChecks`: real F8 travel, readiness checks, ordinary held W
 input, a production `wood.swing` partial holm-oak harvest with normal stock and

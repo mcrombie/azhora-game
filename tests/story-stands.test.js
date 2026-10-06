@@ -2,17 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { BORDER_NPCS, BORDER_ARENA, borderEncounter } from '../src/border-chapter.js';
-import { MOROS_SITES } from '../src/moros-chapter.js';
-import { AFTERMATH_VARIANTS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, aftermathEncounter } from '../src/aftermath-chapter.js';
-import { AFTERMATH_SITES, AFTERMATH_ARENAS, aftermathBuilt } from '../src/aftermath-sites.js';
-import { LEGION_POSTS } from '../src/legion-posts.js';
-import { legionPostStake } from '../src/occupation.js';
-import { RIDE } from '../src/riding.js';
-import { LUMBER_TOWN_STABLE } from '../src/region-world.js';
-import { HIDEOUT_GARRISON, FOREST_HIDEOUT_QUEST } from '../src/forest-hideout.js';
-import { STORY_STARTS, startingSpot } from '../src/story-starts.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BORDER_NPCS, BORDER_ARENA, borderEncounter } from '../src/content/chapters/chapter-one/border-chapter.js';
+import { MOROS_SITES } from '../src/content/chapters/civil-war/moros-chapter.js';
+import { AFTERMATH_VARIANTS, AFTERMATH_SITE_IDS, AFTERMATH_ARENA_IDS, aftermathEncounter } from '../src/content/chapters/chapter-one/aftermath-chapter.js';
+import { AFTERMATH_SITES, AFTERMATH_ARENAS, aftermathBuilt } from '../src/content/chapters/chapter-one/aftermath-sites.js';
+import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
+import { legionPostStake } from '../src/gameplay/company/occupation.js';
+import { RIDE } from '../src/gameplay/movement/riding.js';
+import { LUMBER_TOWN_STABLE } from '../src/world/terrain/region-world.js';
+import { HIDEOUT_GARRISON, FOREST_HIDEOUT_QUEST } from '../src/content/quests/forest/forest-hideout.js';
+import { STORY_STARTS, startingSpot } from '../src/app/startup/story-starts.js';
 
 test('everyone the later chapters place on the ground stands on walkable ground in the right region', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
@@ -70,7 +70,7 @@ test('the roads can be ridden end to end, and the stable yard has room for a man
   const { createWorld } = await sourceModule('../src/world.js');
   const world = createWorld(new THREE.Scene());
   // **With the Caloss span down again.** Six paces of it are in the river until somebody mends
-  // it, and a horse will not go in the water at all (src/world-regions.js, src/swimming.js) -
+  // it, and a horse will not go in the water at all (src/world/terrain/world-regions.js, src/gameplay/movement/swimming.js) -
   // which is the point of the repair, and not a road that was built wrong.
   world.setJourneySiteState?.('bridge-repair', true);
   // A mounted traveler is wider than a walker: the whole main road, the Caloss bridge included, must take the mount's footprint.

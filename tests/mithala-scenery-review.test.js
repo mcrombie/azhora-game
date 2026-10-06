@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { REGION_IDS, hexOwnerAt } from '../src/region-world.js';
-import { MITHALA_REGIONS, mithalaWet, inBackswamp } from '../src/mithala-world.js';
-import { timberForSpecies } from '../src/wood-species.js';
-import { MITHALA_WILDLIFE_ZONES } from '../src/mithala-wildlife.js';
+import { REGION_IDS, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { MITHALA_REGIONS, mithalaWet, inBackswamp } from '../src/content/regions/mithala/mithala-world.js';
+import { timberForSpecies } from '../src/gameplay/skills/woodcutting/wood-species.js';
+import { MITHALA_WILDLIFE_ZONES } from '../src/content/regions/mithala/mithala-wildlife.js';
 import { sourceModule } from './module-loader.js';
-import { mithalaCityReserved } from '../src/mithala-city.js';
+import { mithalaCityReserved } from '../src/content/regions/mithala/mithala-city.js';
 
 const scene = new THREE.Scene();
 const world = await scopedWorld(scene, MITHALA_REGIONS.map(name => REGION_IDS[name]));
@@ -129,7 +129,7 @@ test('Mithala wildlife meets visible ground without changing water heights or sa
   } finally { life.dispose(); }
 });
 
-const lifeModule = await sourceModule('../src/west-regions-life.js');
+const lifeModule = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 
 test('Mithala low plants and solid apron stones touch the rendered ground', t => {
   const matrix = new THREE.Matrix4(), point = new THREE.Vector3(), failures = [], summary = [];

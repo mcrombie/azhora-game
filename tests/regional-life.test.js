@@ -1,11 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { toWorld } from '../src/world-scale.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
-import { createJourney } from '../src/journey.js';
+import { toWorld } from '../src/world/terrain/world-scale.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
+import { createJourney } from '../src/content/chapters/journey/journey.js';
 import { REGIONAL_LIFE_NPCS, REGIONAL_LIFE_SITES, createRegionalLife, validateRegionalLifeSnapshot,
-  regionalLifeConversation, regionalLifeSiteConversation, regionalLifeRelayChoices } from '../src/regional-life.js';
+  regionalLifeConversation, regionalLifeSiteConversation, regionalLifeRelayChoices } from '../src/world/life/regional-life.js';
 
 function fixture({ inventory = createInventoryState() } = {}) {
   const events = [], story = createRegionalLife({ inventory, onEvent: event => events.push(event) });

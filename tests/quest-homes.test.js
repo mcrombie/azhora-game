@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { CAGNEY_HOME } from '../src/cagney-quest.js';
-import { BODY } from '../src/bodies.js';
-import { canStand } from '../src/game-state.js';
-import { BEN_HOME, TROY_HOME, CAGNEY_RESIDENCE, QUEST_HOMES } from '../src/quest-homes.js';
-import { AMBRON_BUILDINGS, AMBRON_ENCLOSURE } from '../src/ambron.js';
+import { CAGNEY_HOME } from '../src/content/quests/cagney/cagney-quest.js';
+import { BODY } from '../src/gameplay/combat/bodies.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BEN_HOME, TROY_HOME, CAGNEY_RESIDENCE, QUEST_HOMES } from '../src/content/quests/homes/quest-homes.js';
+import { AMBRON_BUILDINGS, AMBRON_ENCLOSURE } from '../src/content/regions/ambron/ambron.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene(), world = createWorld(scene);

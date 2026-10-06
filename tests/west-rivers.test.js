@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { RIVER_EDGES, RIVER_SOURCE } from '../src/region-rivers.js';
-import { PLAYABLE_SURVEY } from '../src/region-survey.js';
-import { hexCentre, hexOwnerAt } from '../src/region-world.js';
-import { WEST_RIVERS, LIZEEM, CARICA, VASTOS_RIVER, courseDistance } from '../src/west-regions.js';
+import { RIVER_EDGES, RIVER_SOURCE } from '../src/world/terrain/region-rivers.js';
+import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
+import { hexCentre, hexOwnerAt } from '../src/world/terrain/region-world.js';
+import { WEST_RIVERS, LIZEEM, CARICA, VASTOS_RIVER, courseDistance } from '../src/content/regions/western-regions/west-regions.js';
 
 /**
  * The west's rivers are chained out of the atlas's own hex edges, and which chains exist
@@ -13,7 +13,7 @@ import { WEST_RIVERS, LIZEEM, CARICA, VASTOS_RIVER, courseDistance } from '../sr
  *
  * Adding the six southern countries to `RIVER_REGIONS` gave the Lizeem four tributaries it
  * did not have (the Oveth, the Neth, the Isareos border river, and its own reach on past
- * Nesdor) and broke its two chains into five. `src/west-regions.js` joins them back, and
+ * Nesdor) and broke its two chains into five. `src/content/regions/western-regions/west-regions.js` joins them back, and
  * this file is what holds it to having joined them back *correctly* — because Caricas and
  * Nesdor were built against the river as it was, and a Lizeem a metre out of place moves
  * every tree on both banks.

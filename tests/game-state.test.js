@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {canStand,moveCharacter,advanceQuest,getMovementInput,questSteps,QUEST_DONE,SUBQUESTS} from '../src/game-state.js';
+import {canStand,moveCharacter,advanceQuest,getMovementInput,questSteps,QUEST_DONE,SUBQUESTS} from '../src/gameplay/movement/game-state.js';
 const input=(...codes)=>getMovementInput(new Set(codes));
 test('Q and E move forward diagonally at the same speed as walking',()=>{
   const left=input('KeyQ'),right=input('KeyE');
@@ -51,7 +51,7 @@ test('Traversal restrictions are opt-in and can leave movement along a forbidden
  * **Chapter 1 in three subquests** (the user, 22 September 2026): report to Jojo, train with
  * Glun, report to Nothom. The eleven-step spine this replaced ran through the goblins in the
  * Greenway, the report to Corvan, the satchel lesson and Fernway Rest; all of it is off the
- * slate (src/quest-slate.js) and the four events that drove it are gone with it.
+ * slate (src/gameplay/quests/quest-slate.js) and the four events that drove it are gone with it.
  */
 const tutorialEvents=['ashore','accept-letter','trained'];
 test('Chapter 1 is three subquests: ashore to Jojo, Jojo to Glun, Glun to the road west',()=>{

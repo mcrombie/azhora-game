@@ -4,22 +4,22 @@
   <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="A playable 3D adventure on the forested shores of Azhora.">
   <title>Azhora · An Adventure Game</title>
-  <link rel="stylesheet" href="./src/style.css"><link rel="stylesheet" href="./src/adventure.css"><link rel="stylesheet" href="./src/inventory.css"><link rel="stylesheet" href="./src/world-map.css"><link rel="stylesheet" href="./src/trail-map.css"><link rel="stylesheet" href="./src/woodland.css">
+  <link rel="stylesheet" href="./src/ui/styles/style.css"><link rel="stylesheet" href="./src/ui/styles/adventure.css"><link rel="stylesheet" href="./src/ui/styles/inventory.css"><link rel="stylesheet" href="./src/ui/map/world-map.css"><link rel="stylesheet" href="./src/ui/map/trail-map.css"><link rel="stylesheet" href="./src/ui/styles/woodland.css">
   <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
-<link rel="stylesheet" href="./src/campcraft.css"><link rel="stylesheet" href="./src/journey.css"><link rel="stylesheet" href="./src/developer-mode.css"><link rel="stylesheet" href="./src/birding.css">
-<link rel="stylesheet" href="./src/civil-war.css">
-  <link rel="stylesheet" href="./src/journal-ui.css">
-  <link rel="stylesheet" href="./src/journey-browser.css">
-  <link rel="stylesheet" href="./src/skills-browser.css">
-<link rel="stylesheet" href="./src/drent-ui.css">
-<link rel="stylesheet" href="./src/skill-announcement.css">
-<link rel="stylesheet" href="./src/quest-choice.css">
-  <link rel="stylesheet" href="./src/law.css">
-  <link rel="stylesheet" href="./src/magic.css">
-  <link rel="stylesheet" href="./src/testing-tools.css">
-  <link rel="stylesheet" href="./src/flight.css">
-  <link rel="stylesheet" href="./src/climbing.css">
-  <link rel="stylesheet" href="./src/touch-controls.css">
+<link rel="stylesheet" href="./src/ui/styles/campcraft.css"><link rel="stylesheet" href="./src/ui/styles/journey.css"><link rel="stylesheet" href="./src/dev/tools/developer-mode.css"><link rel="stylesheet" href="./src/gameplay/skills/birding/birding.css">
+<link rel="stylesheet" href="./src/ui/styles/civil-war.css">
+  <link rel="stylesheet" href="./src/ui/journal/journal-ui.css">
+  <link rel="stylesheet" href="./src/ui/journal/journey-browser.css">
+  <link rel="stylesheet" href="./src/ui/skills/skills-browser.css">
+<link rel="stylesheet" href="./src/content/regions/drent/drent-ui.css">
+<link rel="stylesheet" href="./src/ui/skills/skill-announcement.css">
+<link rel="stylesheet" href="./src/ui/dialogue/quest-choice.css">
+  <link rel="stylesheet" href="./src/ui/styles/law.css">
+  <link rel="stylesheet" href="./src/gameplay/magic/magic.css">
+  <link rel="stylesheet" href="./src/dev/tools/testing-tools.css">
+  <link rel="stylesheet" href="./src/ui/styles/flight.css">
+  <link rel="stylesheet" href="./src/gameplay/movement/climbing.css">
+  <link rel="stylesheet" href="./src/ui/input/touch-controls.css">
 </head>
 <body>
   <section id="skill-intro" hidden role="status" aria-live="polite" aria-label="New skill learned"></section>
@@ -28,7 +28,7 @@
   <div id="loading" aria-label="Azhora is loading"><img class="opening-oak" src="./assets/azhora-oak-mark.png" alt="Azhora — an oak tree with acorns and a squirrel at its roots">
     <section id="loading-choice" hidden role="dialog" aria-modal="true" aria-labelledby="loading-choice-title" aria-describedby="loading-countdown">
       <h2 id="loading-choice-title">Choose how to begin</h2>
-      <button id="loading-full" type="button"><strong>Full mode <span>Default</span></strong><small>Prepare the whole world before you play.</small></button>
+      <button id="loading-full" type="button"><strong>Full mode <span>Default</span></strong><small>Preload the campaign. Developer Start opens the full world.</small></button>
       <button id="loading-fast" type="button"><strong>Fast mode <span>Experimental</span></strong><small>Start in your region. Nearby places load ahead of you; distant regions wait until you travel.</small></button>
       <p id="loading-countdown" role="timer" aria-live="off">Full mode starts automatically in 10 seconds.</p>
     </section>
@@ -41,9 +41,9 @@
   <div id="opening"><h2><em>Azhora</em></h2><div class="eyebrow opening-subtitle">An Adventure Game</div>
     <p class="opening-place">Minora <span>At the meeting of the rivers</span></p>
     <span id="opening-who" class="hidden">A traveler in plain cloth, with one simple sword.</span>
-    <section id="opening-characters" class="hidden" aria-label="Who you are"><div id="character-line"></div><p id="character-detail"></p></section>
-    <div class="opening-actions"><button id="begin" class="secondary">Tutorial</button><button id="begin-skip-tutorial">Start</button><button id="continue-road" class="secondary" disabled>Continue</button></div>
-    <div class="opening-note">Learn the basics on Drent's peninsula, or begin your own journey in Minora.</div>
+    <section id="opening-characters" class="hidden" aria-label="Who you are"><div id="character-line"></div><p id="character-detail"></p><button id="chapter-one-enter" disabled>Enter Chapter 1</button><button id="chapter-one-back" class="secondary">Back</button></section>
+    <div id="opening-main-actions" class="opening-actions"><button id="begin" class="secondary">Tutorial</button><button id="begin-chapter-one">Chapter 1</button><button id="begin-skip-tutorial" class="secondary">Developer Start</button><button id="continue-road" class="secondary" disabled>Continue</button></div>
+    <div class="opening-note">Tutorial begins the prologue in Drent. Chapter 1 joins the war. Developer Start opens the full world from Minora.</div>
     <button id="opening-newest" class="hidden">Start at the newest chapter</button><button id="opening-autoplay" class="hidden">Watch the computer play</button><button id="opening-testing" class="hidden">Explore testing tools</button>
   </div>
   <section id="lesson" class="hidden" aria-label="Current tutorial lesson"><span class="eyebrow" id="lesson-title">A first step</span><p id="lesson-hint"></p><div id="practice-progress" class="hidden"><span id="practice-hits">0 / 2 hits</span><span id="practice-guard">0 / 1 guard</span><span id="practice-dodge">0 / 1 dodge</span></div></section>
@@ -76,13 +76,25 @@
           <button id="test-dev-bat" class="secondary">Developer bat &middot; fly</button>
           <button id="test-dev-horse" class="secondary">Developer horse &middot; fast</button>
           <button id="test-reveal-chart" class="secondary">Developer map: reveal all</button>
+          <button id="test-full-world" class="secondary">Load full developer world</button>
         </div>
+      </div>
+      <div id="testing-prototypes" class="test-section">
+        <h3>Prototypes</h3>
+        <button id="test-climate-annex" class="test-quest-card test-prototype-card">
+          <span class="test-card-title">Climate Annex Prototype <span aria-hidden="true">&rarr;</span></span>
+          <span class="test-card-description">A Waiting Room for Climates &middot; Explore the scene</span>
+          <span class="test-card-description">Save your adventure before entering. Exit returns to the main menu.</span>
+        </button>
       </div>
       <div id="testing-quest-playtests" class="test-section">
         <h3 id="test-autoplay-heading">Quest playtests</h3>
         <p class="test-autoplay-note">Fresh computer playtests. Any key or click takes control; <kbd>P</kbd> resumes. Your saved adventure stays unchanged.</p>
         <h4 id="test-main-heading" class="test-group-heading test-gold-heading">Gold &middot; Main quests</h4>
-        <div id="test-main-quests" class="test-quest-grid" aria-labelledby="test-main-heading"></div>
+        <div id="test-main-quests" class="test-quest-grid" aria-labelledby="test-main-heading">
+          <button id="test-chapter-one-battle" class="test-quest-card test-gold-card"><span class="test-card-title">Chapter 1: Battle <span aria-hidden="true">&rarr;</span></span><span class="test-card-description">Computer playtest &middot; Start at the battle</span></button>
+          <button id="test-chapter-one-parley" class="test-quest-card test-gold-card"><span class="test-card-title">Chapter 1: Full quest <span aria-hidden="true">&rarr;</span></span><span class="test-card-description">Computer autoplay &middot; Begin with the parley</span></button>
+        </div>
         <h4 id="test-silver-heading" class="test-group-heading test-silver-heading">Silver &middot; Side stories</h4>
         <div class="test-quest-grid" aria-labelledby="test-silver-heading">
           <button id="test-silver-drent-autoplay" class="test-quest-card test-silver-card"><span class="test-card-title">Civil War in Drent <span aria-hidden="true">&rarr;</span></span><span class="test-card-description">Glun's investigation &middot; Monarchist route</span></button>

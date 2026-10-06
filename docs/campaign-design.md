@@ -1,8 +1,8 @@
 # Azhora campaign design
 
-The civil-war campaign as specified by the voice-to-text brief of 16 September 2026, rewritten with the authored region names from World Builder. This is the design record; `src/campaign-world.js` and `src/campaign.js` are its executable form and their tests check that the two agree.
+The civil-war campaign as specified by the voice-to-text brief of 16 September 2026, rewritten with the authored region names from World Builder. This is the design record; `src/content/chapters/civil-war/campaign-world.js` and `src/content/chapters/civil-war/campaign.js` are its executable form and their tests check that the two agree.
 
-The brief was cut off by the message limit at "You're going to meet some sage wizard-like figure who's going to be your…". Everything from the South Oremindi Mountains onward is a frontier, not a design.
+The original brief was cut off by the message limit at "You're going to meet some sage wizard-like figure who's going to be your…". The later [campaign and hero mode design](campaign-opening-design.md) governs the shared live world and revised opening. The [Thalmagar crisis and Forsaken Citadel design](thalmagar-crisis-design.md) now establishes the overarching alliance-building objective, the Dark Lord's preparation and invasion, and the separate undead faction on Eshtor Plateau. The detailed later chapter sequence remains open; these later designs are not yet implemented by the older campaign state machine.
 
 ## Premise
 
@@ -141,7 +141,7 @@ Tidehaven (Drent, new), the Torn mouth (Drent, lore: seat of the Lord Protector)
 
 ## Autoplay
 
-Press **P** (or the opening screen's *Watch the computer play*, or *Autoplay the road* in Pause) and the computer plays the main quest with ordinary inputs while you watch or step away. `src/autopilot.js` is a pure planner and navigator: it picks the current goal from the quest state (talk, practise, walk, fight, gather, use, open the satchel), follows the authored trail polyline for long trips, probes collision for a free heading, sidesteps when stalled, dodges enemy tells and counters in reach, paces dialogue so it can be read, and gives up after 150 s without progress. Any trusted key press or click hands control straight back; the game does not pause on lost window focus while autoplay is on. `npm run test:autoplay` watches it play the whole road from the boat to Iven's relay.
+Press **P** (or the opening screen's *Watch the computer play*, or *Autoplay the road* in Pause) and the computer plays the main quest with ordinary inputs while you watch or step away. `src/gameplay/autoplay/autopilot.js` is a pure planner and navigator: it picks the current goal from the quest state (talk, practise, walk, fight, gather, use, open the satchel), follows the authored trail polyline for long trips, probes collision for a free heading, sidesteps when stalled, dodges enemy tells and counters in reach, paces dialogue so it can be read, and gives up after 150 s without progress. Any trusted key press or click hands control straight back; the game does not pause on lost window focus while autoplay is on. `npm run test:autoplay` watches it play the whole road from the boat to Iven's relay.
 
 ## The chart
 

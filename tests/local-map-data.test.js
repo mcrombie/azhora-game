@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildLocalMapModel, localMapPoint, localMapBearing } from '../src/local-map-data.js';
-import { regionAt, regions, WORLD_BOUNDS } from '../src/regions.js';
-import { toWorld } from '../src/world-scale.js';
+import { buildLocalMapModel, localMapPoint, localMapBearing } from '../src/ui/map/local-map-data.js';
+import { regionAt, regions, WORLD_BOUNDS } from '../src/world/terrain/regions.js';
+import { toWorld } from '../src/world/terrain/world-scale.js';
 
 // The fixture is written in authored metres, like the content it stands in for,
 // and converted here so every probe lands in the region it is meant to.

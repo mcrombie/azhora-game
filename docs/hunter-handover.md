@@ -6,8 +6,8 @@ work-in-progress one for step two, and this file.
 
 ## (a) The distant-figure stand-in, step two: what remains
 
-**Step one is on main:** `src/figure-lod.js` (the rule: out at 62 m, back in at 56 m; who is never
-a stand-in; the look; `figureDrawCalls`) and `src/figure-stand-in.js` (one 36-triangle mesh, one
+**Step one is on main:** `src/world/actors/figure-lod.js` (the rule: out at 62 m, back in at 56 m; who is never
+a stand-in; the look; `figureDrawCalls`) and `src/world/actors/figure-stand-in.js` (one 36-triangle mesh, one
 shared material). **This branch adds** two more exemptions to the rule, `swimming` and `posed`,
 with tests, and makes the `draws()` hook honest for what is coming (a mesh counts as drawn only
 if everything above it is visible; it now reports figures within 100 m and 120 m, and stand-ins).
@@ -92,13 +92,13 @@ switching on.
 Sent to the coordinator already; here in full.
 
 **1. Drown, press "Try again", and a fight starts somewhere else. Reproduced.** With the real
-`src/combat.js` (it is pure, so no world build): a traveler who has never fought, put out at sea
+`src/gameplay/combat/combat.js` (it is pure, so no world build): a traveler who has never fought, put out at sea
 and drowned through `combat.exhaust` exactly as `swimTick` does it (33.3 s at level 1), then
 `combat.resetEncounter({})` exactly as `retry()` calls it. Result: carried 346 m to (0, −25), full
 health and wind, phase `active`, encounter `tidehaven-raiders`, three goblins alive at 75 hp.
 Evidence: `retry()` at `src/main.js:2656` moves nobody itself and calls `resetEncounter`;
-`src/combat.js:277–284` sets the position to `lastEncounter.checkpoint` and *starts*
-`lastEncounter`; `src/combat.js:173` starts `lastEncounter` as `DEFAULT_ENCOUNTER`. After a real
+`src/gameplay/combat/combat.js:277–284` sets the position to `lastEncounter.checkpoint` and *starts*
+`lastEncounter`; `src/gameplay/combat/combat.js:173` starts `lastEncounter` as `DEFAULT_ENCOUNTER`. After a real
 fight it is that fight instead — drown swimming to the Pebbles and the Greenway raid or the Lauvel
 wolves form up round you again. Drowning is the skill's designed failure, so this is the path of
 every swimmer who misjudges a crossing. *Proposed:* in `retry()`, for a defeat that was
@@ -113,7 +113,7 @@ way out of any fight you are losing, by way of a pond. Possibly intended; worth 
 
 **3. Nobody can walk into the water. From the repo's own tests and a grep; my simulation is still
 owed.** `docs/swimming.md:12`: "Entering. Walk off a shore into water. There is no prompt and no
-key." But `moveCharacter` (`src/game-state.js:51–61`) lets a body onto water only with
+key." But `moveCharacter` (`src/gameplay/movement/game-state.js:51–61`) lets a body onto water only with
 `swimming:true`; `src/main.js:3110` moves the traveler with `{swimming:inWater}`; and `inWater` is
 assigned in four places (`main.js:493, 2626, 2630, 2645`), true only at 2630, inside `swimTick`,
 when his position is *already* wet. From dry land that is a closed loop.
@@ -147,11 +147,11 @@ a comment naming that failure. Not a bug.
 - **A horse at the water's edge.** The mounted path uses `RIDE.radius` 0.62 and no `swimming`; the
   toast fires when `canSwim` is true *under* him, which by (b)3's logic he can never be. Check
   whether "He will not go in" can ever be shown.
-- **Ed the Word's walk out of the sea** (`src/word-arrival.js`, stateless, a function of the play
+- **Ed the Word's walk out of the sea** (`src/content/quests/roadside/word-arrival.js`, stateless, a function of the play
   clock): where `WORD_BEACH` (4.5, 38) is against `canStand`, whether the swimmer's track crosses
   a hull or the pier, and what `placements()` does with him in the same seconds (he is also
   `merc-word` in the company, in the landing ring).
-- **The fog on the chart** and `src/cartography.js`: new, with a save section; the sweep in
+- **The fog on the chart** and `src/ui/map/cartography.js`: new, with a save section; the sweep in
   `tests/save-round-trip.test.js` already covers it (49 files export a validator; all six new ones
   pass).
 - **Playing as somebody other than Cromb.** All eleven companies are well formed (ten distinct
@@ -246,7 +246,7 @@ that was never checked.
 **Superseded. The live list is at the end of this file** (*Addendum, rounds 5 and 6*); every entry
 below has since been answered or restated. Kept for the record of what was open when.
 
-- **Bows (`src/archery.js`) are entirely unhunted**, and the authored fights have not been
+- **Bows (`src/gameplay/combat/archery.js`) are entirely unhunted**, and the authored fights have not been
   re-measured with an archer in them.
 - **"Hard but winnable" at the file floor** - see the ledger entry; the driver cannot say.
 - **The fill soldiers' death rate** is unmeasured, not zero.
@@ -324,7 +324,7 @@ So a lone traveler with a filled file does **all** of the fighting, and a travel
 companions is watching a battle his friends win 36 times in 40.
 
 **And count retreats and stalemates separately.** A **retreat** empties `state.enemies`
-(`src/combat.js:1112`), and a driver can walk itself out of a fight by following a line that
+(`src/gameplay/combat/combat.js:1112`), and a driver can walk itself out of a fight by following a line that
 wanders - the passenger rows above walked out 1 to 10 times in 40 and stalemated at the two-minute
 cap 2 to 39 times. Folding those into "lost" would have made the passenger look like a loser rather
 than a bystander. One row printing a total of **nought enemies** is what found it.

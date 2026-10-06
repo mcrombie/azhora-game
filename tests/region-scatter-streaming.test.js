@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { DRENT_PENINSULA_HEXES } from '../src/game-atlas-adjustments.js';
-import { hexAt } from '../src/region-world.js';
-const { createRegionScenery } = await sourceModule('../src/world-regions.js');
-const { getTreeRegistry } = await sourceModule('../src/tree-registry.js');
-import { finishBuild } from '../src/build-steps.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { DRENT_PENINSULA_HEXES } from '../src/world/terrain/game-atlas-adjustments.js';
+import { hexAt } from '../src/world/terrain/region-world.js';
+const { createRegionScenery } = await sourceModule('../src/world/terrain/world-regions.js');
+const { getTreeRegistry } = await sourceModule('../src/world/scenery/tree-registry.js');
+import { finishBuild } from '../src/world/loading/build-steps.js';
 
 // Exercise actual shared woodland geometry, timber registration and collision.
 // Unrelated authored landmarks use tiny stand-ins to keep this regression focused.

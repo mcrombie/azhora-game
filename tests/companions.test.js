@@ -1,14 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/mercenaries.js';
+import { MERCENARY_ROSTER, mercenaryById, createMercenaryCompany } from '../src/gameplay/company/mercenaries.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createFallen } from '../src/bystanders.js';
+import { createFallen } from '../src/gameplay/combat/bystanders.js';
 import { hostFunction } from './host-function.js';
 import {
   COMPANION_LIMIT, COMPANION_IDS, ASKS, GROUPS, RUNGS, RUNG_LABELS, RUNG_AT, REGARD,
   rungFor, rungLabel, createCompanions, validateCompanionsSnapshot, MERCENARY_ARMS, armsOf,
-} from '../src/companions.js';
+} from '../src/gameplay/company/companions.js';
 
 const fresh = () => {
   const fallen = createFallen();
@@ -38,7 +38,7 @@ test('everyone on the roster can be asked, each somewhere of his own', () => {
 
 test('the rungs are the four this game already uses, and nothing in between', () => {
   assert.deepEqual(RUNGS, ['unfamiliar', 'acquainted', 'friendly', 'fond']);
-  // The same words as src/rena-letters.js, so one standing is one idea.
+  // The same words as src/content/quests/rena/rena-letters.js, so one standing is one idea.
   assert.deepEqual(RUNG_LABELS, { unfamiliar: 'A stranger', acquainted: 'Acquaintance', friendly: 'Glad to see you', fond: 'Fond of you' });
   assert.equal(rungFor(0), 'unfamiliar');
   assert.equal(rungFor(RUNG_AT.acquainted - 1), 'unfamiliar');
@@ -180,7 +180,7 @@ test('who walks with you survives the road, and the dead do not walk out of an o
 });
 
 test('the automatic landing mate dies permanently even though the recruited walking list is empty', async () => {
-  const { createCombat } = await import('../src/combat.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
   const fallen=createFallen(), road=[{x:0,z:0},{x:0,z:50},{x:0,z:100}];
   const plan={road,muster:road[2],landing:road[0],wild:false,companions:[{id:'merc-gotwood',with:true}]};
   let company=createMercenaryCompany({...plan,dead:fallen.ids});
@@ -214,8 +214,8 @@ test('a country scales its dangers and never your side', async () => {
   // - `countryHealth` was applied only in the enemies loop - so an ally was a flat 90 anywhere.
   // A companion's health and damage now come from his *own* levels, through the same `ARMS`
   // curves as the traveler's, because he is as good as he is wherever he is standing.
-  const { createCombat } = await import('../src/combat.js');
-  const { maxHealth, damageMultiplier, countryHealth, countryDamage } = await import('../src/combat-skills.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
+  const { maxHealth, damageMultiplier, countryHealth, countryDamage } = await import('../src/gameplay/combat/combat-skills.js');
   const world = { heightAt: () => 0, colliders: [], bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 } };
   const fight = (level, allies) => {
     const position = { x: 0, z: 0, y: 0 };
@@ -310,7 +310,7 @@ test('Kristen’s gate is not one that opens itself', async () => {
   // met before he had walked anywhere. He now lands with no chart at all (the user, 22 September
   // 2026), and Officer Glun's one opens on the hex under his feet - so charted is the ground he
   // is standing in, and explored is still the real reading of "you know the road and we do not".
-  const { createCartography } = await import('../src/cartography.js');
+  const { createCartography } = await import('../src/ui/map/cartography.js');
   const chart = createCartography();
   assert.equal(chart.state('Drent'), 'unknown', 'he lands with no chart at all');
   chart.learn(); chart.noteHex('Drent');
@@ -323,8 +323,8 @@ test('Kristen’s gate is not one that opens itself', async () => {
 });
 
 test('the Marshal asks before anything else, through the conversation', async () => {
-  const { morosConversation, MOROS_LEGATE_ID, MARSHAL_WRITES, marshalAsks } = await import('../src/moros-chapter.js');
-  const { createMorosChapter } = await import('../src/moros-chapter.js');
+  const { morosConversation, MOROS_LEGATE_ID, MARSHAL_WRITES, marshalAsks } = await import('../src/content/chapters/civil-war/moros-chapter.js');
+  const { createMorosChapter } = await import('../src/content/chapters/civil-war/moros-chapter.js');
   const { companions } = fresh();
   const roster = MERCENARY_ROSTER.map(man => man.id);
   companions.ask('merc-mus', { where: 'wild' });
@@ -408,7 +408,7 @@ test('the muster sees the people standing in front of it', async () => {
   // wherever he is - so nine men at the traveler's shoulder counted as none. The camp gave him
   // the early face: eleven pegs "and nobody on them", with ten of the eleven standing in front of
   // it. Once men can die the same count waits forever for somebody who is never coming.
-  const { musterVoices, MUSTER_ARRIVED_WITH, MUSTER_FULL } = await import('../src/moros-chapter.js');
+  const { musterVoices, MUSTER_ARRIVED_WITH, MUSTER_FULL } = await import('../src/content/chapters/civil-war/moros-chapter.js');
   const roster = MERCENARY_ROSTER.map(man => man.id);
   // Alone: the early face, which was always right.
   const alone = musterVoices({ musterCount: 1, roster });
@@ -625,8 +625,8 @@ test('a man who falls is remembered where he fell, and it survives the road', ()
 test('the people walking with you are in the fight, at their own numbers', async () => {
   // The gap this closes: step 2 built the arithmetic of a companion in a fight - his health from
   // his own Toughness, his damage from his weapon's family - and nothing ever put one in a fight.
-  const { createCombat } = await import('../src/combat.js');
-  const { maxHealth } = await import('../src/combat-skills.js');
+  const { createCombat } = await import('../src/gameplay/combat/combat.js');
+  const { maxHealth } = await import('../src/gameplay/combat/combat-skills.js');
   const world = { heightAt: () => 0, colliders: [], bounds: { minX: -500, maxX: 500, minZ: -500, maxZ: 500 } };
   const arena = { id: 'somewhere', center: { x: 0, z: 0 }, checkpoint: { x: 0, z: -9 }, retreatLine: 20,
     enemies: [{ id: 'foe', x: 0, z: 6, hp: 75 }] };
@@ -693,7 +693,7 @@ test('the fights the player is taught alone in are a list, not a place', () => {
 });
 
 test('a hold is each man staying where he is, and the fallback is not one stone', async () => {
-  const { escortSpotFor, ESCORT_OFFSETS } = await import('../src/mercenaries.js');
+  const { escortSpotFor, ESCORT_OFFSETS } = await import('../src/gameplay/company/mercenaries.js');
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
   // The hold was one closure variable, and `placeCompanion` runs once per companion per frame:
   // the first man through set it from his own feet and the other nine were handed a copy. Ten
@@ -727,11 +727,11 @@ test('they walk in a file, one of them speaks, and none of them is ever a peg', 
   // shoulders - and closing to the centreline where the shoulders have nowhere to be.
   assert.match(main, /function fileSpot\(p,yaw,place,mounted=false\)\{/, 'the file has a shape of its own');
   // One shape, measured in whatever the file is made of: a man's stride on foot, a horse's
-  // length in the saddle (RIDE_FILE, src/company-horses.js).
+  // length in the saddle (RIDE_FILE, src/gameplay/company/company-horses.js).
   assert.match(main, /const reach=mounted\?RIDE_FILE:COMPANION_REACH,radius=mounted\?RIDE\.radius:undefined;/, 'men or horses');
   // The arithmetic itself lives in the pure module now, so the ground at a real place can be
   // asked the same question a test asks it (tests/company-file.test.js measures the stable yard).
-  const horses = readFileSync(fileURLToPath(new URL('../src/company-horses.js', import.meta.url)), 'utf8');
+  const horses = readFileSync(fileURLToPath(new URL('../src/gameplay/company/company-horses.js', import.meta.url)), 'utf8');
   assert.match(horses, /const back = reach\.shoulder \+ \(n \+ step\) \* reach\.stride;/, 'a stride apart');
   assert.match(horses, /const side = reach\.side \* \(n % 2 \? -1 : 1\);/, 'and alternating shoulders');
   assert.match(horses, /if \(step === 0\) \{ const shoulder = spot\(side, back\); if \(free\(shoulder\)\) return shoulder; \}[\s\S]{0,180}if \(free\(middle\)\) return middle;/,

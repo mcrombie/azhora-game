@@ -2,15 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { regionAt, hexAt, CALOSS, SUVAL_ROAD, calossDistance, landDistance, LUMBER_TOWN } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { roadRoute } from '../src/autopilot.js';
+import { regionAt, hexAt, CALOSS, SUVAL_ROAD, calossDistance, landDistance, LUMBER_TOWN } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { roadRoute } from '../src/gameplay/autoplay/autopilot.js';
 import { PORT_CALOS, PORT_CALOS_TOWN_CELL, PORT_CALOS_BUILDINGS, PORT_CALOS_PATHS, PORT_CALOS_ROAD, PORT_CALOS_QUAY,
   PORT_CALOS_LANDING, PORT_CALOS_JESS, PORT_CALOS_MOORING, PORT_CALOS_SEA_APPROACH, PORT_CALOS_NPC_POSITIONS,
-  portCalosGround, portCalosDeckHeight, inPortCalos } from '../src/port-calos-world.js';
+  portCalosGround, portCalosDeckHeight, inPortCalos } from '../src/content/regions/port-calos/port-calos-world.js';
 
-const { createPortCalosScenery } = await sourceModule('../src/port-calos-scenery.js');
+const { createPortCalosScenery } = await sourceModule('../src/content/regions/port-calos/port-calos-scenery.js');
 const height=(x,z)=>portCalosGround(x,z,groundWithRiver(x,z));
 const parent=new THREE.Group(), colliders=[], signs=[];
 const scenery=createPortCalosScenery({parent,heightAt:height,colliders,signs:{place:sign=>signs.push(sign)}});

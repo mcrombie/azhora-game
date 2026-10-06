@@ -2,16 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { SMITH_NPC, SLOT_NOUNS, pieceName, smithOffers, buyFromSmith, smithGreeting, smithConversation } from '../src/smith.js';
-import { createGear, SLOTS, NAMED_TIERS, armourOf } from '../src/gear.js';
-import { COPPER_ITEM, STARTING_PURSE } from '../src/economy.js';
+import { SMITH_NPC, SLOT_NOUNS, pieceName, smithOffers, buyFromSmith, smithGreeting, smithConversation } from '../src/content/quests/roadside/smith.js';
+import { createGear, SLOTS, NAMED_TIERS, armourOf } from '../src/gameplay/inventory/gear.js';
+import { COPPER_ITEM, STARTING_PURSE } from '../src/gameplay/inventory/economy.js';
 import { SMITH_VOICES, TIER_NOTES, sellsHere, AMOD_SMITH_ID, MOROS_ARMOURER_NPC,
-  AMBRON_ARMOURER_NPC, MYTH_SMITHS, SELLER_TIERS, tiersSoldBy } from '../src/smith.js';
-import { tiernamed, tierSoldAt, smithStock } from '../src/gear.js';
-import { regionLevel } from '../src/region-levels.js';
-import { AMOD_NPCS } from '../src/amod-people.js';
-import { TIDEHAVEN_SMITHY } from '../src/region-world.js';
-import { AMBRON_FORGE, AMBRON_BUILDINGS, AMBRON_STREETS } from '../src/ambron.js';
+  AMBRON_ARMOURER_NPC, MYTH_SMITHS, SELLER_TIERS, tiersSoldBy } from '../src/content/quests/roadside/smith.js';
+import { tiernamed, tierSoldAt, smithStock } from '../src/gameplay/inventory/gear.js';
+import { regionLevel } from '../src/world/terrain/region-levels.js';
+import { AMOD_NPCS } from '../src/content/regions/amod/amod-people.js';
+import { TIDEHAVEN_SMITHY } from '../src/world/terrain/region-world.js';
+import { AMBRON_FORGE, AMBRON_BUILDINGS, AMBRON_STREETS } from '../src/content/regions/ambron/ambron.js';
 
 const source = name => readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8');
 

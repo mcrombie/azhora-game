@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { KATY, KATY_STAND, KATY_SKETCH, KATY_WAITING, BATMAN_TOLD, createKaty, katyConversation, validateKatySnapshot } from '../src/katy.js';
-import { WINERY, WINERY_STANDS } from '../src/winery.js';
-import { PORT_CALOS_TOWN_CELL, inPortCalos } from '../src/port-calos-world.js';
-import { hexAt } from '../src/region-world.js';
-import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { KATY, KATY_STAND, KATY_SKETCH, KATY_WAITING, BATMAN_TOLD, createKaty, katyConversation, validateKatySnapshot } from '../src/content/quests/roadside/katy.js';
+import { WINERY, WINERY_STANDS } from '../src/content/regions/winery/winery.js';
+import { PORT_CALOS_TOWN_CELL, inPortCalos } from '../src/content/regions/port-calos/port-calos-world.js';
+import { hexAt } from '../src/world/terrain/region-world.js';
+import { INVENTORY_ITEMS, createInventoryState } from '../src/gameplay/inventory/inventory.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
 
 /** A dialogue box that records what was said and lets a test pick a reply. */
 function talkTo(katy, inventory, visits = 0) {

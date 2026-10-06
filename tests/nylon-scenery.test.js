@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { NYLON, NYLON_BUILDINGS, NYLON_PATHS, NYLON_GATES, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, nylonHarborDeckHeight, nylonRiverClearance } from '../src/nylon-city.js';
-import { LIZEEM_REACH, courseHalfAt, coursePosition } from '../src/west-regions.js';
-import { groundWithRiver } from '../src/world-terrain.js';
+import { NYLON, NYLON_BUILDINGS, NYLON_PATHS, NYLON_GATES, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, nylonHarborDeckHeight, nylonRiverClearance } from '../src/content/regions/nylon/nylon-city.js';
+import { LIZEEM_REACH, courseHalfAt, coursePosition } from '../src/content/regions/western-regions/west-regions.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
 const THREE=await sourceModule('../vendor/three.module.js');
-const {createNylonScenery}=await sourceModule('../src/nylon-scenery.js');
+const {createNylonScenery}=await sourceModule('../src/content/regions/nylon/nylon-scenery.js');
 const parent=new THREE.Group(),colliders=[];
 const heightAt=(x,z)=>nylonHarborDeckHeight(x,z)??groundWithRiver(x,z);
 const city=createNylonScenery({parent,colliders,heightAt,groundHeight:groundWithRiver});

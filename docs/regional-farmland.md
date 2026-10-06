@@ -33,7 +33,7 @@ are unassigned outbuildings.
 
 ## Playable farming
 
-`src/regional-farmland.js` owns immutable coordinates and stable save IDs. It has
+`src/world/scenery/regional-farmland.js` owns immutable coordinates and stable save IDs. It has
 no renderer or terrain dependencies, so terrain generation and the farming model
 can both read it safely.
 
@@ -57,7 +57,7 @@ so static scenery cannot overwrite a player's planted or harvested bed.
 ## Geometry and integration
 
 `createRegionalFarmlandScenery({ root, groundHeight, colliders, canPlace? })` in
-`src/regional-farmland-scenery.js` returns `{ group, metrics }`. The optional
+`src/world/scenery/regional-farmland-scenery.js` returns `{ group, metrics }`. The optional
 `canPlace(point, kind)` hook lets a caller suppress an entire farm or individual
 field/crop/tree/hedge if future terrain requires it. It does not invent alternate
 positions or move roads.

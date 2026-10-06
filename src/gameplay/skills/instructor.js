@@ -1,0 +1,139 @@
+/**
+ * **Officer Glun, who teaches you to fight and then gives you a map.**
+ *
+ * The user's direction of 22 September 2026. The opening used to point a quest card at an
+ * unattended straw post and hand the traveler Tidehaven's rough chart along with the letter, so
+ * fighting was learned from a caption and three-quarters of the map was answered before he had
+ * walked anywhere. Now an Imperial officer stands at the post and does both jobs in order:
+ *
+ *   1. Jojo sends the traveler to him.
+ *   2. He sets the lesson - two strikes, one guard and one step - and watches it. Nothing counts
+ *      until he has. The guard is the user's, 22 September 2026: Cromb comes ashore with a shield
+ *      now (src/content/characters/player-characters.js) and blocking is the third of the three things a sword,
+ *      a shield and a pair of feet can do. A traveler without an equipped shield uses a
+ *      practice shield at the post; it is returned after the drill and never becomes gear.
+ *   3. When it is done he says so, gives the map, and explains what the other skills are: the
+ *      ground you walk draws itself, and anybody who lives somewhere can tell you which way the
+ *      next country is. That map opens on Tidehaven and nothing else.
+ *
+ * He is an officer of the same army as every soldier on the road - the plumed helm, the gold at
+ * the shoulder and the red cloak are the `legion-officer` build - with a white drill plume of
+ * his own, because he is the one who teaches rather than the one who commands (src/content/characters/characters.js,
+ * `look.plume`).
+ *
+ * **He is Drent's own** (the user, 22 September 2026). Born here, went into the army at seventeen,
+ * came back up it over twenty-odd years, and is older now and has the protection of the country he
+ * grew up in - which is not a posting the army usually gives a man, and he asked for it. He and
+ * Chip the carpenter at the Caloss were boys on that river together and still are, after a
+ * fashion: Chip will tell you the whole of it if you ask him (src/content/chapters/journey/journey-content.js).
+ *
+ * Pure: no DOM, no three, no world. The host places him, runs the practice and hands his lines
+ * to the dialogue.
+ */
+
+export const INSTRUCTOR_SKILL_LESSON = 'cartography';
+
+export const INSTRUCTOR = Object.freeze({
+  id: 'instructor', name: 'Officer Glun', role: 'Imperial officer, and Drent’s own',
+  modelRole: 'legion-officer', color: 0x9a3b30, skin: 0xd2a077,
+  look: Object.freeze({ plume: 'white' }),
+});
+
+/**
+ * Where he stands: two metres north of the straw post at the village crossroads, on the side the
+ * village comes from, so a traveler walking up from the landing meets him before he meets the
+ * straw. Measured on the built world - `canStand` at the body radius, and sixteen metres clear of
+ * anybody else's stand (tests/instructor.test.js).
+ */
+export const INSTRUCTOR_STAND = Object.freeze({ x: -32, z: 28.5, yaw: Math.PI });
+
+/** How much of the lesson is done, from the three numbers the host already keeps. */
+export const LESSON = Object.freeze({ hits: 2, guards: 1, dodges: 1 });
+
+/**
+ * How long the shield has to be up to count for anything. A tap of the key is not a guard; this
+ * is about as long as a blow takes to arrive, which is the point of the exercise.
+ */
+export const GUARD_SECONDS = .7;
+
+/**
+ * The state of the lesson, which is not remembered anywhere of its own: it is read off the
+ * traveler's quest stage and the practice tally the save already carries.
+ *
+ *   `waiting`   he has not been spoken to; the post banks nothing
+ *   `set`       the lesson is set and unfinished
+ *   `done`      the combat practice is complete; he can issue the chart
+ *   `open-map`  the chart is issued but has not been opened
+ *   `return-to-glun` the chart has been opened; the report is still owed
+ *   `finished`  he has heard the report and sent the traveler west
+ */
+export function lessonStage({ briefed = false, hits = 0, guards = 0, dodges = 0, taught = false, chartLesson = 'unissued' } = {}) {
+  // The skill is learned when the chart is issued. It grants access, not permission to skip
+  // reading the chart or the final conversation. Explicit pending work wins over skill ownership.
+  if (chartLesson === 'open-map' || chartLesson === 'return-to-glun') return chartLesson;
+  if (chartLesson === 'complete' || taught) return 'finished';
+  if (!briefed) return 'waiting';
+  return hits >= LESSON.hits && guards >= LESSON.guards && dodges >= LESSON.dodges ? 'done' : 'set';
+}
+
+const BRIEF = Object.freeze([
+  'Glun. I hold the post here, which this morning means I am the one who decides whether you go up that road or back on your boat.',
+  'And before you ask it the way they all ask it: yes, I am from here. Born four miles up that road. I went off with the army at seventeen and they have sent me back grey to look after the place, which some of them think is a joke and is the only thing I ever asked them for.',
+  'Hired swords come off every boat saying they can fight. Show me. That is a straw post; it does not hit back and it does not lie about you either.',
+  `Three things, and a sword is only the first of them. Two clean strikes on the straw: the left button, or R.`,
+  `Then the shield. If you have none, borrow a practice shield here at the post. Hold V and keep it there - not a tap, hold it, the way you would hold it while somebody who means it comes at you. Most of them never learn that a shield is something you decide to be behind.`,
+  `And the step: C and a direction. Strike, guard, step. Two of those three are how you are still standing at the end of a day, and it is not the sword.`,
+]);
+
+const NOT_YET = Object.freeze([
+  'Not finished. Two strikes on the straw, the shield up and held, and one step out of the way.',
+  'It is not a test of strength. It is a test of whether you can do the same thing twice and still be standing.',
+]);
+
+const DONE = Object.freeze([
+  'That will do. You will not frighten anybody, but you know which end goes in, you can get behind your own shield, and you can get out of the way. That is more than half of them manage.',
+  'Now the other half of staying alive: knowing where you are. This is your first lesson in cartography. Take this chart.',
+  'A chart. It is blank, and that is not a fault - it is blank because you have not been anywhere. Ground you walk draws itself on it. This village is on it already, because you are standing in it.',
+  'For the rest: ask. Anybody who lives somewhere can tell you which way the next country is, and a name and a bearing is worth having before you need it. Same with everything else out there - the man who fishes will show you fishing, the woman with the hedge will name a plant for you. None of them will come and find you.',
+  'Press M to open the world map. Find where you stand, and look west along the road. Zoom in for nearby ground or out for the regions beyond it. Close it with M or Esc, then come back and speak to me before you leave.',
+]);
+
+const OPEN_MAP = Object.freeze([
+  'You have the chart. Now open it: M. A thing carried in a bag is not a thing you have learned to use.',
+  'Find Tidehaven on Drent’s coast and the road west. Zoom changes how much of the same map you see. Close it with M or Esc, then speak to me again.',
+]);
+
+const REPORT = Object.freeze([
+  'There. Now you have looked at where you are going, rather than trusting the first man who points.',
+  'Keep the chart. Walked ground fills it in, and people can give you names and bearings for places you have yet to reach.',
+  'Your training is finished. Follow the west road across the Caloss into Luscia. Report to Iven at the army’s relay post in Nothom, with your letter. Keep your shield ready, and mind what is beside the road as well as what is on it.',
+]);
+
+const AFTER = Object.freeze([
+  'You have the chart and you have the measure of a straw post. The road is west.',
+  'Everything else in this country you will have to go and ask for.',
+]);
+
+/** What he says, by where the lesson has got to. */
+export function instructorLines(stage) {
+  if (stage === 'waiting') return [...BRIEF];
+  if (stage === 'set') return [...NOT_YET];
+  if (stage === 'done') return [...DONE];
+  if (stage === 'open-map') return [...OPEN_MAP];
+  if (stage === 'return-to-glun') return [...REPORT];
+  return [...AFTER];
+}
+
+/**
+ * His conversation. The host hands in where the lesson stands and the two things it can do:
+ * `begin` sets practice; `giveChart` issues the chart; `report` finishes the whole lesson only
+ * after the chart has been opened. `finish` remains an alias for older chart-giving callers.
+ */
+export function instructorConversation(npc, { stage = 'waiting', openDialogue, begin = () => {}, finish = () => {}, giveChart = finish, openMap = () => {}, report = () => {}, extraChoices = [] } = {}) {
+  const lines = instructorLines(stage);
+  if (stage === 'waiting') return openDialogue(npc, lines, null, 'Take up the sword', { onComplete: begin });
+  if (stage === 'done') return openDialogue(npc, lines, null, 'Take the chart', { onComplete: giveChart });
+  if (stage === 'open-map') return openDialogue(npc, lines, null, 'Open the world map', { onComplete: openMap });
+  if (stage === 'return-to-glun') return openDialogue(npc, lines, null, 'Report for service', { onComplete: report });
+  return openDialogue(npc, lines, null, 'Back to the post', stage === 'finished' ? { choices: [...extraChoices, {id:'leave-instructor',label:'Back to the road',action:()=>openDialogue(npc,['Keep your eyes open on the road.'],null,'Until next time')}] } : {});
+}

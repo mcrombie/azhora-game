@@ -16,8 +16,8 @@ dry way from Eer (the near bank) to Gala (the far bank).
 ## State of play
 
 - Neither Ascarth is registered anywhere. The atlas names them **"Northern Ascarth"** and
-  **"Southern Ascarth"** (use exactly those ids); `src/region-levels.js` already has them (4 and
-  2) and `src/campaign-world.js` carries one-line story designs that are left alone.
+  **"Southern Ascarth"** (use exactly those ids); `src/world/terrain/region-levels.js` already has them (4 and
+  2) and `src/content/chapters/civil-war/campaign-world.js` carries one-line story designs that are left alone.
 - Worktree `C:\Users\Michael\Programs\typescript\azhora-game-ascarth`, branch `ascarth`, from
   b108263 (= main 2bc45e3 + the East Lotharn). Run everything from this folder. Never cd into
   another checkout; never use a bare `git stash`; **do not commit** — leave the work
@@ -39,7 +39,7 @@ dry way from Eer (the near bank) to Gala (the far bank).
   Mediterranean (`Csa`/`Csb`) like Eer's coast; build to what you find.
 - **Survey**: add both names to `PLAYABLE` in `scripts/build-region-survey.mjs` after
   `'Feradom'` and run `node scripts/build-region-survey.mjs` (never hand-edit
-  `src/region-survey.js`; `tests/region-survey.test.js` re-derives it). Southern Ascarth reaches
+  `src/dev/tools/region-survey.js`; `tests/region-survey.test.js` re-derives it). Southern Ascarth reaches
   row 132 against `WINDOW.maxR: 133`; the coast lattice samples out to `COAST_MARGIN` plus a
   circumradius beyond the world bounds — **measure** whether 133 still covers it and widen it
   with a measured comment in the style of the ones there if not. The world's southern edge was
@@ -80,9 +80,9 @@ append the adjustment claim by claim to `docs/lore-adjusted-to-atlas.md` and say
 
 ## Wildlife
 
-Ranges for the western rigs in `src/west-regions-life.js`, in a new `src/ascarth-wildlife.js`
+Ranges for the western rigs in `src/content/regions/western-regions/west-regions-life.js`, in a new `src/content/regions/ascarth/ascarth-wildlife.js`
 (zones tagged `region: 'Northern Ascarth'` or `'Southern Ascarth'` each) spread into the zone
-list after Feradom's; `src/feradom-wildlife.js` and `src/south-suval-wildlife.js` show the shape
+list after Feradom's; `src/content/regions/feradom/feradom-wildlife.js` and `src/content/regions/south-suval/south-suval-wildlife.js` show the shape
 and their tests how a site is held to its ground. Species with rigs today: boar, dolphin, duck,
 egret, gull, harrier, hill-sheep, longhorn, nethrani-cattle, otter, plateau-hawk, red-deer,
 river-fox, stilt, turkey-vulture, upland-hare, wading-bird. Grounded suggestions from
@@ -95,16 +95,16 @@ built ground; every extension labelled as one. Domestic stock is somebody's: non
 ## Registration checklist (every item, or say why not)
 
 `scripts/build-region-survey.mjs` PLAYABLE (+ WINDOW if measured) → regenerate
-`src/region-survey.js` · `src/region-layout.js` REGION_BIOMES · `src/region-world.js`
+`src/dev/tools/region-survey.js` · `src/world/terrain/region-layout.js` REGION_BIOMES · `src/world/terrain/region-world.js`
 REGION_IDS (22, 23), REGION_TERRAIN (default + `byTerrain.hills` for the north), REGION_TEXT
 for each (subtitle, spawn on dry ground, description, palette, `npcIds: []`, landmarks) ·
-`src/languages.js` an Avite dialect entry after `eer` (the lore's Avites; no personal names) ·
-`src/developer-atlas.js` LOCALS · `src/map-fog.js` 2–4 areas per region (radius 18–130, > 60 %
-inside its own region) · `src/build-status.js` (`'early'`, as Eer) · `src/region-sky.js` if
-they get a sky (add to every OWN_SKY list a test pins) · `src/ascarth-world.js` terrain module
-hooked into the chain in `src/world-terrain.js` (the hills, the cliffs; South Suval and the
-East Lotharn show both) · `src/ascarth-scenery.js` hooked in `src/world.js` (wood on the hills,
-scrub, the green rock) · `src/ascarth-wildlife.js` · `tests/ascarth-world.test.js` (sites on
+`src/gameplay/skills/languages.js` an Avite dialect entry after `eer` (the lore's Avites; no personal names) ·
+`src/dev/tools/developer-atlas.js` LOCALS · `src/ui/map/map-fog.js` 2–4 areas per region (radius 18–130, > 60 %
+inside its own region) · `src/dev/tools/build-status.js` (`'early'`, as Eer) · `src/world/environment/region-sky.js` if
+they get a sky (add to every OWN_SKY list a test pins) · `src/content/regions/ascarth/ascarth-world.js` terrain module
+hooked into the chain in `src/world/terrain/world-terrain.js` (the hills, the cliffs; South Suval and the
+East Lotharn show both) · `src/content/regions/ascarth/ascarth-scenery.js` hooked in `src/world.js` (wood on the hills,
+scrub, the green rock) · `src/content/regions/ascarth/ascarth-wildlife.js` · `tests/ascarth-world.test.js` (sites on
 ground; cliffs where claimed and bays where claimed; the seam numbers; map-fog coords; the
 window measurement) · `package.json` test list · `docs/ascarth-report.md` · a dated entry in
 `docs/design-answers.md`.
@@ -131,7 +131,7 @@ review render at the end is allowed if electron is available
 images in `tests/artifacts/`); no autoplays, no long smokes. There is no `node_modules` in this
 worktree; the node tests need none.
 
-Line endings: `src/main.js`, `src/world.js`, `src/map-fog.js` are CRLF; keep files as found.
+Line endings: `src/main.js`, `src/world.js`, `src/ui/map/map-fog.js` are CRLF; keep files as found.
 
 ## Report
 

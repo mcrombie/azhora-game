@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-import { hexOwnerAt, REGION_CELLS } from '../src/region-world.js';
-import { groundWithRiver } from '../src/world-terrain.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { BAT_CAVE, BAT_LANDING, SUVAL_PEAKS, SUVAL_HIGHLAND_TRAILS, SUVAL_PEAK_CRAGS, IMLAMDRIS_REBUILD, nearestHighlandTrail, suvalHighlandGround } from '../src/suval-highlands.js';
+import { hexOwnerAt, REGION_CELLS } from '../src/world/terrain/region-world.js';
+import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { BAT_CAVE, BAT_LANDING, SUVAL_PEAKS, SUVAL_HIGHLAND_TRAILS, SUVAL_PEAK_CRAGS, IMLAMDRIS_REBUILD, nearestHighlandTrail, suvalHighlandGround } from '../src/content/regions/suval-highlands/suval-highlands.js';
 
-import { buildSuvalFlightRoute, SUVAL_FLIGHT_REGIONS } from '../src/batman-flight.js';
+import { buildSuvalFlightRoute, SUVAL_FLIGHT_REGIONS } from '../src/content/quests/batman/batman-flight.js';
 
-const { createSuvalHighlandScenery } = await sourceModule('../src/suval-highlands-scenery.js');
+const { createSuvalHighlandScenery } = await sourceModule('../src/content/regions/suval-highlands/suval-highlands-scenery.js');
 const root = new THREE.Group(), colliders = [];
 const material = (color, options = {}) => new THREE.MeshStandardMaterial({ color, ...options });
 const mesh = (geometry, mat, x, y, z, sx = 1, sy = 1, sz = 1, parent = root) => { const m = new THREE.Mesh(geometry, mat); m.position.set(x, y, z); m.scale.set(sx, sy, sz); parent.add(m); return m; };

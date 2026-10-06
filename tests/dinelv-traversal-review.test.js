@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
-import { canStand, moveCharacter } from '../src/game-state.js';
-import { createClimbing, canWalkSlope, sampleClimbSurface } from '../src/climbing.js';
-import { createTerrainFall, shouldStartTerrainFall } from '../src/terrain-fall.js';
-import { DINELV_ASCENT, DINELV_MESAS } from '../src/southwest-world.js';
+import { canStand, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { createClimbing, canWalkSlope, sampleClimbSurface } from '../src/gameplay/movement/climbing.js';
+import { createTerrainFall, shouldStartTerrainFall } from '../src/gameplay/movement/terrain-fall.js';
+import { DINELV_ASCENT, DINELV_MESAS } from '../src/content/regions/southwest/southwest-world.js';
 
 // Complete the actual shared southwest scenery job and both approach countries.
 // These are the production colliders, height sampler, walking, falling and climbing.

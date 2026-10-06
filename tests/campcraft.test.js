@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCampcraft } from '../src/campcraft.js';
-import { createInventoryState } from '../src/inventory.js';
-import { createWeapons } from '../src/weapons.js';
+import { createCampcraft } from '../src/gameplay/skills/crafting/campcraft.js';
+import { createInventoryState } from '../src/gameplay/inventory/inventory.js';
+import { createWeapons } from '../src/gameplay/combat/weapons.js';
 
 function fixture(items = {}, options = {}) {
   const inventory = createInventoryState();

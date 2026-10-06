@@ -21,11 +21,11 @@ match. Nothing here may move Tidehaven: the village is a rigid carried-over clus
 - **The quest is letters.** The traveler carries letters between the two of them, and they catch up
   after years. Two or three exchanges, each letter worth reading: what they remember, what they
   disagree about, what one of them has never told the other. The reward for now is only that **they
-  both become fond of you** — the same kind of standing Lysa's acorn favour gives (`src/acorn-quest.js`,
+  both become fond of you** — the same kind of standing Lysa's acorn favour gives (`src/content/quests/forest/acorn-quest.js`,
   `friendship`). No coin, no item; the user will decide rewards later. Leave the hook obvious.
 
 Ground it in what exists before inventing: `../world-builder/azhora_lore/geography/regions/drent.md`
-(read-only, outside this repo) for Drent itself, `src/campaign-world.js` for who holds it and why, and
+(read-only, outside this repo) for Drent itself, `src/content/chapters/civil-war/campaign-world.js` for who holds it and why, and
 the novella notes in `docs/brief-review.md` only where they touch places already on the map. If the
 lore names who razed Rena, use it; if not, invent in its voice and say so in your report. The Empire
 holds Drent quietly today — whatever happened eighty years ago is why it is quiet.
@@ -36,16 +36,16 @@ holds Drent quietly today — whatever happened eighty years ago is why it is qu
   street lines under grass, a burnt gate, the stump of a hall, a well that still holds water, a
   boundary stone with the old name, orchards gone wild, grave markers in a row. It should read as a
   town that was killed rather than one that faded. Discovery text, a landmark, and a named area on
-  the chart (`SUBREGIONS` in `src/map-fog.js`; areas must not overlap — `tests/map-fog.test.js`).
+  the chart (`SUBREGIONS` in `src/ui/map/map-fog.js`; areas must not overlap — `tests/map-fog.test.js`).
 - **The western village** (the old West Rena) with its newer name: eight to twelve buildings in
   Drent's manner, four to six people with ambient lines, and the old woman among them.
 - **The old man** in Tidehaven, with a stand of his own and something to do with his hands. Both of
   them speak plainly, like everyone else in Drent; the age is in what they remember, not in how they
   talk.
-- **The letters quest** (a new pure module, e.g. `src/rena-letters.js`, with its own tests): accept,
+- **The letters quest** (a new pure module, e.g. `src/content/quests/rena/rena-letters.js`, with its own tests): accept,
   carry, deliver, return, repeat; the letters readable in the satchel as items or in the journal,
-  your choice, but readable. Save it with the road (`src/road-checkpoint.js` takes a validated
-  snapshot, as `src/birding.js` and `src/forest-hideout.js` do). Both of them end fond of you.
+  your choice, but readable. Save it with the road (`src/app/saves/road-checkpoint.js` takes a validated
+  snapshot, as `src/gameplay/skills/birding/birding.js` and `src/content/quests/forest/forest-hideout.js` do). Both of them end fond of you.
 - **Depth elsewhere in Drent**, in the same spirit and within reason: two or three more small places
   worth finding on the paths that already exist, and a few more people with a line each in Tidehaven
   and along the Greenway. Do not add quests beyond the letters; do not touch the goblin camp (it is
@@ -59,7 +59,7 @@ holds Drent quietly today — whatever happened eighty years ago is why it is qu
 
 - Work only in your worktree (`../azhora-game-drent`, branch `drent-depth`). Two other agents are
   building Elagos and West Izol, and the lead is working on main. Keep edits to shared files
-  (`src/world.js`, `src/main.js`, `src/map-fog.js`, `package.json`) small and local; put your work in
+  (`src/world.js`, `src/main.js`, `src/ui/map/map-fog.js`, `package.json`) small and local; put your work in
   new modules with one call from the world builder and one hook in `src/main.js`.
 - `src/main.js`, `index.html` and others are CRLF with very long lines: never reformat, patch by exact
   anchors with a Python script that asserts each anchor occurs once and writes nothing if one fails.

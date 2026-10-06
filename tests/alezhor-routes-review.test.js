@@ -5,8 +5,8 @@ import { createHash } from 'node:crypto';
 import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { inspectCelderRoute } from './celder-route-controller.js';
-import { ALEZHOR_TRAILS } from '../src/alezhor-world.js';
-import { WALK_STEP } from '../src/walk-surfaces.js';
+import { ALEZHOR_TRAILS } from '../src/content/regions/alezhor/alezhor-world.js';
+import { WALK_STEP } from '../src/world/collision/walk-surfaces.js';
 
 // The delivered simple walker kept updating Y directly. This check instead
 // carries one novice traveler along the full authored coast journey and back,
@@ -17,10 +17,10 @@ const trail = ALEZHOR_TRAILS.find(row => row.id === 'alezhor-the-length');
 const route = { name: 'The complete Alezhor coastal journey and return',
   intent: 'the published principal natural trail, including the gold-river ford', strict: true,
   points: [...trail.points, ...trail.points.slice(0, -1).reverse()].map(({ x, z }) => ({ x, z })) };
-const sourceFiles = ['src/world.js', 'src/world-terrain.js', 'src/terrain-extension.js',
-  'src/alezhor-world.js', 'src/alezhor-scenery.js', 'src/alezhor-water.js', 'src/ibenwood-alezhor-ground.js',
-  'src/game-state.js', 'src/climbing.js', 'src/terrain-fall.js', 'src/locomotion-skills.js',
-  'src/swimming.js', 'tests/celder-route-controller.js'];
+const sourceFiles = ['src/world.js', 'src/world/terrain/world-terrain.js', 'src/world/terrain/terrain-extension.js',
+  'src/content/regions/alezhor/alezhor-world.js', 'src/content/regions/alezhor/alezhor-scenery.js', 'src/content/regions/alezhor/alezhor-water.js', 'src/content/regions/ibenwood/ibenwood-alezhor-ground.js',
+  'src/gameplay/movement/game-state.js', 'src/gameplay/movement/climbing.js', 'src/gameplay/movement/terrain-fall.js', 'src/gameplay/movement/locomotion-skills.js',
+  'src/gameplay/movement/swimming.js', 'tests/celder-route-controller.js'];
 const source = Object.fromEntries(sourceFiles.map(file => [file,
   createHash('sha256').update(readFileSync(new URL('../' + file, import.meta.url))).digest('hex')]));
 const scene = new THREE.Scene(), world = await scopedWorld(scene, [64]);

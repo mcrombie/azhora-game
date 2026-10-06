@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGhostFlight } from '../src/ghost-camera.js';
+import { createGhostFlight } from '../src/dev/tools/ghost-camera.js';
 
 const keys = (...codes) => new Set(codes);
 const near = (a, b, message = '') => assert.ok(Math.abs(a - b) < 1e-8, `${message}: ${a} versus ${b}`);

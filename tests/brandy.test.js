@@ -2,14 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
-import { canStand } from '../src/game-state.js';
-import { INVENTORY_ITEMS, ICON_KINDS } from '../src/inventory.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { INVENTORY_ITEMS, ICON_KINDS } from '../src/gameplay/inventory/inventory.js';
 import { BRANDY, BRANDY_YARD, BRANDY_STAND, BRANDY_SIGN, RIBBON_ITEM, YARD_LAYOUT, yardPoint, yardColliders,
-  createBrandy, brandyConversation, validateBrandySnapshot } from '../src/brandy.js';
-import { BRANDY_HOME, BRANDY_HOME_PATH } from '../src/brandy-home-world.js';
+  createBrandy, brandyConversation, validateBrandySnapshot } from '../src/content/quests/brandy/brandy.js';
+import { BRANDY_HOME, BRANDY_HOME_PATH } from '../src/content/quests/brandy/brandy-home-world.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const { SIGN_LABELS } = await sourceModule('../src/signs.js');
+const { SIGN_LABELS } = await sourceModule('../src/world/scenery/signs.js');
 const scene = new THREE.Scene(), world = createWorld(scene);
 const talker = () => {
   const log = { opened: null, acted: [] };
@@ -70,7 +70,7 @@ test('in her own words: Eeyore, charismatic, and the brightest colours in Drent;
 });
 
 test('she looks like herself: an ordinary figure in rainbow and leopard, no hat', async () => {
-  const { createCharacter } = await sourceModule('../src/characters.js');
+  const { createCharacter } = await sourceModule('../src/content/characters/characters.js');
   const size = actor => new THREE.Box3().setFromObject(actor.group).getSize(new THREE.Vector3());
   const brandy = createCharacter({ role: BRANDY.modelRole, tunic: BRANDY.color, skin: BRANDY.skin }), lysa = createCharacter({ role: 'acorn-cook' });
   assert.ok(Math.abs(size(brandy).y - size(lysa).y) < .25, 'ordinary height');

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createCrime,validCrimeState,LAW} from '../src/crime.js';
+import {createCrime,validCrimeState,LAW} from '../src/gameplay/law/crime.js';
 
 test('assault injures a peaceful person and leaves a persistent bounty',()=>{
   const law=createCrime(),result=law.hit({id:'harbormaster',damage:24,essential:true,position:{x:2,z:3}});

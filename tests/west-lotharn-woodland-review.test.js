@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { scopedWorld } from './scoped-world.js';
-import { canStand } from '../src/game-state.js';
-import { WEST_LOTHARN_WILDLIFE_ZONES } from '../src/west-lotharn-wildlife.js';
-import { onBald, onRamp } from '../src/west-lotharn-world.js';
-import { inWestWater } from '../src/west-regions.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { WEST_LOTHARN_WILDLIFE_ZONES } from '../src/content/regions/west-lotharn/west-lotharn-wildlife.js';
+import { onBald, onRamp } from '../src/content/regions/west-lotharn/west-lotharn-world.js';
+import { inWestWater } from '../src/content/regions/western-regions/west-regions.js';
 
-const { createWestLife, LIFE_REACH } = await sourceModule('../src/west-regions-life.js');
+const { createWestLife, LIFE_REACH } = await sourceModule('../src/content/regions/western-regions/west-regions-life.js');
 const world = await scopedWorld(new THREE.Scene(), [27]);
 const woods = WEST_LOTHARN_WILDLIFE_ZONES.filter(zone => zone.habitat === 'woodland');
 const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);

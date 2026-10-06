@@ -1,5 +1,5 @@
-import { BEN, SPIDER } from '../src/spider-quest.js';
-import { createEscortMotionChecks } from '../src/escort-motion-checks.js';
+import { BEN, SPIDER } from '../src/content/quests/spider/spider-quest.js';
+import { createEscortMotionChecks } from '../src/dev/checks/escort-motion-checks.js';
 
 /** Starts the same F8 tool as the player, then only observes normal live frames.
  * The Electron caller supplies trusted native input after the final restart to

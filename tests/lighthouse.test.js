@@ -4,12 +4,12 @@ import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { SUVAL_LIGHT, ADDISON, ADDISON_STAND, LIGHT_HEAD, SIGHTLINES, LIGHT_WORK, WRECK_BOOK,
   WEATHER_LORE, HER_OWN, FROM_THE_GALLERY, SEEN_FROM_THE_LIGHT, createLightKeeper, addisonConversation,
-  validateLightSnapshot } from '../src/lighthouse.js';
-import { SEA_LEVEL } from '../src/region-world.js';
-import { createBatmanHunt } from '../src/batman.js';
-import { createMapFog } from '../src/map-fog.js';
-import { canStand } from '../src/game-state.js';
-import { BODY, bodyWorld, stepToward } from '../src/bodies.js';
+  validateLightSnapshot } from '../src/content/quests/lighthouse/lighthouse.js';
+import { SEA_LEVEL } from '../src/world/terrain/region-world.js';
+import { createBatmanHunt } from '../src/content/quests/batman/batman.js';
+import { createMapFog } from '../src/ui/map/map-fog.js';
+import { canStand } from '../src/gameplay/movement/game-state.js';
+import { BODY, bodyWorld, stepToward } from '../src/gameplay/combat/bodies.js';
 
 // The cottage mesh is a yawed rectangle, whose corners extend past its circular proxy.
 function cottageClearance(point) {

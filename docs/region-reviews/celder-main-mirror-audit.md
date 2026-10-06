@@ -4,7 +4,7 @@ Independent read-only audit of the main checkout against `tests/artifacts/celder
 
 - All 22 packet leaves match the frozen SHA-256 hashes exactly.
 - The 40 edits in 14 shared files replay exactly against `tests/artifacts/main-before-celder` after normalizing line endings. The wildlife imports use the unique Babon import anchor to preserve main's additional developer-wildlife import. The Mithala test's three-line neighbor allowance uses its unchanged border assertion anchor.
-- Unchanged lines in `src/main.js` and `src/west-regions-life.js` remain byte-identical. The only unchanged-line byte difference across all 14 files is the existing Mithala scenery import in `world.js`, whose CRLF became LF. All 13 protected dragon, bat, destruction and wildlife-damage source/test leaves still match their original preservation hashes.
+- Unchanged lines in `src/main.js` and `src/content/regions/western-regions/west-regions-life.js` remain byte-identical. The only unchanged-line byte difference across all 14 files is the existing Mithala scenery import in `world.js`, whose CRLF became LF. All 13 protected dragon, bat, destruction and wildlife-damage source/test leaves still match their original preservation hashes.
 - Reversing the two additions in `west-lotharn-ground.js` and restoring its first import's original LF produces the exact pre-main bytes (SHA-256 `2b71c3af551ad246c85e0087422841e64d94a82e5b867c38700122964ca48eba`). Its first-line EOL explains the archived packet prehash discrepancy; no other original byte differs.
 - The test manifest adds exactly South Celder ground, North Celder ground, Celder life, combined Celder route review, and Celder shared-ground loading review. Every prior entry and its order remains, with no duplicate.
 

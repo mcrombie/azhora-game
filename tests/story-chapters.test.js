@@ -1,9 +1,9 @@
-import { QUEST_DONE } from '../src/game-state.js';
+import { QUEST_DONE } from '../src/gameplay/movement/game-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoal, chapterLabel, storyChapter } from '../src/story-chapters.js';
-import { questLive } from '../src/quest-slate.js';
-import { LONG_ROAD_LEGS } from '../src/long-road.js';
+import { STORY_CHAPTERS, chapterCount, chapterProgress, chapterTitle, chapterGoal, chapterLabel, storyChapter } from '../src/content/chapters/journey/story-chapters.js';
+import { questLive } from '../src/gameplay/quests/quest-slate.js';
+import { LONG_ROAD_LEGS } from '../src/content/chapters/journey/long-road.js';
 
 // `started` is the report to Iven itself; `briefed` is the Lauvel errand accepted after it.
 const reported = { luscia: { started: true } };
@@ -40,10 +40,10 @@ test('chapter one ends on reporting for duty at Nothom', () => {
 
 test('chapter one is the three subquests, and the long way hangs under them only when it is on the slate', () => {
   const one = STORY_CHAPTERS[0];
-  // The journal and the quest card say the same three things (`questSteps`, src/game-state.js).
+  // The journal and the quest card say the same three things (`questSteps`, src/gameplay/movement/game-state.js).
   assert.equal(one.steps.length, 3, 'Chapter 1 is three subquests');
   for (const [index, word] of [[0, /Jojo/], [1, /Glun/], [2, /Nothom/]]) assert.match(one.steps[index], word);
-  // The teachers of Drent are off the slate (src/quest-slate.js), and the road that visits them
+  // The teachers of Drent are off the slate (src/gameplay/quests/quest-slate.js), and the road that visits them
   // went with them. Everything below is the block as it will read when they come back.
   assert.equal(!!one.longWay, questLive('teachers'));
   if (one.longWay) {

@@ -110,7 +110,7 @@ The Celder candidate is the following commit set, in order:
 - `e7012d9e368515ea6e9606e70f70cf7f1bf0c9db`: the two-region build.
 - `136b5822dd8b11906d35b041f2ac9a67be4ad08d`: frozen handoff and final label/comment.
 - `29ca6913a9b437d968850f5afe54726f913bfdb2`: the later seam-table performance follow-up,
-  present in `../azhora-game-east-izol`. It changes only `src/south-celder-world.js`.
+  present in `../azhora-game-east-izol`. It changes only `src/content/regions/south-celder/south-celder-world.js`.
 
 Do not copy the whole East Izol checkout at `fdc1707728128a3cdb29dfac6f8e5be6190dc830` to
 obtain that follow-up. Its later `0a47f26` build also supplies `scripts/walk-route.mjs`,

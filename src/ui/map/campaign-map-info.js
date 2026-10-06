@@ -1,0 +1,24 @@
+import {CHAPTER_PATHS,CHAPTER_FACTIONS,publicProfiles,factionName} from './campaign-map-model.js';
+export const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc=escapeHTML;
+const fact=(label,value)=>`<div class="fact"><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
+export function chapterHTML(path,snapshot,{preview=true}={}){
+  const branch=CHAPTER_PATHS[path],completed=branch?.snapshot===snapshot;
+  let html='<span class="eyebrow">Chapter 1</span><h2 class="title">The Border War</h2>';
+  if(!branch)return html+`<p class="subtitle">An envoy mission to Solis becomes your first choice of allegiance. Your part in the war can change the border.</p><div class="chapter-start">Begins at the Ambroni camp<br><button class="text-button" data-region="Moros Plain">Moros Plain</button></div>`+Object.entries(CHAPTER_PATHS).map(([id,p])=>`<article class="card"><h3>${p.name}</h3><p>${p.aim}</p><button class="text-button" data-chapter="${id}">Read this quest path →</button></article>`).join('');
+  html+=`<div class="path-switch" role="group" aria-label="Read a Chapter 1 path">${Object.entries(CHAPTER_PATHS).map(([id,p])=>`<button data-chapter="${id}" aria-pressed="${id===path}">${id==='empire'?'Monarchist':'Coalition'}</button>`).join('')}</div><p class="subtitle">${esc(branch.aim)}</p><span class="badge ${completed?'':'unknown'}">${completed?'Successful ending':snapshot==='opening'?'At the chapter opening':'Alternative path'}</span><div class="section chapter-outcome"><h3>${completed?'The border has changed':'Territory at stake'}</h3><p>${completed?'':'If you succeed: '}${esc(branch.consequence)}</p><button class="text-button" data-region="${branch.target}">Locate ${branch.target} →</button></div><details class="section quest-route"><summary>Quest route · 5 steps</summary><ol>${branch.steps.map(([title,note,region])=>`<li><h3>${esc(title)}</h3><p>${esc(note)}</p><button class="text-button" data-region="${region}">${region}</button></li>`).join('')}</ol></details><div class="section"><button class="text-button" data-faction="${branch.faction}">About ${path==='empire'?'Ambron':'Izol'} →</button></div>`;
+  if(preview)html+=`<div class="preview-box"><span class="eyebrow">UI preview</span><p>Compare the successful ending with the opening map.</p><button class="preview-button" data-snapshot="${completed?'opening':branch.snapshot}">${completed?'Restore opening territories':'Preview successful ending'}</button></div>`;
+  return html;
+}
+export function factionHTML(id,{factions,territories,snapshot,relation,limited=false,knownRegions=new Set()}){
+  const faction=factions.find(f=>f.id===id),profile=publicProfiles[id],name=factionName(id,factions);
+  let seat=profile?.seat||(id==='thalmagars-empire'?'Black Fortress, Cape Thalmagar':faction?.capital)||'Not specified';
+  if(limited&&!territories.some(region=>seat.includes(region)))seat='Not charted';
+  const territoryLabel=limited?'Discovered territory':'Current territory';
+  let war=profile?.war;
+  if(snapshot==='chapter-monarchy'&&id==='west-suval')war='Solis has fallen. Ambron now controls West Suval; the displaced political faction remains listed.';
+  if(snapshot==='chapter-monarchy'&&id==='ambroni-empire')war='Chapter 1 victory: the Ambroni army has taken Solis and West Suval.';
+  if(snapshot==='chapter-coalition'&&id==='izol')war='Chapter 1 victory: Izol now controls Moros Plain for the Coalition. West Suval remains an allied country.';
+  if(snapshot==='chapter-coalition'&&id==='ambroni-empire')war='Chapter 1 defeat: Moros Plain has been lost to Izol. West Suval remains in coalition hands.';
+  return `<button class="text-button" id="back-factions">← All factions</button><span class="eyebrow faction-kicker">Country</span><h2 class="title">${esc(name)}</h2><p class="subtitle">${territories.length} ${limited?'discovered ':''}${territories.length===1?'region':'regions'}${id.includes('yunethre')?' · shared territory':''}</p><dl class="facts">${fact('Ruler or government',profile?.ruler||'Not yet specified')}${fact(territories.length?'Seat':'Seat claimed',seat)}</dl><div class="section"><h3>Known allegiances</h3><p>${esc(profile?.ties||relation)}</p></div>${war?`<div class="section"><h3>The war</h3><p>${esc(war)}</p>${CHAPTER_FACTIONS.includes(id)?`<button class="text-button chapter-link" data-chapter="${id==='ambroni-empire'?'empire':'coalition'}">Chapter 1 · The Border War →</button>`:''}</div>`:''}<details class="section" open><summary>${territoryLabel} · ${territories.length}</summary>${territories.length?`<ul class="territories">${territories.map(n=>`<li><button data-region="${esc(n)}">${esc(n)}</button></li>`).join('')}</ul>`:'<p>No sole region-wide control. This does not determine the fate of its people or leaders.</p>'}</details>`;
+}
