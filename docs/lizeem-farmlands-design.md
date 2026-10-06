@@ -550,6 +550,78 @@ The feast on the forecourt, fork stew, and Taleth's later topics unlocked.
 2. **Names.** The dictation gave "mythological names". Was that meant literally, or was it "Mittoli names"?
 3. **Taleth's hat.** None by default. A tall pointed hat would suit a Merlin, and would be the first in the game.
 
+## 10. As built: Builds 2 and 3 (6 October 2026)
+
+Nethereum and Nesdor were built on 6 October 2026 under the user's "keep building everything", by six agents working
+by file ownership on branch `lizeem-farmlands` after the groundwork for Builds 2 to 5, and wired into the game by an
+integrator the same day. The report, the files and the evidence are in
+[`docs/region-reviews/lizeem-farmlands-handoff.md`](region-reviews/lizeem-farmlands-handoff.md). What follows records
+what the build is, step by step against sections 5.2 and 5.3, and where it departs from the text above.
+
+### Nethereum: Haethom and the meadow (section 5.2)
+
+- **The place.** Haethom, four houses round a common on the north-east rim where the Sacred Way runs out (-2290, 335),
+  above the reliable line (18 m). The levee is a 1.1 m turf bank along the north-east thread from the rim to the basin
+  floor, its head a round where the Council sits and Fintan speaks the Recall; the hatch is a timber sluice in a notch
+  of it. Eight meadow beds lie inside the levee and four deep plots below the line by Liban's house on its hummock.
+  Boann's byre is on the north rim; Gwyddno's weir, smoke-house and hut are on the Neth below the ford. The levee and
+  the hummock are built ground in `world.heightAt` (`nethereumFarmHeight`), not terrain.
+- **Timing the water** (`src/meadow-water.js`). Mended with two planks and a piece of salvaged metal, the hatch is
+  worked with F from the meadow side: open, the water goes in black for three minutes, the silt shines for four, then
+  the frogs start. Drawn off at the shine, the meadow and the deep plots take fine silt (flood oats fit 2), black thin
+  (1), after the frogs sour (0). The silt feeds one sowing. The meadow grows its own hay after every draw-off; a farmer
+  of Farming 10 gets a second cut off a bed left bare five minutes after the first. The scenery shows the hatch broken,
+  shut or open and the water black, shining or souring.
+- **The steps** (`src/lizeem-nethereum.js`): Mererid on the levee; mend the hatch with Seithenyn; learn the water,
+  drown the meadow and draw it off at the shine; flood oats and the first cut; Boann's wolves (three, on the rim
+  pasture west of her byre, a fight); Fine oats and the second cut; oatcakes and smoked fish in hand at Fintan's Recall,
+  where Ceridwen is among the names of the Long Water and the name may be carried; the dish to Taleth, who teaches
+  *Quicken*. Experience lumps 150, 200, 300, 400 and 1,000 as in Build 1.
+- **The levee tenth** is taken on every Nethereum bed and waived for a game day after a turn of levee work with
+  Mererid. **The deep plots** open at the end at Farming 16; the water takes one planting in five there.
+- **The weir** gives three fish a game day (five at Fishing 5), Fine before noon. Smoked fish is cooked at any lit fire
+  (the kitchen has no place in it); Gwyddno teaches it at the smoke-house.
+- **Seithenyn's minding**: for one dish he draws the meadow off at the shine once while Rollo is away.
+
+### Nesdor: Ninehands and the strips (section 5.3)
+
+- **The place.** Ninehands on the western Flats (-1595, 585): a long house, a barn and Byggvir's malt-house round a yard,
+  Beyla's hives, the seed bench, and three strips of three beds laid down the fall toward the braids, the rise
+  (7.6 m), the drained bench (7.5 m) and the wet strip (7.3 m); Baugi's long strip of six beds lies on bench ground to
+  the west. Idunn's six hazel stools and her house are at the valley head; the Counted Water and Forseti's house stand
+  where the Way meets the army's rope line; the Carica ford is marked with a post. The farm road comes down the valley
+  head from the ford, rounds the Ela-south and wades the reach into the yard.
+- **Right crop, right ground** (`src/flats-ground.js`): floodwheat on the bench, rye on the rise, barley either; nothing
+  thrives on the wet. *Sound the Soil* reads what the strips are dressed with, as Baugi does: rushes and red-stemmed dock
+  on the wet, broad green dock on the cracking silt of the bench, yellowing dock among stones on the rise.
+- **The steps** (`src/lizeem-nesdor.js`): ford the Carica and find Baugi; read the strips and sow a whole strip each of
+  floodwheat, barley and rye on its ground (the wet strip remembered as the trap); reap a whole strip by walking it
+  from its end post (two seconds a bed); the foragers (give a quarter to Cedric's men or the rebellion's, bargain to a
+  tenth on Forseti's three-copper paper, or drive them off in a fight with three); Fine floodwheat; white bread and a
+  nut cake, sealed by Nepri or Consus and carried to Taleth, who teaches *The Work of Nine*. Baugi lends the long strip
+  at Farming 24. Nesdor takes no share. The rebellion pays in paper, which Forseti changes at a copper a note.
+
+### Where the build departs from the text, and why
+
+- **Bolverk's match** (settled at integration): he takes five seconds over a strip and the match is won only by a reap
+  no slower, with no margin. A walk takes six, so the walk always loses, as he says it will; the Work of Nine, cast on
+  Ninehands while the match stands, takes no time and wins it.
+- **Hazelnuts are graded by the picker's hand**: Fine at Farming 16, Prize at 20, coming in as `hazelnuts-fine`. A
+  picking has no fit or watering to grade, and without it the Measure's hazelnut line and the fine nut cake could not be
+  reached. A Prize picking is written in the Measure at once, as a Prize harvest is.
+- **Airmid's basket** adds its one through the farm (`onHarvest` handlers may now return `{ added }`), so the harvest's
+  count says so and a full satchel adds nothing.
+- **The long strip** is registered at start-up and kept shut, rather than left out of the farm, so a save that has
+  worked it always validates; the bed prompt, the reaping and the field workings all pass it over until Baugi lends it.
+  Liban's deep plots are shut to sowing, and to the staff, the same way until she lets them.
+- **The first cut of hay** is not gated on Farming 5: the meadow grows it for anybody, and the level counts towards its
+  grade as every crop's does. The skill sheet lists hay at 5 and the second cut at 10.
+- **No order board in Nethereum** (section 7.7 names none there). The Way board is Forseti's.
+- **Nesdor's region record still lists nobody** (`tests/eer-world.test.js` holds Nesdor, like Caricas, to placing no
+  one itself); its eight are stood up by the game after the cast is trimmed, as Caricas's are. Nethereum's record lists
+  its seven.
+- The people's looks are the design's, written in the figure kit's words; they still want the user's approval.
+
 ---
 
 ## Appendix: facts for builders
