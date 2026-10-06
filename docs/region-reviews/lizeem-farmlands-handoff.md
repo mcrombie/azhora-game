@@ -1,208 +1,294 @@
-# The Farmlands of the Lizeem, Builds 1 to 3: handoff
+# The Farmlands of the Lizeem, Builds 1 to 5: handoff
 
-Not a queue row and not a region: Build 1 of the Farmlands of the Lizeem, the user's design of 5 October 2026
-([`docs/lizeem-farmlands-design.md`](../lizeem-farmlands-design.md), section 8, "Build 1: Rollo, Taleth and Caricas").
-The user approved the design and said "go ahead and implement" on 5 October 2026. Four agents built it in parallel by
-file ownership (the farming mechanics; the economy and market; the quest, the Measure and the people; Rollo, Taleth and
-field sorcery), and an integrator wired it into the files they were not allowed to touch, applied the cross-agent fixes
-and ran the tests on 6 October 2026.
+Not a queue row and not a region: the whole quest line of the Farmlands of the Lizeem, the user's design of 5 October
+2026 ([`docs/lizeem-farmlands-design.md`](../lizeem-farmlands-design.md)). The user approved the design and said "go
+ahead and implement" on 5 October 2026, and "keep building everything" on 6 October 2026. All five builds of section 8
+were made on 6 October 2026 by agents working in parallel by file ownership, each wave wired into the game by an
+integrator who settled the discrepancies between them and ran the checks. The design's section 10 ("As built")
+records what each build is and where it departs from the text; this file is how to play it, what changed, the
+evidence, and what is left.
 
 ## Revision
 
 | | |
 | --- | --- |
 | Base | `57a9de4`, the snapshot of the main checkout's uncommitted work, 2026-10-06 07:18 |
-| Delivered | branch `lizeem-farmlands`, six commits (listed below) |
-| Worktree | the session scratchpad, `azhora-game-farmlands`; clean after the commits apart from the ignored `tests/artifacts/` |
+| Delivered | branch `lizeem-farmlands`, twenty commits (listed below); Builds 4 and 5 on top of `469601b` |
+| Worktree | the session scratchpad, `azhora-game-farmlands`; clean after the commits apart from the ignored `tests/artifacts/` and `tests/.electron-profiles/` |
 | Not done | Not merged, not pushed. |
+
+## For whoever merges
+
+- **The user's decisions are recorded only in the design file**: section 0 (eleven rulings of 5 October 2026, among
+  them Rollo, Taleth, the four countries, Ovesos fertile along the river and never orc country, people with
+  mythological names and roles, and an economy with buyers in coin), the go-aheads of 5 October ("go ahead and
+  implement") and 6 October ("keep building everything"), and `docs/economy.md`'s dated section lifting the "do not
+  develop" ruling for this work. **Copy them into `docs/design-answers.md` when merging**: that file is Codex's, and
+  this branch has not touched it. The defaults still standing (Taleth hatless, the war touched lightly, the names taken
+  literally as mythological) and the open questions of sections 9 and 10 are the user's to settle.
+- Nothing was written to `world-builder/azhora_lore`.
 
 ## How to play it
 
-1. Launch, and choose **Developer Start** on the title screen. You are **Rollo**, a grey-bearded sorcerer of the Guild
-   in a brown cloak and raised hood, on the forecourt south of the Guild tower in Minora (-2414, 63), facing its door.
-   He carries the oak staff and nothing else, and knows Fireball.
-2. The first objective is "Speak with the Master Sorcerer". **Taleth** stands a few steps ahead and to the right.
-   Four topics (the Guild and the tower, the river, the war in the valley, sorcery), the charge, and two later charges
-   shown locked. Taking the charge teaches *Sound the Soil*.
-3. Cross the White Bridge to Caricas. Egeria, the Voice of the Council, at the grain court, lends the North Farm for the
-   holder's quarter. Vertumnus, the fox-keeper elder, explains the rotation and teaches bean pottage and the rye loaf.
-4. Bring in two beds of bridge rye and two of field beans on the North fields (three beds, so two rounds), then sow rye
-   where the beans grew. It comes up Plain: the beans leave the ground too rich for rye, which is the lesson.
-5. Captain Hagen's quartermaster claims a tenth for Cedric's granary: hand it over at the watch-house, tell Hagen the
-   harvest was thin, or let Vertumnus hide it for the families in the upland.
-6. Bring in Fine rye (fresh ground, watered, at the level the quest's experience lumps have paid for), learn the tart
-   from Pomona at the east orchard, bake it, have Consus seal it at the grain court (one copper), and carry it to Taleth.
-7. Taleth teaches *Call the Dew*. Messor the reaper comes back to the North Farm and can be hired. Fine food laid before
-   Seshat in the Guild Library fills the Caricas leaf of the Measure in the journal.
+**Start.** Choose **Developer Start** on the title screen. You are **Rollo**, a grey-bearded sorcerer of the Guild in a
+brown cloak and raised hood, on the forecourt south of the Guild tower in Minora (-2414, 63), with the oak staff and
+Fireball. **Taleth** stands a few steps ahead: four topics, the charge (which teaches *Sound the Soil*), the Dividing and
+two later charges shown locked. Take the charge; the tracker then carries a card for the quest and one for each country
+under way, and the Measure of the River is a page in the journal.
 
-**F8 (the testing menu)**: the **Taleth** card under "Named quest-givers" resets the charge and puts you beside Taleth
-to play the arc by hand. The scripted walk through the whole arc is the smoke flag `--lizeem-farmlands-checks`
-(`npm run test:lizeem-farmlands`).
+**Caricas** (Build 1). Over the White Bridge: Egeria at the grain court lends the North Farm for the holder's quarter;
+Vertumnus explains the rotation and teaches bean pottage and the rye loaf. Rye straight after beans comes up Plain,
+which is the lesson; Captain Hagen's quartermaster claims a tenth (hand it over, plead a thin harvest, or let Vertumnus
+hide it); Fine rye, Pomona's tart, sealed by Consus, to Taleth for *Call the Dew*. Messor can then be hired at six
+copper a game day.
 
-## What Build 1 contains
+**Nethereum** (Build 2). Over the Pilgrims' Bridge to Haethom at the end of the Sacred Way. Mererid on the levee;
+Seithenyn mends the hatch with you (two planks, a piece of salvaged metal); **F** on the meadow side opens it and draws
+the water off, at the shine for fine silt. Flood oats and the hay the meadow grows; Boann's three wolves west of her
+byre; Fine oats and a second cut at Farming 10; oatcakes from Mererid or smoked fish from Gwyddno's weir (**F** at the
+trap) in hand at Fintan's Recall; the dish to Taleth for *Quicken*.
 
-- **Rollo** (`src/player-characters.js`, `src/characters.js`, `src/character-select.js`): a twelfth playable entry
-  flagged `developerOnly`, kept off the Chapter 1 line; two new kit parts (the raised hood with its own colour, and the
-  long cloak); the oak staff equipped, the boot sword taken away, Fireball learned at creation. Ben's Fireball lesson is
-  greyed out ("You already know Fireball.") for anyone who knows it.
-- **The start** (`src/minora-opening.js`): `MINORA_START` on the tower forecourt with its own camera pitch, the new
-  first objective, the opening note on the title screen, and the Minora opening smoke extended to Rollo and Taleth.
-- **Taleth** (`src/taleth.js`): his figure (bare-headed, midnight-blue robe), five topics, the charge, two locked
-  charges, and *Sound the Soil* when the charge is taken.
-- **Field sorcery** (`src/sorcery.js`, `src/magic.js`, `src/skills.js`): a fourth released school. *Sound the Soil*
-  reads the nearest bed within 6 m through `describeBed`; *Call the Dew* waters every growing bed within 40 m. Neither
-  costs focus when there is nothing to work on. A harvest gives 4 focus back.
-- **Farming** (`src/farming.js` and its view and conversation): rotation on the 17 Caricas beds (each bed's heart,
-  0 to 3, and its last crop); grades Plain, Good, Fine and Prize, with Fine and Prize coming in as a `-fine` item;
-  the fox's regard; three Caricas-only crops (bridge rye, field beans, soft fruit) and their seed; three dishes and their
-  fine forms (`rye-cheese-loaf`, `bean-pottage`, `soft-fruit-tart`); `onHarvest` for shares in kind; farming save
-  section version 2 (a version 1 save loads with every bed at heart 2).
-- **The quest** (`src/lizeem-farmlands.js`): the hub (unmet, offered, accepted), the Caricas arc in nine stages, the
-  holder's quarter and the garrison's tenth taken at harvest, experience lumps of 150, 200, 300, 400 and 1,000 paid once
-  each, the Measure of the River (four leaves, Caricas the only one walkable), the tracker card, the journal entry for a
-  restored Caricas, and green-book markers on whoever holds the next step. Added to `LIVE` in `src/quest-slate.js`.
-- **The people** (`src/lizeem-people.js`): fourteen, with the design's looks and nobody in a hat. Minora: Seshat,
-  Nepri, Portunus, Rudiger, Imhotep, Satet. Caricas: Vertumnus, Egeria, Consus, Hagen (armed, a soldier), Ilmarinen,
-  Pomona, Silvanus, and Messor, hidden until Caricas is restored. Stood up after the cast trim, as the Telemon are.
-- **Money** (`src/economy.js`, `src/prices.js`, `src/merchants.js`): the purse helpers, one price table with grade,
-  place and appetite, and eight buyers (Nepri, Portunus, Rudiger, Consus, Pomona, Ilmarinen, Seshat's bounty, Satet's
-  kitchen) behind one trade dialogue; the measurer's seal; order boards at the Measure House and the grain court;
-  Ilmarinen's twelve farm tools and the factor's charcoal as satchel items. `docs/economy.md` records that the user
-  lifted his "do not develop" ruling for this work on 5 October 2026.
-- **The market corner** (`src/menora-city.js`, `src/menora-scenery.js`): four factors' stalls by the Temple Way;
-  Portunus keeps the Carican one, and the other three wait for later builds.
+**Nesdor** (Build 3). Ford the Carica at the marked post and take the farm road to Ninehands. Baugi lends the strips:
+floodwheat (Farming 8) on the bench, rye on the rise, barley either, nothing on the wet. Reap a strip by walking it from
+its end post (**F**); Bolverk's match is lost on foot and won by *The Work of Nine*. The foragers (a quarter, a tenth on
+Forseti's paper, or a fight); Fine floodwheat; Aegir's white bread and Idunn's nut cake, sealed, to Taleth for *The Work
+of Nine*. Baugi lends the long strip at Farming 24.
+
+**Ovesos** (Build 4). Ford the Neth below Haethom and follow the way east across the upland grass past Lahar's camp to
+the divider at the canal's head and down the canal's east bank to Velsorten. Nisaba, at the register house on the
+square, enters you as the newest right, with the four plots at the dry tail. Ask Enbilulu, by the divider, how the
+water is shared (and about salt, or ask Ashnan). Take seed from a plot's panel, sow barley and silver millet at the tail,
+and when the toast says **"Your turn at the divider"**, stand beside the divider's stone and press **F**: it opens on
+your measure ("Measure 4/4"), lists each growing plot with its water against its thirst, and gives one, two or three
+units at a time ("Leave the rest" to go). Barley wants 2, millet 1, hard wheat 3; more leaves salt. Help Enbilulu clear
+the canal head (three stretches, one between turns) and bring in barley of Good or better: the Council moves you up a
+turn. Sow hard wheat (Farming 10). Ziusudra's house draws the water out of turn; answer it before the Water Council at
+the register house, from Nisaba's register, on Ashnan's witness, or quietly for 40 copper. Bring in Fine hard wheat, have
+it ground at Ezina's mill (in her conversation), learn the flatbread from her, bake it at a lit fire, have it sealed by
+Nepri or Consus, and give it to Taleth. Ovesos pays in standing: the second turn at the stone, the mill free, and your
+name read by Nisaba at the next Harvest Close ("Attend the Harvest Close", which also settles the water dues).
+
+**The Dividing** (Build 5). With all four countries restored, Taleth's "The Dividing" opens and a trestle with four bowls
+stands on the forecourt. He teaches fork stew: a bridge rye, a flood oats, a floodwheat or a hard wheat, and a weir fish,
+at any lit fire. Bring it to him ("Serve the fork stew and hold the Dividing"): he pours the bowls, Seshat and Nepri
+each say a line, and the journal enters "Walker of the Measure" with 1,000 Farming experience.
+
+**The rest of Minora** (Build 5): Manawydan, Njord and Adapa keep the three market stalls by the Temple Way; Hapi the
+barge master stands below the River storehouse; Amalthea sells cheese at her hamlet in the hills, out of the Muster Gate
+and along the track through the west side of Wilhelm's camp.
+
+**F8.** The **Taleth** card under "Named quest-givers" resets the whole farmlands (the meadow, the weir, any reap, the
+canal and the mill with it) and puts you beside Taleth. The scripted walks are `npm run test:lizeem-farmlands` (the
+Caricas arc) and `npm run test:lizeem-farms` (Haethom, Ninehands, Velsorten, the hamlet and the forecourt).
+
+## The five builds
+
+- **Build 1: Rollo, Taleth and Caricas.** Rollo (a twelfth playable entry, Developer Start only), the start on the
+  forecourt, Taleth and his topics, field sorcery (*Sound the Soil*, *Call the Dew*), rotation, grades and three crops,
+  the quest hub and the Measure, the Caricas arc and its fourteen people, the purse, one price table, the market, seals
+  and order boards, the market corner.
+- **Groundwork for Builds 2 to 5.** Country farming hooks (`registerCountry`, rows, crops and trees), *Quicken* and *The
+  Work of Nine*, registered buyers and boards, arcs registered with the hub.
+- **Build 2: Nethereum.** Haethom, the levee and hatch, the flood meadow and its silt, the weir and smoke-house, flood
+  oats, hay and weir fish, the seven of design 6.4, the wolves and the Recall.
+- **Build 3: Nesdor.** Ninehands and its strips, right crop on right ground, reaping by walking a strip, Bolverk's
+  match, Idunn's coppice, the inn and the arbiter on the Way, the foragers and the rebellion's paper, the eight of 6.5.
+- **Build 4: Ovesos.** The green belt along the Lizeem, Velsorten, the canal and its turns, salt and dues, Ezina's and
+  Uttu's mills, Lahar's camp, hard wheat, silver millet and madder, flatbread and porridge, the eight of 6.6, the
+  hearing and the Harvest Close.
+- **Build 5: the Dividing.** The feast on the forecourt and fork stew; Manawydan, Njord, Adapa, Hapi and Amalthea, which
+  places every person of section 6.2; Amalthea's hamlet; the whole Farming ladder of section 4.6 on the skill sheet.
 
 ## Files
 
-**New**: `src/taleth.js`, `src/lizeem-farmlands.js`, `src/lizeem-people.js`, `src/lizeem-farmlands-checks.js`,
+**Build 1, new**: `src/taleth.js`, `src/lizeem-farmlands.js`, `src/lizeem-people.js`, `src/lizeem-farmlands-checks.js`,
 `src/merchants.js`, `src/prices.js`; tests `taleth`, `sorcery-field`, `farming-rotation`, `lizeem-farmlands`,
-`lizeem-people`, `merchants`, `prices`; this report.
+`lizeem-people`, `merchants`, `prices`. **Changed**: `src/farming.js`, `farming-view.js`, `farming-conversation.js`,
+`regional-farmland.js`, `countryside-farming-checks.js`, `cooking.js`, `consumables.js`, `inventory.js`, `economy.js`,
+`menora-city.js`, `menora-scenery.js`, `journal-entries.js`, `quest-tracker.js`, `quest-markers.js`,
+`player-characters.js`, `characters.js`, `character-select.js`, `minora-opening.js`, `minora-opening-smoke.js`,
+`sorcery.js`, `magic.js`, `skills.js`, `skill-icons.js`, `quest-slate.js`, `chapter-one-smoke.js`, `index.html`,
+`main.cjs`, `package.json`, `docs/regional-farmland.md`, `docs/economy.md`.
 
-**Changed by the builders**: `src/farming.js`, `src/farming-view.js`, `src/farming-conversation.js`,
-`src/regional-farmland.js`, `src/countryside-farming-checks.js`, `src/cooking.js`, `src/consumables.js`,
-`src/inventory.js`, `src/economy.js`, `src/menora-city.js`, `src/menora-scenery.js`, `src/journal-entries.js`,
-`src/quest-tracker.js`, `src/quest-markers.js`, `src/player-characters.js`, `src/characters.js`,
-`src/character-select.js`, `src/minora-opening.js`, `src/minora-opening-smoke.js`, `src/sorcery.js`, `src/magic.js`,
-`src/skills.js`, `src/skill-icons.js`, `docs/regional-farmland.md`; tests `farming`, `cooking`, `economy`,
-`larder-sources`, `menora-city`, `nesdor-world` (Caricas may now list the farmlands' people), `player-characters`,
-`skills`, `skill-sheet`, `skills-browser`, `spider-quest`, `game-mode` (count pins for the seventh sorcery school).
+**Builds 2 and 3, new**: `src/nethereum-farm.js`, `nethereum-farm-scenery.js`, `meadow-water.js`,
+`nethereum-produce.js`, `lizeem-nethereum.js`, `lizeem-nethereum-people.js`, `nesdor-farm.js`,
+`nesdor-farm-scenery.js`, `flats-ground.js`, `lizeem-nesdor.js`, `lizeem-nesdor-people.js`, `lizeem-farms-smoke.js`;
+tests `nethereum-farm`, `meadow-water`, `lizeem-nethereum`, `lizeem-nethereum-people`, `nesdor-farm`, `flats-ground`,
+`lizeem-nesdor`, `lizeem-nesdor-people`. **Changed**: `src/west-regions-life.js` (mixed line endings kept),
+`west-regions-scenery.js`, tests `nethereum-world`, `nesdor-world`.
 
-**Wiring** (line-ending-preserving edits, each with a dated comment):
+**Builds 4 and 5, new**: `src/ovesos-farm.js`, `ovesos-farm-scenery.js`, `canal-turns.js`, `ovesos-produce.js`,
+`lizeem-ovesos.js`, `lizeem-ovesos-people.js`, `dividing.js`, `dividing-scenery.js`, `lizeem-minora-people.js`,
+`isareos-hamlet.js`, `isareos-hamlet-scenery.js`, `docs/lizeem-farmlands-dividing.md` (every line of the Dividing and
+of Minora's five, for review); tests `ovesos-farm`, `canal-turns`, `lizeem-ovesos`, `lizeem-ovesos-people`, `dividing`,
+`lizeem-minora-people`, `isareos-hamlet`. **Changed by the builders**: `src/oves-world.js`, `oves-scenery.js`,
+`farming-view.js` (hard wheat, millet and madder drawn), `taleth.js` (the Dividing topic), `skills.js` (fifteen ladder
+lines, CRLF kept), tests `oves-world`, `taleth`, `foods` (fork stew alone may heal 60), and dated notes in
+`docs/oves-brief.md` and `docs/six-regions-brief.md`.
 
-- `src/main.js`, sixteen small hunks: imports; Taleth and the fourteen people stood up after the trim; Rollo's kit and
-  spell in `grantStartingKit`; the farm's clock, a grade on the harvest toast and focus back after a harvest; the market,
-  the quest and `placeLizeemHands` made beside the farm; `farming` and the clock for `createMagic`, and the
-  `field-working` toast; Developer Start as Rollo with `MINORA_START.pitch`; the tracker, the journal, the save and the
-  restore; Taleth's and the people's conversations; Ben's lesson disabled when known; the F8 card; the markers; the
-  `runLizeemFarmlandsChecks` and Minora smoke hooks.
-- `index.html` (the opening note, the F8 card), `main.cjs` (`--lizeem-farmlands-checks`), `package.json`
-  (`test:lizeem-farmlands`).
-- `src/road-checkpoint.js`: validators and explicit copies for `lizeemFarmlands` (normalised through the quest) and
-  `merchants` (copied as written, because its appetites and orders are dated by game day). Both are optional: a save
-  from before them restores with fresh defaults.
-- `src/quest-slate.js` (`LIVE`), `src/inventory.js` (`...MERCHANT_ITEMS`), `src/skills.js` (Farming unlock lines for
-  the three crops), `src/chapter-one-smoke.js` (`COMPANY_PLAYABLE`: twelve playable, eleven tiles),
-  `tests/test-manifest.json` (the seven new suites).
+**Wiring** (line-ending-preserving edits, each with a dated comment): `src/main.js`, `src/world.js`,
+`src/region-world.js`, `src/region-layout.js`, `src/build-status.js`, `src/map-fog.js`, `src/west-regions-scenery.js`,
+`src/road-checkpoint.js`, `src/inventory.js`, `src/cooking.js`, `src/consumables.js`, `src/prices.js`,
+`tests/test-manifest.json`, `tests/road-checkpoint.test.js`. For Builds 4 and 5:
 
-**Cross-agent fixes made at integration**:
+- `src/world.js`: the `ovesosFarm` build step (region 25, after the Oves's own scatter) and `isareosHamlet` (region 16);
+  the canal's banks and carried bed in `heightAt`; Velsorten's ways and the hamlet's track in `paths`; their chart
+  names; `world.ovesosFarm` / `world.isareosHamlet`; the mill wheels turned in `update`.
+- `src/region-world.js`: Ovesos's subtitle ("The Sorten, the canal and the upland grass"), description, landmarks and
+  its eight people; the hamlet among Isareos's landmarks. `src/region-layout.js`, `src/build-status.js` (still 'early',
+  listing only what is missing) and `src/map-fog.js` (a Velsorten area; "the only green ground" and "none of them is
+  here" removed) say what is built. `src/west-regions-scenery.js` keeps the frontier's scatter off the hamlet.
+- `src/main.js`: imports; Velsorten's eight and Minora's five stood up after the trim; the canal (announcing Rollo's
+  turn once he is in the register), Ezina's mill and the Ovesos arc beside the other arcs, the Dividing beside the
+  kitchen, both registered with the quest; the canal and the arc each frame and the Dividing's props once a second;
+  the divider's prompt, its F and its panel, allotting through the arc; the Ovesos plots shut by seniority at the bed and
+  to the staff; the Ovesos and Minora conversations; Taleth told of the Dividing, with Ovesos's flatbread and the
+  Dividing in his choices (Seshat and Nepri speak their own lines); the save, the restore and the F8 card's reset for
+  the canal and the mill; the farms smoke's new hooks.
+- `src/road-checkpoint.js`: validators and copies for `canal` and `mill`; the Ovesos arc and the Dividing validated and
+  registered on the validating hub; the canal imported (Ovesos's beds and crops) and both people modules (their buyers
+  and the register board). All optional: a save from before them loads fresh, and a refused save leaves the last one.
+- `src/inventory.js`, `cooking.js`, `consumables.js`: `OVESOS_*` and `DIVIDING_*` spread in. `src/prices.js`: ids
+  `silver-millet`, `madder`, `hard-wheat-flour` (kind `flour`), and cloth 8 and mutton 3.
+- `tests/test-manifest.json`: the seven new suites. `src/lizeem-farms-smoke.js`: Velsorten, the hamlet and the
+  forecourt.
 
-- The quest's rye loaf is `rye-cheese-loaf`, the Caricas loaf the kitchen registers, not Wendel's mill loaf `rye-loaf`.
-- The swap step no longer promises Good rye on the bean ground. Vertumnus, the tracker and the module header now say
-  what the farming rules do: rye straight after beans comes up Plain, and the Fine rotation is beans, a day's rest,
-  fruit or barley, then rye. The design's step 2 carries a dated note.
-- Seshat is a trader, so the Guild's bounty can be claimed through her. Silvanus is not (his barter is not in this
-  build); offered a dish, he says why not.
-- Consus seals the tart as `consus` (`merchants.seal(tart, 1, { by: 'consus' })`, already so in the people's module).
-- `tests/larder-sources.test.js` counts `prices.js` and `merchants.js` as describers of food, not sources of it.
-- `docs/economy.md` has a dated section for the 5 October ruling.
-- Where the builders' wiring differed, the simpler working version was taken: the people's trade uses the market's own
-  context (refresh, sound and save after a trade; "That is all" returns to the person), not a bare one; Taleth's tart
-  hand-in comes through his own `extraChoices`; the quest asks for `magic.learn` through a small facade, because magic is
-  made two and a half thousand lines after the farm; the F8 card is a manual playtest, since the scripted driver needs the
-  `?test=1` hooks.
+## Settled at integration
 
-## Evidence
+**Build 1**: the quest's loaf is `rye-cheese-loaf`; rye after beans comes up Plain and the tracker says so; Seshat
+trades (the bounty), Silvanus does not; Consus seals as `consus`; prices and merchants describe food, not supply it;
+the people trade through the market's own context.
 
-Every changed JS file passes `node --check`. Node suites, one process each, run on the integrated tree:
+**Builds 2 and 3**: Bolverk 5 seconds and no margin; *Sound the Soil* reads the strips; hazelnuts graded by the hand
+(Fine at 16, Prize at 20); `onHarvest` may return `{ added }`; the staff passes over shut beds; the Nethereum dish line
+is the hub's; Seithenyn's minding and Messor's wage are live; the farm view turns a bed by its yaw.
+
+**Builds 4 and 5**:
+
+- `src/farming.js`: a country may register with `judge: 'harvest'`, and the farm then asks it for the fit each time it
+  reads a planting instead of keeping the fit judged at sowing (three lines). The canal needs it: its water arrives
+  after the seed.
+- **Hapi's terms** (`src/merchants.js`): a buyer with a `rate` may keep a finite appetite, `fineOnly` takes only Fine or
+  Prize units, and `secondLot: false` sells no second lot. Hapi is registered with all three: sealed Fine or Prize only,
+  ten of each good a day, at twice the home price.
+- **Nisaba's water right** is sold only at Farming 28 (design 4.6), with her reason given below it.
+- Uttu is drawn as a woman, and the scenery comment that called the vats "his" now says "her".
+- **The canal's lift** is left as built: the canal's head stands about 3 m above the Lizeem's surface. A question for the
+  user (a noria at the divider would explain it).
+- The divider is the contract's: outside his turn one line, "The water is going to {holder}; yours in {n} s"; in his turn
+  "Measure {left}/{measure}", a choice per growing plot "{plot} · {crop} · {units}/{thirst}", then one to three units
+  (no more than are left), and "Leave the rest". The measure shown is what Ziusudra's half turn leaves.
+- The canal's turn is announced only once Rollo is in the register, so nobody else's game is told of it every twenty
+  minutes.
+- `tests/isareos-hamlet.test.js` tells the world's own hamlet (now built by the world) from the copy it lays, so it is
+  measured once; `tests/lizeem-minora-people.test.js` checks Hapi's full terms; `tests/lizeem-ovesos*.test.js` check the
+  level gate; `tests/prices.test.js` and `tests/merchants.test.js` take the new ids; `tests/road-checkpoint.test.js` has
+  a new test (the canal, the mill, the Ovesos arc and the Dividing ride along, refuse corruption, and an older save loads
+  fresh).
+
+## Evidence (Builds 4 and 5, 6 October 2026)
+
+Every changed JS file passes `node --check` (44 files). Node suites, one process each with `--test-isolation=none`, up
+to four at once:
 
 | suite | result |
 | --- | --- |
-| `taleth`, `sorcery-field`, `farming-rotation`, `lizeem-farmlands`, `prices` | 10/10, 7/7, 12/12, 20/20, 8/8 |
-| `lizeem-people` (measures each person on the built world), `merchants` | 10/10, 23/23 |
-| `road-checkpoint` (with a new test: both sections ride along, refuse corruption, and an older save loads fresh) | 40/40 |
-| `save-round-trip`, `quest-markers`, `quest-tracker`, `journal-entries`, `quest-destinations`, `cast` | 4/4, 21/21, 11/11, 11/11, 3/3, 6/6 |
-| `tills`, `economy`, `larder-sources`, `inventory`, `consumables`, `foods`, `cooking` | 7/7, 6/6, 4/4, 11/11, 8/8, 3/3, 5/5 |
-| `skills`, `skill-sheet`, `skills-browser`, `skill-announcement`, `game-mode`, `player-characters`, `magic` | 7/7, 2/2, 5/5, 4/4, 10/10, 24/24, 18/18 |
-| `spider-quest`, `sunflower-lesson`, `farming`, `regional-farmland`, `regional-farming` | 13/13, 7/7, 14/14, 4/4, 4/4 |
-| `menora-city`, `chapter-one`, `telemonia-people` | 9/9, 6/6, 10/10 |
-| `companions`, `first-contact`, `found-weapons`, `long-road-clock`, `smith`, `story-spine`, `field-card`, `death-lifecycle`, `mercenaries`, `weapons`, `weapon-feel`, `gear` | all pass |
+| The builders' own: `canal-turns`, `farming-countries`, `farming`, `regional-farming`, `lizeem-ovesos`, `lizeem-ovesos-people`, `lizeem-farmlands`, `dividing`, `lizeem-minora-people`, `taleth`, `skills`, `foods` | 14/14, 8/8, 14/14, 4/4, 7/7, 6/6, 26/26, 8/8, 10/10, 11/11, 7/7, 3/3 |
+| Scoped and full worlds: `ovesos-farm`, `isareos-hamlet`, `nethereum-farm`, `nesdor-farm`, `oves-world` (full world, once, 347 s) | 9/9, 6/6, 9/9, 11/11, 14/14 |
+| `road-checkpoint`, `save-round-trip`, `larder-sources`, `inventory`, `cooking`, `consumables`, `prices`, `merchants`, `tills`, `economy` | 42/42, 4/4, 4/4, 11/11, 5/5, 8/8, 8/8, 26/26, 7/7, 6/6 |
+| `menora-city`, `cast`, `lizeem-people`, `sorcery-field`, `farming-rotation`, `magic`, `player-characters`, `game-mode` | 9/9, 6/6, 10/10, 10/10, 12/12, 18/18, 24/24, 10/10 |
+| `quest-markers`, `quest-tracker`, `journal-entries`, `quest-destinations`, `skill-sheet`, `skills-browser`, `skill-announcement` | 21/21, 11/11, 11/11, 3/3, 2/2, 5/5, 4/4 |
+| Builds 2 and 3's: `flats-ground`, `meadow-water`, `lizeem-nethereum`, `lizeem-nethereum-people`, `lizeem-nesdor`, `lizeem-nesdor-people`, `world-map-detail`, `west-rivers` | 9/9, 14/14, 7/7, 5/5, 13/13, 9/9, 19/19, 5/5 |
+| Build 1's: `spider-quest`, `sunflower-lesson`, `regional-farmland`, `chapter-one`, `telemonia-people`, `companions`, `first-contact`, `found-weapons`, `long-road-clock`, `smith`, `story-spine`, `field-card`, `death-lifecycle`, `mercenaries`, `weapons`, `weapon-feel`, `gear` | all pass |
+| Touching the edited shared modules: `build-status`, `region-survey`, `developer-atlas`, `minimap`, `fishing-lessons` | 4/4, 4/4, 7/7, 16/16, 5/5 |
 
-**Red before this work** (the same tests fail with the same messages on an extracted copy of `57a9de4`):
-`frame-errors` 1, `prompt-priority` 1, `shield-guard` 2, `rebel-crew` 1, `combat-skills` 1, `long-road` 2 (the troupe
-camp), `session-clock` 1, `review-quiet` 1, `opening-sequence` 3 (the boat at its berth, the pier walk, and `if(autopilot.active)skipOpening()`, which `src/main.js` no longer has). `nesdor-world` (seven minutes) was not run;
-its builder reports the edited Caricas assertion passing and "Every hex of the Flats is honest ground" failing by
-1.22 m in Nesdor, which no file here touches.
+**Red before this work** (same tests, same messages):
 
-**Electron** (fast load, isolated profile):
+- Confirmed on the base `main.js` in this run: `frame-errors` 1, `prompt-priority` 1, `shield-guard` 2, `rebel-crew` 1,
+  `combat-skills` 1, `session-clock` 1, `review-quiet` 1.
+- As in the earlier builds' runs: `long-road` 2 (the troupe camp), `map-fog` 1 ("Selemis is only 55% inside Selemi";
+  the test stops there, so Velsorten's new area was measured separately by its rules: wholly inside Ovesos, 100% of its
+  disc, clear of every other area), `testing-travel` 1 ("Acor Wetlands · The Acor Reedwater", the only place listed),
+  `caricas-world` 1 ("the chart knows caricas-farms").
+- Seen for the first time in these runs, in things this work does not touch: `region-layout` 1 and `isareos-world` 1
+  (the world is 73.2 hexes wide: the world-width pin `nethereum-world` already fails), `isareos-world` 2 more (west-ground
+  and world-terrain disagree by 4.19 m, a terrain sample; "the chart knows menora", while the world charts Minora as
+  `menora-city`), `languages` 1 ("East Ibenwood has no tongue"), `fire-making` 1 (Martin's hair is `short-cropped`
+  where the test wants `cropped`).
 
-Electron came from `world-builder/map/node_modules` through a scratchpad copy of `scripts/launch.cjs`, because this
-worktree does not sit beside `world-builder`; nothing outside the worktree was edited.
+**Not run**: `eer-world` (stopped at 200 s, over the three minutes allowed), `nethereum-world`, `nesdor-world` and
+`gala-world` (as asked), `world-scale` (eighteen minutes), and never the full suite.
+
+**Electron** (Fast load, isolated profile, Electron from `world-builder/map/node_modules` through the scratchpad copy of
+`scripts/launch.cjs`; nothing outside the worktree edited; one at a time):
 
 | run | result |
 | --- | --- |
-| 1. `--minora-opening-checks --fast-load` | Failed at "Taleth offers taleth-guild": his greeting is two lines and the hub's choices are drawn only on the last line, which the builder's added check did not read on to. The smoke now clicks on to the choices (`src/minora-opening-smoke.js`). |
-| 2. the same, after the fix | Passed: 35 checks before the reload and 18 after, no console errors, no frame errors. Rollo on the forecourt with the oak staff, 24 copper and Fireball; the camera behind him; "Speak with the Master Sorcerer"; Taleth's five choices and two locked charges; saving, exiting, Continue in a fresh renderer, recruitment and the tutorial unchanged. Screenshots `tests/artifacts/minora-start.png` and `minora-taleth.png`. |
-| `--lizeem-farmlands-checks` | **Not run.** It needs a launch of its own (the smoke flags choose one entry point each), and the integration was held to two Electron runs. It is the first thing to run in review, about the length of a Full start plus a few minutes; `npm run test:lizeem-farmlands`. |
+| 1. `--minora-opening-checks --fast-load` | **Passed**: 35 checks before the reload and 18 after, no console errors, no frame errors. Developer Start, Rollo, Taleth's choices (the Dividing now among the locked), saving and Continue unchanged. |
+| 2. `--lizeem-farms-checks --fast-load`, extended | **Passed on its first run**, 38 s of checks, no console errors, no frame errors. Haethom (62 checks): the broken hatch's prompt, mended, opened, the shine, the draw-off with fine silt on all twelve beds and hay on eight, the weir hauled. Ninehands (68): the bench strip reaped by walking it, 7.15 s, six barley. Velsorten (62): the scenery, the canal running, twelve plots drawn, the eight people on their stands; the divider's prompt outside his turn ("The divider · the water is going to the head farms · yours in 491 s"); entered at the tail, the clock moved on to his turn, the turn announced with its measure of four; a tail plot sown with barley and given two units with F through the panel (two of two, fit 2, two units left, the panel back on "Measure 2/4"). The hamlet (5): built, Amalthea on her stand, F opens her talk with Trade among her choices. The forecourt (3): the trestle out through the developer hook, solid, then hidden and out of the way. The smoke was hardened after Build 3's failed run and not run again until now. |
+| 3. | Not needed. |
 
-## What is deliberately not in this build
+Screenshots in `tests/artifacts/`: `lizeem-farms-velsorten.png`, `lizeem-farms-velsorten-mill.png`,
+`lizeem-farms-velsorten-divider.png` (the stone, its sluice frames, Enbilulu and his hut, the footbridge, the prompt),
+`lizeem-farms-amalthea-hamlet.png`, `lizeem-farms-dividing-forecourt.png` (the camera is behind the traveller, so the
+trestle shows beside him rather than in full), and the Haethom and Ninehands set. The smoke plays as the road-skill
+traveller, not as Rollo.
 
-- The other three arcs (Nethereum, Nesdor, Ovesos) and their crops, people, workings (*Quicken*, *The Work of Nine*)
-  and buyers. Their leaves of the Measure are listed as "not yet walked"; their three market stalls stand empty.
-- The Dividing, and Taleth's later charges (shown locked).
-- Silvanus's barter (dishes for herbs "as consideration").
-- Fine-dish healing above 50: `tests/foods.test.js` holds every food at 50 or less, so the fine tart heals 50, not 55,
-  and fine pottage 50.
-- Messor's wage: he can be hired, and nothing yet charges the 6 copper a day or makes him reap.
-- A Prize at the seal: a Prize harvest comes in as the fine kind, and nothing in play yet marks a sealed lot as Prize,
-  so the Measure's gold lines and Seshat's 20-copper bounty are reachable only through the market's API.
-- The second farmstead: offered in words when Caricas is restored, not yet for sale.
-- Hired hands, tools that change a farm act (the tools are sold and do nothing yet), charcoal with a use, Cedric's
-  scrip, and haggling, weight and spoilage (design 7.11).
+Builds 1 to 3's own evidence (their suites, the Minora smoke's two runs and the first farms smoke) is in the earlier
+revisions of this file (`git show 469601b:docs/region-reviews/lizeem-farmlands-handoff.md`).
 
-## Open points for review
+## Open items
 
-- After the charge is taken, the free-roam objective still reads "Speak with the Master Sorcerer"; the tracker shows
-  the farmlands card beside it.
-- Learning a Caricas recipe from Vertumnus or Pomona records it with the quest even if the kitchen refuses (no Fire
-  Making and no Cooking); Developer Start knows every skill, so Rollo is never refused.
-- Oatcakes are priced at 3 and Wendel sells them at 2, so they can be resold at a profit. Wendel is trimmed from the cast,
-  so it is harmless now.
-- The user's decisions of 5 October are still recorded only in the design file, not yet in `docs/design-answers.md`.
-- Lore: nothing was written to `world-builder/azhora_lore` for this build.
-- Leaving a Rollo game for the menu and starting the Tutorial in the same session gives Cromb the sword back but leaves
-  Rollo's Fireball and staff, as every other spell and item already carries over; a fresh launch is clean.
-- The scripted playtest warps to Egeria before it reads her marker (markers draw within 180 m), and its `visit` lands
-  1.3 m beside each person; if a stall collider is in the way there, give `visit` a clear approach.
+**For the user**
 
-## First-pass numbers to tune
+1. **The canal's lift.** The head stands about 3 m above the Lizeem; a noria at the divider would explain it. Left as
+   built.
+2. **The looks.** Every person of all five builds wears the design's look in the figure kit's words; none has the user's
+   approval, nor have Velsorten, the hamlet or the trestle. Ninkasi has the kit's short curls; Uttu is a woman.
+3. **Seed-saving** (Farming 20) is listed "to come": the farm has no hook for the next sowing's grade.
+4. **The first cut of hay** in Nethereum is still not gated at Farming 5; the ladder lists it there.
+5. **Barley at the tail** ripens in one turn's length (240 s), so it must be sown at, or just before, the start of
+   Rollo's turn to be given any water. Longer barley, or longer turns?
+6. The war (design question 1), the names (question 2) and Taleth's hat (question 3) are still open.
+
+**For review**
+
+- The Harvest Close is held whenever Rollo asks Nisaba for it; the game has no seasons for the lore's three a year.
+- Seshat and Nepri speak at the Dividing from wherever they stand; the places by the trestle are not used.
+- The canal always shows water (some right's turn is always on); its `dry` state is unused.
+- Adapa sells hard-wheat flour at 3 in Minora, where Njord pays 4.5 for it (kind `flour`) and Portunus buys it as a
+  west-bank good: a small resale margin, as Manawydan's smoked fish already has with Portunus.
+- `src/build-status.js` still describes Nethereum, Nesdor and Caricas as terrain only; Nesdor's region record lists
+  nobody (the Eer test pins it); `nethereum-world` and `nesdor-world` have not been run since Builds 2 and 3.
+- From Build 1: the free-roam objective still reads "Speak with the Master Sorcerer" after the charge; a recipe is
+  recorded with the quest even if the kitchen refuses (Developer Start knows every skill); a Prize at the seal is
+  reachable only through the market's API; the second farmstead is offered in words only; the tools and charcoal do
+  nothing yet; Silvanus's barter; leaving a Rollo game for the Tutorial keeps his spell and staff.
+- From Builds 2 and 3: reaping a strip gives focus back per bed; no F8 card per arc (the Taleth card resets them all).
+
+## Numbers to tune
+
+All first pass. Builds 4 and 5's are also tabled in the design's section 10.
 
 | what | value | where |
 | --- | --- | --- |
-| Crops | bridge rye 240 s, 30 XP, level 1; field beans 150 s, 26 XP, level 1; soft fruit 300 s, 40 XP, level 3; yield 2 | `src/farming.js` `CROPS` |
-| Heart | 0 to 3, fresh 2; grain and fruit -1, beans +1, a bare bed +1 a game day (1,440 play-seconds) | `src/farming.js` |
-| Fit by heart | lean [1, 2, 2, 0], rich [0, 0, 1, 2], any [0, 0, 0, 1]; same crop twice: 0 | `FIT` |
-| Grade experience | Plain x1, Good x1.25, Fine x1.5, Prize x2 | `GRADE_XP` |
-| The fox's regard | one Caricas sowing in six | `foxRegards` |
-| Quest lumps | 150, 200, 300, 400, then 1,000 for the tart | `LIZEEM_XP` |
-| Shares | the holder's quarter on every Caricas bed while leased; the garrison's tenth through the claim and the Fine rye, unless hidden | `SHARES` |
-| Dishes | rye loaf 25 (fine 35), pottage 40 (fine 50), tart 45 (fine 50); recipe XP 25 to 50 | `src/cooking.js`, `src/consumables.js` |
-| Field sorcery | Sound the Soil 5 focus (3 at level 99), 6 m, 10 XP; Call the Dew 20 focus (12), 40 m, 6 XP a bed; 4 focus back per harvest | `src/sorcery.js` |
-| Base prices | rye, beans, barley 1; soft fruit 2; loaf 3, pottage 4, tart 7 | `src/prices.js` |
-| Multipliers | grade 1 / 1.5 / 2 / 3; place home 1, city 1.5, far bank 2; second lot 0.6; commissary 0.6 of home, unlimited | `GRADES`, `PLACE_RATES`, `TRADE_RATES` |
-| Appetites a game day | Nepri 30 (sealed grain only), Portunus 20, Consus 24, Pomona 12, Satet 8 | `BUYERS` |
-| Seal | a twentieth of a lot of 20 or more, else 1 copper | `TRADE_RATES` |
-| Orders | three a board a day; half again the market price; 2 Farming XP per copper; each fill raises the buyer's appetite a quarter, up to double | `ORDER_BOARDS`, `TRADE_RATES` |
-| Seed, tools, bounty | a packet of four seeds 2; tools 12, 35, 120; charcoal 2; the first Prize of a food 20 | `src/merchants.js`, `TRADE_RATES` |
+| Caricas crops | bridge rye 240 s, 30 XP; field beans 150 s, 26 XP; soft fruit 300 s, 40 XP, level 3; yield 2 | `src/farming.js` |
+| Heart and fit | heart 0 to 3, fresh 2; grain and fruit -1, beans +1, bare +1 a game day; lean [1, 2, 2, 0], rich [0, 0, 1, 2]; same crop twice 0 | `src/farming.js` |
+| Grades | experience Plain x1, Good x1.25, Fine x1.5, Prize x2; price 1 / 1.5 / 2 / 3 | `GRADE_XP`, `GRADES` |
+| Quest lumps | 150, 200, 300, 400, then 1,000, in each country; the Dividing 1,000 | the arcs, `DIVIDING_XP` |
+| Shares | the holder's quarter (Caricas); the levee tenth, waived a day for levee work (Nethereum); none (Nesdor); water dues, a measure of grain per 10 units, millet exempt (Ovesos) | the arcs, `src/canal-turns.js` |
+| Field sorcery | Sound the Soil 5 focus, 6 m; Call the Dew 20 focus, 40 m; 4 focus back a harvest | `src/sorcery.js` |
+| Place and appetite | home 1, city 1.5, far bank 2; second lot 0.6; commissary 0.6, unlimited; barge x2, ten a good, Fine sealed only | `src/prices.js`, buyers |
+| Seal, orders | a twentieth of 20 or more, else 1 copper; three orders a board a day at x1.5, 2 Farming XP a copper | `TRADE_RATES` |
+| Nethereum | flood oats 240 s, 30 XP; hay 180 s, 35 XP; blackwater 180 s, shine 240 s; deep plots at 16; weir 3 fish a day (5 at Fishing 5) | `src/meadow-water.js`, `src/nethereum-produce.js` |
+| Nesdor | floodwheat 360 s, 60 XP, level 8; coppice 12, again in 600 s; 2 s a bed reaped, Bolverk 5 s; long strip 24; foragers a quarter, or a tenth on 3 copper of paper | `src/flats-ground.js`, `src/lizeem-nesdor.js` |
+| Ovesos crops | hard wheat 360 s, 60 XP, level 10, yield 2; silver millet 150 s, 24 XP, level 1, yield 3; madder 480 s, 70 XP, level 18, yield 2 | `src/ovesos-produce.js` |
+| The canal | 240 s a turn, five rights, 1,200 s a round; measure 3 + seniority (4 to 8); thirst hard wheat 3, barley 2, madder 2, millet 1; exact 2, one short 1, else 0; salt rests out in 1,440 s | `src/canal-turns.js` |
+| Mill, Close, rights | 2 sheaves a measure, the 16th the toll; a day on the head writes off a measure, up to 30; settling 40; Ashnan's dues 30; a right 1,500 at Farming 28; plots tail 1, middle 3, head 5; reward seniority 4 | `src/canal-turns.js`, `src/lizeem-ovesos.js` |
+| Dishes | rye loaf 25, pottage 40, tart 45, oatcakes 25, smoked fish 40, white bread 35, nut cake 50, flatbread 30, porridge 30, mutton 25, fork stew 60 (Fine forms +10, at most 50, fork stew apart) | `src/consumables.js` and the produce modules |
+| Base prices | rye, beans, barley, oats, silver millet 1; fruit, hazelnuts, floodwheat, hard wheat, hay, fish 2; hard-wheat flour 3; madder 4; flatbread 4, porridge 2, fork stew 12; cloth 8, mutton 3 | `src/prices.js` |
+| Appetites a day | Nepri 30, Portunus 20, Consus 24, Pomona 12, Satet 8; Gwyddno 12; Boann 24 + 12; Aegir 8 + 12; Egil 24 + 12; Byggvir 24; Ezina 24; Ninkasi 24; Uttu 12; Lahar 12 + 12; Manawydan 20; Njord 12; Adapa 20; Hapi 10 a good; Amalthea 12 | the people modules |
+| Ovesos belt | full green within 45 m of the Lizeem, none past 165 m (30 / 120 m in the south; the Neth 22 / 100 m) | `src/oves-world.js` |
 
 ## Commits
 
@@ -213,195 +299,23 @@ worktree does not sit beside `world-builder`; nothing outside the worktree was e
 | `546bf8c` | Farmlands of the Lizeem: Taleth's charge, the Caricas arc and its people |
 | `b47bb02` | Rollo, Taleth and field sorcery |
 | `2230817` | Wire Build 1 of the Farmlands of the Lizeem into the game |
-| this report | Hand off Build 1 of the Farmlands of the Lizeem |
-
-## Next action
-
-Codex review. Then the user's playtest of the Caricas arc from Developer Start, and his word on the numbers above before
-Build 2 (Nethereum).
-
----
-
-# Builds 2 and 3: Nethereum and Nesdor (6 October 2026)
-
-The user's "keep building everything" (6 October 2026) took the design on to Nethereum (section 5.2, Build 2) and
-Nesdor (section 5.3, Build 3). The groundwork for Builds 2 to 5 (country farming hooks, *Quicken* and *The Work of
-Nine*, registered buyers and boards, arcs registered with the hub) was committed first (`360907f`, `7bba42b`). Six
-agents then built the two countries in parallel by file ownership (Nethereum's scenery, Nesdor's scenery, the meadow,
-the Flats, and the two arcs with their people), and an integrator wired them in, settled the discrepancies between
-them and ran the checks. The design's dated section 10 records what was built and where it departs from the text.
-
-| | |
-| --- | --- |
-| Base | `7bba42b` (the groundwork wired) |
-| Delivered | branch `lizeem-farmlands`, six commits (listed below) |
-| Not done | Not merged, not pushed. |
-
-## How to play them
-
-From Developer Start, take Taleth's charge (Build 1); each country's arc then waits for you.
-
-**Nethereum.** Cross the Isa by the Pilgrims' Bridge and follow the Sacred Way to its end at Haethom. Mererid is on the
-levee above the meadow. Seithenyn, by the hatch, mends it with you for two planks and a piece of salvaged metal. Ask
-Mererid about the water; then, from the meadow side of the hatch, **F** opens it ("Open the meadow hatch"), and **F**
-again draws the water off ("Draw the water off · Siltshine"): at the shine for fine silt, three minutes after opening.
-Sow flood oats from the seed bench at the meadow's head and cut the hay the meadow grows. Boann sends for you: three
-wolves on the rim pasture west of her byre (back east toward the levee to leave the fight). Bring in Fine oats and a
-second cut (Farming 10), learn oatcakes from Mererid and smoked fish from Gwyddno at the weir (haul the trap with **F**
-at its head on the bank), stand at Fintan's Recall on the levee's head with both in hand, and carry the dish (and,
-if you ask, the name Ceridwen) to Taleth for *Quicken*.
-
-**Nesdor.** Ford the Carica at the marked post east of Caricas and take the farm road down the valley head to Ninehands. Baugi
-lends the strips. Read them with *Sound the Soil* or ask him, and sow a whole strip each of floodwheat (Farming 8) on
-the bench, barley, and rye on the rise; the wet strip is the trap. Reap a ripe strip by walking it: **F** at its end
-post ("Reap the bench strip · 6 seconds"), then stay on the strip; Bolverk's match is lost on foot and won by the Work
-of Nine. Answer the foragers through Baugi (Forseti writes the three-copper paper at the end of the Way), bring in Fine
-floodwheat, learn the white bread from Aegir and the nut cake from Idunn, have both sealed by Nepri or Consus, and give
-them to Taleth for *The Work of Nine*. Baugi lends his long strip at Farming 24.
-
-## Files
-
-**New** (the builders'): `src/nethereum-farm.js`, `src/nethereum-farm-scenery.js`, `src/meadow-water.js`,
-`src/nethereum-produce.js`, `src/lizeem-nethereum.js`, `src/lizeem-nethereum-people.js`; `src/nesdor-farm.js`,
-`src/nesdor-farm-scenery.js`, `src/flats-ground.js`, `src/lizeem-nesdor.js`, `src/lizeem-nesdor-people.js`; tests
-`nethereum-farm`, `meadow-water`, `lizeem-nethereum`, `lizeem-nethereum-people`, `nesdor-farm`, `flats-ground`,
-`lizeem-nesdor`, `lizeem-nesdor-people`. The integrator's: `src/lizeem-farms-smoke.js` (the Electron smoke).
-
-**Changed by the builders**: `src/farming-view.js` (flood oats, hay and floodwheat drawn), `src/west-regions-life.js`
-(the rim hares moved off Haethom; mixed line endings kept), `src/west-regions-scenery.js` (Haethom kept clear of
-scatter), `tests/nethereum-world.test.js` and `tests/nesdor-world.test.js` (the countries may now hold their own
-people and chart names).
-
-**Wiring** (line-ending-preserving edits, each with a dated comment):
-
-- `src/world.js`: the two scenery build steps (`nethereumFarm`, region 17, with the hatch and meadow water remembered
-  until Fast mode has built the region; `nesdorFarm`, region 14), the levee and Liban's hummock in `heightAt`, both
-  countries' paths, their chart names, and `world.nethereumFarm` / `world.nesdorFarm`.
-- `src/region-world.js`: the new landmarks for both, Nethereum's seven in its `npcIds`, the comments. Nesdor's `npcIds`
-  stay empty: `tests/eer-world.test.js` holds Nesdor, like Caricas, to placing nobody itself.
-- `src/main.js`: imports; the fifteen people after the trim; Nesdor's farming registered before the farm is drawn; the
-  meadow, the weir, the reaping and both arcs made beside the quest and registered with it; the meadow, the arc's clock
-  and the scenery's hatch and water each frame; a strip being reaped (stopped by a fight, the saddle, water, a climb or
-  stepping off the strip); the hatch, weir and strip-end prompts and their F actions, each taking priority over the bed
-  beside it and over anybody standing farther off (Seithenyn at the hatch, Bolverk at the bench strip); the long strip
-  and the deep plots shut at the bed; *Sound the Soil* reading the strips for Baugi, and the Work of Nine reported to
-  Bolverk's match; the conversations, the wolves' and foragers' fights, Taleth's two hand-ins; a Prize hazel picking
-  written in the Measure; the save (`meadow`, `weir`), the restore (no reap, the long strip shut until the arc says
-  otherwise) and the F8 card's reset; the `runLizeemFarmsChecks` hook.
-- `src/road-checkpoint.js`: validators and copies for `meadow` and `weir`; explicit validators for both arcs; Nesdor's
-  beds, floodwheat and coppice registered, both arcs registered on a validating hub, and both people modules imported
-  so the market knows their buyers. All optional: a save from before them loads fresh.
-- `src/inventory.js`, `src/cooking.js`, `src/consumables.js` (the two countries' goods, dishes and foods, and the
-  rebellion's paper), `src/skills.js` (seven Farming unlock lines), `src/map-fog.js` (Haethom and Ninehands charted),
-  `tests/test-manifest.json` (the eight suites), `main.cjs` (`--lizeem-farms-checks`), `package.json`
-  (`test:lizeem-farms`).
-
-**Settled at integration** (the builders' open questions):
-
-- Bolverk takes 5 seconds and the match has no margin, so a walk (6 seconds) always loses and the Work of Nine wins.
-  His terms and lines say so.
-- *Sound the Soil* on the Flats reads what the scenery dresses each strip with and what Baugi reads off it.
-- `farming.pick` grades a tree that has a fine kind by Farming level: Fine at 16, Prize at 20 (Idunn's hazels give
-  `hazelnuts-fine`), so the Measure's hazelnut line and the fine nut cake can be reached.
-- `farming.onHarvest` handlers may return `{ added }`; Airmid's basket uses it, so the harvest's count includes it.
-- The staff passes over a shut bed (`src/magic.js`: `bedOpen` for Baugi's long strip, and a host `fieldOpen` that main
-  uses for Liban's deep plots).
-- Both `frontierReserved` additions are in `src/west-regions-scenery.js`.
-- The Nethereum dish line in the Measure is the hub's (`dish`: oatcakes or smoked fish); the arc's lines agree.
-- Seithenyn's minding (one dish, one draw-off at the shine) and Messor's wage (6 copper a game day) are both live; Idunn
-  sells hazelnuts and charcoal as she is.
-- Also fixed: the farm view turns a bed by its `yaw` (the Nesdor beds lie down their strips); Taleth's Nethereum hand-in
-  takes the dish from the satchel before the arc moves on, so the save written then does not keep it;
-  `tests/nesdor-farm.test.js` builds its world before declaring any test, since only five of its eleven ran under
-  `--test-isolation=none`; `tests/nethereum-farm.test.js` reads the ground without the bank now that `world.heightAt`
-  carries it; `tests/flats-ground.test.js` expects its goods to be spread in.
-
-## Evidence
-
-Every changed JS file passes `node --check`. Node suites, one process each, up to four at once:
-
-| suite | result |
-| --- | --- |
-| `flats-ground`, `meadow-water`, `lizeem-nethereum`, `lizeem-nethereum-people`, `lizeem-nesdor`, `lizeem-nesdor-people` | 9/9, 14/14, 7/7, 5/5, 13/13, 9/9 |
-| `nethereum-farm`, `nesdor-farm` (scoped worlds, minutes each) | 9/9 (190 s), 11/11 (83 s) |
-| `farming`, `farming-countries`, `farming-rotation`, `regional-farming`, `regional-farmland`, `sorcery-field`, `magic` | 14/14, 8/8, 12/12, 4/4, 4/4, 10/10, 18/18 |
-| `lizeem-farmlands`, `lizeem-people`, `taleth`, `prices`, `merchants`, `menora-city`, `cast`, `telemonia-people` | 26/26, 10/10, 10/10, 8/8, 26/26, 9/9, 6/6, 10/10 |
-| `road-checkpoint` (a new test: the meadow, the weir and both arcs ride along, refuse corruption, and an older save loads fresh), `save-round-trip` | 41/41, 4/4 |
-| `tills`, `economy`, `larder-sources`, `inventory`, `consumables`, `foods`, `cooking` | 7/7, 6/6, 4/4, 11/11, 8/8, 3/3, 5/5 |
-| `skills`, `skill-sheet`, `skills-browser`, `skill-announcement`, `game-mode`, `player-characters` | 7/7, 2/2, 5/5, 4/4, 10/10, 24/24 |
-| `quest-markers`, `quest-tracker`, `journal-entries`, `quest-destinations`, `spider-quest`, `sunflower-lesson`, `chapter-one` | 21/21, 11/11, 11/11, 3/3, 13/13, 7/7, 6/6 |
-| `companions`, `first-contact`, `found-weapons`, `long-road-clock`, `smith`, `story-spine`, `field-card`, `death-lifecycle`, `mercenaries`, `weapons`, `weapon-feel`, `gear`, `world-map-detail`, `west-rivers` | all pass |
-
-**Red before this work** (the same tests fail with the same messages on the committed base `7bba42b`, or did so in
-Build 1's run): `frame-errors` 1, `prompt-priority` 1, `shield-guard` 2, `rebel-crew` 1, `combat-skills` 1,
-`session-clock` 1, `review-quiet` 1, `long-road` 2 (the troupe camp), `map-fog` 1 ("Selemis is only 55% inside
-Selemis"; the test stops there, so Haethom's and Ninehands' new areas were measured separately by the same rules:
-wholly inside their countries, and clear of every other area), `testing-travel` 1 ("Acor Wetlands · The Acor
-Reedwater", confirmed on `7bba42b`), `caricas-world` 1 ("the chart knows caricas-farms", as in earlier sweeps),
-`world-scale` 1 ("standable ground 0.6 m outside a bridge rail" on the Caloss at (-944, 2377), far from both farms, confirmed on `7bba42b`; eighteen minutes, not quick).
-Not run, as asked: `nethereum-world` and `nesdor-world`, whose one failure each (the world-width pin, and the honest
-ground at 1.22 m) their builders found before this work. `opening-sequence` (three failures before this work) was not
-re-run.
-
-**Electron** (Fast load, isolated profile, Electron from `world-builder/map/node_modules` through the scratchpad copy of
-`scripts/launch.cjs`; nothing outside the worktree edited):
-
-| run | result |
-| --- | --- |
-| 1. `--minora-opening-checks --fast-load` (3 min) | **Passed**: 35 checks before the reload and 18 after, no console errors, no frame errors. Developer Start, Rollo, Taleth's choices, saving and Continue unchanged by these builds. |
-| 2. `--lizeem-farms-checks --fast-load` (`npm run test:lizeem-farms`, 69 s) | **Partly passed.** Both countries loaded. Haethom: the scenery is built (the hatch broken, the meadow dry), all twelve Nethereum beds are drawn, and all seven people stand on their stands on the ground. Ninehands: the scenery is built, all fifteen Nesdor beds are drawn turned down their strips, all eight people stand on their stands, and the bench strip was sown and ripened. **Failed** at the first prompt in each country: the interaction label was never written. The screenshot (`tests/artifacts/lizeem-farms-haethom.png`) shows why: "Preparing Drent. Your journey will continue when the region is ready." The road-skill `prepare` stands the traveller in Drent, which Fast load had not built, and the region guard held every game frame back while it loaded, so the draw-off, the reap and the weir were never reached in Electron (each is covered by the Node suites above). The smoke now goes straight from `prepare` to the first country with no frame between, waits until nothing is loading, checks that the game's own frames are running, and reports the whole prompt state on a failure. **Not re-run**: the integration was held to two Electron runs. |
-
-## Open points for review
-
-- **Run `npm run test:lizeem-farms` first in review** (about a minute and a half): the hardened smoke has not been
-  run, and the hatch, weir and strip-end prompts, one draw-off and one strip reap are proved only by the Node suites.
-  Neither fight (Boann's wolves, the foragers) nor the Recall has been played in the renderer.
-- `tests/nethereum-world.test.js` and `tests/nesdor-world.test.js` were not run (seven minutes each, one failure each
-  before this work). Both scoped worlds now build Haethom and Ninehands, so their counts and clearances want a look.
-  `tests/nethereum-farm.test.js` still lays a second copy of Haethom on its world, which now holds one; it passes, but
-  could read the world's own as the Nesdor test now does.
-- The people's looks are the design's, in the figure kit's words; none has the user's approval yet. The user's
-  decisions of 5 and 6 October are not yet in `docs/design-answers.md`, and no lore was written for either country.
-- `src/build-status.js` still describes Nethereum, Nesdor (and Caricas) as terrain and wildlife only.
-- The first cut of meadow hay is not gated on Farming 5 (the meadow grows it for anybody); the skill sheet lists it at
-  5. The deep plots are shut to sowing and to the staff until the arc is done and Farming is 16; a deep bed sown before
-  that cannot exist, so nothing is shut to reaping.
-- Reaping a strip gives a little focus back for each bed, as three separate harvests do.
-- Nesdor's region record lists nobody (the Eer test pins it); the game stands its eight up after the trim.
-- No F8 card was added for the two arcs: Build 1's Taleth card resets the whole farmlands (and now the meadow, the weir
-  and any reap with it), and both countries are reached by the F8 region list.
-
-## First-pass numbers to tune
-
-| what | value | where |
-| --- | --- | --- |
-| Flood oats | 240 s, 30 XP, level 1, yield 2; fit by silt: fine 2, thin 1, sour or none 0 | `src/nethereum-produce.js`, `src/meadow-water.js` |
-| Meadow hay | 180 s, 35 XP a cut, yield 2; second cut 300 s after the first, Farming 10 | the same |
-| The water | blackwater 180 s, siltshine 240 s, then frogcall; the silt feeds one sowing | `src/meadow-water.js` |
-| Deep plots | Farming 16 after the arc; thin silt counts as fine; the water takes one planting in five | `src/meadow-water.js`, `src/lizeem-nethereum.js` |
-| Levee tenth | one in ten of every Nethereum harvest; waived a game day after a turn of levee work | `src/lizeem-nethereum.js` |
-| Weir | 3 fish a game day, 5 at Fishing 5; Fine before noon | `src/meadow-water.js` |
-| Floodwheat | 360 s, 60 XP, level 8, yield 2; bench 2, rise 1, wet 0 | `src/flats-ground.js` |
-| Hazel coppice | Farming 12, 18 XP, bears again in 600 s; Fine at 16, Prize at 20 | `src/flats-ground.js`, `src/farming.js` |
-| Reaping | 2 s a bed; Bolverk 5 s, no margin; the long strip at Farming 24 | `src/flats-ground.js` |
-| Foragers | a quarter to one party, or a tenth on 3 copper of paper; paper 2 copper a note, changed for 1; three foragers of 120 hp | `src/lizeem-nesdor.js` |
-| Dishes | oatcakes 25 (fine 35), smoked fish 40 (50), white bread 35 (45), nut cake 50 (50), ale 15, butter 10, weir fish 10 (15) | `src/nethereum-produce.js`, `src/flats-ground.js` |
-| Arc lumps | 150, 200, 300, 400, 1,000 in each country | `src/lizeem-nethereum.js`, `src/lizeem-nesdor.js` |
-| Buyers | Gwyddno oats 12; Boann hay 24, barley 12; Aegir dishes 8, barley 12; Egil hay 24, barley 12; Byggvir barley 24 | the people modules |
-| Wares | basket 20, salt 2, butter 3, manure 1, ale 3, hides 2, honeycomb 2, hazelnuts 2, charcoal 2 | the people modules, `src/prices.js` |
-
-## Commits (Builds 2 and 3)
-
-| commit | subject |
-| --- | --- |
+| `836f87c` | Hand off Build 1 of the Farmlands of the Lizeem |
+| `360907f` | Groundwork for Builds 2 to 5 of the Farmlands of the Lizeem |
+| `7bba42b` | Wire the Lizeem groundwork into the game |
 | `4652d15` | Nethereum scenery: Haethom, the levee, the meadow and the weir |
 | `f76c7c0` | Nesdor scenery: Ninehands, the strips, the hazel wood and the Way |
 | `2d468ce` | The flood meadow and the Flats: timing the water, right crop on right ground |
 | `d81cca0` | Nethereum and Nesdor arcs and their people |
 | `bf39d28` | Wire Builds 2 and 3 of the Farmlands of the Lizeem into the game |
-| this report | Hand off Builds 2 and 3 of the Farmlands of the Lizeem |
+| `469601b` | Hand off Builds 2 and 3 of the Farmlands of the Lizeem |
+| `3db8970` | Ovesos scenery: the green belt, Velsorten, the canal and Lahar's camp |
+| `32b13b5` | The Velsorten canal and Ezina's mill: sharing the water |
+| `685f9b8` | The Ovesos arc and the people of Velsorten |
+| `7a1aaf9` | The Dividing, the rest of Minora, Amalthea's hamlet and the Farming ladder |
+| `b47cfc7` | Wire Builds 4 and 5 of the Farmlands of the Lizeem into the game |
+| this report | Hand off the Farmlands of the Lizeem, Builds 1 to 5 |
 
 ## Next action
 
-Codex review. Then the user's playtest of both arcs from Developer Start, his word on the people's looks and on the
-numbers above, and the remaining builds (Ovesos, then the Dividing).
+Codex review and merge, with the user's decisions copied into `docs/design-answers.md`. Then the user's playtest from
+Developer Start, his word on the looks, the numbers and the open questions above, and on whether to add the noria.
