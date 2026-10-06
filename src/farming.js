@@ -339,13 +339,15 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
    * there; `onPlant(bedId, cropId)` hears each sowing, and `onHarvest(bedId, result)` each harvest on
    * its beds, before any share-taker, and may itself return `{ taken, note }`. The fit is judged at
    * sowing and kept with the planting, so what the country does to the ground afterwards does not
-   * change a crop already in it. A country registered again replaces its old rules.
+   * change a crop already in it. A country registered again replaces its old rules. A country that
+   * registers with `judge: 'harvest'` (the Ovesos canal, Build 4, 6 October 2026) is asked afresh each
+   * time the planting is read instead, because the water it is given after sowing is what decides it.
    */
-  function registerCountry(country, { fit, describe = null, onPlant = null, onHarvest = null } = {}) {
+  function registerCountry(country, { fit, describe = null, onPlant = null, onHarvest = null, judge = 'sowing' } = {}) {
     const key = regionKey(country);
     if (!key || typeof fit !== 'function') return false;
     countries.set(key, freeze({ fit, describe: typeof describe === 'function' ? describe : null,
-      onPlant: typeof onPlant === 'function' ? onPlant : null, onHarvest: typeof onHarvest === 'function' ? onHarvest : null }));
+      onPlant: typeof onPlant === 'function' ? onPlant : null, onHarvest: typeof onHarvest === 'function' ? onHarvest : null, atHarvest: judge === 'harvest' }));
     return true;
   }
   // Caricas farms by rotation, and is the first country registered: its fit is the built-in one.
@@ -449,7 +451,7 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     remember(id, { heart, last: bed.last, since: null });
     const regarded = rotation && foxRegards(id, at);
     // The country judges the fit now, and the planting keeps it (6 October 2026).
-    const judged = !!countryOf(id), fit = fitOf(id, kind.id, { heart, last: bed.last, since: null }, at);
+    const judged = !!countryOf(id) && !countryOf(id).atHarvest, fit = fitOf(id, kind.id, { heart, last: bed.last, since: null }, at);
     state.rows.set(id, { crop: kind.id, sownAt: at, ...(regarded ? { regarded: true } : {}), ...(judged ? { fit } : {}) });
     try { countryOf(id)?.onPlant?.(id, kind.id); } catch { /* a country's listener never stops the sowing */ }
     onEvent({ type: 'row-sown', row: id, crop: kind.id, ripeAt: at + kind.seconds, fit, regarded, ...(working ? { working } : {}) });
