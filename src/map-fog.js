@@ -168,6 +168,8 @@ export const SUBREGIONS = Object.freeze([
   area('nesdor-braids', 'The Braided Water', 'Nesdor', -1660, 660, 96, 'Where the gradient dies the water stops keeping to one channel: three shallow threads side by side round low bars of sand, a different shape after every flood season and never deep enough to matter.'),
   area('nesdor-flats', 'The Nesdor Flats', 'Nesdor', -1420, 730, 120, 'Dark alluvial ground with the relief measured in feet, cattle standing about on it, and an open horizon that goes on being open until it is the Moros. Nothing here breaks the sky.'),
   area('lizeem-bend', 'The Lizeem Bend', 'Nesdor', -1630, 740, 90, 'Where the great river turns south-east along the foot of the Flats and takes everything off them with it. A hundred paces of deep water; the far bank is another country and there is no way to it here.'),
+  // Ninehands (the Farmlands of the Lizeem, 6 October 2026): the one farm on the western Flats.
+  area('ninehands', 'Ninehands', 'Nesdor', -1600, 612, 40, 'Baugi’s farm on the western Flats: a long house, a barn and a malt-house round a yard, and three strips laid down the fall of the ground toward the braids, wet, bench and rise.'),
   // Eer: a country with one line drawn across it, and the chart records which side of it you are on.
   area('aevis', 'Aevis', 'Southern Ascarth', AEVIS.x, AEVIS.z, 74, 'The bronze city of the Avites: massive landward gates, verdigris roofs, a martial palace court and a working harbor open to the sea. Bronze-armored soldiers guard its streets.'),
   area('nylon', 'Nylon', 'Eer', NYLON.x, NYLON.z, 82, 'The independent city at the Lizeem estuary: immensely high walls surround tall scholarly houses, an immaculate Great Library and the tower palace. Its protected harbour keeps the city supplied when its hinterland is lost.'),
@@ -194,6 +196,8 @@ export const SUBREGIONS = Object.freeze([
   // ford is on the southern corner of Nethereum and a disc centred on it was 42% Ovesos.
   area('neth-ford', 'The Neth Ford', 'Nethereum', -2320, 545, 50, 'Gravel, shin-deep, below where the river comes off the desert edge. The only dry-shod way south out of this country, and the only place on the Neth that is one: everything below it runs deep to the Lizeem and nobody has bridged any of it.'),
   area('nethereum-dry-corner', 'The Dry Corner', 'Nethereum', -2880, 206, 95, 'The one corner the basin does not drain, against the Nether Desert. Two metres lower than the rim and outside the catchment altogether: the grass goes short, thin and grey, and the wind off the desert margin has nothing to break it.'),
+  // Haethom (the Farmlands of the Lizeem, 6 October 2026): the ridge hamlet, its levee and the flood meadow below it.
+  area('haethom', 'Haethom', 'Nethereum', -2335, 342, 48, 'The ridge hamlet above the reliable line, where the Sacred Way runs out: four houses round a common, a turf levee along the north-east thread with a hatch in it, and the meadow it drowns.'),
   // South Suval: the lake country and its hills (src/south-suval-world.js).
   area('imlamdris', 'Imlamdris', 'South Suval', -52, 1158, 62, 'The oldest city on the peninsula, on terraces climbing from the Stillwater to the Star Terrace, facing the water and turning its back on the road.'),
   area('the-stillwater', 'The Stillwater', 'South Suval', -100, 1241, 58, 'Spring-fed and never dry: the only lake on the peninsula, misted in the mornings, with reed round its open shore.'),

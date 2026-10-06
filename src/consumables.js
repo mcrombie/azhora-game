@@ -5,6 +5,9 @@
  * traveler tries to eat something they do not carry, and says where it comes from.
  */
 import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
+// The larders of Nethereum and Nesdor (the Farmlands of the Lizeem, Builds 2 and 3; 6 October 2026).
+import { NETHEREUM_FOODS } from './nethereum-produce.js';
+import { NESDOR_FOODS } from './flats-ground.js';
 
 const define = (healing, missing) => Object.freeze({ healing, missing });
 
@@ -75,6 +78,8 @@ export const FOODS = Object.freeze({
   'bean-pottage-fine': define(50, 'You have no fine bean pottage. Stew it from two Fine field beans and a Fine barley.'),
   'soft-fruit-tart': define(45, 'You have no soft-fruit tart. Bake two soft fruit and a bridge rye at a lit fire, once the orchard-wife has shown you how.'),
   'soft-fruit-tart-fine': define(50, 'You have no fine soft-fruit tart. Bake it from two Fine soft fruit and a Fine bridge rye.'),
+  // Weir fish, oatcakes, smoked fish and butter; white bread, nut cake and ale (6 October 2026).
+  ...NETHEREUM_FOODS, ...NESDOR_FOODS,
 });
 
 export function createConsumables({ inventory, combat, onEvent = () => {} }) {

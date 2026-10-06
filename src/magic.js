@@ -1,5 +1,6 @@
 import { SPELLS, SPELL_IDS, FOCUS_WEAPONS, SORCERY, castWith, focusAt, spellXp, readingXp, learnableSpell, fieldXp, soundingText } from './sorcery.js';
-import { ALL_FARM_ROWS } from './farming.js';
+import { ALL_FARM_ROWS, farmRow } from './farming.js';
+import { bedOpen } from './flats-ground.js';
 import { gameDay } from './merchants.js';
 import { meleeLineClear } from './melee-contact.js';
 import { forestSegmentHit } from './forest-sightline.js';
@@ -51,7 +52,7 @@ export function validateMagicSnapshot(data) {
  */
 export function createMagic({ skills, inventory, weapons, combat, position, world,
   getBodies = () => [], damageWorld = () => null, getCastOrigin = () => null, onEvent = () => {},
-  farming = null, clock = () => 0, fieldBeds = ALL_FARM_ROWS } = {}) {
+  farming = null, clock = () => 0, fieldBeds = ALL_FARM_ROWS, fieldOpen = () => true } = {}) {
   const learned = new Set(), read = new Set();
   let selected = null, focus = 60, pending = null, recovery = null, sequence = 0, quickened = null;
   const projectiles = [], swarms = [];
@@ -133,10 +134,15 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
   const now = () => Number(typeof clock === 'function' ? clock() : clock) || 0;
   const today = () => gameDay(now());
 
-  /** The bed nearest a point, within `reach` metres, that `accepts` takes, or null. */
+  /**
+   * Whether the staff may work a bed (6 October 2026): not one the farm keeps shut (src/flats-ground.js `bedOpen`,
+   * Baugi's long strip before he lends it), nor one the host shuts (`fieldOpen`: Liban's deep plots before they are let).
+   */
+  const workable = bed => (!farmRow(bed.id) || bedOpen(bed.id)) && fieldOpen(bed.id) !== false;
+  /** The bed nearest a point, within `reach` metres, that `accepts` takes, or null. Shut beds are passed over. */
   function nearestBed(at, reach, accepts = () => true) {
     let best = null, gapTo = Infinity;
-    for (const bed of fieldBeds ?? []) { const d = gap(bed, at); if (d <= reach && d < gapTo && accepts(bed)) { best = bed; gapTo = d; } }
+    for (const bed of fieldBeds ?? []) { const d = gap(bed, at); if (d <= reach && d < gapTo && workable(bed) && accepts(bed)) { best = bed; gapTo = d; } }
     return best;
   }
   const stageOf = (bedId, at) => farming?.rowState?.(bedId, at)?.stage ?? null;
@@ -168,7 +174,7 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
     const near = nearestBed(from, profile.range);
     if (!near) return {ok:false,code:'no-farm',reason:`Stand within ${profile.range} paces of a farm, then plant the staff.`};
     const farmstead = near.farmstead ?? near.farmId ?? null;
-    const beds = farmstead ? (fieldBeds ?? []).filter(bed => (bed.farmstead ?? bed.farmId) === farmstead) : [near];
+    const beds = farmstead ? (fieldBeds ?? []).filter(bed => (bed.farmstead ?? bed.farmId) === farmstead && workable(bed)) : [near];
     const ripe = beds.filter(bed => stageOf(bed.id, at) === 'ripe').map(bed => bed.id);
     const bare = beds.filter(bed => stageOf(bed.id, at) === 'bare').map(bed => bed.id);
     const choices = [];

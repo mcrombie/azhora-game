@@ -197,6 +197,16 @@ import { createLizeemFarmlands, talethFarmlandsChoices, freeRoamGuidance } from 
 import { pay as payPurse } from './economy.js';
 import { LIZEEM_PEOPLE, LIZEEM_PEOPLE_IDS, isLizeemNpc, lizeemConversation, lizeemHiddenIds } from './lizeem-people.js';
 import { createMerchants, openTrade } from './merchants.js';
+// The Farmlands of the Lizeem, Builds 2 and 3 (the design of 5 October 2026, built 6 October 2026): Nethereum's meadow, weir
+// and arc, Nesdor's strips, reaping and arc, and the people of both. Importing the meadow registers the Nethereum beds and crops.
+import { createMeadowWater, createWeir } from './meadow-water.js';
+import { NETHEREUM_SITES } from './nethereum-farm.js';
+import { createNethereumArc, talethNethereumChoices, NETHEREUM_WOLVES } from './lizeem-nethereum.js';
+import { NETHEREUM_PEOPLE, isNethereumNpc, nethereumConversation } from './lizeem-nethereum-people.js';
+import { registerNesdorFarming, createReaping, stripEndNear, bedOpen, lockLong, unlockLong, LONG_STRIP_LOCKED } from './flats-ground.js';
+import { NESDOR_STRIPS } from './nesdor-farm.js';
+import { createNesdorArc, talethNesdorChoices, FORAGER_FIGHT } from './lizeem-nesdor.js';
+import { NESDOR_PEOPLE, isNesdorNpc, nesdorConversation } from './lizeem-nesdor-people.js';
 import { cityPoint as imlamdrisPoint } from './south-suval-world.js';
 // Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
 import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE } from './opening-sequence.js';
@@ -760,6 +770,9 @@ async function init() {
   // src/lizeem-people.js; the user, 5 October 2026), stood up after the cast is trimmed as the Telemon are.
   world.npcPositions[TALETH.id]={x:TALETH.x,z:TALETH.z};npcData.push({...TALETH});
   for(const person of LIZEEM_PEOPLE){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
+  // Haethom's seven and the eight of Nesdor (src/lizeem-nethereum-people.js, src/lizeem-nesdor-people.js; 6 October 2026), stood
+  // up after the trim as the rest of the farmlands' people are.
+  for(const person of [...NETHEREUM_PEOPLE,...NESDOR_PEOPLE]){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createLazyCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,hat:npc.hat??false,armed:!!npc.armed},{onMaterialize:()=>{npc.shadows=undefined;npc.detailDirty=true;}});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     if(npc.scale)npc.actor.group.scale.setScalar(npc.scale);
@@ -1119,6 +1132,7 @@ async function init() {
     if(encounterId===OGRE_ENCOUNTER.id)return 'The ogre at the pass stones';
     if(encounterId===BORDER_ENCOUNTER_ID)return 'The border battle';
     if(encounterId===hideoutEncounter.id)return 'The scouts at the Bramble camp';
+    if(encounterId===NETHEREUM_WOLVES.id)return 'Wolves';if(encounterId===FORAGER_FIGHT)return 'The foragers'/* the Farmlands of the Lizeem, 6 October 2026 */;
     return 'Goblins';}
   /**
    * Weapons lying in the world to be found (src/found-weapons.js). It owns nothing: a dead man's
@@ -1416,11 +1430,12 @@ async function init() {
   // Farming, the fourteenth skill: four rows at the Mill Commons and Applegarth's kept orchard
   // (src/farming.js). The only skill with a clock of its own, which is the long road's own point.
   let sunflowerLesson=null;
+  let nethereum=null,nesdorArc=null;/* the Nethereum and Nesdor arcs (6 October 2026): made below, beside the quest, and heard by the farm */
   const farming=createFarming({skills,inventory,clock:()=>playSeconds,onEvent:event=>{
-    sunflowerLesson?.farmEvent(event);
+    sunflowerLesson?.farmEvent(event);nesdorArc?.farmEvent(event)/* a sowing on the Nesdor strips, 6 October 2026 */;
     if(event.type==='row-sown'&&!event.working/* the Work of Nine shows one notice for the lot, 6 October 2026 */)toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · FARMING`);
     if(event.type==='row-watered')toast('Watered. This crop will grow faster and yield more. +4 Farming XP.','FARMING');
-    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');if(event.type==='row-reaped'&&!event.hand&&!event.working)magic?.refocus();
+    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');if(event.type==='tree-picked'&&event.grade==='prize'&&event.country)farmlands.enter(event.item,'prize',{country:event.country})/* a Prize picking off Idunn's coppice, 6 October 2026 */;if(event.type==='row-reaped'&&!event.hand&&!event.working)magic?.refocus();
       // 6 October 2026: Messor's reaping is his, not Rollo's (no focus back); a working's beds share its one notice; a hazel is not an apple.
       if(!event.working)toast(event.type==='row-reaped'?`${event.hand?`${event.hand[0].toUpperCase()}${event.hand.slice(1)} reaped the north fields: `:''}${event.grade==='good'?'Good harvest: ':event.grade==='prize'?'Prize harvest: ':''}${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}.${event.hand?'':` ${event.xp} farming.`}`:`${event.item==='avrel-apple'?'An Avrel apple':`1 × ${INVENTORY_ITEMS[event.item]?.name??event.item}`}. ${event.xp} farming.`,
         event.levelled?`FARMING LEVEL ${event.level}`:'FARMING');}
@@ -1434,8 +1449,32 @@ async function init() {
   const farmlands=createLizeemFarmlands({skills,farming,magic:{learn:(id,options)=>magic?.learn(id,options)??null},pay:copper=>payPurse(inventory,copper),clock:()=>playSeconds/* Messor's wage, 6 October 2026 */,onEvent:event=>{if(event.type==='lizeem-caricas-restored')placeLizeemHands();if(event.type==='lizeem-hand-unpaid')toast(`${event.hand[0].toUpperCase()}${event.hand.slice(1)} has gone home. There was no ${event.wage} copper for his day, and he does not reap for nothing.`,'FARMING');inventory.refresh();refreshQuest();saveRoad(false);}});
   function placeLizeemHands(){const hide=lizeemHiddenIds(farmlands);for(const id of LIZEEM_PEOPLE_IDS){const npc=npcById.get(id);if(!npc)continue;npc.hidden=hide.includes(id);if(npc.hidden)npc.actor.group.visible=false;}}
   placeLizeemHands();
+  // **Nethereum and Nesdor** (the Farmlands of the Lizeem, Builds 2 and 3: the design of 5 October 2026, built 6 October 2026).
+  // Nesdor's way of farming, floodwheat, Idunn's coppice and the Ninehands beds join the farm here, before it is drawn, with
+  // Baugi's long strip registered and shut until he lends it; importing the meadow has already brought in Nethereum's beds.
+  // The meadow hatch, the weir and the reaping walk are the game's; each country's arc keeps its story, takes its share at
+  // harvest through the farm, and is registered with the quest, which carries its card, its leaf of the Measure and its save.
+  registerNesdorFarming(farming);
+  const meadowLook={hatch:null,water:null};/* what the Haethom scenery was last told */
+  const meadow=createMeadowWater({farming,clock:()=>playSeconds,skills,inventory,onEvent:event=>{nethereum?.hear(event);
+    if(event.type==='meadow-drawn')toast(`The water is off the meadow and has left ${event.silt==='fine'?'a fine silt':event.silt==='thin'?'a thin silt':'the ground sour'}${event.hay.length?`; hay is coming up on ${event.hay.length===1?'one bed':`${event.hay.length} beds`}`:''}.`,'THE MEADOW');
+    if(event.type==='meadow-aftermath')toast(`The aftermath is up on ${event.rows.length===1?'one cut bed':`${event.rows.length} cut beds`}: a second cut of hay.`,'THE MEADOW');
+    if(event.type==='basket-extra')inventory.refresh();
+    if(['meadow-mended','meadow-opened','meadow-drawn','meadow-aftermath'].includes(event.type)&&hasRoadProgress())saveRoad(false);}});
+  const weir=createWeir({clock:()=>playSeconds,skills,inventory});
+  nethereum=createNethereumArc({farming,meadow,weir,skills,inventory,magic:{learn:(id,options)=>magic?.learn(id,options)??null},clock:()=>playSeconds,
+    onEvent:event=>{if(event.note&&['nethereum-wolves','nethereum-minded'].includes(event.type))toast(event.note,'NETHEREUM');inventory.refresh();refreshQuest();saveRoad(false);}});
+  farmlands.registerArc('nethereum',nethereum);
+  const reaping=createReaping({farming,clock:()=>playSeconds,onEvent:event=>{if(event.type!=='strip-reaped')return;nesdorArc?.stripReaped(event);inventory.refresh();refreshSkillsSheet();
+    const name=NESDOR_STRIPS.find(strip=>strip.id===event.strip)?.name??'the strip';
+    toast(`${name[0].toUpperCase()}${name.slice(1)} is in: ${event.count===1?'one bed':`${event.count} beds`} in ${event.seconds} seconds.`,'REAPING');saveRoad(false);}});
+  nesdorArc=createNesdorArc({farming,flats:{unlockLong,lockLong},reaping,skills,magic:{learn:(id,options)=>magic?.learn(id,options)??null},inventory,merchants,
+    onEvent:event=>{if(event.type==='nesdor-match')toast(event.outcome==='won'?'Bolverk looks at the strip, and at you, and sits down without a word.':'Bolverk was at the end of his strip with breath to spare. He says so.','BOLVERK’S MATCH');
+      if(event.type==='nesdor-foragers-stand')toast('The foragers are still between the strips. Baugi is in the yard.','NINEHANDS');
+      inventory.refresh();refreshQuest();saveRoad(false);}});
+  farmlands.registerArc('nesdor',nesdorArc);
   const farmView=createFarmingView({scene,world,farming});
-  let currentRow=null,currentAppleTree=null,nearArtEasel=false;
+  let currentRow=null,currentAppleTree=null,nearArtEasel=false,currentStripEnd=null,currentHatch=null,currentWeir=null;/* a strip's end post, the meadow hatch, the weir head: 6 October 2026 */
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
@@ -3593,8 +3632,32 @@ async function init() {
   const farmingContext=()=>({farming,cooking,fireMaking,inventory,openDialogue,closeDialogue,playSeconds:()=>playSeconds,onChange:refreshRoadSkills,notify:toast});
   function refreshRoadSkills(){inventory.refresh();refreshSkillsSheet();refreshQuest();saveRoad(false);}
   function workRow(){
+    // Baugi's long strip until he lends it, and Liban's deep plots until she lets them (6 October 2026).
+    if(currentRow&&!bedOpen(currentRow.id)){toast(LONG_STRIP_LOCKED,'NINEHANDS');return;}
+    if(currentRow&&currentRow.stage==='bare'){const gate=nethereum.canSow(currentRow.id);if(!gate.ok){toast(gate.reason,'THE DEEP PLOTS');return;}}
     if(currentRow)farmRowConversation(currentRow.id,farmingContext());return;
 
+  }
+  // The Farmlands of the Lizeem, Builds 2 and 3 (6 October 2026): a Nesdor strip reaped by walking it from its end post, the
+  // Haethom meadow hatch opened and drawn off, and Gwyddno's weir trap hauled, each with F where it stands.
+  function reapStripEnd(){
+    if(reaping.pose()){reaping.cancel();toast('You stop, and the rest of the strip is left standing.','REAPING');return;}
+    if(!currentStripEnd)return;
+    if(!currentStripEnd.open){toast(LONG_STRIP_LOCKED,'NINEHANDS');return;}
+    const begun=reaping.begin(currentStripEnd.id,playSeconds);
+    toast(begun.ok?`Take the scythe down ${begun.name}: ${begun.seconds} seconds to the far end. Stay on the strip.`:begun.reason,'REAPING');
+  }
+  function useMeadowHatch(){
+    const result=nethereum.useHatch(playSeconds);
+    if(!result.ok){toast(result.reason,'THE MEADOW HATCH');return;}
+    if(!result.silt)toast('The paddle comes up and the thread goes out over the meadow, black. Draw it off when the silt shines under it.','THE MEADOW HATCH');
+    inventory.refresh();refreshQuest();saveRoad(false);
+  }
+  function haulWeir(){
+    const result=nethereum.takeWeir(playSeconds);
+    if(!result.ok){toast(result.reason,'GWYDDNO’S WEIR');return;}
+    inventory.refresh();audio?.effect('success');
+    toast(`${result.count} × ${INVENTORY_ITEMS[result.item]?.name??result.item}${result.fine?', bright from the trap':''}.`,'GWYDDNO’S WEIR');saveRoad(false);
   }
   function gatherStone(){
     if(!currentStone)return;
@@ -3951,7 +4014,7 @@ async function init() {
     onJail:({seconds})=>{living.advance(seconds);playSeconds=living.clock();corpseHost.update(seconds,elapsed,{playing:true});if(riding.mounted)riding.dismount();
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
 
-  magic=createMagic({skills,inventory,weapons,combat,world,farming,clock:()=>playSeconds,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
+  magic=createMagic({skills,inventory,weapons,combat,world,farming,clock:()=>playSeconds,fieldOpen:id=>nethereum.canSow(id).ok/* Liban's deep plots, 6 October 2026 */,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
     getCastOrigin:spellCast=>{
       // Sample the rendered hand at the release beat, even on a frame that
       // advances past it. The actual equipped model supplies its world-space tip.
@@ -3967,6 +4030,10 @@ async function init() {
       if(event.type==='mind-read'){republic?.mindRead?.(event);toast(event.text,`MIND READ - ${event.name.toUpperCase()}`);saveRoad(false);}
       // Field sorcery (Taleth's, 5 October 2026): what the staff heard in the ground, or how many beds the dew reached.
       if(event.type==='field-working'){toast(event.text,event.kind==='sound'?`SOUND THE SOIL - ${event.name.toUpperCase()}`:(SPELLS[event.id]?.name??'Field sorcery').toUpperCase()/* Quicken and the Work of Nine, 6 October 2026 */);inventory.refresh();refreshSkillsSheet();refreshQuest();saveRoad(false);}
+      // Nesdor (6 October 2026): the staff reads the strips for Baugi's lesson, and the Work of Nine is the one reaper who beats Bolverk.
+      if(event.type==='field-working'&&event.kind==='sound')nesdorArc.readStrips('soil',event.bedId);
+      if(event.type==='field-working'&&event.kind==='nine'){const whole=NESDOR_STRIPS.filter(strip=>strip.beds.every(id=>event.reaped.includes(id)));
+        const last=whole.find(strip=>strip.beds.includes(event.reaped.at(-1)))??whole[0];if(last)nesdorArc.stripReaped({strip:last.id,seconds:0,won:true});}
       if(event.type==='spell-impact'&&event.managed){crime.handleImpact({type:'melee-impact',id:event.id,source:'player',range:0,combatantIds:[...combat.state.enemies,...combat.state.allies].map(actor=>actor.id),
         hits:[{id:event.targetId,npcId:event.targetNpcId,team:event.team,hp:event.hp,maxHp:event.maxHp,spared:event.spared}]});}
     }});
@@ -4603,7 +4670,7 @@ async function init() {
     if(mode!=='opening')return false;
     if(deferUntilLoaded([MINORA_START],beginFreeRoam))return true;
     // Developer Start plays Rollo outside the Guild tower in Minora (the user, 5 October 2026).
-    setPlayerCharacter(DEVELOPER_PLAYER);resetDragonDestruction();grantStartingKit();
+    setPlayerCharacter(DEVELOPER_PLAYER);resetDragonDestruction();grantStartingKit();reaping.cancel();lockLong()/* a new start: no reap, and Baugi's long strip shut (6 October 2026) */;
     chapterOne=null;chapterColumn?.clear();for(const id of SKILL_IDS)skills.learn(id,{announce:false});cartography.learn();swimming.learn();
     skillAnnouncements.clear();freeStart=freshMinoraStart();peninsulaHost.restore();campaign.restore(createCampaign().snapshot());
     questStage=0;practiceHits=practiceGuards=practiceDodges=0;lessonSet=false;
@@ -5184,7 +5251,7 @@ async function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),merchants:merchants.snapshot(),lizeemFarmlands:farmlands.snapshot()/* the Lizeem market and farmlands, 5 October 2026 */,barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),merchants:merchants.snapshot(),lizeemFarmlands:farmlands.snapshot()/* the Lizeem market and farmlands, 5 October 2026 */,meadow:meadow.snapshot(),weir:weir.snapshot()/* the Haethom meadow and Gwyddno's weir, 6 October 2026 */,barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(mode==='opening'||restoringRoad||regionLoadDepth||strategicReturn)return false;
@@ -5270,6 +5337,9 @@ async function init() {
     if(!saved.magic){for(const [model,id]of [[spiderQuest,'fireball'],[catQuest,'summon-bees'],[murder,'mindread']])
       if(model.snapshot().stage==='taught')magic.learn(id,{equip:false,announce:false});}
     // The Lizeem market and the Farmlands of the Lizeem (5 October 2026): a save from before them starts both afresh.
+    // The Haethom meadow and the weir (6 October 2026): a save from before them has a broken hatch and a full trap. No reap is ever
+    // saved, and Baugi's long strip is shut until the Nesdor arc, restored with the farmlands below, says he has lent it.
+    reaping.cancel();lockLong();meadow.restore(saved.meadow);weir.restore(saved.weir);
     merchants.restore(saved.merchants);farmlands.restore(saved.lizeemFarmlands);placeLizeemHands();
     inventory.refresh();
     ferry.restore(saved.ferry??createFerry().snapshot());
@@ -5791,8 +5861,15 @@ async function init() {
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(telemonia?.converse(npc))return;
     // Taleth and the people of the Farmlands of the Lizeem (src/taleth.js, src/lizeem-people.js; 5 October 2026).
-    if(talethConversation(npc,{openDialogue,closeDialogue,farmlands,magic,playerId:()=>playerId,notify:toast,onChange:()=>{refreshQuest();refreshSkillsSheet();inventory.refresh();saveRoad(false);},extraChoices:(who,back)=>talethFarmlandsChoices(who,{farmlands,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast})}))return;
+    if(talethConversation(npc,{openDialogue,closeDialogue,farmlands,magic,playerId:()=>playerId,notify:toast,onChange:()=>{refreshQuest();refreshSkillsSheet();inventory.refresh();saveRoad(false);},extraChoices:(who,back)=>[...talethFarmlandsChoices(who,{farmlands,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethNethereumChoices(who,{nethereum,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethNesdorChoices(who,{nesdor:nesdorArc,openDialogue,closeDialogue,onComplete:back,notify:toast})]/* Nethereum's dish and Nesdor's bread and cake, 6 October 2026 */}))return;
     if(isLizeemNpc(npc.id)&&lizeemConversation(npc,{farmlands,openDialogue,closeDialogue,inventory,cooking,merchants,notify:toast,openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who)),hireHand:()=>true,onMeasure:()=>{inventory.refresh();refreshQuest();saveRoad(false);}}))return;
+    // Haethom's seven and the eight of Nesdor (src/lizeem-nethereum-people.js, src/lizeem-nesdor-people.js; 6 October 2026).
+    if(isNethereumNpc(npc.id)&&nethereumConversation(npc,{nethereum,openDialogue,closeDialogue,inventory,cooking,notify:toast,openTrade:who=>openTrade(who,tradeContext(who)),
+      startEncounter:config=>{saveRoad(false);if(combat.startEncounter(config)){stopInput();toast('Three wolves come in off the hollow from the west. Back east toward the levee to leave the fight.','HAETHOM · WOLVES');}},
+      onChange:()=>{refreshQuest();inventory.refresh();saveRoad(false);}}))return;
+    if(isNesdorNpc(npc.id)&&nesdorConversation(npc,{nesdor:nesdorArc,openDialogue,closeDialogue,inventory,cooking,merchants,notify:toast,onChange:()=>{inventory.refresh();refreshQuest();saveRoad(false);},
+      openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who)),
+      startFight:config=>{saveRoad(false);const begun=combat.startEncounter(config);if(begun)stopInput();return begun;}}))return;
     if(npc.id===CUB.id){cubHost.conversation({openDialogue,closeDialogue});return;}
     if(circusConversation(npc,{openDialogue,closeDialogue,kaylaNear:()=>!!bearFamily?.roaming}))return;
     if(npc.id===LIZ.id&&cubHost.state().alerted){toast('Liz is furious. Leave the apiary and give her time to calm down.','LIZ');return;}
@@ -6684,6 +6761,11 @@ async function init() {
     if(cubHost?.nearby&&combat.state.phase!=='active'){cubHost.interact();return;}
     if(rivalLight?.nearby&&combat.state.phase!=='active'){rivalLight.interact();return;}
     if(droppedSatchelNear&&combat.state.phase!=='active'){takeDroppedSatchel();return;}
+    // The Farmlands of the Lizeem, Builds 2 and 3 (6 October 2026): a reap under way stops on F; a strip's end post, the meadow
+    // hatch and the weir head are worked when they are nearer than whoever stands by them.
+    if(combat.state.phase!=='active'&&(reaping.pose()||currentStripEnd)){reapStripEnd();return;}
+    if(combat.state.phase!=='active'&&currentHatch){useMeadowHatch();return;}
+    if(combat.state.phase!=='active'&&currentWeir){haulWeir();return;}
     if(currentNPC){conversation(currentNPC);return;}
     if(!currentNPC&&peninsulaHost?.nearby()&&combat.state.phase!=='active'){peninsulaHost.interact();return;}
     if(!currentNPC&&jesseHost.nearby()&&combat.state.phase!=='active'){jesseHost.interact(jesseHost.nearby());return;}
@@ -6957,7 +7039,7 @@ async function init() {
   // The scripted walk through the Caricas arc is `--lizeem-farmlands-checks` (src/lizeem-farmlands-checks.js).
   function testPlayLizeemFarmlands(){
     if(deferUntilLoaded([TALETH],()=>testPlayLizeemFarmlands()))return true;
-    stopAutopilot();closeDialogue();questChoice.close();farmlands.restore();placeLizeemHands();
+    stopAutopilot();closeDialogue();questChoice.close();farmlands.restore();placeLizeemHands();reaping.cancel();meadow.restore();weir.restore()/* the arcs' ground with them, 6 October 2026 */;
     testGoTo({...(clearApproach(TALETH)??TALETH),facing:MINORA_START.yaw},'PLAYTEST - TALETH','Take Taleth’s charge and walk the Caricas arc: the North Farm, the swap, the claim, Fine rye and the tart.');
     refreshQuest();canvas.focus();return true;
   }
@@ -7567,7 +7649,7 @@ async function init() {
       combatView.event(e);audio?.effect(e.type);
       if(strategicBattle){const outcome=strategicCombatOutcome(e,combat.state.encounterId,strategicBattle);
         if(outcome){finishStrategicBattle(outcome);return;}continue;}
-      const lawEvent=crime.combatEvent(e);kaylaHost.combatEvent(e);batmanHost.combatEvent(e);frontierRaids.combatEvent(e);
+      const lawEvent=crime.combatEvent(e);kaylaHost.combatEvent(e);batmanHost.combatEvent(e);frontierRaids.combatEvent(e);nesdorArc.combatEvent(e,combat.state)/* the foragers at Ninehands, 6 October 2026 */;
       corpseHost.combatEvent(e,combat.state);
       ambushHost.combatEvent(e);cagneyHost.combatEvent(e);rivalLight?.combatEvent(e);telemonia?.combatEvent(e);
       if(lawEvent&&['victory','retreat','defeat'].includes(e.type)){saveRoad(false);continue;}
@@ -7680,6 +7762,9 @@ async function init() {
             toast('Mallec sits down on his own stone. Tell the road house at Ostel, and tell the court.','THE TOLL STONE \u00b7 THE ROAD IS OPEN');saveRoad(false);}
         }
         else if(combat.state.encounterId===LUSCIA_WOLVES.id){const cleared=luscia.clearWolves(LUSCIA_WOLVES.id);if(cleared.ok){toast('The pack breaks for the copses. Carry the courier\u2019s satchel back to Iven.','THE LAUVEL · WOLVES DRIVEN OFF');saveRoad(false);}}
+        // The wolves on Haethom's new grass and the foragers at Ninehands (the Farmlands of the Lizeem, 6 October 2026).
+        else if(combat.state.encounterId===NETHEREUM_WOLVES.id){if(nethereum.wolvesDriven(NETHEREUM_WOLVES.id).ok){toast('The pack breaks for the hollow. Boann’s cattle go back onto the new grass.','HAETHOM · WOLVES DRIVEN OFF');saveRoad(false);}}
+        else if(combat.state.encounterId===FORAGER_FIGHT){toast('The foragers find they have business on the north road and the Flats. Baugi is in the yard.','NINEHANDS · FORAGERS DRIVEN OFF');saveRoad(false);}
         else if(combat.state.encounterId===SPIDER_DEN.id){
           refreshQuest();
           toast(spiderQuest.state.benDown?'The spider is dead, but Ben did not survive.':'The spider is down. Speak with Ben when you are ready.','THE SPIDER IN THE THORNS');
@@ -7693,6 +7778,7 @@ async function init() {
         else if(combat.state.encounterId===hideoutEncounter.id){forestHideout.endEncounter(hideoutEncounter.id);toast('The camp can wait. Return to its approach when you are ready.','BACK TO THE ROAD');saveRoad(false);}
         else if(combat.state.encounterId===BORDER_ENCOUNTER_ID){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line holds without you for now. Tell your commander when you are ready.','THE BORDER BATTLE');}
         else if(combat.state.encounterId===OGRE_ENCOUNTER.id){ogreToll.endEncounter(OGRE_ENCOUNTER.id);toast('You are out of his reach and he has not followed. He never follows.','THE TOLL STONE');saveRoad(false);}
+        else if(combat.state.encounterId===NETHEREUM_WOLVES.id){toast('You are clear of the pack. Boann’s cattle are not. Speak to her when you are ready.','HAETHOM · WOLVES');saveRoad(false);}
         else if(inAftermathFight()){const banner=aftermath.spec.title.toUpperCase();aftermath.endEncounter(combat.state.encounterId);toast('Your commander holds the ground without you for now. Give the word again when you are ready.',banner);}
         else if(combat.state.encounterId===SPIDER_DEN.id){
           refreshQuest();
@@ -8138,6 +8224,9 @@ async function init() {
       player.setFishing(mode==='fishing');
       acting.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:climbing.active||movement>.05||combat.state.phase==='active'||riding.mounted||inWater});
       visualArts.update(dt,{paused:mode!=='playing'||reviewFrozen,blocked:climbing.active||movement>.05||combat.state.phase==='active'||riding.mounted||inWater||!!acting.pose()||!!combat.state.player.guarding||weaponPose.action==='attack',position:player.group.position});
+      // A Nesdor strip being reaped (src/flats-ground.js, 6 October 2026): a fight, the saddle, the water, a climb or a step off the strip stops it.
+      {const reap=reaping.progress(playSeconds);if(reap){if(combat.state.phase==='active'||riding.mounted||inWater||climbing.active||!reaping.along(player.group.position)){reaping.cancel();toast('You left the strip, and the rest of it is still standing.','REAPING');}
+        else if(reap.done){const done=reaping.finish(playSeconds);if(!done.ok)toast(done.reason,'REAPING');}}}
       sylviaIvy.update(dt,{position:player.group.position,paused:mode!=='playing'||reviewFrozen,blocked:movement>.05||combat.state.phase==='active'||riding.mounted||inWater||!grounded||suspended()||!!acting.pose()||!!visualArts.pose()||!!magic.pose()||!!combat.state.player.guarding||weaponPose.action==='attack'});ivyView.update();
       artTools.set(!!visualArts.pose());
       if(visualArts.pose()||sylviaIvy.pose()){player.setArmed(false);player.setShield(false);}
@@ -8160,6 +8249,10 @@ async function init() {
       drentBirds.update(['playing','dialogue'].includes(mode)&&!reviewFrozen?dt:0,player.group.position,{feederHung:birding.feeder==='hung'});
       if(!riding.owned)refreshCompanyHorses();
       farmView.update(playSeconds,player.group.position);farmlands.tick(playSeconds)/* Messor's wage and reaping, 6 October 2026 */;
+      // The Haethom meadow (6 October 2026): the aftermath comes up, the arc reads the water, and the scenery shows the hatch and the water.
+      meadow.update(playSeconds);nethereum.tick(playSeconds);
+      {const water=meadow.view(playSeconds),hatch=!water.mended?'broken':water.open?'open':'shut';
+        if(hatch!==meadowLook.hatch||water.phase!==meadowLook.water){meadowLook.hatch=hatch;meadowLook.water=water.phase;world.nethereumFarm.hatch.set(hatch);world.nethereumFarm.meadowWater.set(water.phase);}}
       currentLivestock=mode==='playing'&&combat.state.phase!=='active'?husbandry.nearby(player.group.position,[...roadLife.state().creatures,...westLife.state().creatures].filter(animal=>!crime.isDown(animal.id))):null;
       birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;watchBird();}
       if(mode!=='playing'){currentBird=null;birdWatch=null;}
@@ -8559,6 +8652,13 @@ async function init() {
       {const working=mode==='playing'&&combat.state.phase!=='active';
         currentRow=working?((row)=>row?farming.rowState(row.id,playSeconds):null)(ALL_FARM_ROWS.find(row=>Math.hypot(row.x-player.group.position.x,row.z-player.group.position.z)<2.4))??null:null;
         currentAppleTree=working&&!currentRow?ORCHARD_TREES.map(tree=>farming.treeState(tree.id,playSeconds)).find(tree=>Math.hypot(tree.x-player.group.position.x,tree.z-player.group.position.z)<2.4)??null:null;}
+      // A Nesdor strip's end post, the Haethom meadow hatch and Gwyddno's weir head (6 October 2026): each is worked from where it
+      // stands, ahead of the bed beside it and of anybody standing farther off (Bolverk by the bench strip, Seithenyn by the hatch).
+      {const working=mode==='playing'&&combat.state.phase!=='active',pp=player.group.position,np=currentNPC?.actor?.group?.position;
+        const npcAway=currentNPC?(np?Math.hypot(np.x-pp.x,np.z-pp.z):0):Infinity,near=(at,reach)=>{const d=Math.hypot(at.x-pp.x,at.z-pp.z);return working&&d<reach&&d<npcAway;};
+        const end=working?stripEndNear(pp,1.5):null;currentStripEnd=end&&end.distance<npcAway?end:null;if(currentStripEnd)currentRow=null;
+        const hatch=NETHEREUM_SITES.hatch;currentHatch=!currentRow&&!currentStripEnd&&(near(hatch.approach,2)||near(hatch,1.6))?hatch:null;
+        currentWeir=!currentRow&&!currentStripEnd&&!currentHatch&&near(NETHEREUM_SITES.weir,2.4)?NETHEREUM_SITES.weir:null;}
       currentDig=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?digs.nearest(player.group.position):null;
       currentVine=mode==='playing'&&combat.state.phase!=='active'&&!currentDig?vinePlateNear(player.group.position):null;
       currentTree=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?specimenTrees.nearest(player.group.position):null;
@@ -8599,7 +8699,7 @@ async function init() {
       currentHomeDoor=mode==='playing'?(brandyHome.nearby()??homeResidents.nearby()):null;
       const currentCorpse=mode==='playing'?corpseHost.nearest():null;
       if(currentChop&&(currentRow||currentAppleTree||currentAcorn||currentStick||currentFruit||currentMushroom||currentPlant||currentStone||currentFire||currentIvy||currentHomeDoor||currentCorpse||currentJourneySite||currentForestSite||currentRegionalSite||nearOldTree))currentChop=null;
-      const prompting=mode==='playing'&&!suspended()&&living.recall().status!=='passenger'&&(!urubondHost.active&&!sevronHost.active&&!baldroHost.active||(!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby()))&&((!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby())||!!jesseHost.nearby()||!!batmanHost.nearby()||!!currentNPC||!!currentHomeDoor||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!cubHost.nearby||!!rivalLight?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||nearArtEasel||!!currentIvy||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&!raceHost.mounted&&combat.state.phase!=='active';show('interaction',prompting);
+      const prompting=mode==='playing'&&!suspended()&&living.recall().status!=='passenger'&&(!urubondHost.active&&!sevronHost.active&&!baldroHost.active||(!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby()))&&((!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby())||!!jesseHost.nearby()||!!batmanHost.nearby()||!!currentNPC||!!currentHomeDoor||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!cubHost.nearby||!!rivalLight?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentStripEnd||!!currentHatch||!!currentWeir||!!reaping.pose()||nearArtEasel||!!currentIvy||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&!raceHost.mounted&&combat.state.phase!=='active';show('interaction',prompting);
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ${currentFishingSpot?.id==='avrel-pool'?'ask Stanley for a lesson':currentFishingSpot?.id==='reedwater'?'ask Chip for a rod':currentFishingSpot?.id==='willowmere'?'ask Ryan by the pond':'ask Glun, Mark, Jean or Stanley to teach you'}`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentNPC?.marker?.visible&&currentNPC.markerKind==='skill')$('interaction-label').textContent+=' \u00b7 Skill teacher';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
@@ -8610,6 +8710,8 @@ async function init() {
       if(currentFeederHook&&!currentNPC)$('interaction-label').textContent='Hang the hummingbird feeder';
       if(currentLivestock&&!currentNPC)$('interaction-label').textContent=`Care for ${currentLivestock.name} · Animal Husbandry`;
       if(currentRow&&!currentNPC)$('interaction-label').textContent=`Work ${currentRow.name} · ${currentRow.stage==='bare'?'choose a crop':currentRow.stage==='ripe'?currentRow.cropName+' ready':currentRow.cropName+' · '+farmWait(currentRow.left)+(currentRow.watered?'':' · water me')}`;
+      // The Farmlands of the Lizeem, Builds 2 and 3 (6 October 2026).
+      if(currentRow&&!currentNPC&&!bedOpen(currentRow.id))$('interaction-label').textContent=`${currentRow.name} · Baugi lends it at Farming 24`;
       if(nearArtEasel&&!currentNPC)$('interaction-label').textContent=visualArts.pose()?`Working on your study · ${Math.round(visualArts.pose().progress*100)}% · F to stop`:'Use the spare easel · Visual Arts';
       if(currentAppleTree&&!currentNPC)$('interaction-label').textContent=currentAppleTree.item!=='avrel-apple'/* a country's own trees (src/farming.js registerTrees), 6 October 2026 */
         ?(currentAppleTree.stage==='fruiting'?`${currentAppleTree.name} · pick ${(INVENTORY_ITEMS[currentAppleTree.item]?.name??currentAppleTree.item).toLowerCase()}`:`Picked out · bearing again in ${Math.ceil(currentAppleTree.left)} seconds`)
@@ -8627,6 +8729,11 @@ async function init() {
       if(nearOldTree&&!currentNPC)$('interaction-label').textContent=oldTree.awake?'The Old Tree watches you \u00b7 White oak':'The Old Tree \u00b7 White oak';
       if(currentPlant&&!currentNPC&&!currentFeederHook&&!currentMushroom)$('interaction-label').textContent=botany.met?(botany.hasFound(currentPlant.species)?`Gather the ${currentPlant.name.toLowerCase()}`:'Look at this plant'):'Something growing here';
       if(currentMushroom&&!currentNPC&&!currentFeederHook)$('interaction-label').textContent=mycology.met?(mycology.hasFound(currentMushroom.species)?`Gather the ${currentMushroom.name.toLowerCase()}`:'Look at this mushroom'):'An unfamiliar mushroom';
+      // The strip ends, the meadow hatch and the weir head (6 October 2026) are worked ahead of a stone, a plant or a tree beside them, so their words come last.
+      if(currentStripEnd||reaping.pose())$('interaction-label').textContent=reaping.pose()?`Reaping · ${Math.round(reaping.pose().progress*100)}% · F to stop`
+        :currentStripEnd.open?`Reap ${currentStripEnd.name} · ${reaping.timeFor(currentStripEnd.id)} seconds`:`${currentStripEnd.name[0].toUpperCase()}${currentStripEnd.name.slice(1)} · Baugi lends it at Farming 24`;
+      if(currentHatch){const water=meadow.view(playSeconds);$('interaction-label').textContent=!water.mended?'The meadow hatch · broken':water.open?`Draw the water off · ${water.phase[0].toUpperCase()}${water.phase.slice(1)}`:'Open the meadow hatch';}
+      if(currentWeir){const trap=weir.view(playSeconds);$('interaction-label').textContent=trap.ready?`Haul the weir trap · ${trap.count} fish${trap.fresh?', fresh':''}`:'The weir trap · empty until tomorrow';}
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Survey Bramble Scout Camp · keep your distance';
       if(cubHost.nearby)$('interaction-label').textContent=cubHost.nearby.prompt;
       if(rivalLight?.nearby&&!currentNPC)$('interaction-label').textContent=rivalLight.nearby.prompt;
@@ -8891,6 +8998,16 @@ async function init() {
           prepare:async()=>{hooks.prepare();for(const id of pendingRegions([TALETH,...LIZEEM_PEOPLE]))await world.loading.ensureRegion(id);
             const egeria=LIZEEM_PEOPLE.find(person=>person.id==='lizeem-egeria'),at=clearApproach(egeria)??egeria;hooks.warp(at.x,at.z);},
           restore:saved=>{recoveryInfo={testing:true,encounterId:null};hooks.restore(saved);testingEnabled=true;}});
+      },
+      // Haethom and Ninehands in the running game (src/lizeem-farms-smoke.js; the Farmlands of the Lizeem, Builds 2 and 3, 6 October 2026).
+      runLizeemFarmsChecks:async()=>{
+        const {runLizeemFarmsChecks}=await import('./lizeem-farms-smoke.js');const hooks=roadSkillsHooks();
+        return runLizeemFarmsChecks({...hooks,scene,meadow,weir,reaping,toasts:()=>reviewLog.toasts.slice(-12),
+          goTo:async point=>{const pending=testGoTo({x:point.x,z:point.z},'THE FARMLANDS OF THE LIZEEM','Haethom and Ninehands.');if(pending&&typeof pending.then==='function')await pending;await hooks.frames(2);},
+          view:(turn,tilt=.32,away=8)=>{yaw=turn;pitch=tilt;distance=targetDistance=away;settleCamera();},
+          prompt:()=>({shown:!$('interaction').classList.contains('hidden'),label:$('interaction-label').textContent,row:currentRow?.id??null,stripEnd:currentStripEnd?.id??null,hatch:!!currentHatch,weir:!!currentWeir,npc:currentNPC?.id??null,mode}),
+          capture:async name=>{await hooks.frames(4);console.log('FARMS_CAPTURE '+name);await new Promise(resolve=>setTimeout(resolve,700));},
+          loaded:id=>!world.loading||world.loading.isReady(id)});
       },
       runSilverAutoplayChecks:async()=>{
         const {runSilverAutoplayChecks}=await import('./silver-autoplay-checks.js');

@@ -36,6 +36,9 @@ import { LIZ_STAND } from '../src/cat-quest.js';
 import {createSevronState} from '../src/sevron-state.js';
 import { createLizeemFarmlands } from '../src/lizeem-farmlands.js';
 import { createMerchants } from '../src/merchants.js';
+import { createMeadowWater, createWeir } from '../src/meadow-water.js';
+import { createNethereumArc } from '../src/lizeem-nethereum.js';
+import { createNesdorArc } from '../src/lizeem-nesdor.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -799,4 +802,35 @@ test('the Farmlands of the Lizeem and its market ride along in the checkpoint, a
   assert.equal(Object.hasOwn(old, 'lizeemFarmlands') || Object.hasOwn(old, 'merchants'), false);
   assert.equal(farmlands.restore(old.lizeemFarmlands), true); assert.equal(farmlands.stage, 'unmet');
   assert.equal(merchants.restore(old.merchants), true); assert.deepEqual(merchants.snapshot().appetites, {});
+});
+
+test('the Haethom meadow, the weir and the Nethereum and Nesdor arcs ride along, and a save from before them loads fresh', () => {
+  // Builds 2 and 3 of the farmlands (6 October 2026): the meadow and the weir are sections of their own; the arcs ride
+  // nested in the farmlands' section; the Nethereum and Nesdor beds, Baugi's long strip among them, are the farm's.
+  const { data, checkpoint } = fixture();
+  const quest = createLizeemFarmlands(), nethereum = createNethereumArc(), nesdor = createNesdorArc();
+  quest.registerArc('nethereum', nethereum); quest.registerArc('nesdor', nesdor);
+  quest.offer(); quest.accept(); nethereum.meet(); nesdor.meet();
+  const bag = { count: id => ({ 'pine-plank': 2, 'salvaged-metal': 1 })[id] ?? 0, remove: () => true, add: () => true };
+  const meadow = createMeadowWater(); assert.equal(meadow.mendHatch({ inventory: bag }).ok, true); assert.equal(meadow.openHatch(100).ok, true);
+  const weir = createWeir(); assert.equal(weir.take(120).ok, true);
+  const farming = { version: 2, met: true, reaped: 0, trees: {}, beds: {},
+    rows: { 'nethereum-meadow-1': { crop: 'flood-oats', sownAt: 10 }, 'nesdor-long-1': { crop: 'barley', sownAt: 10 }, 'nesdor-bench-1': { crop: 'floodwheat', sownAt: 20 } } };
+  const saved = { ...data, playSeconds: 500, lizeemFarmlands: quest.snapshot(), meadow: meadow.snapshot(), weir: weir.snapshot(), farming };
+  assert.equal(checkpoint.save(saved).ok, true);
+  const kept = checkpoint.read().data;
+  assert.deepEqual(kept.lizeemFarmlands.arcs, { nethereum: nethereum.snapshot(), nesdor: nesdor.snapshot() });
+  assert.deepEqual([kept.meadow, kept.weir], [meadow.snapshot(), weir.snapshot()]);
+  assert.deepEqual(Object.keys(kept.farming.rows).sort(), ['nesdor-bench-1', 'nesdor-long-1', 'nethereum-meadow-1']);
+  for (const bad of [{ meadow: { ...meadow.snapshot(), version: 2 } }, { meadow: { ...meadow.snapshot(), openedAt: 900 } }, { weir: { ...weir.snapshot(), day: -1 } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, nethereum: { ...nethereum.snapshot(), stage: 'drowned' } } } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, nesdor: { ...nesdor.snapshot(), stage: 'done' } } } },
+    { farming: { ...farming, rows: { 'nesdor-long-9': { crop: 'barley', sownAt: 10 } } } }])
+    assert.equal(checkpoint.save({ ...saved, ...bad }).ok, false, JSON.stringify(Object.keys(bad)));
+  assert.deepEqual(checkpoint.read().data.meadow, meadow.snapshot(), 'a refused save leaves the last one alone');
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before Builds 2 and 3 is still a save');
+  const old = checkpoint.read().data, water = createMeadowWater(), trap = createWeir();
+  assert.equal(['meadow', 'weir'].some(key => Object.hasOwn(old, key)), false);
+  assert.equal(water.restore(old.meadow), true); assert.equal(water.view(0).hatch, 'broken');
+  assert.equal(trap.restore(old.weir), true); assert.equal(trap.view(0).ready, true);
 });

@@ -3,12 +3,18 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 import { WOOD_SPECIES } from './wood-species.js';
 import { JESSE_ITEMS } from './jesse-carriage-world.js';
 import { MERCHANT_ITEMS } from './merchants.js';
+// The goods of Nethereum and Nesdor, and the rebellion's paper (the Farmlands of the Lizeem, Builds 2 and 3; 6 October 2026).
+import { NETHEREUM_ITEMS } from './nethereum-produce.js';
+import { NESDOR_ITEMS } from './flats-ground.js';
+import { NESDOR_ARC_ITEMS } from './lizeem-nesdor.js';
 import { SLOT_NAMES, SLOTS, gearId } from './gear.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
   ...JESSE_ITEMS,
   // Ilmarinen's farm tools and the Carican factor's charcoal (src/merchants.js; the Farmlands of the Lizeem, 5 October 2026).
   ...MERCHANT_ITEMS,
+  // Flood oats, hay, weir fish and Haethom's wares; floodwheat, white bread, nut cake, ale and hides; the rebellion's paper (6 October 2026).
+  ...NETHEREUM_ITEMS, ...NESDOR_ITEMS, ...NESDOR_ARC_ITEMS,
   // Authored entries below preserve old item IDs and descriptions; every other
   // timber species gets its own stack and can be sold or used as firewood.
   ...Object.fromEntries(Object.values(WOOD_SPECIES).filter(wood => wood.log).map(wood => [wood.log, Object.freeze({

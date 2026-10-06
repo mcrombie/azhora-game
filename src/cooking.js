@@ -6,6 +6,9 @@
  * repeated meals count toward the same skill whoever first taught the traveler.
  * Pure: no DOM, no three.
  */
+// The Nethereum and Nesdor kitchens (the Farmlands of the Lizeem, Builds 2 and 3; 6 October 2026), each with its fine forms.
+import { NETHEREUM_RECIPES } from './nethereum-produce.js';
+import { NESDOR_RECIPES } from './flats-ground.js';
 export const COOKING_VERSION = 1;
 export const COOKING_SKILL = 'cooking';
 /** He will make you another cup, but not before you have had time to finish the last. Seconds of play. */
@@ -46,6 +49,8 @@ export const RECIPES = Object.freeze({
   // 50, not 55: tests/foods.test.js holds every food at 50 or less (src/consumables.js).
   'soft-fruit-tart-fine': recipe('soft-fruit-tart-fine', { name: 'Fine soft-fruit tart', xp: 50, needs: Object.freeze({ 'soft-fruit-fine': 2, 'bridge-rye-fine': 1 }), makes: 'soft-fruit-tart-fine', fineOf: 'soft-fruit-tart',
     note: 'The tart from two Fine soft fruit and a Fine bridge rye. Restores up to 50 health.' }),
+  // Mererid's oatcakes and Gwyddno's smoked fish; Aegir's white bread and Idunn's nut cake (6 October 2026).
+  ...NETHEREUM_RECIPES, ...NESDOR_RECIPES,
 });
 export const RECIPE_IDS = Object.freeze(Object.keys(RECIPES));
 

@@ -6,7 +6,8 @@ import { createCombat } from '../src/combat.js';
 import { SKILLS, createSkills } from '../src/skills.js';
 import { createWeapons, WEAPON_TYPES } from '../src/weapons.js';
 import { createInventoryState } from '../src/inventory.js';
-import { createFarming, ALL_FARM_ROWS } from '../src/farming.js';
+import { createFarming, ALL_FARM_ROWS, farmRow } from '../src/farming.js';
+import { registerNesdorFarming, lockLong, unlockLong } from '../src/flats-ground.js';
 
 /**
  * **Field sorcery** (the user, 5 October 2026): the farming techniques are sorcery cast with the
@@ -162,16 +163,40 @@ test('what the ground says is read from the farm’s whole line, or from its par
  * the Nethereum and Nesdor arcs teach, on a real farm that shares the satchel and the skills.
  */
 const NORTH_BEDS = ALL_FARM_ROWS.filter(row => row.farmstead === 'caricas-north-fields');
-function fieldGame({ seeds = {}, at = NORTH_BEDS[0] } = {}) {
+function fieldGame({ seeds = {}, at = NORTH_BEDS[0], fieldOpen = null } = {}) {
   const time = { now: 0 };
   const game = fixture({ at: { x: at.x + 1, z: at.z }, clock: () => time.now });
   const farming = createFarming({ skills: game.skills, inventory: game.inventory, clock: () => time.now });
   for (const [id, n] of Object.entries(seeds)) game.inventory.add(id, n);
   const magic = createMagic({ skills: game.skills, inventory: game.inventory, weapons: game.weapons, world: { colliders: [], heightAt: () => 0 },
     combat: createCombat({ world: { bounds: { minX: -5000, maxX: 5000, minZ: -5000, maxZ: 5000 }, colliders: [], heightAt: () => 0 }, position: game.position, getWeapon: () => game.weapons.profile() }),
-    position: game.position, farming, clock: () => time.now, onEvent: event => game.events.push(event) });
+    position: game.position, farming, clock: () => time.now, ...(fieldOpen ? { fieldOpen } : {}), onEvent: event => game.events.push(event) });
   return { ...game, magic, farming, time };
 }
+
+test('the staff passes over a bed that is shut: Baugi’s long strip until he lends it, and any bed the host shuts', () => {
+  // Settled at integration (6 October 2026): src/flats-ground.js keeps the long strip shut, and the host may shut
+  // others (Liban's deep plots before they are let) through `fieldOpen`.
+  const nesdor = fieldGame({ seeds: { 'barley-seed': 20 }, at: (() => { registerNesdorFarming(createFarming()); return farmRow('nesdor-long-1'); })() });
+  registerNesdorFarming(nesdor.farming);
+  nesdor.magic.learn('work-of-nine', { announce: false });
+  lockLong();
+  const shut = nesdor.magic.cast('work-of-nine', { seed: 'barley' });
+  assert.equal(shut.ok, true, shut.reason);
+  assert.equal(shut.farmstead, 'ninehands', 'the long strip is passed over for the nearest open farm');
+  assert.ok(shut.sown.length === 9 && shut.sown.every(id => !id.startsWith('nesdor-long')), shut.sown.join(', '));
+  unlockLong();
+  nesdor.magic.refocus(100);
+  const lent = nesdor.magic.cast('work-of-nine', { seed: 'barley' });
+  assert.deepEqual([lent.ok, lent.farmstead, lent.sown.length], [true, 'ninehands-long', 6], 'lent, it is worked like any farm');
+  lockLong();
+  const [first, second] = NORTH_BEDS.map(row => row.id);
+  const caricas = fieldGame({ seeds: { 'carrot-seed': 4 }, fieldOpen: id => id !== first });
+  caricas.magic.learn('quicken', { announce: false });
+  caricas.farming.sow(first, 'carrot', 0); caricas.farming.sow(second, 'carrot', 0);
+  caricas.time.now = 10;
+  assert.equal(caricas.magic.cast('quicken').bedId, second, 'the nearest bed the host has not shut');
+});
 
 test('Quicken ripens the nearest growing bed within six metres, for thirty focus, once a game day', () => {
   const game = fieldGame({ seeds: { 'carrot-seed': 4 } });

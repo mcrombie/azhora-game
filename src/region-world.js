@@ -1252,13 +1252,18 @@ const REGION_TEXT = {
     description: 'Imperial soldiers hold the river town and its patchwork of farms. The Carica drops from the upland shelf into a wooded corridor, where old riverbank forest and the vel-caric river fox survive beside the worked country. Occupation has settled who commands the road, not the civil war.',
     palette: { ground: '#7e8f5b', accent: '#c7cf9a', fog: '#b0bfae', sky: 0xaacfd3, haze: 0xb3d3d0, hazeDensity: .0028 },
     npcIds: [], landmarks: ['caricas-garrison-town', 'caricas-farms', 'carica-corridor', 'carica-upper', 'lizeem-channel', 'caricas-shelf'] },
-  // Nesdor is terrain and wildlife only. The Nesdor Way, the route-communities that live off
+  // **Ninehands** (the Farmlands of the Lizeem, Build 3: the user's design of 5 October 2026, built 6 October 2026): Baugi's
+  // farm and its strips on the western Flats, Idunn's hazel wood at the valley head, the Counted Water and Forseti's house
+  // where the Way meets the army's line, and the Carica ford marked (src/nesdor-farm.js). The eight people of the farmlands
+  // are stood up by the game after the cast is trimmed (src/lizeem-nesdor-people.js) and are not listed here, as Caricas's
+  // are not: tests/eer-world.test.js holds Nesdor and Caricas to placing nobody themselves. What follows was written before:
+  // Nesdor was terrain and wildlife only. The Nesdor Way, the route-communities that live off
   // it, the inns and warehouses and the legal practitioners who sell the difference between
-  // two jurisdictions are the whole of what the lore is about, and none of it is built.
+  // two jurisdictions are the whole of what the lore is about, and none of it was built.
   Nesdor: { subtitle: 'The Flats', spawn: point(-1550, 462),
     description: 'Where the counted rivers of the branch country give out and the open country begins: shallow broad valleys with hazel and oak on their slopes in the north-west, and east and south of them the Flats — dark alluvial ground, relief measured in feet, shallow water braiding across it toward the Lizeem, cattle on the grass and an open horizon all the way to the Moros.',
     palette: { ground: '#a3a86a', accent: '#ded9a4', fog: '#cbd0b6' },
-    npcIds: [], landmarks: ['nesdor-flats', 'nesdor-braids', 'nesdor-head', 'lizeem-bend'] },
+    npcIds: [], landmarks: ['nesdor-flats', 'nesdor-braids', 'nesdor-head', 'lizeem-bend', 'ninehands', 'nesdor-hazel-wood', 'counted-water', 'carica-ford'] },
   // Nylon now guards the east bank of the Lizeem mouth. The wider Eer plain
   // retains its existing water, climate and wildlife; villages and regional quests remain future work.
   //
@@ -1278,7 +1283,12 @@ const REGION_TEXT = {
     description: 'Minora rises over the Isa-Lizeem fork: great white walls, an immense Sorcerers’ Guild tower and a sacred Imperial temple. Cedric keeps his claim to the crown here; Wilhelm and his army camp outside. Beyond the protected city, northern and western hills are exposed to centaur raids from Yunethre.',
     palette: { ground: '#6f9150', accent: '#d3dca6', fog: '#b7c8ac', sky: 0xaacfd3, haze: 0xb3d3d0, hazeDensity: .0020 },
     npcIds: ['prince-cedric', 'prince-wilhelm'], landmarks: ['menora', 'menora-grand-temple', 'menora-sorcerers-guild', 'menora-army-muster', 'isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim'] },
-  // Nethereum is terrain and wildlife only, like the six before it. The ridge communities, the
+  // **Haethom** (the Farmlands of the Lizeem, Build 2: the design of 5 October 2026, built 6 October 2026): the ridge hamlet
+  // on the north-east rim, the levee and its hatch, the flood meadow, Liban's house below the line, and Gwyddno's weir and
+  // smoke-house on the Neth (src/nethereum-farm.js), with Haethom's seven people (src/lizeem-nethereum-people.js), stood
+  // up by the game after the cast is trimmed. The flood is a sheet the meadow hatch lets out over the meadow and draws
+  // off again, not a lake. What follows was written before them:
+  // Nethereum was terrain and wildlife only, like the six before it. The ridge communities, the
   // Flood Council, the Flood Recall, the weirs and the oats and hay on the flood meadow are all
   // somebody's, and somebody is not built — and two of them are impossible besides, because
   // **there is no Nethermere**. The atlas gives this country twenty-six `grassland` hexes and one
@@ -1297,7 +1307,8 @@ const REGION_TEXT = {
   Nethereum: { subtitle: 'The wet grass country', spawn: point(-2650, 289),
     description: 'A broad shallow dish of grass between the Isa and the Neth, and the greenest ground in the west. Water gathers in the middle of it every spring and leaves slowly, and what it leaves is the richest pasture in the inner branch country: rank wet meadow on the floor, ordinary humid grass up the sides and over the rim, and wet threads of rush and sedge in the low ground where the hill-streams run out and stop. Willow and alder on the water and nowhere else. There is no lake here and there never was one on this map — only the hollow, the cattle loose on it, and an overcast that makes the light feel like something held.',
     palette: { ground: '#5f8c46', accent: '#cfdaa2', fog: '#b0c3ac', sky: 0xa7b3ad, haze: 0xb4bcb1, hazeDensity: .0071 },
-    npcIds: [], landmarks: ['nethereum-hollow', 'nethereum-basin', 'nethereum-threads', 'neth-ford', 'neth-lower', 'nethereum-dry-corner'] },
+    npcIds: ['mererid', 'seithenyn', 'gwyddno', 'boann', 'fintan', 'airmid', 'liban'],
+    landmarks: ['nethereum-hollow', 'nethereum-basin', 'nethereum-threads', 'neth-ford', 'neth-lower', 'nethereum-dry-corner', 'haethom', 'haethom-levee', 'gwyddno-weir', 'liban-hummock'] },
   // South Suval retains its lake and old terraces, but Wilhelm razed Imlamdris.
   // Its ruins and broken temple stand beside a small timber rebuilding quarter.
   // The highlands shelter the vigilante; civilian town characters remain unassigned.
