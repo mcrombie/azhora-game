@@ -47,22 +47,23 @@ const good = (base, kind, home) => freeze({ base, kind, home: freeze([...home]) 
 /**
  * Plain produce, in its own country (design 7.5). `home` is where it grows; carrots and beets are the
  * old commons crops and grow anywhere. Ids for Builds 2 to 4 are priced now so the table is whole;
- * nothing can sell them until their crops exist.
+ * nothing can sell them until their crops exist. The Nethereum ids are the contract's of 6 October
+ * 2026 (`flood-oats`, `meadow-hay`), and bridge rye grows on the Nesdor rises as well as in Caricas.
  */
 export const FARM_GOODS = freeze({
   carrot: good(1, 'root', ALL_FOUR),
   beet: good(1, 'root', ALL_FOUR),
   barley: good(1, 'grain', ['Caricas', 'Nesdor', 'Ovesos']),
   rye: good(1, 'grain', ['Nesdor']),
-  'bridge-rye': good(1, 'grain', ['Caricas']),
-  oats: good(1, 'grain', ['Nethereum']),
+  'bridge-rye': good(1, 'grain', ['Caricas', 'Nesdor']),
+  'flood-oats': good(1, 'grain', ['Nethereum']),
   millet: good(1, 'grain', ['Ovesos']),
   'field-beans': good(1, 'pulse', ['Caricas']),
   'soft-fruit': good(2, 'fruit', ['Caricas']),
   hazelnuts: good(2, 'nut', ['Nesdor']),
   floodwheat: good(2, 'grain', ['Nesdor']),
   'hard-wheat': good(2, 'grain', ['Ovesos']),
-  hay: good(2, 'fodder', ['Nethereum']),
+  'meadow-hay': good(2, 'fodder', ['Nethereum']),
   'weir-fish': good(2, 'fish', ['Nethereum']),
   flour: good(3, 'flour', ['Nesdor', 'Ovesos']),
   'dye-crop': good(4, 'dye', ['Ovesos']),
@@ -71,13 +72,15 @@ export const FARM_GOODS = freeze({
 /**
  * Dishes (design 7.6), each at home in the country that cooks it; the fork stew is the city's own.
  * The rye loaf with onion and river cheese is `rye-cheese-loaf`: plain `rye-loaf` is Wendel's mill
- * bread, sold in Drent, and has no price here so it cannot be carried to Minora at a profit.
+ * bread, sold in Drent, and has no price here so it cannot be carried to Minora at a profit. In the
+ * same way the Nethrani oatcakes are `oatcakes` (6 October 2026), and Wendel's `oatcake` at two
+ * copper has no price here, which closes the resale noted at Build 1's handoff.
  */
 export const DISH_PRICES = freeze({
   'rye-cheese-loaf': good(3, 'dish', ['Caricas']),
   'bean-pottage': good(4, 'dish', ['Caricas']),
   'soft-fruit-tart': good(7, 'dish', ['Caricas']),
-  oatcake: good(3, 'dish', ['Nethereum']),
+  oatcakes: good(3, 'dish', ['Nethereum']),
   'smoked-fish': good(4, 'dish', ['Nethereum']),
   'white-bread': good(5, 'dish', ['Nesdor']),
   'nut-cake': good(8, 'dish', ['Nesdor']),
@@ -86,7 +89,21 @@ export const DISH_PRICES = freeze({
   'fork-stew': good(12, 'dish', ['Minora']),
 });
 
-export const PRICE_TABLE = freeze({ ...FARM_GOODS, ...DISH_PRICES });
+/**
+ * What the countries' people sell and buy besides crops and dishes (the contract for Builds 2 and 3,
+ * 6 October 2026): the weir-master's salt, the cattle-woman's butter and manure, the innkeeper's ale,
+ * the drover's hides, and Airmid's harvest basket. Priced, so a buyer who wants them can pay for them.
+ */
+export const WARES = freeze({
+  salt: good(2, 'salt', ['Nethereum']),
+  butter: good(3, 'dairy', ['Nethereum']),
+  manure: good(1, 'manure', ['Nethereum']),
+  ale: good(3, 'drink', ['Nesdor']),
+  hides: good(2, 'hide', ['Nesdor', 'Nethereum']),
+  'harvest-basket': good(20, 'tool', ['Nethereum']),
+});
+
+export const PRICE_TABLE = freeze({ ...FARM_GOODS, ...DISH_PRICES, ...WARES });
 
 /**
  * The satchel keeps two kinds of each crop, ordinary and fine (design 4.4): `bridge-rye` and

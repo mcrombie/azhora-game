@@ -20,7 +20,7 @@
  *
  * Pure: no DOM, no three; the host supplies the dialogue box.
  */
-import { LIZEEM_ROLES, LIZEEM_RECIPES, TART_ITEM, carriedTart, measureLineFor } from './lizeem-farmlands.js';
+import { LIZEEM_ROLES, LIZEEM_RECIPES, MEASURE_LEAVES, TART_ITEM, carriedTart, measureEntriesFor } from './lizeem-farmlands.js';
 import { LIZEEM_MARKET_STANDS } from './menora-city.js';
 
 const freeze = Object.freeze;
@@ -232,10 +232,14 @@ function questChoices(npc, context, arc, say) {
     measureGoods = null, hireHand = null, notify = null } = context;
   if (!farmlands) return [];
   const R = LIZEEM_ROLES, at = arc.stage, out = [];
+  // A recipe counts as taught only when the kitchen takes it (6 October 2026): without Fire Making
+  // or Cooking the lesson is heard and not kept, and the choice stays offered for another day.
   const learn = (id, name) => {
-    const learned = cooking?.learn?.(id);
+    const learned = cooking?.learn ? cooking.learn(id) : { ok: true };
+    if (learned?.ok === false) { notify?.(learned.reason || `You cannot make ${name} yet.`, `${npc.name.toUpperCase()} TRIED TO TEACH YOU A RECIPE`); return false; }
     farmlands.noteTaught(id);
-    if (learned?.ok !== false) notify?.(`You can make ${name} now.`, `${npc.name.toUpperCase()} TAUGHT YOU A RECIPE`);
+    notify?.(`You can make ${name} now.`, `${npc.name.toUpperCase()} TAUGHT YOU A RECIPE`);
+    return true;
   };
   if (npc.id === R.egeria && at === 'bridge') out.push({ id: 'lizeem-egeria-lease', label: 'Ask for land to work.', action: () => {
     farmlands.lease();
@@ -294,7 +298,7 @@ function questChoices(npc, context, arc, say) {
   if (npc.id === R.seshat && farmlands.accepted()) {
     out.push({ id: 'lizeem-seshat-measure', label: 'Ask about the Measure.', action: () => say(measureLines(farmlands)) });
     const goods = Array.isArray(measureGoods) ? measureGoods : measureGoodsFrom(context);
-    for (const good of goods.filter(item => measureLineFor(item?.itemId) && grades[item.grade]).slice(0, 4))
+    for (const good of goods.filter(item => measureEntriesFor(item?.itemId).length && grades[item.grade]).slice(0, 4))
       out.push({ id: `lizeem-measure-${good.itemId}`, label: `Lay ${good.name ?? good.itemId} before the Measure (${grades[good.grade]}).`, action: () => {
         const result = farmlands.enter(good.itemId, good.grade);
         if (!result.ok) { say([result.reason]); return; }
@@ -305,21 +309,26 @@ function questChoices(npc, context, arc, say) {
       } });
   }
   if (npc.id === R.messor && arc.hands?.includes('messor') && !arc.hired?.includes('messor')) out.push({ id: 'lizeem-messor-hire', label: 'Hire Messor to reap the north fields.', action: () => {
-    const ok = hireHand ? hireHand(npc) !== false : true;
-    if (ok) farmlands.hire('messor');
+    // The first day's wage is paid at the hire (src/lizeem-farmlands.js `hire`; 6 October 2026).
+    const ok = (hireHand ? hireHand(npc) !== false : true) && farmlands.hire('messor');
     say([ok ? 'Six copper a day, and I reap what is ripe. You will not need to tell me which.' : 'Six copper a day. Come back when you have it.']);
   } });
   return out;
 }
 
 /**
- * What the traveler can lay before the Measure: the fine kind of each Caricas food he carries
+ * What the traveler can lay before the Measure: the fine kind of each food of a walked leaf he carries
  * (`bridge-rye-fine`, src/prices.js), sealed by a measurer when there is a market to ask, since
- * away from home Fine counts only under seal (design 4.4). Prize is what the seal says it is.
+ * away from home Fine counts only under seal (design 4.4). Prize is what the seal says it is. The
+ * leaves walked are the quest's to say (`farmlands.measureView`); without it, Caricas's alone.
  */
-export function measureGoodsFrom({ inventory = null, merchants = null } = {}) {
+export function measureGoodsFrom({ inventory = null, merchants = null, farmlands = null } = {}) {
   if (!inventory?.count) return [];
   const names = { 'bridge-rye': 'Fine bridge rye', 'field-beans': 'Fine field beans', 'soft-fruit': 'Fine soft fruit', [TART_ITEM]: 'a Fine soft-fruit tart' };
+  // The other countries' foods (6 October 2026), once their leaves are walked.
+  const walked = new Set(farmlands?.measureView?.().leaves.filter(leaf => leaf.walked).map(leaf => leaf.id) ?? []);
+  for (const leaf of MEASURE_LEAVES.filter(entry => entry.id !== 'caricas' && walked.has(entry.id)))
+    for (const item of leaf.lines.flatMap(entry => entry.items)) names[item] ??= `Fine ${item.replace(/-/g, ' ')}`;
   return Object.keys(names).map(base => `${base}-fine`).filter(id => inventory.count(id) > 0)
     .map(id => ({ id, seal: merchants?.sealed?.(id) ?? null }))
     .filter(({ seal }) => !merchants?.sealed || seal?.count > 0)

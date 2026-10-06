@@ -11,6 +11,12 @@
  * `openTrade` for its "Trade" choice; this module owns the trade and the dialogue it opens, and is a
  * subsystem in the usual shape (snapshot, restore, and a validator that accepts a missing section).
  * It imports nothing that imports the satchel, so src/inventory.js can register MERCHANT_ITEMS.
+ *
+ * The groundwork for Builds 2 to 5 (the user, 6 October 2026: "keep building everything"): each
+ * country declares its buyers and order boards in its own module and registers them at start-up
+ * (`registerBuyers`, `registerBoards`), and Build 1's are registered the same way below. A buyer's
+ * wants each carry their own appetite, as the design's table gives them (the cattle-woman takes 24 hay
+ * and 12 barley a day); a want may name several goods that share one appetite (Consus's 24).
  */
 import { describeSum, earn, pay, peddlerOffers, purse, till } from './economy.js';
 import { BANKS, TRADE_RATES, atHome, goodOf, gradeVariant, isPriced, priceOf as tablePrice, wholeCopper } from './prices.js';
@@ -66,81 +72,136 @@ export const MERCHANT_ITEMS = freeze({
 });
 
 const stock = (id, price, quantity = 1) => freeze({ id, price, quantity });
-const packet = crop => stock(SEED_ITEMS[crop], TRADE_RATES.seedPacket, SEED_PACKET);
-const buyer = spec => freeze({ wants: freeze([]), appetite: 0, sells: freeze([]), services: freeze([]), sealedOnly: false, ...spec });
+const packet = crop => ({ id: SEED_ITEMS[crop], price: TRADE_RATES.seedPacket, quantity: SEED_PACKET });
 
 /**
- * The buyers of Build 1 (design 6.2, 6.3 and 7.4). `where` is the country the price is reckoned in;
- * `wants` holds item ids (ordinary and fine kinds alike), kinds from the price table ('grain', 'dish'),
- * 'west-bank' / 'east-bank' for goods that grow only on that bank, or 'any'. `appetite` is units a game
- * day: that many at the full price, as many again at six-tenths, then "enough until tomorrow".
+ * The buyers, by id, in the order they were registered, and their ids. Live: a country's buyers join
+ * them at start-up. Each is the normalised form of what was registered: `where` is the place the
+ * price is reckoned in, `wants` every good or kind he takes, `groups` the wants with their appetites,
+ * `appetite` the first want's (as Build 1 had one appetite a buyer), and `services` what else he does.
  */
-export const BUYERS = freeze({
-  nepri: buyer({ id: 'nepri', name: 'Nepri', role: 'Grain clerk of the Measure House', where: 'Minora', at: 'the River storehouse',
-    wants: freeze(['grain']), sealedOnly: true, appetite: 30, services: freeze(['seal', 'orders']), board: 'measure-house',
-    lines: freeze({
+export const BUYERS = {};
+export const BUYER_IDS = [];
+const PLACES = freeze(['Minora', 'Isareos', 'Caricas', 'Nethereum', 'Nesdor', 'Ovesos']);
+/** 'nethereum' is Nethereum: the price table names places as the atlas does. */
+const placeName = place => { const text = String(place ?? '').trim(); return PLACES.find(name => name.toLowerCase() === text.toLowerCase()) ?? text; };
+const DEFAULT_LINES = freeze({ open: '“I buy what I need, and I sell what I have.”', full: '“I have enough until tomorrow.”',
+  none: '“Nothing I want today.”' });
+
+/**
+ * A buyer as a country declares him (the contract for Builds 2 and 3, 6 October 2026):
+ * `{ id, name, place, wants: [{ item, appetite }], sells: [{ id, price, quantity? }], seals?, bounty?, board?,
+ *   role?, at?, sealedOnly?, rate?, services?, lines? }`. A want's `item` is an item id, a kind from the
+ * price table ('grain', 'dish', 'fodder'), 'west-bank' / 'east-bank' for goods that grow only on that
+ * bank, 'any', or a list of these sharing one appetite; `appetite` is units a game day at the full price
+ * (as many again at six-tenths, then "enough until tomorrow"). `seals` makes him a sworn measurer,
+ * `bounty` pays the Guild's bounty, `board` names his order board, `rate` buys everything without limit
+ * at that share of the home price (the commissary), and `sealedOnly` takes only sealed goods. `lines`
+ * are `{ open, full, none, paid }`, where `paid` is a function of the copper paid or a string with
+ * `{total}` in it; any left out are plain.
+ */
+function buyerOf(spec) {
+  const groups = [].concat(spec.wants ?? []).map(want => (typeof want === 'string' ? { item: want } : want ?? {}))
+    .map(want => freeze({ items: freeze([].concat(want.item ?? want.items ?? []).map(String)), appetite: want.appetite ?? spec.appetite ?? 0 }))
+    .filter(group => group.items.length);
+  const services = [...new Set([...(spec.seals ? ['seal'] : []), ...(spec.board ? ['orders'] : []), ...(spec.bounty ? ['bounty'] : []), ...(spec.services ?? [])])];
+  const lines = { ...DEFAULT_LINES, ...(spec.lines ?? {}) }, paid = lines.paid;
+  lines.paid = typeof paid === 'function' ? paid : typeof paid === 'string' ? total => paid.replaceAll('{total}', total) : total => `${spec.name} pays ${total} copper.`;
+  return freeze({ id: spec.id, name: spec.name, role: spec.role ?? '', where: placeName(spec.place ?? spec.where), at: spec.at ?? '',
+    wants: freeze([...new Set(groups.flatMap(group => group.items))]), groups: freeze(groups), appetite: groups[0]?.appetite ?? 0,
+    sells: freeze((spec.sells ?? []).map(entry => stock(entry.id, entry.price, entry.quantity ?? 1))), services: freeze(services),
+    sealedOnly: !!spec.sealedOnly, ...(spec.rate ? { rate: spec.rate } : {}), ...(spec.board ? { board: spec.board } : {}), lines: freeze(lines) });
+}
+
+/**
+ * Buyers join the market at start-up: a country's module calls this at its top level, so whoever
+ * imports it (the game, the save's validator, a test) has them. A buyer needs an id nobody else has,
+ * a name and a place; a want's appetite is a whole number of units or Infinity, and stock is sold at a
+ * whole price. Answers `{ ok, added, refused: [{ id, reason }] }`; nothing refused is half-registered.
+ */
+export function registerBuyers(list) {
+  const added = [], refused = [];
+  for (const spec of [].concat(list ?? [])) {
+    const id = spec?.id, no = reason => refused.push({ id: id ?? null, reason });
+    if (typeof id !== 'string' || !id || typeof spec.name !== 'string' || !spec.name || !String(spec.place ?? spec.where ?? '').trim()) { no('A buyer needs an id, a name and a place.'); continue; }
+    if (Object.hasOwn(BUYERS, id)) { no('Another buyer already has that id.'); continue; }
+    const b = buyerOf(spec);
+    if (!b.groups.every(group => group.appetite === Infinity || (Number.isSafeInteger(group.appetite) && group.appetite >= 0))) { no('An appetite is a whole number of units a day.'); continue; }
+    if (!b.sells.every(entry => typeof entry.id === 'string' && Number.isSafeInteger(entry.price) && entry.price > 0 && Number.isSafeInteger(entry.quantity) && entry.quantity > 0)) { no('Stock is sold at a whole price, by the whole unit.'); continue; }
+    BUYERS[id] = b; BUYER_IDS.push(id); added.push(id);
+  }
+  return { ok: refused.length === 0, added, refused };
+}
+
+/**
+ * The buyers of Build 1 (design 6.2, 6.3 and 7.4), in the form every country uses. `place` is the
+ * country the price is reckoned in.
+ */
+export const BUILD_ONE_BUYERS = freeze([
+  { id: 'nepri', name: 'Nepri', role: 'Grain clerk of the Measure House', place: 'Minora', at: 'the River storehouse',
+    wants: [{ item: 'grain', appetite: 30 }], sealedOnly: true, seals: true, board: 'measure-house',
+    lines: {
       open: '“Sealed grain I buy, for the granary trust. Unsealed grain I seal: one in twenty, or a copper for a small lot. The board by the door has today’s orders.”',
       full: '“The granary has enough until tomorrow. Whatever the commissary thinks, it is not bottomless.”',
       none: '“Sealed grain only. I can seal it for you, if you have any.”',
       paid: total => `He writes the lot in the column marked “sold”, which is a small pleasure for him these days, and counts out ${total} copper.`,
-    }) }),
-  portunus: buyer({ id: 'portunus', name: 'Portunus', role: 'The Carican factor', where: 'Minora', at: 'the market corner',
-    wants: freeze(['west-bank']), appetite: 20, sells: freeze([packet('bridge-rye'), packet('field-beans'), stock('charcoal', 2)]),
-    lines: freeze({
+    } },
+  { id: 'portunus', name: 'Portunus', role: 'The Carican factor', place: 'Minora', at: 'the market corner',
+    wants: [{ item: 'west-bank', appetite: 20 }], sells: [packet('bridge-rye'), packet('field-beans'), { id: 'charcoal', price: 2 }],
+    lines: {
       open: '“West-bank goods. For home. I sell seed and charcoal.”',
       full: '“Enough for today. Tomorrow.”',
       none: '“Nothing from the west bank. Then nothing.”',
       paid: total => `He counts it twice. “${total} copper. Good.”`,
-    }) }),
-  rudiger: buyer({ id: 'rudiger', name: 'Rudiger', role: 'Cedric’s commissary', where: 'Minora', at: 'the western barracks',
-    wants: freeze(['any']), appetite: Infinity, rate: TRADE_RATES.commissary,
-    lines: freeze({
+    } },
+  { id: 'rudiger', name: 'Rudiger', role: 'Cedric’s commissary', place: 'Minora', at: 'the western barracks',
+    wants: [{ item: 'any', appetite: Infinity }], rate: TRADE_RATES.commissary,
+    lines: {
       open: '“The garrison buys anything that can be eaten, without limit, at six-tenths of what it fetches where it was grown. Those are my orders.”',
       full: '“The garrison is never full.”',
       none: '“Nothing the garrison eats. Come back when you have.”',
       paid: total => `He writes it in the ledger under his arm and pays ${total} copper without looking at you, or at the goods.`,
-    }) }),
-  consus: buyer({ id: 'consus', name: 'Consus', role: 'Grain factor and sworn measurer', where: 'Caricas', at: 'the grain court',
-    wants: freeze(['rye', 'bridge-rye', 'barley', 'field-beans', 'soft-fruit']), appetite: 24,
-    sells: freeze([packet('bridge-rye'), packet('field-beans')]), services: freeze(['seal', 'orders']), board: 'grain-court',
-    lines: freeze({
+    } },
+  { id: 'consus', name: 'Consus', role: 'Grain factor and sworn measurer', place: 'Caricas', at: 'the grain court',
+    wants: [{ item: ['rye', 'bridge-rye', 'barley', 'field-beans', 'soft-fruit'], appetite: 24 }],
+    sells: [packet('bridge-rye'), packet('field-beans')], seals: true, board: 'grain-court',
+    lines: {
       open: '“Rye, barley, beans and fruit, for the granary. I seal lots, I sell seed, and the board has today’s orders. The garrison reads my books. So do I.”',
       full: '“The granary has enough until tomorrow.”',
       none: '“Rye, barley, beans or fruit. You have none of them.”',
       paid: total => `He weighs it, writes it in his book while the garrison’s clerk reads over his shoulder, and pays ${total} copper.`,
-    }) }),
-  pomona: buyer({ id: 'pomona', name: 'Pomona', role: 'Orchard-wife of the East Orchard', where: 'Caricas', at: 'the East Orchard',
-    wants: freeze(['soft-fruit']), appetite: 12, sells: freeze([packet('soft-fruit')]),
-    lines: freeze({
+    } },
+  { id: 'pomona', name: 'Pomona', role: 'Orchard-wife of the East Orchard', place: 'Caricas', at: 'the East Orchard',
+    wants: [{ item: 'soft-fruit', appetite: 12 }], sells: [packet('soft-fruit')],
+    lines: {
       open: '“Soft fruit, I buy. Canes, I sell. Mind the gate.”',
       full: '“I have all the fruit I can boil today.”',
       none: '“No fruit. Then it is canes you want, or nothing.”',
       paid: total => `She takes the fruit in over the gate and pays ${total} copper back across it.`,
-    }) }),
-  ilmarinen: buyer({ id: 'ilmarinen', name: 'Ilmarinen', role: 'Toolsmith of the eastern upland', where: 'Caricas', at: 'the town workshop',
-    sells: freeze(FARM_TOOLS.map(tool => stock(tool.id, tool.price))),
-    lines: freeze({
+    } },
+  { id: 'ilmarinen', name: 'Ilmarinen', role: 'Toolsmith of the eastern upland', place: 'Caricas', at: 'the town workshop',
+    sells: FARM_TOOLS.map(tool => ({ id: tool.id, price: tool.price })),
+    lines: {
       open: '“Hoes, sickles, pruning hooks and water yokes, in bog iron, iron and steel. The steel is dear because the upland is steep.”',
       full: '', none: '“I make tools. I do not buy turnips.”',
       paid: total => `${total} copper.`,
-    }) }),
-  seshat: buyer({ id: 'seshat', name: 'Seshat', role: 'Keeper of the Guild’s ledger', where: 'Minora', at: 'the Guild Library',
-    services: freeze(['bounty']),
-    lines: freeze({
+    } },
+  { id: 'seshat', name: 'Seshat', role: 'Keeper of the Guild’s ledger', place: 'Minora', at: 'the Guild Library', bounty: true,
+    lines: {
       open: '“The Guild pays a bounty for the first Prize of each food, once, when a measurer has sealed it. I write it down. Then I pay.”',
       full: '', none: '“No Prize I have not already paid for. The ledger is patient.”',
       paid: total => `She writes it into the ledger in a hand you could rule lines by, and pays the Guild’s bounty: ${total} copper.`,
-    }) }),
-  satet: buyer({ id: 'satet', name: 'Satet', role: 'Bowl-Keeper of the Grand Temple', where: 'Minora', at: 'the temple court',
-    wants: freeze(['dish']), appetite: 8, services: freeze(['healing']),
-    lines: freeze({
+    } },
+  { id: 'satet', name: 'Satet', role: 'Bowl-Keeper of the Grand Temple', place: 'Minora', at: 'the temple court',
+    wants: [{ item: 'dish', appetite: 8 }], services: ['healing'],
+    lines: {
       open: '“The pilgrims’ kitchen buys cooked food, and pays best for Fine. The river does not mind what it eats. The pilgrims do.”',
       full: '“The kitchen has enough until tomorrow. Come back after the bell.”',
       none: '“Cooked food. A dish, not the makings of one.”',
       paid: total => `She tastes one, says nothing, and pays ${total} copper from the kitchen’s purse.`,
-    }) }),
-});
-export const BUYER_IDS = freeze(Object.keys(BUYERS));
+    } },
+]);
+registerBuyers(BUILD_ONE_BUYERS);
 /** The measurer of a seal whose caller did not say which: the seal is good, the place is the caller's to know. */
 const ANY_MEASURER = freeze({ id: null, name: 'The measurer', where: null, services: freeze(['seal']) });
 
@@ -152,27 +213,54 @@ export function buyerForNpc(npc) {
 
 const posting = (item, min, max, requester) => freeze({ item, min, max, requester });
 /**
- * The order boards (design 7.7). Each posts three orders a game day from its list; an order pays half
- * again the market price where the board stands, plus Farming experience, and comes down at midnight
- * if nobody fills it. Postings for goods not yet in the satchel's item list are skipped.
+ * The order boards (design 7.7), by id; live, as the buyers are. Each posts three orders a game day
+ * from its list; an order pays half again the market price where the board stands, plus Farming
+ * experience, and comes down at midnight if nobody fills it. Postings for goods not yet in the
+ * satchel's item list are skipped.
  */
 export const ORDERS_PER_DAY = 3;
-export const ORDER_BOARDS = freeze({
-  'measure-house': freeze({ id: 'measure-house', name: 'The Measure House board', buyer: 'nepri', where: 'Minora', postings: freeze([
+export const ORDER_BOARDS = {};
+
+/**
+ * Order boards join the market at start-up, as buyers do: `{ id, name, buyer, place, postings: [{ item,
+ * min, max, requester }] }`, where `buyer` is the registered buyer whose appetite a filled order raises
+ * (Forseti's `nesdor-way`). Answers `{ ok, added, refused }`.
+ */
+export function registerBoards(list) {
+  const added = [], refused = [];
+  for (const spec of [].concat(list ?? [])) {
+    const id = spec?.id, no = reason => refused.push({ id: id ?? null, reason });
+    if (typeof id !== 'string' || !id || typeof spec.name !== 'string' || !String(spec.place ?? spec.where ?? '').trim()) { no('A board needs an id, a name and a place.'); continue; }
+    if (Object.hasOwn(ORDER_BOARDS, id)) { no('Another board already has that id.'); continue; }
+    if (!Object.hasOwn(BUYERS, spec.buyer)) { no('A board belongs to a registered buyer.'); continue; }
+    const postings = [].concat(spec.postings ?? []);
+    if (!postings.length || !postings.every(p => typeof p?.item === 'string' && Number.isSafeInteger(p.min) && Number.isSafeInteger(p.max) && p.min >= 1 && p.max >= p.min
+      && typeof p.requester === 'string' && p.requester)) { no('Each posting needs a good, a count from one up, and who wants it.'); continue; }
+    ORDER_BOARDS[id] = freeze({ id, name: spec.name, buyer: spec.buyer, where: placeName(spec.place ?? spec.where),
+      postings: freeze(postings.map(p => posting(p.item, p.min, p.max, p.requester))) });
+    added.push(id);
+  }
+  return { ok: refused.length === 0, added, refused };
+}
+
+/** Build 1's boards: the Measure House in Minora and the grain court in Caricas. */
+export const BUILD_ONE_BOARDS = freeze([
+  { id: 'measure-house', name: 'The Measure House board', buyer: 'nepri', place: 'Minora', postings: [
     posting('bridge-rye', 10, 20, 'The granary trust'), posting('bridge-rye-fine', 4, 8, 'The barge for Nylon'),
     posting('barley', 10, 20, 'The granary trust'), posting('field-beans', 6, 12, 'The bridge wardens’ mess'),
     posting('soft-fruit', 4, 8, 'The Guild’s kitchen'), posting('soft-fruit-fine', 2, 6, 'The barge for Nylon'),
     posting('rye-cheese-loaf', 3, 6, 'The bridge wardens’ mess'), posting('bean-pottage', 3, 6, 'The temple kitchen'),
     posting('soft-fruit-tart', 2, 4, 'The temple kitchen'),
-  ]) }),
-  'grain-court': freeze({ id: 'grain-court', name: 'The grain court board', buyer: 'consus', where: 'Caricas', postings: freeze([
+  ] },
+  { id: 'grain-court', name: 'The grain court board', buyer: 'consus', place: 'Caricas', postings: [
     posting('bridge-rye', 10, 20, 'The Council’s granary'), posting('bridge-rye-fine', 4, 8, 'The Council’s granary'),
     posting('barley', 10, 20, 'The garrison’s quartermaster'), posting('field-beans', 8, 16, 'The fox keepers’ winter store'),
     posting('field-beans-fine', 4, 8, 'The fox keepers’ winter store'), posting('soft-fruit', 4, 10, 'The town bakehouse'),
     posting('carrot', 8, 16, 'The watch-house'), posting('bean-pottage', 3, 6, 'The watch-house'),
     posting('soft-fruit-tart', 2, 4, 'The garrison’s officers’ table'),
-  ]) }),
-});
+  ] },
+]);
+registerBoards(BUILD_ONE_BOARDS);
 
 /** A small deterministic generator, so a board shows the same three orders all day without saving them. */
 function seeded(text) {
@@ -197,8 +285,11 @@ export function validateMerchantsSnapshot(data) {
   if (!onlyKeys(data, ['version', 'appetites', 'standing', 'sealed', 'prizes', 'bounties', 'orders'])) return false;
   const { appetites = {}, standing = {}, sealed = {}, prizes = [], bounties = [], orders = {} } = data;
   if (![appetites, standing, sealed, orders].every(isPlain)) return false;
+  // `each` is what each of a buyer's wants took today, when he has more than one (6 October 2026).
   for (const [id, entry] of Object.entries(appetites))
-    if (!Object.hasOwn(BUYERS, id) || !isPlain(entry) || !onlyKeys(entry, ['day', 'taken']) || !count0(entry.day) || !count0(entry.taken)) return false;
+    if (!Object.hasOwn(BUYERS, id) || !isPlain(entry) || !onlyKeys(entry, ['day', 'taken', 'each']) || !count0(entry.day) || !count0(entry.taken)
+      || (entry.each !== undefined && (!Array.isArray(entry.each) || !entry.each.length || entry.each.length > Math.max(1, BUYERS[id].groups.length)
+        || !entry.each.every(count0) || entry.each.reduce((sum, n) => sum + n, 0) !== entry.taken))) return false;
   for (const [id, steps] of Object.entries(standing))
     if (!Object.hasOwn(BUYERS, id) || !count0(steps) || steps > TRADE_RATES.standingMax) return false;
   for (const [id, entry] of Object.entries(sealed))
@@ -240,19 +331,20 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
   let state = fresh();
 
   // ---- Appetites -------------------------------------------------------------------------------
-  const appetiteOf = id => {
-    const b = BUYERS[id];
-    if (!b) return 0;
-    if (!Number.isFinite(b.appetite)) return b.appetite;
-    return Math.round(b.appetite * (1 + TRADE_RATES.standingStep * (state.standing.get(id) ?? 0)));
+  /** A want's appetite (want 0 unless named), raised a quarter for each order of his filled. */
+  const appetiteOf = (id, want = 0) => {
+    const group = BUYERS[id]?.groups[want];
+    if (!group) return 0;
+    if (!Number.isFinite(group.appetite)) return group.appetite;
+    return Math.round(group.appetite * (1 + TRADE_RATES.standingStep * (state.standing.get(id) ?? 0)));
   };
-  const takenToday = id => { const entry = state.appetites.get(id); return entry && entry.day === today() ? entry.taken : 0; };
-  /** Units a buyer will still take today, at the full price and at six-tenths. */
-  function appetiteLeft(id) {
+  const takenToday = (id, want = 0) => { const entry = state.appetites.get(id); return entry && entry.day === today() ? entry.taken[want] ?? 0 : 0; };
+  /** Units a buyer will still take today of one want, at the full price and at six-tenths. */
+  function appetiteLeft(id, want = 0) {
     const b = BUYERS[id];
-    if (!b) return { full: 0, reduced: 0 };
+    if (!b?.groups[want]) return { full: 0, reduced: 0 };
     if (b.rate) return { full: Infinity, reduced: 0 };
-    const cap = appetiteOf(id), taken = takenToday(id);
+    const cap = appetiteOf(id, want), taken = takenToday(id, want);
     return { full: Math.max(0, cap - taken), reduced: Math.max(0, 2 * cap - Math.max(taken, cap)) };
   }
 
@@ -269,14 +361,16 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
   }
 
   // ---- What a buyer will take ------------------------------------------------------------------
-  function wants(b, id) {
+  /** Which of a buyer's wants takes an item, or -1: the first that names it, its kind, its bank or 'any'. */
+  function wantOf(b, id) {
     const good = goodOf(id);
-    if (!good || !b) return false;
+    if (!good || !b) return -1;
     const { base } = gradeVariant(id);
     const banks = good.home.map(home => BANKS[home]);
-    return b.wants.some(want => want === 'any' || want === base || want === good.kind
-      || (want === 'west-bank' && banks.every(bank => bank === 'west')) || (want === 'east-bank' && banks.every(bank => bank === 'east')));
+    return b.groups.findIndex(group => group.items.some(want => want === 'any' || want === base || want === good.kind
+      || (want === 'west-bank' && banks.every(bank => bank === 'west')) || (want === 'east-bank' && banks.every(bank => bank === 'east'))));
   }
+  const wants = (b, id) => wantOf(b, id) >= 0;
   /** One unit's price to this buyer at a grade: the commissary pays a share of the home price, everyone else the market's. */
   const unitPrice = (b, id, grade) => (b.rate ? (priceOf(id, { grade }) ?? 0) * b.rate : priceOf(id, { grade, place: b.where }) ?? 0);
   /**
@@ -287,34 +381,36 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
   function groupsFor(b, id) {
     const held = inventory?.count?.(id) ?? 0;
     if (!held || !wants(b, id)) return [];
-    const { fine } = gradeVariant(id), seal = sealedOf(id), home = atHome(id, b.where);
+    const { fine } = gradeVariant(id), seal = sealedOf(id), home = atHome(id, b.where), want = wantOf(b, id);
     const groups = [
       { id, kind: 'prize', units: seal.prize, grade: 'prize' },
       { id, kind: 'sealed', units: seal.count - seal.prize, grade: fine ? 'fine' : 'plain' },
       { id, kind: 'unsealed', units: b.sealedOnly ? 0 : held - seal.count, grade: fine && home ? 'fine' : 'plain' },
     ].filter(group => group.units > 0);
-    for (const group of groups) group.unit = unitPrice(b, id, group.grade);
+    for (const group of groups) { group.unit = unitPrice(b, id, group.grade); group.want = want; }
     return groups;
   }
   const order = { unsealed: 0, sealed: 1, prize: 2 };
   /** Fit groups of units into what is left of today's appetite, best value first. */
   function fit(b, groups, limit = Infinity) {
-    let { full, reduced } = appetiteLeft(b.id), left = limit, sum = 0, units = 0;
-    const parts = [];
+    let left = limit, sum = 0, units = 0;
+    const parts = [], budgets = new Map();
     for (const group of [...groups].sort((x, y) => y.unit - x.unit || order[x.kind] - order[y.kind])) {
-      const n = Math.min(group.units, left);
-      const atFull = Math.min(n, full), atReduced = Math.min(n - atFull, reduced);
+      if (!budgets.has(group.want)) budgets.set(group.want, { ...appetiteLeft(b.id, group.want) });
+      const budget = budgets.get(group.want), n = Math.min(group.units, left);
+      const atFull = Math.min(n, budget.full), atReduced = Math.min(n - atFull, budget.reduced);
       if (atFull + atReduced <= 0) continue;
-      full -= atFull; reduced -= atReduced; left -= atFull + atReduced; units += atFull + atReduced;
+      budget.full -= atFull; budget.reduced -= atReduced; left -= atFull + atReduced; units += atFull + atReduced;
       sum += group.unit * (atFull + TRADE_RATES.secondLot * atReduced);
       parts.push({ ...group, units: atFull + atReduced });
     }
     return { units, total: wholeCopper(sum), parts };
   }
-  function refusal(b, held) {
-    if (!held) return b.lines.none;
-    const { full, reduced } = appetiteLeft(b.id);
-    return full + reduced <= 0 ? b.lines.full : b.lines.none;
+  /** "Enough until tomorrow" when every want of his the satchel could fill is full today; else "nothing I want". */
+  function refusal(b, ids) {
+    const held = ids.filter(id => groupsFor(b, id).length);
+    if (!held.length) return b.lines.none;
+    return held.every(id => { const { full, reduced } = appetiteLeft(b.id, wantOf(b, id)); return full + reduced <= 0; }) ? b.lines.full : b.lines.none;
   }
   /** What selling would fetch, without selling: { ok, reason, units, total, parts }. */
   function quote(buyerId, itemId, count) {
@@ -324,7 +420,7 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
     if (itemId !== undefined && !wants(b, itemId)) return { ok: false, reason: b.lines.none, units: 0, total: 0, parts: [] };
     if (count !== undefined && (!Number.isSafeInteger(count) || count < 1)) return { ok: false, reason: 'That is not a number of anything.', units: 0, total: 0, parts: [] };
     const result = fit(b, ids.flatMap(id => groupsFor(b, id)), count ?? Infinity);
-    if (!result.units) return { ok: false, reason: refusal(b, ids.some(id => groupsFor(b, id).length)), ...result };
+    if (!result.units) return { ok: false, reason: refusal(b, ids), ...result };
     if (!result.total) return { ok: false, reason: '“That is not worth a copper.”', ...result };
     return { ok: true, reason: '', ...result };
   }
@@ -363,7 +459,11 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
     if (!undo) return { ok: false, reason: 'Your satchel is lighter than it looks.' };
     if (!earn(inventory, offer.total)) { undo(); return { ok: false, reason: 'Your purse will not hold any more.' }; }
     // The commissary has no appetite to fill, so there is nothing of his to count or save.
-    if (!b.rate) state.appetites.set(buyerId, { day: today(), taken: takenToday(buyerId) + offer.units });
+    if (!b.rate) {
+      const taken = b.groups.map((group, want) => takenToday(buyerId, want));
+      for (const part of offer.parts) taken[part.want] += part.units;
+      state.appetites.set(buyerId, { day: today(), taken });
+    }
     const sold = itemsOf(offer.parts);
     const result = { ok: true, reason: '', buyer: buyerId, units: offer.units, total: offer.total, items: sold, line: b.lines.paid(offer.total) };
     onEvent({ type: 'sold', ...result });
@@ -547,7 +647,8 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
     for (const id of [...state.sealed.keys()].sort()) { const s = sealedOf(id); if (s.count) sealed[id] = { count: s.count, prize: s.prize }; }
     return {
       version: MERCHANTS_VERSION,
-      appetites: Object.fromEntries([...state.appetites].filter(([, e]) => e.day === day && e.taken > 0).map(([id, e]) => [id, { day: e.day, taken: e.taken }])),
+      appetites: Object.fromEntries([...state.appetites].map(([id, e]) => [id, e, e.taken.reduce((sum, n) => sum + n, 0)]).filter(([, e, total]) => e.day === day && total > 0)
+        .map(([id, e, total]) => [id, { day: e.day, taken: total, ...(e.taken.length > 1 ? { each: [...e.taken] } : {}) }])),
       standing: Object.fromEntries([...state.standing].filter(([, n]) => n > 0)),
       sealed,
       prizes: [...state.prizes],
@@ -560,7 +661,8 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
     if (!validateMerchantsSnapshot(data)) return false;
     const next = fresh();
     if (data) {
-      for (const [id, e] of Object.entries(data.appetites ?? {})) next.appetites.set(id, { day: e.day, taken: e.taken });
+      // A save from before a buyer's wants were counted apart charges the whole day to his first.
+      for (const [id, e] of Object.entries(data.appetites ?? {})) next.appetites.set(id, { day: e.day, taken: e.each ? [...e.each] : [e.taken] });
       for (const [id, n] of Object.entries(data.standing ?? {})) if (n) next.standing.set(id, n);
       for (const [id, e] of Object.entries(data.sealed ?? {})) next.sealed.set(id, { count: e.count, prize: e.prize });
       for (const id of data.prizes ?? []) next.prizes.add(id);
@@ -573,7 +675,9 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
 
   return {
     sell, sellAll, quote, buy, seal, sealed: id => sealedOf(id), orders, fill, bountiesOwed, claimBounty,
-    appetite: id => ({ ...appetiteLeft(id), of: appetiteOf(id) }), wants: (buyerId, itemId) => wants(BUYERS[buyerId], itemId),
+    // What a buyer will still take today: of the want that takes `itemId`, or of his first.
+    appetite: (id, itemId) => { const want = itemId === undefined ? 0 : wantOf(BUYERS[id], itemId); return { ...appetiteLeft(id, want), of: appetiteOf(id, want) }; },
+    wants: (buyerId, itemId) => wants(BUYERS[buyerId], itemId),
     tradeConversation, ordersConversation, snapshot, restore, today,
   };
 }

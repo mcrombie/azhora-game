@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { BUYERS, FARM_TOOLS, GAME_DAY_SECONDS, MERCHANT_ITEMS, ORDERS_PER_DAY, ORDER_BOARDS, SEED_ITEMS,
-  buyerForNpc, createMerchants, gameDay, openTrade, validateMerchants } from '../src/merchants.js';
+import { BUILD_ONE_BOARDS, BUILD_ONE_BUYERS, BUYERS, BUYER_IDS, FARM_TOOLS, GAME_DAY_SECONDS, MERCHANT_ITEMS, ORDERS_PER_DAY, ORDER_BOARDS, SEED_ITEMS,
+  buyerForNpc, createMerchants, gameDay, openTrade, registerBoards, registerBuyers, validateMerchants } from '../src/merchants.js';
 import { TRADE_RATES, isPriced } from '../src/prices.js';
 import { INVENTORY_ITEMS, createInventoryState } from '../src/inventory.js';
 
@@ -13,6 +13,8 @@ const FARM_ITEMS = Object.fromEntries([
   ['bridge-rye', 'Bridge rye'], ['bridge-rye-fine', 'Fine bridge rye'], ['field-beans', 'Field beans'], ['field-beans-fine', 'Fine field beans'],
   ['soft-fruit', 'Soft fruit'], ['soft-fruit-fine', 'Fine soft fruit'], ['bean-pottage', 'Bean pottage'], ['soft-fruit-tart', 'Soft-fruit tart'], ['rye-cheese-loaf', 'Rye loaf with onion and river cheese'],
   [SEED_ITEMS['bridge-rye'], 'Bridge rye seed'], [SEED_ITEMS['field-beans'], 'Field bean seed'], [SEED_ITEMS['soft-fruit'], 'Soft fruit canes'],
+  // The Nethereum goods of the contract for Builds 2 and 3 (6 October 2026), for the registered buyers below.
+  ['meadow-hay', 'Meadow hay'], ['flood-oats', 'Flood oats'], ['butter', 'Butter'], ['manure', 'Manure'],
 ].map(([id, name]) => [id, { name, stackable: true }]));
 const ITEMS = { ...INVENTORY_ITEMS, ...MERCHANT_ITEMS, ...FARM_ITEMS };
 
@@ -169,7 +171,7 @@ test('the commissary pays six-tenths of the home price for anything priced, with
 
 test('the Carican factor buys what grows only on the west bank, and not Caricas’s own rye', () => {
   assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', 'bridge-rye'), false);
-  for (const id of ['oats', 'hay', 'weir-fish', 'millet', 'hard-wheat', 'dye-crop', 'oatcake', 'flatbread'])
+  for (const id of ['flood-oats', 'meadow-hay', 'weir-fish', 'millet', 'hard-wheat', 'dye-crop', 'oatcakes', 'flatbread'])
     assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', id), true, id);
   for (const id of ['barley', 'flour', 'carrot']) assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', id), false, `${id} grows on both banks`);
 });
@@ -423,4 +425,84 @@ test('the toolsmith’s tools are whole satchel entries at the design’s three 
     assert.equal(INVENTORY_ITEMS[tool.id] === undefined || INVENTORY_ITEMS[tool.id] === item, true, `${tool.id} is not a different item already`);
   }
   for (const id of Object.keys(MERCHANT_ITEMS)) assert.equal(Object.hasOwn(INVENTORY_ITEMS, id) && INVENTORY_ITEMS[id] !== MERCHANT_ITEMS[id], false, `${id} collides`);
+});
+
+/**
+ * The groundwork for Builds 2 to 5 (the user, 6 October 2026: "keep building everything"): each
+ * country registers its buyers and boards at start-up, in the form Build 1's own now take, and a
+ * buyer's wants each carry their own appetite.
+ */
+test('Build 1’s buyers and boards are registered in the same form every country uses', () => {
+  assert.deepEqual(BUILD_ONE_BUYERS.map(spec => spec.id), ['nepri', 'portunus', 'rudiger', 'consus', 'pomona', 'ilmarinen', 'seshat', 'satet']);
+  assert.deepEqual(BUYER_IDS.slice(0, 8), BUILD_ONE_BUYERS.map(spec => spec.id));
+  assert.deepEqual(BUILD_ONE_BOARDS.map(board => board.id), ['measure-house', 'grain-court']);
+  for (const spec of BUILD_ONE_BUYERS) assert.ok(typeof spec.place === 'string' && (spec.wants ?? []).every(want => want.appetite >= 0), `${spec.id} is in the contract’s form`);
+  assert.deepEqual(BUYERS.consus.groups.map(group => [group.items.length, group.appetite]), [[5, 24]], 'Consus’s five goods share one appetite of 24');
+  assert.deepEqual(BUYERS.nepri.services, ['seal', 'orders']);
+  assert.deepEqual(BUYERS.seshat.services, ['bounty']);
+  assert.equal(BUYERS.rudiger.rate, TRADE_RATES.commissary);
+  assert.equal(registerBuyers([{ ...BUILD_ONE_BUYERS[0] }]).ok, false, 'an id is registered once');
+});
+
+test('a country’s buyer is registered at start-up, and each of his wants has an appetite of its own', () => {
+  const boann = { id: 'boann', name: 'Boann', role: 'The cattle-woman', place: 'nethereum',
+    wants: [{ item: 'meadow-hay', appetite: 24 }, { item: 'barley', appetite: 12 }],
+    sells: [{ id: 'butter', price: 3 }, { id: 'manure', price: 1 }], lines: { paid: 'She pays {total} copper.' } };
+  assert.deepEqual(registerBuyers([boann]), { ok: true, added: ['boann'], refused: [] });
+  assert.equal(BUYERS.boann.where, 'Nethereum', 'the place as the price table names it');
+  assert.deepEqual(BUYERS.boann.wants, ['meadow-hay', 'barley']);
+  assert.equal(BUYERS.boann.appetite, 24, 'the first want’s, as Build 1 had one a buyer');
+  assert.ok(BUYERS.boann.lines.open && BUYERS.boann.lines.full && BUYERS.boann.lines.none, 'plain lines where none were given');
+  assert.equal(buyerForNpc({ id: 'boann' }), BUYERS.boann);
+  for (const bad of [{ id: 'nobody', place: 'Nesdor' }, { id: 'nameless', name: 'X' }, { id: 'greedy', name: 'Greedy', place: 'Nesdor', wants: [{ item: 'barley', appetite: 1.5 }] },
+    { id: 'dear', name: 'Dear', place: 'Nesdor', sells: [{ id: 'ale', price: 0 }] }])
+    assert.equal(registerBuyers([bad]).ok, false, JSON.stringify(bad));
+  assert.equal(Object.hasOwn(BUYERS, 'greedy'), false, 'nothing refused is half-registered');
+  const { merchants, inventory, nextDay } = market({ 'meadow-hay': 60, barley: 40, [COPPER]: 10 });
+  const hay = merchants.sell('boann', 'meadow-hay', 24);
+  assert.deepEqual([hay.ok, hay.total, hay.line], [true, 48, 'She pays 48 copper.'], 'twenty-four hay at two, at home');
+  assert.deepEqual(merchants.appetite('boann', 'barley'), { full: 12, reduced: 12, of: 12 }, 'the hay did not eat the barley’s appetite');
+  assert.equal(merchants.sell('boann', 'barley', 12).total, 12, 'barley grows in Ovesos on the same bank, so Nethereum pays the home price');
+  assert.deepEqual(merchants.appetite('boann'), { full: 0, reduced: 24, of: 24 });
+  const saved = JSON.parse(JSON.stringify(merchants.snapshot()));
+  assert.deepEqual(saved.appetites.boann, { day: 0, taken: 36, each: [24, 12] });
+  assert.equal(validateMerchants(saved), true);
+  assert.equal(validateMerchants({ ...saved, appetites: { boann: { day: 0, taken: 30, each: [24, 12] } } }), false, 'the wants add up to the day');
+  assert.equal(validateMerchants({ ...saved, appetites: { boann: { day: 0, taken: 36, each: [24, 6, 6] } } }), false, 'no more wants than he has');
+  const again = createMerchants({ inventory, items: ITEMS, playSeconds: () => 0 });
+  assert.equal(again.restore(saved), true);
+  assert.deepEqual(again.snapshot(), saved);
+  assert.deepEqual(again.appetite('boann', 'barley'), merchants.appetite('boann', 'barley'));
+  // A save from before the wants were counted apart charges the day to the first.
+  assert.equal(again.restore({ version: 1, appetites: { boann: { day: 0, taken: 10 } } }), true);
+  assert.deepEqual([again.appetite('boann', 'meadow-hay').full, again.appetite('boann', 'barley').full], [14, 12]);
+  assert.equal(merchants.buy('boann', 'butter').ok, true);
+  nextDay();
+  assert.deepEqual(merchants.appetite('boann', 'meadow-hay'), { full: 24, reduced: 24, of: 24 }, 'a new day');
+});
+
+test('a country’s order board is registered for one of its buyers, and posts and fills as the others do', () => {
+  registerBuyers([{ id: 'gwyddno', name: 'Gwyddno', role: 'The weir-master', place: 'Nethereum', wants: [{ item: 'flood-oats', appetite: 12 }], seals: true, board: 'weir-board' }]);
+  assert.equal(registerBoards([{ id: 'nobody-board', name: 'A board', buyer: 'nobody', place: 'Nethereum', postings: [{ item: 'flood-oats', min: 1, max: 2, requester: 'Someone' }] }]).ok, false,
+    'a board belongs to a registered buyer');
+  assert.equal(registerBoards([{ id: 'empty-board', name: 'A board', buyer: 'gwyddno', place: 'Nethereum', postings: [] }]).ok, false, 'a board posts something');
+  const board = { id: 'weir-board', name: 'The weir board', buyer: 'gwyddno', place: 'nethereum', postings: [
+    { item: 'flood-oats', min: 4, max: 8, requester: 'The levee store' }, { item: 'meadow-hay', min: 4, max: 8, requester: 'The Flood Council' },
+    { item: 'butter', min: 2, max: 4, requester: 'The smoke-house' }] };
+  assert.deepEqual(registerBoards([board]).added, ['weir-board']);
+  assert.equal(registerBoards([board]).ok, false, 'once');
+  assert.equal(ORDER_BOARDS['weir-board'].where, 'Nethereum');
+  assert.ok(BUYERS.gwyddno.services.includes('seal') && BUYERS.gwyddno.services.includes('orders'));
+  const { merchants, inventory, gained } = market({ 'flood-oats': 20, 'meadow-hay': 20, butter: 10, [COPPER]: 1 });
+  const posted = merchants.orders('weir-board');
+  assert.equal(posted.length, 3);
+  const [o] = posted;
+  assert.equal(merchants.fill('weir-board', o.id).ok, true);
+  assert.equal(inventory.count(COPPER), 1 + o.pay);
+  assert.deepEqual(gained, [['farming', o.xp]]);
+  assert.equal(merchants.appetite('gwyddno').of, 15, 'a quarter more of twelve');
+  const saved = merchants.snapshot();
+  assert.equal(validateMerchants(saved), true);
+  assert.deepEqual(saved.standing, { gwyddno: 1 });
+  assert.equal(merchants.seal('flood-oats', 5, { by: 'gwyddno' }).where, 'Nethereum');
 });

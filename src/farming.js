@@ -7,6 +7,13 @@
  * Build 1 of the Farmlands of the Lizeem (docs/lizeem-farmlands-design.md §4, §5.1, §7.3) adds
  * what every bed remembers (its heart and its last crop), the grade of every harvest, the fine
  * kind of each produce, the Caricas crops, and shares taken at harvest.
+ *
+ * The groundwork for Builds 2 to 5 (the user, 6 October 2026: "keep building everything") lets a
+ * country bring its own beds, crops and bearing trees at start-up (`registerRows`, `registerCrops`,
+ * `registerTrees`) and its own way of farming to the farm (`farming.registerCountry`): the country
+ * decides the fit of a crop on its beds, and Caricas, whose rotation is built in, is the first
+ * country registered. `ripen` is the working Quicken's, `farmRowsNear` and `farmsteadRows` the
+ * Work of Nine's, and `harvestAll` / `sowAll` work several beds in one act.
  */
 import { APPLEGARTH_WORKS } from './rena.js';
 import { REGIONAL_FARM_ROWS } from './regional-farmland.js';
@@ -41,7 +48,7 @@ const cropRow = (id, entry) => freeze({ id, ...entry, fine: fineItem(entry.item)
  * `heart` what ground it likes (lean, rich or any); `restores` puts heart back. A crop with a
  * `region` is sown only on that country's beds: the Caricas three, on its five farmsteads.
  */
-export const CROPS = freeze({
+export const CROPS = {
   sunflower: cropRow('sunflower', { name: 'Sunflowers', seconds: 120, xp: 26, level: 1, item: 'sunflower', yield: 2, seed: 'sunflower-seed', kind: 'flower', heart: 'any',
     note: 'Golden flowers on tall green stems. Ari teaches this crop in Applegarth. Water once for a fuller harvest in ninety seconds of active play.' }),
   carrot: cropRow('carrot', { name: 'Carrots', seconds: 90, xp: 22, level: 1, item: 'carrot', yield: 2, seed: 'carrot-seed', kind: 'root', heart: 'any',
@@ -53,25 +60,58 @@ export const CROPS = freeze({
   'drent-leaf': cropRow('drent-leaf', { name: 'Drent leaf', seconds: 480, xp: 45, level: 5, item: 'pipe-weed', yield: 1, seed: 'drent-leaf-seed', kind: 'leaf', heart: 'any',
     note: 'Twice as long and worth it. Half the good ground in Drent is under tobacco, and this is a row of it (src/pipeweed.js).' }),
   // The Caricas three (design §5.1), 6 October 2026. Rye and beans need no level; the canes want 3.
-  'bridge-rye': cropRow('bridge-rye', { name: 'Bridge rye', seconds: 240, xp: 30, level: 1, item: 'bridge-rye', yield: 2, seed: 'bridge-rye-seed', kind: 'grain', heart: 'lean', region: 'caricas',
+  // Bridge rye also takes the dry rises of the Nesdor Flats (the contract for Builds 2 and 3, 6 October 2026).
+  'bridge-rye': cropRow('bridge-rye', { name: 'Bridge rye', seconds: 240, xp: 30, level: 1, item: 'bridge-rye', yield: 2, seed: 'bridge-rye-seed', kind: 'grain', heart: 'lean', region: freeze(['caricas', 'nesdor']),
     note: 'The Minoran bridge rye, the grain of practical people. It does best on lean ground and falls over on rich, so sow it where grain or fruit has been.' }),
   'field-beans': cropRow('field-beans', { name: 'Field beans', seconds: 150, xp: 26, level: 1, item: 'field-beans', yield: 2, seed: 'field-beans-seed', kind: 'pulse', heart: 'any', restores: true,
     region: 'caricas', note: 'Broad beans that put heart back into the ground they grow in. A Carican sows them after grain, and what follows them does better for it.' }),
   // Canes, not seed: the satchel still gets a cutting back at harvest, for simplicity.
   'soft-fruit': cropRow('soft-fruit', { name: 'Soft fruit', seconds: 300, xp: 40, level: 3, item: 'soft-fruit', yield: 2, seed: 'soft-fruit-seed', kind: 'fruit', heart: 'rich', region: 'caricas',
     note: 'Raspberry and currant canes for the terraces. They want rich, rested ground: sow them after beans, never after themselves.' }),
-});
-export const CROP_IDS = freeze(Object.keys(CROPS));
-export const crop = id => CROPS[id] ?? null;
+};
+/** Live lists: a country's crops join them at start-up (`registerCrops`, below). */
+export const CROP_IDS = Object.keys(CROPS);
+export const crop = id => (typeof id === 'string' && Object.hasOwn(CROPS, id) ? CROPS[id] : null);
 /** Every fine produce item, for the satchel, the larder and whoever buys it. */
-export const FINE_ITEMS = freeze(CROP_IDS.map(id => CROPS[id].fine));
+export const FINE_ITEMS = CROP_IDS.map(id => CROPS[id].fine);
+/** The countries a crop is sown in, lower case, or null for a crop that grows anywhere. */
+export const cropRegions = cropId => { const kind = crop(cropId); return kind?.region ? [].concat(kind.region) : null; };
+const titleCase = word => `${word[0].toUpperCase()}${word.slice(1)}`;
+
+/**
+ * A country's crops, added at start-up (6 October 2026). Each is `{ id, name, seconds, xp, level,
+ * item, yield, seed, kind, heart?, region?, restores?, sown?, note? }`; `region` is a country or a
+ * list of them, and a crop with `sown: false` is never offered for seed: the country grows it
+ * (meadow hay after a draw-off) through `sow(..., { free: true })`. The same crop registered twice
+ * is a no-op; a different crop under an id already taken is refused. Items, fine items and seed
+ * must be registered with the satchel separately (src/inventory.js).
+ */
+export function registerCrops(list) {
+  const added = [], refused = [];
+  for (const spec of [].concat(list ?? [])) {
+    const id = spec?.id;
+    const whole = typeof id === 'string' && id && typeof spec.name === 'string' && typeof spec.item === 'string'
+      && [spec.seconds, spec.xp, spec.level, spec.yield].every(n => Number.isFinite(n) && n >= 0) && spec.seconds > 0
+      && (spec.sown === false || typeof spec.seed === 'string');
+    if (!whole) { refused.push({ id: id ?? null, reason: 'A crop needs an id, a name, an item, seed, seconds, experience, a level and a yield.' }); continue; }
+    const region = spec.region == null ? undefined : [].concat(spec.region).map(name => String(name).toLowerCase());
+    const row = freeze({ kind: 'grain', heart: 'any', note: '', ...spec, id,
+      region: region ? (region.length === 1 ? region[0] : freeze(region)) : undefined, fine: fineItem(spec.item) });
+    if (Object.hasOwn(CROPS, id)) {
+      if (JSON.stringify(CROPS[id]) === JSON.stringify(row)) continue;
+      refused.push({ id, reason: 'Another crop already has that id.' }); continue;
+    }
+    CROPS[id] = row; CROP_IDS.push(id); FINE_ITEMS.push(row.fine); added.push(id);
+  }
+  return { ok: refused.length === 0, added, refused };
+}
 
 /**
  * The rows, at the Mill Commons in the Avrel clearing, in world metres. Positions only: they are
  * the commons' own worked ground, laid out along the field edge east of where Enna stands, and
  * the first cut draws nothing new on them beyond a sown look and a ripe one.
  */
-const row = (id, name, x, z) => freeze({ id, name, x, z });
+const row = (id, name, x, z) => freeze({ id, name, x, z, country: null, farmstead: 'avrel-commons' });
 export const FARM_ROWS = freeze([
   row('commons-row-1', 'The first commons row', -424.6, 62.4),
   row('commons-row-2', 'The second commons row', -428.2, 65.8),
@@ -79,16 +119,60 @@ export const FARM_ROWS = freeze([
   row('commons-row-4', 'The far commons row', -435.4, 72.6),
 ]);
 export const FARM_ROW_IDS = freeze(FARM_ROWS.map(entry => entry.id));
-export const ALL_FARM_ROWS = freeze([...FARM_ROWS, ...SUNFLOWER_ROWS, ...REGIONAL_FARM_ROWS]);
-export const ALL_FARM_ROW_IDS = freeze(ALL_FARM_ROWS.map(entry => entry.id));
-export const farmRow = id => ALL_FARM_ROWS.find(entry => entry.id === id) ?? null;
 
-const regionKey = value => typeof value === 'string' ? value.toLowerCase() : null;
-/** Whether a crop may be sown on a bed: a country's own crop only on that country's beds. */
-export const growsOn = (cropId, rowId) => {
-  const kind = CROPS[cropId], bed = farmRow(rowId);
-  return !!kind && !!bed && (!kind.region || regionKey(bed.region) === kind.region);
+const regionKey = value => typeof value === 'string' && value ? value.toLowerCase() : null;
+/**
+ * Every bed carries its `country` (lower case, or null for the commons and Ari's garden) and its
+ * `farmstead`, the farm it belongs to: the Work of Nine works one farmstead at a time.
+ */
+const bedRow = (entry, farmstead = null) => freeze({ ...entry, country: regionKey(entry.country ?? entry.region),
+  farmstead: entry.farmstead ?? entry.farmId ?? farmstead });
+/** Live lists: a country's beds join them at start-up (`registerRows`, below). */
+export const ALL_FARM_ROWS = [...FARM_ROWS.map(entry => bedRow(entry)), ...SUNFLOWER_ROWS.map(entry => bedRow(entry, 'ari-garden')),
+  ...REGIONAL_FARM_ROWS.map(entry => bedRow(entry))];
+export const ALL_FARM_ROW_IDS = ALL_FARM_ROWS.map(entry => entry.id);
+const rowIndex = new Map(ALL_FARM_ROWS.map(entry => [entry.id, entry]));
+export const farmRow = id => rowIndex.get(id) ?? null;
+
+/**
+ * A country's beds, added at start-up, before the farm is drawn (src/farming-view.js builds its
+ * beds when it is made) and before the first save is read: `{ id, country, farmstead, x, z, yaw?,
+ * ground?, name? }`. Bed ids are permanent once shipped, as every save id is. The same bed
+ * registered twice is a no-op; another bed under a taken id is refused.
+ */
+export function registerRows(rows) {
+  const added = [], refused = [];
+  for (const spec of [].concat(rows ?? [])) {
+    const id = spec?.id;
+    if (typeof id !== 'string' || !id || !regionKey(spec.country) || typeof spec.farmstead !== 'string' || !spec.farmstead
+      || ![spec.x, spec.z].every(Number.isFinite)) { refused.push({ id: id ?? null, reason: 'A bed needs an id, a country, a farmstead and a place.' }); continue; }
+    const entry = bedRow({ name: `${titleCase(regionKey(spec.country))} bed`, ...spec });
+    if (rowIndex.has(id)) {
+      if (JSON.stringify(rowIndex.get(id)) === JSON.stringify(entry)) continue;
+      refused.push({ id, reason: 'Another bed already has that id.' }); continue;
+    }
+    ALL_FARM_ROWS.push(entry); ALL_FARM_ROW_IDS.push(id); rowIndex.set(id, entry); added.push(id);
+  }
+  return { ok: refused.length === 0, added, refused };
+}
+
+/** Every bed within `radius` metres of a point, nearest first, each with its `distance`. */
+export function farmRowsNear(point, radius) {
+  const x = Number(point?.x), z = Number(point?.z), reach = Number(radius);
+  if (!Number.isFinite(x) || !Number.isFinite(z) || !(reach >= 0)) return [];
+  return ALL_FARM_ROWS.map(entry => ({ ...entry, distance: Math.hypot(entry.x - x, entry.z - z) }))
+    .filter(entry => entry.distance <= reach).sort((a, b) => a.distance - b.distance);
+}
+/** The beds of one farmstead, in the order they were laid out. */
+export const farmsteadRows = farmstead => (typeof farmstead === 'string' && farmstead ? ALL_FARM_ROWS.filter(entry => entry.farmstead === farmstead) : []);
+
+/** Whether a crop belongs on a bed: a country's own crop only on that country's beds. */
+const belongsOn = (cropId, rowId) => {
+  const regions = cropRegions(cropId), bed = farmRow(rowId);
+  return !!crop(cropId) && !!bed && (!regions || regions.includes(bed.country));
 };
+/** Whether a crop may be sown on a bed: it belongs there, and it is sown at all (not the meadow's own hay). */
+export const growsOn = (cropId, rowId) => belongsOn(cropId, rowId) && crop(cropId).sown !== false;
 
 /**
  * Rotation, the Caricas way of farming (design §4.3, §5.1). Every bed remembers its heart, from
@@ -113,8 +197,10 @@ export const ROTATION_REGIONS = freeze(['caricas']);
 export const HEART_WORDS = freeze(['spent', 'lean', 'in fair heart', 'rested and rich']);
 const FIT = freeze({ lean: freeze([1, 2, 2, 0]), rich: freeze([0, 0, 1, 2]), any: freeze([0, 0, 0, 1]) });
 const DRAWS = freeze(['grain', 'fruit']);
-export const rotates = rowId => ROTATION_REGIONS.includes(regionKey(farmRow(rowId)?.region));
+export const rotates = rowId => ROTATION_REGIONS.includes(farmRow(rowId)?.country);
 const clampHeart = value => Math.max(0, Math.min(HEART_MAX, value));
+/** A fit is 0, 1 or 2, whatever a country's own rule answered. */
+const clampFit = value => Math.max(0, Math.min(2, Math.round(Number(value) || 0)));
 export function fitFor(cropId, heart = HEART_DEFAULT, last = null, rotation = true) {
   const kind = CROPS[cropId];
   if (!kind || !rotation || last === kind.id) return 0;
@@ -159,9 +245,32 @@ export const ORCHARD_REGROW = 600;
  * wild, which is the whole difference between Applegarth and Rena. Their places are the village's
  * own (`APPLEGARTH_WORKS.orchard`), so the trees move only if the village does.
  */
-export const ORCHARD_TREES = freeze(APPLEGARTH_WORKS.orchard.map((point, index) =>
-  freeze({ id: `applegarth-tree-${index + 1}`, name: 'An Avrel apple tree', x: point.x, z: point.z })));
-export const ORCHARD_TREE_IDS = freeze(ORCHARD_TREES.map(tree => tree.id));
+export const ORCHARD_TREES = APPLEGARTH_WORKS.orchard.map((point, index) =>
+  freeze({ id: `applegarth-tree-${index + 1}`, name: 'An Avrel apple tree', x: point.x, z: point.z,
+    item: ORCHARD_ITEM, xp: ORCHARD_XP, regrow: ORCHARD_REGROW, level: 1, country: null }));
+export const ORCHARD_TREE_IDS = ORCHARD_TREES.map(tree => tree.id);
+const treeIndex = new Map(ORCHARD_TREES.map(tree => [tree.id, tree]));
+
+/**
+ * A country's bearing trees and coppice, added at start-up as the beds are (6 October 2026): `{ id,
+ * name, x, z, item, xp, regrow, level?, country? }`. The Nesdor hazels are picked for hazelnuts and
+ * bear again ten minutes later, as the Applegarth apples do. Same rules as `registerRows`.
+ */
+export function registerTrees(trees) {
+  const added = [], refused = [];
+  for (const spec of [].concat(trees ?? [])) {
+    const id = spec?.id;
+    if (typeof id !== 'string' || !id || typeof spec.item !== 'string' || ![spec.x, spec.z, spec.xp, spec.regrow].every(Number.isFinite)
+      || spec.regrow <= 0) { refused.push({ id: id ?? null, reason: 'A tree needs an id, a place, a produce, experience and a time to bear again.' }); continue; }
+    const tree = freeze({ name: 'A kept tree', level: 1, ...spec, country: regionKey(spec.country) });
+    if (treeIndex.has(id)) {
+      if (JSON.stringify(treeIndex.get(id)) === JSON.stringify(tree)) continue;
+      refused.push({ id, reason: 'Another tree already has that id.' }); continue;
+    }
+    ORCHARD_TREES.push(tree); ORCHARD_TREE_IDS.push(id); treeIndex.set(id, tree); added.push(id);
+  }
+  return { ok: refused.length === 0, added, refused };
+}
 
 const isPlainObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
 const seconds = value => Number.isFinite(value) && value >= 0 && value <= 1e8;
@@ -185,7 +294,10 @@ export function validateFarmingSnapshot(data, { allowMissing = true, playSeconds
   if (!rows.every(([id, sown]) => ALL_FARM_ROW_IDS.includes(id) && isPlainObject(sown)
     && Object.hasOwn(CROPS, sown.crop) && seconds(sown.sownAt) && sown.sownAt <= playSeconds
     && (sown.watered === undefined || typeof sown.watered === 'boolean')
-    && (!current || sown.regarded === undefined || typeof sown.regarded === 'boolean'))) return false;
+    && (!current || sown.regarded === undefined || typeof sown.regarded === 'boolean')
+    // The fit a country judged at sowing, and a bed Quickened ripe (6 October 2026).
+    && (!current || sown.fit === undefined || [0, 1, 2].includes(sown.fit))
+    && (!current || sown.ripened === undefined || sown.ripened === true))) return false;
   if (current) {
     if (!isPlainObject(data.beds)) return false;
     const beds = Object.entries(data.beds);
@@ -207,6 +319,34 @@ export function validateFarmingSnapshot(data, { allowMissing = true, playSeconds
 export function createFarming({ skills = null, inventory = null, onEvent = () => {}, clock = null } = {}) {
   const state = { met: false, rows: new Map(), beds: new Map(), trees: new Map(), reaped: 0 };
   const shares = new Set();
+  const countries = new Map();
+
+  /**
+   * A country's way of farming (6 October 2026): `fit(bedId, cropId, bed)` answers 0, 1 or 2 for a
+   * crop on one of its beds, where `bed` is the bed as it stands (`country`, `farmstead`, `ground`,
+   * `heart`, `last`, `playSeconds`); `describe(bedId, bed)` answers the line Sound the Soil reads
+   * there; `onPlant(bedId, cropId)` hears each sowing, and `onHarvest(bedId, result)` each harvest on
+   * its beds, before any share-taker, and may itself return `{ taken, note }`. The fit is judged at
+   * sowing and kept with the planting, so what the country does to the ground afterwards does not
+   * change a crop already in it. A country registered again replaces its old rules.
+   */
+  function registerCountry(country, { fit, describe = null, onPlant = null, onHarvest = null } = {}) {
+    const key = regionKey(country);
+    if (!key || typeof fit !== 'function') return false;
+    countries.set(key, freeze({ fit, describe: typeof describe === 'function' ? describe : null,
+      onPlant: typeof onPlant === 'function' ? onPlant : null, onHarvest: typeof onHarvest === 'function' ? onHarvest : null }));
+    return true;
+  }
+  // Caricas farms by rotation, and is the first country registered: its fit is the built-in one.
+  registerCountry('caricas', { fit: (bedId, cropId, bed) => fitFor(cropId, bed.heart, bed.last, true) });
+  const countryOf = id => countries.get(farmRow(id)?.country) ?? null;
+  /** The fit of a crop on a bed as its country judges it; a bed whose country has no rules is 0. */
+  function fitOf(id, cropId, bed, at) {
+    const rules = countryOf(id);
+    if (!rules) return 0;
+    try { return clampFit(rules.fit(id, cropId, freeze({ ...farmRow(id), heart: bed.heart, last: bed.last, since: bed.since ?? null, playSeconds: at }))); }
+    catch { return 0; }
+  }
 
   const now = playSeconds => Math.max(0, Number(playSeconds === undefined && typeof clock === 'function' ? clock() : playSeconds) || 0);
   const pay = amount => {
@@ -233,10 +373,11 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
    * seed benches on the Caricas farms keep rye, beans and canes as they keep carrots.
    */
   function stockSeeds(where = null) {
-    const bed = farmRow(where), region = regionKey(bed ? bed.region : where);
+    const bed = farmRow(where), region = bed ? bed.country : regionKey(where);
     const added = [];
     for (const kind of Object.values(CROPS)) {
-      if (level() < kind.level || (kind.region && kind.region !== region)) continue;
+      const regions = cropRegions(kind.id);
+      if (kind.sown === false || level() < kind.level || (regions && !regions.includes(region))) continue;
       const quantity = Math.max(0, SEED_PACKET_SIZE - (inventory?.count?.(kind.seed) ?? 0));
       if (quantity && inventory?.add?.(kind.seed, quantity)) added.push({ id: kind.seed, quantity });
     }
@@ -259,11 +400,12 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     const at = now(playSeconds), bed = memory(id), sown = state.rows.get(id);
     if (!sown) return { ...here, stage: 'bare', crop: null, sownAt: null, ripeAt: null, left: 0, progress: 0, watered: false, heart: rested(bed, at), last: bed.last };
     const kind = CROPS[sown.crop], duration = kind.seconds * (sown.watered ? WATERED_GROWTH : 1);
-    const ripeAt = sown.sownAt + duration, left = Math.max(0, ripeAt - at);
-    const fit = fitFor(kind.id, bed.heart, bed.last, rotates(id)), regarded = !!sown.regarded;
+    // A bed Quickened (src/magic.js) is ripe from that moment, whatever its clock says.
+    const ripeAt = sown.ripened ? Math.min(at, sown.sownAt + duration) : sown.sownAt + duration, left = sown.ripened ? 0 : Math.max(0, ripeAt - at);
+    const fit = sown.fit ?? fitOf(id, kind.id, bed, sown.sownAt), regarded = !!sown.regarded;
     const grade = gradeFor(gradePoints({ fit, watered: !!sown.watered, level: level(), regarded }), level());
     return { ...here, stage: left > 0 ? 'sown' : 'ripe', crop: kind.id, cropName: kind.name, sownAt: sown.sownAt, ripeAt, left,
-      progress: Math.max(0, Math.min(1, (at - sown.sownAt) / duration)), watered: !!sown.watered,
+      progress: sown.ripened ? 1 : Math.max(0, Math.min(1, (at - sown.sownAt) / duration)), watered: !!sown.watered, ...(sown.ripened ? { ripened: true } : {}),
       quantity: kind.yield + (sown.watered ? 1 : 0), heart: bed.heart, last: bed.last, fit, regarded, grade, xp: Math.round(kind.xp * GRADE_XP[grade]) };
   }
 
@@ -274,25 +416,56 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
       .map(cropId => ({ ...CROPS[cropId], seeds: inventory?.count?.(CROPS[cropId].seed) ?? 0 }));
   }
 
-  function sow(id, cropId, playSeconds) {
+  /**
+   * `free` is a country growing something itself (meadow hay after a draw-off): no seed is taken and
+   * a crop that is never sown may go in. `working` names a field working (the Work of Nine) that did
+   * the sowing, so the host can show one notice for the lot.
+   */
+  function sow(id, cropId, playSeconds, { free = false, working = null } = {}) {
     // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
     // teacher is still worth meeting; he is no longer the door.
     if (!farmRow(id)) return { ok: false, reason: 'There is no such row.' };
     if (state.rows.has(id)) return { ok: false, reason: 'Something is already in that row.' };
-    const kind = CROPS[cropId];
+    const kind = crop(cropId);
     if (!kind) return { ok: false, reason: 'There is no such seed.' };
-    if (!growsOn(kind.id, id)) return { ok: false, reason: `${kind.name} grow${kind.name.endsWith('s') ? '' : 's'} only on the ${kind.region[0].toUpperCase()}${kind.region.slice(1)} farms.` };
-    if (level() < kind.level) return { ok: false, reason: `${kind.name} wants farming level ${kind.level}.` };
-    if (inventory?.remove && !inventory.remove(kind.seed, 1)) return { ok: false, reason: `You need ${kind.name.toLowerCase()} seed. Take a seed packet from the shared bin beside the beds.` };
+    if (!belongsOn(kind.id, id)) return { ok: false, reason: `${kind.name} grow${kind.name.endsWith('s') ? '' : 's'} only on the ${cropRegions(kind.id).map(titleCase).join(' or ')} farms.` };
+    if (!free && kind.sown === false) return { ok: false, reason: `${kind.name} is not sown. The ground grows it when it is ready.` };
+    if (!free && level() < kind.level) return { ok: false, reason: `${kind.name} wants farming level ${kind.level}.` };
+    if (!free && inventory?.remove && !inventory.remove(kind.seed, 1)) return { ok: false, reason: `You need ${kind.name.toLowerCase()} seed. Take a seed packet from the shared bin beside the beds.` };
     const at = now(playSeconds), bed = memory(id), rotation = rotates(id);
     // The rest a bare bed has had is banked when it is sown; growing, it rests no more.
     const heart = rested(bed, at);
     remember(id, { heart, last: bed.last, since: null });
     const regarded = rotation && foxRegards(id, at);
-    state.rows.set(id, { crop: kind.id, sownAt: at, ...(regarded ? { regarded: true } : {}) });
-    const fit = fitFor(kind.id, heart, bed.last, rotation);
-    onEvent({ type: 'row-sown', row: id, crop: kind.id, ripeAt: at + kind.seconds, fit, regarded });
+    // The country judges the fit now, and the planting keeps it (6 October 2026).
+    const judged = !!countryOf(id), fit = fitOf(id, kind.id, { heart, last: bed.last, since: null }, at);
+    state.rows.set(id, { crop: kind.id, sownAt: at, ...(regarded ? { regarded: true } : {}), ...(judged ? { fit } : {}) });
+    try { countryOf(id)?.onPlant?.(id, kind.id); } catch { /* a country's listener never stops the sowing */ }
+    onEvent({ type: 'row-sown', row: id, crop: kind.id, ripeAt: at + kind.seconds, fit, regarded, ...(working ? { working } : {}) });
     return { ok: true, row: id, crop: kind.id, ripeAt: at + kind.seconds, seconds: kind.seconds, fit, regarded };
+  }
+
+  /** Sow every bare bed of `ids` that will take the crop, while the seed lasts (the Work of Nine). */
+  function sowAll(ids, cropId, playSeconds, options = {}) {
+    const sown = [], refused = [];
+    for (const id of [].concat(ids ?? [])) {
+      if (rowState(id, playSeconds)?.stage !== 'bare') continue;
+      const result = sow(id, cropId, playSeconds, options);
+      if (result.ok) sown.push(id); else refused.push({ id, reason: result.reason });
+    }
+    return { ok: sown.length > 0, sown, count: sown.length, refused,
+      ...(sown.length ? {} : { reason: refused[0]?.reason ?? 'No bare bed there wants that seed.' }) };
+  }
+
+  /** The working Quicken (design §3): a growing bed is ripe at once. Once a game day is the working's rule, not the farm's. */
+  function ripen(id, playSeconds) {
+    const here = rowState(id, playSeconds);
+    if (!here) return { ok: false, reason: 'There is no such row.' };
+    if (here.stage === 'bare') return { ok: false, reason: 'Nothing is growing there to ripen.' };
+    if (here.stage === 'ripe') return { ok: false, reason: 'That bed is ripe already. Take the crop in.' };
+    state.rows.get(id).ripened = true;
+    onEvent({ type: 'row-ripened', row: id, crop: here.crop });
+    return { ok: true, row: id, crop: here.crop, cropName: here.cropName };
   }
 
   /** One useful tending action per planting, with the commons watering can kept at each row. */
@@ -354,7 +527,12 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
    * reaped: waiting is the lesson. The harvest comes in at its grade, Fine and Prize as the fine
    * kind; shares are withheld before the rest is granted, and the bed remembers what it bore.
    */
-  function harvest(id, playSeconds) {
+  /**
+   * `hand` names a hired hand who did the reaping (Messor on the North Farm): the crop is still
+   * Rollo's, but the experience is not, since he did not do the work. `working` names the field
+   * working that did it (the Work of Nine): the experience is his, and the host shows one notice.
+   */
+  function harvest(id, playSeconds, { hand = null, working = null } = {}) {
     const here = rowState(id, playSeconds);
     // The user's ruling of 21 September 2026: no introduction is needed to do a thing. The
     // teacher is still worth meeting; he is no longer the door.
@@ -365,7 +543,9 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     if (inventory?.add && !inventory.add(produce, grown)) return { ok: false, reason: 'There is no room for the harvest in your satchel. The crop is still in the row.' };
     let count = grown;
     const notes = [];
-    for (const handler of [...shares]) {
+    // The country's own hook first (6 October 2026), then the share-takers, in the order they came.
+    const own = countryOf(id)?.onHarvest;
+    for (const handler of [...(own ? [own] : []), ...shares]) {
       let share = null;
       try { share = handler(id, freeze({ crop: kind.id, produce, count, grade, grown })); } catch { share = null; }
       const taken = Math.max(0, Math.min(count, Math.floor(Number(share?.taken) || 0)));
@@ -374,16 +554,33 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     }
     const taken = grown - count;
     if (taken && inventory?.remove) inventory.remove(produce, taken);
-    if (inventory?.add) inventory.add(kind.seed, 1);
+    // A crop the ground grows by itself (meadow hay) gives no seed back.
+    if (inventory?.add && kind.seed) inventory.add(kind.seed, 1);
     const heart = heartAfter(kind.id, here.heart);
     remember(id, { heart, last: kind.id, since: now(playSeconds) });
     state.rows.delete(id);
     state.reaped++;
-    const xp = here.xp, gained = pay(xp);
+    const xp = hand ? 0 : here.xp, gained = pay(xp);
     const result = { row: id, crop: kind.id, produce, count, grade, grown, taken, notes, item: produce, quantity: count, seed: kind.seed, xp,
-      regarded: here.regarded, heart, levelled: !!gained?.levelled, level: gained?.level ?? level() };
+      regarded: here.regarded, heart, levelled: !!gained?.levelled, level: gained?.level ?? level(), ...(hand ? { hand } : {}), ...(working ? { working } : {}) };
     onEvent({ type: 'row-reaped', ...result });
     return { ok: true, ...result };
+  }
+
+  /**
+   * Every ripe bed of `ids` reaped in one act (the Work of Nine; Nesdor's strips are reaped three
+   * beds at a time). Beds not ripe are passed over; a bed the satchel cannot take stays in the ground.
+   */
+  function harvestAll(ids, playSeconds, options = {}) {
+    const results = [], refused = [];
+    for (const id of [].concat(ids ?? [])) {
+      if (rowState(id, playSeconds)?.stage !== 'ripe') continue;
+      const result = harvest(id, playSeconds, options);
+      if (result.ok) results.push(result); else refused.push({ id, reason: result.reason });
+    }
+    return { ok: results.length > 0, results, reaped: results.map(result => result.row), count: results.length,
+      xp: results.reduce((sum, result) => sum + result.xp, 0), refused,
+      ...(results.length ? {} : { reason: refused[0]?.reason ?? 'Nothing there is ripe.' }) };
   }
 
   /**
@@ -395,9 +592,10 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
   function describeBed(id, playSeconds) {
     const here = rowState(id, playSeconds);
     if (!here) return null;
-    const rotation = rotates(id), heart = here.stage === 'bare' ? here.heart : heartAfter(here.crop, here.heart);
-    const last = here.stage === 'bare' ? here.last : here.crop;
-    const fits = CROP_IDS.filter(cropId => growsOn(cropId, id)).map(cropId => [cropId, fitFor(cropId, heart, last, rotation)]);
+    const rotation = rotates(id), rules = countryOf(id), heart = here.stage === 'bare' ? here.heart : heartAfter(here.crop, here.heart);
+    const last = here.stage === 'bare' ? here.last : here.crop, at = now(playSeconds);
+    // What would do best next is the country's own judgement (6 October 2026); Caricas's is the rotation.
+    const fits = CROP_IDS.filter(cropId => growsOn(cropId, id)).map(cropId => [cropId, rules ? fitOf(id, cropId, { heart, last }, at) : 0]);
     const best = Math.max(0, ...fits.map(([, fit]) => fit));
     const likes = best ? fits.filter(([, fit]) => fit === best).map(([cropId]) => cropId) : [];
     const readiness = here.stage === 'bare' ? 'ready' : here.stage === 'sown' && here.watered ? 'wet' : 'passed';
@@ -405,22 +603,25 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     const named = names.length > 1 ? `${names.slice(0, -1).join(', ')} or ${names.at(-1)}` : names[0];
     const ground = `The ground here is ${HEART_WORDS[here.heart]}${here.stage !== 'bare' ? `, in ${CROPS[here.crop].name.toLowerCase()} now`
       : here.last ? `, last in ${CROPS[here.last].name.toLowerCase()}` : ''}`;
-    const wants = !rotation ? 'what it grew before makes no odds to what it grows next'
+    const wants = !rules ? 'what it grew before makes no odds to what it grows next'
       : likes.length ? `${named} would do best in it ${here.stage === 'bare' ? 'now' : 'after this crop'}`
-      : 'it wants beans or a day’s rest before it carries anything well';
+      : rotation ? 'it wants beans or a day’s rest before it carries anything well' : 'nothing sown here would do well in it now';
     const test = readiness === 'ready' ? 'a pinch rolls into a cord and breaks when you bend it, so it is ready for seed'
       : readiness === 'wet' ? 'a pinch smears between your fingers, too wet to work, so leave it to grow'
       : here.stage === 'ripe' ? 'a pinch crumbles, the moment has passed, so take the crop in'
       : 'a pinch crumbles, the moment has passed, so give it water';
-    return { heart: here.heart, last: here.last, likes, readiness, text: `${ground}; ${wants}; ${test}.` };
+    let own = null;
+    try { own = rules?.describe?.(id, freeze({ ...farmRow(id), ...here, playSeconds: at })) ?? null; } catch { own = null; }
+    const text = typeof own === 'string' && own.trim() ? own.trim() : typeof own?.text === 'string' && own.text.trim() ? own.text.trim() : `${ground}; ${wants}; ${test}.`;
+    return { heart: here.heart, last: here.last, likes, readiness, text };
   }
 
   /** A kept tree at a moment of play: in fruit, or bearing again in so many seconds. */
   function treeState(id, playSeconds) {
-    const tree = ORCHARD_TREES.find(entry => entry.id === id);
+    const tree = treeIndex.get(id);
     if (!tree) return null;
     const picked = state.trees.get(id);
-    const left = picked === undefined ? 0 : Math.max(0, picked + ORCHARD_REGROW - now(playSeconds));
+    const left = picked === undefined ? 0 : Math.max(0, picked + tree.regrow - now(playSeconds));
     return { ...tree, stage: left > 0 ? 'picked' : 'fruiting', pickedAt: picked ?? null, left };
   }
 
@@ -431,11 +632,12 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     // teacher is still worth meeting; he is no longer the door.
     if (!tree) return { ok: false, reason: 'There is no such tree.' };
     if (tree.stage === 'picked') return { ok: false, reason: `This one is picked out. It will bear again in about ${Math.ceil(tree.left)} seconds.` };
-    if (inventory?.add && !inventory.add(ORCHARD_ITEM, 1)) return { ok: false, reason: 'There is no room for the apple in your satchel. It is still on the tree.' };
+    if (level() < tree.level) return { ok: false, reason: `This tree wants farming level ${tree.level}.` };
+    if (inventory?.add && !inventory.add(tree.item, 1)) return { ok: false, reason: `There is no room for ${tree.item === ORCHARD_ITEM ? 'the apple' : 'it'} in your satchel. It is still on the tree.` };
     state.trees.set(id, now(playSeconds));
-    const gained = pay(ORCHARD_XP);
-    onEvent({ type: 'tree-picked', tree: id, item: ORCHARD_ITEM, xp: ORCHARD_XP, level: gained?.level ?? level(), levelled: !!gained?.levelled });
-    return { ok: true, tree: id, item: ORCHARD_ITEM, quantity: 1, xp: ORCHARD_XP, levelled: !!gained?.levelled, level: gained?.level ?? level() };
+    const gained = pay(tree.xp);
+    onEvent({ type: 'tree-picked', tree: id, item: tree.item, xp: tree.xp, level: gained?.level ?? level(), levelled: !!gained?.levelled });
+    return { ok: true, tree: id, item: tree.item, quantity: 1, xp: tree.xp, levelled: !!gained?.levelled, level: gained?.level ?? level() };
   }
 
   /** The whole farm at a moment of play, for the journal and for whoever draws the rows. */
@@ -462,7 +664,8 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
 
   function snapshot() {
     return { version: FARMING_VERSION, met: state.met, reaped: state.reaped,
-      rows: Object.fromEntries([...state.rows].map(([id, sown]) => [id, { crop: sown.crop, sownAt: round(sown.sownAt), ...(sown.watered ? { watered: true } : {}), ...(sown.regarded ? { regarded: true } : {}) }])),
+      rows: Object.fromEntries([...state.rows].map(([id, sown]) => [id, { crop: sown.crop, sownAt: round(sown.sownAt), ...(sown.watered ? { watered: true } : {}), ...(sown.regarded ? { regarded: true } : {}),
+        ...(sown.fit === undefined ? {} : { fit: sown.fit }), ...(sown.ripened ? { ripened: true } : {}) }])),
       beds: Object.fromEntries([...state.beds].map(([id, bed]) => [id, { heart: bed.heart, last: bed.last, ...(bed.since === null ? {} : { since: round(bed.since) }) }])),
       trees: Object.fromEntries([...state.trees].map(([id, at]) => [id, round(at)])) };
   }
@@ -472,13 +675,17 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     state.met = false; state.rows.clear(); state.beds.clear(); state.trees.clear(); state.reaped = 0;
     if (!validateFarmingSnapshot(data, { allowMissing: false })) return false;
     state.met = data.met; state.reaped = data.reaped;
-    for (const [id, sown] of Object.entries(data.rows)) state.rows.set(id, { crop: sown.crop, sownAt: sown.sownAt, ...(sown.watered ? { watered: true } : {}), ...(sown.regarded === true && data.version === FARMING_VERSION ? { regarded: true } : {}) });
+    const current = data.version === FARMING_VERSION;
+    for (const [id, sown] of Object.entries(data.rows)) state.rows.set(id, { crop: sown.crop, sownAt: sown.sownAt, ...(sown.watered ? { watered: true } : {}), ...(sown.regarded === true && current ? { regarded: true } : {}),
+      ...(current && sown.fit !== undefined ? { fit: sown.fit } : {}), ...(current && sown.ripened === true ? { ripened: true } : {}) });
     if (data.version === FARMING_VERSION) for (const [id, bed] of Object.entries(data.beds)) remember(id, { heart: bed.heart, last: bed.last, since: bed.since ?? null });
     for (const [id, at] of Object.entries(data.trees)) state.trees.set(id, at);
     return true;
   }
 
-  return { learn, sow, water, waterAllWithin, stockSeeds, harvest, reap: harvest, onHarvest, markRegarded, describeBed, pick, sowable, view, task, rowState, treeState, snapshot, restore,
+  return { learn, sow, sowAll, water, waterAllWithin, stockSeeds, harvest, reap: harvest, harvestAll, ripen, onHarvest, markRegarded, describeBed, pick, sowable, view, task, rowState, treeState, snapshot, restore,
+    // The groundwork for Builds 2 to 5 (6 October 2026). The registries are the module's; the farm passes them through.
+    registerCountry, registerRows, registerCrops, registerTrees, farmRowsNear, farmsteadRows, countries: () => [...countries.keys()],
     get met() { return state.met; }, get reaped() { return state.reaped; } };
 }
 

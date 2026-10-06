@@ -289,6 +289,7 @@
   "tests/farming.test.js",
   "tests/sunflower-lesson.test.js",
   "tests/farming-rotation.test.js",
+  "tests/farming-countries.test.js",
   "tests/prices.test.js",
   "tests/merchants.test.js",
   "tests/lizeem-farmlands.test.js",

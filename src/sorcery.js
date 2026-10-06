@@ -45,7 +45,9 @@ export const SCHOOLS = Object.freeze({
   fire: Object.freeze({ id: 'fire', name: SKILLS.fire.name, spells: Object.freeze(['fireball']) }),
   mind: Object.freeze({ id: 'mind', name: SKILLS.mind.name, spells: Object.freeze(['mindread']) }),
   beast: Object.freeze({ id: 'beast', name: SKILLS.beast.name, spells: Object.freeze(['summon-bees']) }),
-  field: Object.freeze({ id: 'field', name: SKILLS.field.name, spells: Object.freeze(['sound-the-soil', 'call-the-dew']) }),
+  // Quicken and the Work of Nine join the school for Builds 2 and 3 (6 October 2026): the Nethereum and
+  // Nesdor arcs teach them, as Caricas teaches Call the Dew; Taleth himself teaches only Sound the Soil.
+  field: Object.freeze({ id: 'field', name: SKILLS.field.name, spells: Object.freeze(['sound-the-soil', 'call-the-dew', 'quicken', 'work-of-nine']) }),
   frost: Object.freeze({ id: 'frost', name: SKILLS.frost.name, reserved: true, spells: Object.freeze([]) }),
   wards: Object.freeze({ id: 'wards', name: SKILLS.wards.name, reserved: true, spells: Object.freeze([]) }),
   /** Begun, with one spell, and nobody's to learn yet: Subtractidaughter casts it (src/combat.js). */
@@ -84,6 +86,9 @@ export const SORCERY = Object.freeze({
      */
     perSounding: 10,
     perBedWatered: 6,
+    /** A bed Quickened ripe, and each bed the Work of Nine reaps or sows (6 October 2026, first pass). */
+    perQuicken: 15,
+    perBedWorked: 10,
   }),
   /** "Harvesting gives a little focus back" (docs/lizeem-farmlands-design.md, section 3; first pass). */
   harvestFocus: 4,
@@ -168,6 +173,31 @@ export const SPELLS = Object.freeze({
     damage: Object.freeze({ low: 0, high: 0 }),
     range: 40, speed: 0, radius: 0, field: 'water',
   }),
+  /**
+   * **Quicken** (design section 3; the Nethereum arc teaches it, 6 October 2026): the nearest bed
+   * within `range` metres that is sown and still growing is ripe at once. Once a game day, `daily`;
+   * nothing growing within reach costs nothing, and nor does a second try the same day.
+   */
+  quicken: Object.freeze({
+    id: 'quicken', school: 'field', name: 'Quicken',
+    cost: Object.freeze({ low: 30, high: 18 }),
+    cast: Object.freeze({ low: 0, high: 0 }),
+    damage: Object.freeze({ low: 0, high: 0 }),
+    range: 6, speed: 0, radius: 0, field: 'quicken', daily: true,
+  }),
+  /**
+   * **The Work of Nine** (design section 3; the Nesdor arc teaches it, 6 October 2026): the farmstead
+   * of the nearest bed within `range` metres is worked whole, as nine hands would: every ripe bed is
+   * reaped and every bed that was bare is sown with a seed he carries, chosen by him when he carries
+   * more than one kind that will grow there. Costs nothing when there is nothing to reap or sow.
+   */
+  'work-of-nine': Object.freeze({
+    id: 'work-of-nine', school: 'field', name: 'The Work of Nine',
+    cost: Object.freeze({ low: 40, high: 24 }),
+    cast: Object.freeze({ low: 0, high: 0 }),
+    damage: Object.freeze({ low: 0, high: 0 }),
+    range: 40, speed: 0, radius: 0, field: 'nine',
+  }),
 });
 export const SPELL_IDS = Object.freeze(Object.keys(SPELLS));
 /** Whether a spell can be taught at all: a spell of a reserved school cannot, whoever asks. */
@@ -200,7 +230,7 @@ export function castWith(spellId, { level = 1, weapon = null } = {}) {
     cast: +(between(spell.cast, level) * tool.cast).toFixed(3),
     damage: Math.round(between(spell.damage, level) * tool.damage),
     range: spell.range, speed: spell.speed, radius: spell.radius,
-    spoken: !!spell.spoken, swarm: !!spell.swarm, field: spell.field ?? null,
+    spoken: !!spell.spoken, swarm: !!spell.swarm, field: spell.field ?? null, daily: !!spell.daily,
     ...(spell.swarm ? { stay: between(spell.stay, level), sting: spell.sting } : {}),
     ...(spell.slow ? { slow: Object.freeze({ factor: spell.slow.factor, seconds: +between(spell.slow.seconds, level).toFixed(2) }) } : {}),
   });
@@ -214,9 +244,15 @@ export function focusAt(level = 1) {
 /** What a reading pays Mind, when it actually turned something up. */
 export const readingXp = ({ learned = false } = {}) => (learned ? SORCERY.xp.perReading : 0);
 
-/** What a field working pays: a sounding that reached a bed, or a dew for each bed it watered. */
+/**
+ * What a field working pays: a sounding that reached a bed, a dew for each bed it watered, a bed
+ * Quickened, or each bed the Work of Nine reaped or sowed.
+ */
+const beds = count => Math.max(0, Math.floor(Number(count) || 0));
 export const fieldXp = (kind, count = 1) => kind === 'sound' ? (count > 0 ? SORCERY.xp.perSounding : 0)
-  : kind === 'water' ? Math.max(0, Math.floor(Number(count) || 0)) * SORCERY.xp.perBedWatered : 0;
+  : kind === 'water' ? beds(count) * SORCERY.xp.perBedWatered
+  : kind === 'quicken' ? (count > 0 ? SORCERY.xp.perQuicken : 0)
+  : kind === 'nine' ? beds(count) * SORCERY.xp.perBedWorked : 0;
 
 /**
  * What the ground says when it is sounded, as one line. The farming module's `describeBed` answers

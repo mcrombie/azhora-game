@@ -173,8 +173,8 @@ test('only damage pays a school, and only Ben teaches one', () => {
   assert.match(SKILLS.fire.teacher, /Ben/);
   assert.match(SKILLS.frost.teacher, /nobody/i, 'and nobody teaches the other two yet');
   assert.match(SKILLS.wards.teacher, /nobody/i);
-  assert.deepEqual(Object.keys(SPELLS), ['fireball', 'mindread', 'summon-bees', 'slow', 'sound-the-soil', 'call-the-dew'],
-    'one spell a school, and Ben’s is the plainest thing in the world, except Taleth’s two for the fields');
+  assert.deepEqual(Object.keys(SPELLS), ['fireball', 'mindread', 'summon-bees', 'slow', 'sound-the-soil', 'call-the-dew', 'quicken', 'work-of-nine'],
+    'one spell a school, and Ben’s is the plainest thing in the world, except the four field workings of Taleth’s charge');
   assert.equal(learnableSpell('slow'), false, 'Slow is Subtractidaughter’s, and nobody’s to teach');
   assert.equal(SPELLS.fireball.school, 'fire');
 });

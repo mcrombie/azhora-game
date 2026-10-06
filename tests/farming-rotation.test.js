@@ -36,7 +36,8 @@ function grow(farming, id, cropId, from, { water = true } = {}) {
 
 test('the Caricas crops are sown only on the five Caricas farmsteads, and the seed benches there hand out their seed', () => {
   assert.deepEqual(['bridge-rye', 'field-beans', 'soft-fruit'].map(id => [CROPS[id].level, CROPS[id].heart, CROPS[id].seconds, CROPS[id].xp, CROPS[id].yield, CROPS[id].region]),
-    [[1, 'lean', 240, 30, 2, 'caricas'], [1, 'any', 150, 26, 2, 'caricas'], [3, 'rich', 300, 40, 2, 'caricas']]);
+    [[1, 'lean', 240, 30, 2, ['caricas', 'nesdor']], [1, 'any', 150, 26, 2, 'caricas'], [3, 'rich', 300, 40, 2, 'caricas']],
+    'bridge rye also takes the dry rises of the Nesdor Flats (6 October 2026)');
   assert.equal(CROPS['field-beans'].restores, true, 'beans put heart back');
   assert.deepEqual(['barley', 'soft-fruit', 'carrot', 'beet', 'sunflower', 'drent-leaf'].map(id => CROPS[id].heart), ['rich', 'rich', 'any', 'any', 'any', 'any']);
   for (const id of ['sunflower', 'carrot', 'beet', 'barley', 'drent-leaf']) assert.equal(CROPS[id].region, undefined, `${id} still grows everywhere`);
@@ -47,7 +48,8 @@ test('the Caricas crops are sown only on the five Caricas farmsteads, and the se
   assert.deepEqual(farming.sowable(COMMONS).map(kind => kind.id), ['sunflower', 'carrot', 'barley'], 'the commons is as it was');
   assert.deepEqual(farming.sowable(BED).map(kind => kind.id), ['sunflower', 'carrot', 'barley', 'bridge-rye', 'field-beans'], 'the canes wait for level 3');
   const refused = farming.sow(COMMONS, 'bridge-rye', 0);
-  assert.equal(refused.ok, false); assert.match(refused.reason, /only on the Caricas farms/);
+  assert.equal(refused.ok, false); assert.match(refused.reason, /only on the Caricas or Nesdor farms/);
+  assert.match(farming.sow(COMMONS, 'field-beans', 0).reason, /only on the Caricas farms/);
   // Stanley's bin never hands out Carican seed; a Caricas bench does, at the level it opens.
   const bare = createFarming({ skills: createSkills(), inventory: createInventoryState() });
   const fresh = () => bare.stockSeeds().added.map(entry => entry.id);

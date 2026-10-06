@@ -360,7 +360,8 @@ export const SKILLS = Object.freeze({
    * **Field Sorcery** (the user, 5 October 2026: the farming techniques are sorcery cast with the
    * staff, and Taleth, Master Sorcerer of the Guild at Minora, teaches them). A fourth released
    * school, and nobody else's to teach: Sound the Soil when he gives the charge of the Lizeem
-   * farmlands, Call the Dew when Caricas is brought back to work (src/sorcery.js).
+   * farmlands, Call the Dew when Caricas is brought back to work (src/sorcery.js). Quicken and
+   * the Work of Nine are learned in Nethereum and Nesdor (6 October 2026), never at the tower door.
    */
   field: Object.freeze({
     id: 'field', name: 'Field Sorcery', group: SORCERY_HEADING,
@@ -369,8 +370,10 @@ export const SKILLS = Object.freeze({
     thresholds: RUNESCAPE_TABLE,
     unlocks: Object.freeze([unlock(1, 'After Taleth’s charge: Sound the Soil tells you what a bed needs'),
       unlock(1, 'After Caricas is restored: Call the Dew waters every growing bed on a farm at once'),
-      unlock(50, 'Call the Dew for sixteen focus rather than twenty'),
-      unlock(99, 'Call the Dew for twelve, and Sound the Soil for three')]),
+      unlock(1, 'After Nethereum is restored: Quicken ripens one growing bed at once, once a game day'),
+      unlock(1, 'After Nesdor is restored: the Work of Nine reaps and sows a whole farmstead in one act'),
+      unlock(50, 'Call the Dew for sixteen focus rather than twenty, Quicken for twenty-four, the Work of Nine for thirty-two'),
+      unlock(99, 'Call the Dew for twelve, Quicken for eighteen, the Work of Nine for twenty-four, and Sound the Soil for three')]),
   }),
   frost: Object.freeze({
     id: 'frost', name: 'Frost', group: SORCERY_HEADING, reserved: true,

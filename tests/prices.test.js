@@ -1,15 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { BANKS, DISH_PRICES, FARM_GOODS, GRADES, PRICE_TABLE, TRADE_RATES, atHome, gradeVariant, isPriced, lotPrice, priceOf } from '../src/prices.js';
+import { BANKS, DISH_PRICES, FARM_GOODS, GRADES, PRICE_TABLE, TRADE_RATES, WARES, atHome, gradeVariant, isPriced, lotPrice, priceOf } from '../src/prices.js';
 
 test('every good and dish in the design’s first-pass table has its base price', () => {
   const bases = {
-    carrot: 1, beet: 1, barley: 1, rye: 1, 'bridge-rye': 1, oats: 1, millet: 1, 'field-beans': 1,
-    'soft-fruit': 2, hazelnuts: 2, floodwheat: 2, 'hard-wheat': 2, hay: 2, 'weir-fish': 2, flour: 3, 'dye-crop': 4,
+    carrot: 1, beet: 1, barley: 1, rye: 1, 'bridge-rye': 1, 'flood-oats': 1, millet: 1, 'field-beans': 1,
+    'soft-fruit': 2, hazelnuts: 2, floodwheat: 2, 'hard-wheat': 2, 'meadow-hay': 2, 'weir-fish': 2, flour: 3, 'dye-crop': 4,
   };
-  const dishes = { 'rye-cheese-loaf': 3, 'bean-pottage': 4, 'soft-fruit-tart': 7, oatcake: 3, 'smoked-fish': 4, 'white-bread': 5, 'nut-cake': 8, flatbread: 4, 'millet-porridge': 2, 'fork-stew': 12 };
+  const dishes = { 'rye-cheese-loaf': 3, 'bean-pottage': 4, 'soft-fruit-tart': 7, oatcakes: 3, 'smoked-fish': 4, 'white-bread': 5, 'nut-cake': 8, flatbread: 4, 'millet-porridge': 2, 'fork-stew': 12 };
+  // The contract for Builds 2 and 3 (6 October 2026): what the countries' people sell besides crops and dishes.
+  const wares = { salt: 2, butter: 3, manure: 1, ale: 3, hides: 2, 'harvest-basket': 20 };
   assert.deepEqual(Object.fromEntries(Object.entries(FARM_GOODS).map(([id, good]) => [id, good.base])), bases);
   assert.deepEqual(Object.fromEntries(Object.entries(DISH_PRICES).map(([id, good]) => [id, good.base])), dishes);
+  assert.deepEqual(Object.fromEntries(Object.entries(WARES).map(([id, good]) => [id, good.base])), wares);
   for (const [id, good] of Object.entries(PRICE_TABLE)) {
     assert.ok(good.home.length > 0, `${id} grows somewhere`);
     for (const home of good.home) assert.ok(BANKS[home] || home === 'Minora', `${id} is at home in ${home}, which is on the Lizeem`);
@@ -40,7 +43,7 @@ test('the fine kind of a crop is priced as its Fine grade, and a named grade ove
 });
 
 test('anything not in the table has no price, so nothing becomes sellable by accident', () => {
-  for (const id of ['copper-piece', 'tinderbox', 'kings-axe', 'carrot-seed', 'bridge-rye-seed', 'iron-hoe', 'charcoal', 'pipe-weed', 'pipe-weed-fine', 'rye-loaf',
+  for (const id of ['copper-piece', 'tinderbox', 'kings-axe', 'carrot-seed', 'bridge-rye-seed', 'iron-hoe', 'charcoal', 'pipe-weed', 'pipe-weed-fine', 'rye-loaf', 'oatcake',
     'tinderbox-fine', 'bridge-rye-fine-fine', 'fine-bridge-rye', '', undefined, null, 7]) {
     assert.equal(priceOf(id), undefined, `${String(id)} has no price`);
     assert.equal(isPriced(id), false, `${String(id)} is not priced`);

@@ -23,9 +23,22 @@
  * Caricas trouble, and the choice changes who is friendly and nothing in the main story), the
  * names are the design's mythological ones, and nobody wears a hat.
  *
+ * The groundwork for Builds 2 to 5 (the user, 6 October 2026: "keep building everything"):
+ *
+ * - **The other countries' arcs** come in through `registerArc(countryId, arc)`. The hub lists each on
+ *   its leaf of the Measure, gives it a card of its own on the tracker, writes it in the journal when
+ *   it is done, and nests its save under `arcs`. Caricas stays built in.
+ * - **The Measure** is the Guild's, so the hub keeps every leaf's lines; a Prize harvest is written in
+ *   it the moment it is reaped, and a leaf opens for writing when its country's arc is registered.
+ * - **Messor's wage**: six copper a game day, paid at the hire and each morning after; a day not paid
+ *   and he stops. While he is paid he reaps the North fields when they are ripe (`tick`).
+ * - **The free-roam objective** reads differently once the charge is taken (`freeRoamGuidance`).
+ *
  * Pure: no DOM, no three, no world. The host walks, draws and pays coin; this keeps the record.
  */
 import { REGIONAL_FARM_ROWS, REGIONAL_SEED_STATIONS } from './regional-farmland.js';
+import { farmRow } from './farming.js';
+import { gameDay } from './merchants.js';
 
 const freeze = Object.freeze;
 
@@ -110,29 +123,54 @@ export const SHARES = freeze({ holder: 1 / 4, garrison: 1 / 10 });
 
 /** The hired hands of Caricas, one per farm brought back; Messor comes first (design 6.3). */
 export const HIRED_HANDS = freeze(['messor']);
+/** A hired hand's wage, a game day (design 7.8; Messor: "six copper a day and my dinner"). */
+export const HAND_WAGE = 6;
 
 /**
  * **The Measure of the River** (design 4.7). Four leaves, one per country; each has its three
- * crops and its dish. Only Caricas can be walked in this build; the others are listed so the page
- * shows how much river is left.
+ * crops and its dish. Caricas is walked from the charge; another leaf opens when its country's arc
+ * is registered (`registerArc`), and until then it is listed so the page shows how much river is
+ * left. `items` are the satchel's ids that fill a line (the contract for Builds 2 and 3, 6 October
+ * 2026): either of a country's two dishes fills its dish line, and the Nesdor rye is bridge rye.
  */
-const line = (id, name) => freeze({ id, name });
+const line = (id, name, items = [id]) => freeze({ id, name, items: freeze(items) });
 export const MEASURE_LEAVES = freeze([
   freeze({ id: 'caricas', name: 'Caricas', walked: true, lines: freeze([
-    line('bridge-rye', 'Bridge rye'), line('field-beans', 'Field beans'), line('soft-fruit', 'Soft fruit'), line('tart', 'Soft-fruit tart')]) }),
+    line('bridge-rye', 'Bridge rye'), line('field-beans', 'Field beans'), line('soft-fruit', 'Soft fruit'), line('tart', 'Soft-fruit tart', ['soft-fruit-tart'])]) }),
   freeze({ id: 'nethereum', name: 'Nethereum', walked: false, lines: freeze([
-    line('flood-oats', 'Flood oats'), line('meadow-hay', 'Meadow hay'), line('weir-fish', 'Weir fish'), line('dish', 'Oatcakes and smoked fish')]) }),
+    line('flood-oats', 'Flood oats'), line('meadow-hay', 'Meadow hay'), line('weir-fish', 'Weir fish'), line('dish', 'Oatcakes and smoked fish', ['oatcakes', 'smoked-fish'])]) }),
   freeze({ id: 'nesdor', name: 'Nesdor', walked: false, lines: freeze([
-    line('floodwheat', 'Floodwheat'), line('rye', 'Rye from the dry rises'), line('hazelnuts', 'Hazelnuts'), line('dish', 'White bread and nut cake')]) }),
+    line('floodwheat', 'Floodwheat'), line('rye', 'Rye from the dry rises', ['bridge-rye']), line('hazelnuts', 'Hazelnuts'), line('dish', 'White bread and nut cake', ['white-bread', 'nut-cake'])]) }),
   freeze({ id: 'ovesos', name: 'Ovesos', walked: false, lines: freeze([
-    line('hard-wheat', 'Hard wheat'), line('barley', 'Barley'), line('silver-millet', 'Silver millet'), line('dish', 'Flatbread')]) }),
+    line('hard-wheat', 'Hard wheat'), line('barley', 'Barley'), line('silver-millet', 'Silver millet', ['silver-millet', 'millet']), line('dish', 'Flatbread', ['flatbread'])]) }),
 ]);
 const CARICAS_LINES = freeze(MEASURE_LEAVES[0].lines.map(entry => entry.id));
+const LEAF_IDS = freeze(MEASURE_LEAVES.map(leaf => leaf.id));
+const leafOf = id => MEASURE_LEAVES.find(leaf => leaf.id === id) ?? null;
+/** An item id without its grade or seal: 'fine-bridge-rye' and 'bridge-rye-prize' are bridge rye. */
+const baseItem = itemId => itemId.replace(/^(fine|prize|sealed)-/, '').replace(/-(fine|prize|sealed)$/, '');
+/** Every line of every leaf an item could fill, Caricas first: `[{ leaf, line }]`. */
+export function measureEntriesFor(itemId) {
+  if (typeof itemId !== 'string') return [];
+  const base = baseItem(itemId);
+  return MEASURE_LEAVES.flatMap(leaf => leaf.lines.filter(entry => entry.items.includes(base) || (leaf.id === 'caricas' && measureLineFor(itemId) === entry.id))
+    .map(entry => ({ leaf: leaf.id, line: entry.id })));
+}
+
+/**
+ * **The other countries' arcs** (the contract for Builds 2 and 3, 6 October 2026). The ids an arc may
+ * be registered under, and what each registered arc's own validator says of its save: the save's
+ * validator (`validateLizeemFarmlands`, used by src/road-checkpoint.js) asks them, so a leaf of the
+ * Measure or a nested arc save is accepted only once the game has registered that country.
+ */
+export const ARC_IDS = freeze(['nethereum', 'nesdor', 'ovesos', 'dividing']);
+const ARC_VALIDATORS = new Map();
+const REGISTERED = new Set();
 
 /** The food an item id stands for, whatever its grade, or null. */
 export function measureLineFor(itemId) {
   if (typeof itemId !== 'string') return null;
-  const base = itemId.replace(/^(fine|prize|sealed)-/, '').replace(/-(fine|prize|sealed)$/, '');
+  const base = baseItem(itemId);
   if (base === TART_ITEM || base === 'tart') return 'tart';
   return CARICAS_LINES.includes(base) ? base : null;
 }
@@ -143,7 +181,7 @@ const titled = grade => grade ? grade[0].toUpperCase() + grade.slice(1) : '';
 const fresh = () => ({
   version: LIZEEM_FARMLANDS_VERSION, stage: 'unmet',
   caricas: { stage: 'waiting', leased: false, rye: [], beans: [], last: {}, ryeOnBeans: null, fineRye: false,
-    swapGrade: null, claim: null, taught: [], secondFarm: false, hands: [], hired: [] },
+    swapGrade: null, claim: null, taught: [], secondFarm: false, hands: [], hired: [], paid: {} },
   shares: { holder: 0, garrison: 0, holderTaken: 0, garrisonTaken: 0 },
   measure: { caricas: {} },
 });
@@ -162,6 +200,15 @@ const count = value => Number.isSafeInteger(value) && value >= 0 && value <= 1e7
 export function validateLizeemFarmlands(value) {
   if (value === undefined) return true;
   if (!isObject(value) || value.version !== LIZEEM_FARMLANDS_VERSION || !HUB_STAGES.includes(value.stage)) return false;
+  // The other countries' arcs (6 October 2026): a missing section is an arc not yet begun.
+  if (value.arcs !== undefined) {
+    if (!isObject(value.arcs)) return false;
+    for (const [id, nested] of Object.entries(value.arcs)) {
+      if (!ARC_IDS.includes(id) || !REGISTERED.has(id)) return false;
+      const check = ARC_VALIDATORS.get(id);
+      try { if (check && check(nested) !== true) return false; } catch { return false; }
+    }
+  }
   const c = value.caricas, s = value.shares, m = value.measure;
   if (!isObject(c) || !CARICAS_STAGES.includes(c.stage)) return false;
   if (typeof c.leased !== 'boolean' || typeof c.fineRye !== 'boolean' || typeof c.secondFarm !== 'boolean') return false;
@@ -172,13 +219,17 @@ export function validateLizeemFarmlands(value) {
   if (![null, 'handed', 'hidden'].includes(c.claim)) return false;
   if (!idList(c.taught, RECIPE_IDS, RECIPE_IDS.length)) return false;
   if (!idList(c.hands, HIRED_HANDS, HIRED_HANDS.length) || !idList(c.hired, c.hands, HIRED_HANDS.length)) return false;
+  // The last game day each hand's wage was paid; a save from before the wage has none.
+  if (c.paid !== undefined && (!isObject(c.paid) || !Object.entries(c.paid).every(([hand, day]) => c.hired.includes(hand) && count(day)))) return false;
   if (!isObject(s) || !carry(s.holder) || !carry(s.garrison) || !count(s.holderTaken) || !count(s.garrisonTaken)) return false;
-  if (!isObject(m) || !Object.keys(m).every(id => id === 'caricas') || !isObject(m.caricas)) return false;
-  if (!Object.entries(m.caricas).every(([id, grade]) => CARICAS_LINES.includes(id) && MEASURE_GRADES.includes(grade))) return false;
+  // Caricas's leaf always; another leaf only once its country's arc is registered.
+  if (!isObject(m) || !isObject(m.caricas) || !Object.keys(m).every(id => id === 'caricas' || (LEAF_IDS.includes(id) && REGISTERED.has(id)))) return false;
+  if (!Object.entries(m).every(([leaf, written]) => isObject(written) && Object.entries(written)
+    .every(([id, grade]) => leafOf(leaf).lines.some(entry => entry.id === id) && MEASURE_GRADES.includes(grade)))) return false;
   // The arc cannot have begun before the charge was taken, and nothing is measured before then.
   const at = rank(c.stage), taken = value.stage === 'accepted';
   if (taken !== (at > 0)) return false;
-  if (!taken && Object.keys(m.caricas).length) return false;
+  if (!taken && Object.values(m).some(written => Object.keys(written).length)) return false;
   // The lease is what the sowing step begins with, and the holder's quarter follows it.
   if (c.leased !== (at >= rank('sowing'))) return false;
   if (!c.leased && (s.holderTaken || s.holder || Object.keys(c.last).length)) return false;
@@ -200,10 +251,14 @@ export function validateLizeemFarmlands(value) {
  * missing in a test. With `farming.onHarvest` present the quest registers its share-taker on
  * creation. Sealing is the market's (src/merchants.js), asked for in the people's conversations.
  */
-export function createLizeemFarmlands({ skills = null, magic = null, farming = null, onEvent = () => {} } = {}) {
+export function createLizeemFarmlands({ skills = null, magic = null, farming = null, onEvent = () => {}, pay: payWage = null, clock = null } = {}) {
   let state = fresh();
   const c = () => state.caricas;
   const accepted = () => state.stage === 'accepted';
+  /** Registered arcs by country, and the saves of arcs this game has not registered, kept as they came. */
+  const arcs = new Map();
+  let carried = {};
+  const today = at => gameDay(Number.isFinite(at) ? at : Number(typeof clock === 'function' ? clock() : 0) || 0);
 
   const pay = amount => {
     if (!(amount > 0)) return null;
@@ -252,6 +307,11 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
    * kind; answers `{ taken, note }` when something was owed, or null.
    */
   function harvest(bedId, result = {}) {
+    // A Prize harvest is written in the Measure the moment it is reaped (6 October 2026), on its own country's leaf.
+    if (accepted() && gradeOf(result.grade ?? result.quality) === 'prize') {
+      const country = farmRow(bedId)?.country ?? (CARICAS_BEDS.includes(bedId) ? 'caricas' : null);
+      if (country) enter(result.crop ?? result.item, 'prize', { country });
+    }
     if (!accepted() || !c().leased || !CARICAS_BEDS.includes(bedId)) return null;
     const crop = cropOf(result), key = crop?.key ?? 'other', grade = gradeOf(result.grade ?? result.quality) ?? 'plain';
     const north = NORTH_BEDS.includes(bedId), before = north ? c().last[bedId] : undefined;
@@ -332,39 +392,91 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
     return { ok: true, spell: CALL_THE_DEW, learned, measured };
   }
 
-  /** A returned hand taken on for a wage. The wage itself is the market's (design 7.8). */
+  /**
+   * A returned hand taken on for a wage (design 7.8): six copper, paid now for today through `pay`
+   * when the host gives one, and every game day after through `tick`. Without the copper, no hire.
+   */
   function hire(handId) {
     if (!c().hands.includes(handId) || c().hired.includes(handId)) return false;
+    if (typeof payWage === 'function' && !payWage(HAND_WAGE)) return false;
     c().hired.push(handId);
-    onEvent({ type: 'lizeem-hired', hand: handId });
+    if (typeof clock === 'function') c().paid[handId] = today();
+    onEvent({ type: 'lizeem-hired', hand: handId, wage: HAND_WAGE });
     return true;
+  }
+
+  /**
+   * The hands at work, once a whole second of play (the host calls this from its loop). Each morning
+   * a hand's wage is paid, a day at a time; a day that cannot be paid and he stops, and must be hired
+   * again. Messor, while paid, reaps whatever on the North fields is ripe: the crop is Rollo's, the
+   * shares are taken as ever, and the experience is nobody's, since Rollo did not do the work.
+   */
+  let lastTick = null;
+  function tick(playSeconds) {
+    const at = Number(playSeconds);
+    if (!Number.isFinite(at) || Math.floor(at) === lastTick) return null;
+    lastTick = Math.floor(at);
+    if (!accepted() || !c().hired.length) return null;
+    const day = today(at), stopped = [], reaped = [];
+    for (const hand of [...c().hired]) {
+      let paidTo = c().paid[hand] ?? day - 1;
+      while (paidTo < day && (typeof payWage !== 'function' || payWage(HAND_WAGE))) paidTo++;
+      if (paidTo < day) {
+        c().hired = c().hired.filter(id => id !== hand); delete c().paid[hand]; stopped.push(hand);
+        onEvent({ type: 'lizeem-hand-unpaid', hand, wage: HAND_WAGE });
+      } else if (c().paid[hand] !== paidTo) c().paid[hand] = paidTo;
+    }
+    if (c().hired.includes('messor') && farming?.rowState && farming?.harvest)
+      for (const bed of NORTH_BEDS) if (farming.rowState(bed, at)?.stage === 'ripe') {
+        const result = farming.harvest(bed, at, { hand: 'messor' });
+        if (result?.ok) reaped.push(bed);
+      }
+    return { stopped, reaped };
   }
 
   /**
    * Fine or Prize food laid before Seshat in Minora. Prize replaces Fine; nothing replaces Prize.
    * Answers what changed, including `firstPrize`, which is when Seshat pays her small bounty.
    */
-  function enter(itemId, grade) {
-    const id = measureLineFor(itemId), level = gradeOf(grade);
+  function enter(itemId, grade, { country = null } = {}) {
+    const level = gradeOf(grade);
     if (!accepted()) return { ok: false, reason: 'The Measure is the Guild’s, and you have not taken Taleth’s charge.' };
-    if (!id) return { ok: false, reason: 'That is not one of the river’s foods in the Measure.' };
+    // Every line the food could fill on a leaf that is walked: Caricas's first, then the registered countries'.
+    const places = measureEntriesFor(itemId).filter(entry => (!country || entry.leaf === country));
+    const open = places.filter(entry => walkedLeaf(entry.leaf));
+    if (!places.length) return { ok: false, reason: 'That is not one of the river’s foods in the Measure.' };
+    if (!open.length) return { ok: false, reason: 'That country’s leaf of the Measure is not yet walked.' };
     if (!MEASURE_GRADES.includes(level)) return { ok: false, reason: 'The Measure takes Fine or better.' };
-    const leaf = state.measure.caricas, was = leaf[id] ?? null;
-    if (was === 'prize' || was === level) return { ok: false, reason: 'That line is already written at that grade.' };
-    leaf[id] = level;
-    const full = CARICAS_LINES.every(entry => leaf[entry]);
-    const result = { ok: true, country: 'caricas', line: id, grade: level, upgraded: was === 'fine', firstPrize: level === 'prize', full };
+    const target = open.find(entry => { const was = state.measure[entry.leaf]?.[entry.line] ?? null; return was !== 'prize' && was !== level; });
+    if (!target) return { ok: false, reason: 'That line is already written at that grade.' };
+    const leaf = (state.measure[target.leaf] ??= {}), was = leaf[target.line] ?? null;
+    leaf[target.line] = level;
+    const full = leafOf(target.leaf).lines.every(entry => leaf[entry.id]);
+    const result = { ok: true, country: target.leaf, line: target.line, grade: level, upgraded: was === 'fine', firstPrize: level === 'prize', full };
     onEvent({ type: 'lizeem-measure', ...result });
+    try { arcs.get(target.leaf)?.measured?.(result); } catch { /* an arc's listener never unwrites the Measure */ }
     return result;
   }
+  const walkedLeaf = id => id === 'caricas' || arcs.has(id);
+  const betterGrade = (a, b) => (a === 'prize' || b === 'prize' ? 'prize' : a ?? b ?? null);
 
+  /**
+   * The Measure as a page: each leaf's lines, with a registered arc's own `measureLines()` (its names,
+   * and any grade it keeps itself) read over the leaf's, and the better of the two grades shown.
+   */
   function measureView() {
     const leaves = MEASURE_LEAVES.map(leaf => {
-      const written = leaf.walked ? state.measure[leaf.id] ?? {} : {};
-      const lines = leaf.lines.map(entry => ({ id: entry.id, name: entry.name, grade: written[entry.id] ?? null,
-        filled: !!written[entry.id], prize: written[entry.id] === 'prize' }));
-      return { id: leaf.id, name: leaf.name, walked: leaf.walked && accepted(), lines, full: lines.every(entry => entry.filled),
-        ...(leaf.walked ? {} : { note: 'Not yet walked.' }) };
+      const arc = arcs.get(leaf.id), walked = walkedLeaf(leaf.id), written = walked ? state.measure[leaf.id] ?? {} : {};
+      let own = null;
+      try { own = arc?.measureLines?.() ?? null; } catch { own = null; }
+      const named = new Map((Array.isArray(own) ? own : []).filter(entry => typeof entry?.id === 'string').map(entry => [entry.id, entry]));
+      const lines = leaf.lines.map(entry => {
+        const theirs = named.get(entry.id), grade = betterGrade(written[entry.id] ?? null, walked ? gradeOf(theirs?.grade) : null);
+        return { id: entry.id, name: typeof theirs?.name === 'string' ? theirs.name : entry.name, grade: MEASURE_GRADES.includes(grade) ? grade : null,
+          filled: MEASURE_GRADES.includes(grade), prize: grade === 'prize' };
+      });
+      return { id: leaf.id, name: leaf.name, walked: walked && accepted(), lines, full: lines.every(entry => entry.filled),
+        ...(walked ? {} : { note: 'Not yet walked.' }) };
     });
     return { id: 'measure', title: 'The Measure of the River', leaves, full: leaves.every(leaf => leaf.full) };
   }
@@ -401,8 +513,8 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
         : 'Ask Pomona at the east orchard how the tart is made, bake one, and have Consus seal it at the grain court.', taughtTart ? [R.consus] : [R.pomona, R.consus], null],
       carry: ['Carry the sealed tart back across the White Bridge to Taleth at the Guild tower in Minora.', [TALETH_ID], null],
       done: [missing.length
-        ? `Caricas is restored. Lay Fine ${missing.join(', ')} before Seshat in the Guild Library to fill its leaf of the Measure. Nethereum, Nesdor and Ovesos are not yet walked.`
-        : 'The Caricas leaf of the Measure is full. Nethereum, Nesdor and Ovesos are not yet walked.',
+        ? `Caricas is restored. Lay Fine ${missing.join(', ')} before Seshat in the Guild Library to fill its leaf of the Measure.${stillToWalk()}`
+        : `The Caricas leaf of the Measure is full.${stillToWalk()}`,
         [...(missing.length ? [R.seshat] : []), ...(c().hired.length < c().hands.length ? [R.messor] : [])], null],
     };
     const [detail, destinationIds, target] = by[at] ?? ['Speak with Taleth outside the Guild tower in Minora.', [TALETH_ID], null];
@@ -412,10 +524,81 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
       active: accepted(), complete: false, stage: at === 'done' ? 'measure' : at,
       detail, destinationIds: [...destinationIds], target,
       steps: STEPS.map(([stage, text]) => ({ text, done: rank(at) > rank(stage) })),
-      notes: measureText(), measure: measureView() };
+      notes: measureText(), measure: measureView(), arcs: arcCards() };
   }
-  /** Who should wear the farmlands' mark now (src/quest-markers.js `farmlandsDestinations`). */
-  const markerIds = () => (accepted() ? trackableView().destinationIds : []);
+  /** The countries whose arcs are not yet done, as the end of a sentence. */
+  function stillToWalk() {
+    const left = MEASURE_LEAVES.filter(leaf => leaf.id !== 'caricas' && arcStage(leaf.id) !== 'done').map(leaf => leaf.name);
+    if (!left.length) return '';
+    return ` ${left.length > 1 ? `${left.slice(0, -1).join(', ')} and ${left.at(-1)} are` : `${left[0]} is`} not yet walked.`;
+  }
+  const arcStage = id => { try { return arcs.get(id)?.stage?.() ?? null; } catch { return null; } };
+  /**
+   * A card for each registered arc that is under way, in the tracker's shape: the arc's own
+   * `trackableView()` over the hub's defaults. Arcs show only once the charge is taken, and a done
+   * arc goes to the journal instead. Each card rides on the hub's place in the slate.
+   */
+  function arcCards() {
+    if (!accepted()) return [];
+    const cards = [];
+    for (const [id, arc] of arcs) {
+      let view = null;
+      try { view = arc.trackableView?.() ?? null; } catch { view = null; }
+      const stage = arcStage(id);
+      if (!view || stage === 'done') continue;
+      const name = leafOf(id)?.name ?? `${id[0].toUpperCase()}${id.slice(1)}`;
+      cards.push({ id: `${LIZEEM_FARMLANDS.id}-${id}`, title: `${LIZEEM_FARMLANDS.title}: ${name}`, type: LIZEEM_FARMLANDS.type, region: name,
+        kicker: name, stage, complete: false, ...view, slateId: LIZEEM_FARMLANDS.id, active: view.active !== false, arc: id });
+    }
+    return cards;
+  }
+  /** The hub's card and every arc card under way, for the tracker (src/quest-tracker.js takes each). */
+  const trackableViews = () => { const card = trackableView(); return [card, ...card.arcs]; };
+  /** Who should wear the farmlands' mark now (src/quest-markers.js `farmlandsDestinations`): the hub's step and every arc's. */
+  function markerIds() {
+    if (!accepted()) return [];
+    const ids = [...trackableView().destinationIds];
+    for (const [id, arc] of arcs) {
+      if (arcStage(id) === 'done') continue;
+      try { ids.push(...[].concat(arc.markerIds?.() ?? []).filter(value => typeof value === 'string' && value)); } catch { /* an arc that cannot say marks nobody */ }
+    }
+    return [...new Set(ids)];
+  }
+  /**
+   * The journal's entries for the arcs that are done, in its shape (src/journal-entries.js): each
+   * arc's own `journal()` over the hub's defaults. Caricas's entry is written by the journal itself.
+   */
+  function journal() {
+    const entries = [];
+    for (const [id, arc] of arcs) {
+      let own = null;
+      try { own = arc.journal?.() ?? null; } catch { own = null; }
+      const name = leafOf(id)?.name ?? id;
+      for (const entry of [].concat(own ?? []).filter(value => value && typeof value === 'object'))
+        entries.push({ id: `${LIZEEM_FARMLANDS.id}-${id}`, title: name, type: 'skill', grade: 'skill', status: 'complete', region: name,
+          kicker: LIZEEM_FARMLANDS.title, detail: '', ...entry });
+    }
+    return entries;
+  }
+
+  /**
+   * An arc for another country (the contract for Builds 2 and 3, 6 October 2026). `arc` is what the
+   * country's module makes, `createXArc({ farming, skills, magic, inventory, cooking, merchants, onEvent })`,
+   * and answers `{ stage(), trackableView(), markerIds(), journal(), measureLines(), snapshot(), restore(data),
+   * validate(data) }`; `restore(undefined)` starts it afresh, and `validate` must accept undefined. It may
+   * also have `attach(hub)`, given `{ accepted, enter, measureView }` when registered, and `measured(result)`,
+   * told when one of its lines is written. Registering an arc opens its leaf of the Measure and lets the
+   * save carry it; a save read before the arc was registered is handed to it now.
+   */
+  function registerArc(countryId, arc) {
+    const id = typeof countryId === 'string' ? countryId.toLowerCase() : '';
+    if (!ARC_IDS.includes(id) || !arc || ['stage', 'snapshot', 'restore'].some(key => typeof arc[key] !== 'function')) return false;
+    arcs.set(id, arc); REGISTERED.add(id);
+    if (typeof arc.validate === 'function') ARC_VALIDATORS.set(id, arc.validate); else ARC_VALIDATORS.delete(id);
+    if (Object.hasOwn(carried, id)) { const nested = carried[id]; delete carried[id]; arc.restore(nested); }
+    arc.attach?.(freeze({ accepted, enter, measureView, stage: () => state.stage }));
+    return true;
+  }
 
   /** How a choice in the trouble sits with a person: 1 warmer, 0 unchanged. */
   function regard(personId) {
@@ -424,11 +607,22 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
     return 0;
   }
 
-  const snapshot = () => copy(state);
+  /** The hub's record, with each arc's save nested under `arcs` (left out while there is none). */
+  function snapshot() {
+    const out = copy(state), nested = copy(carried);
+    for (const [id, arc] of arcs) { const saved = arc.snapshot(); if (saved !== undefined) nested[id] = copy(saved); }
+    if (Object.keys(nested).length) out.arcs = nested;
+    return out;
+  }
   function restore(data) {
-    if (data === undefined) { state = fresh(); return true; }
+    if (data === undefined) { state = fresh(); carried = {}; for (const arc of arcs.values()) arc.restore(undefined); return true; }
     if (!validateLizeemFarmlands(data)) return false;
-    state = { ...fresh(), ...copy(data) };
+    const { arcs: nested = {}, ...rest } = copy(data);
+    state = { ...fresh(), ...rest };
+    // A save from before the wage: nobody's has been paid yet, so the next morning is the first.
+    c().paid ??= {};
+    carried = Object.fromEntries(Object.entries(nested).filter(([id]) => !arcs.has(id)));
+    for (const [id, arc] of arcs) arc.restore(nested[id]);
     return true;
   }
 
@@ -436,8 +630,8 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
   farming?.onHarvest?.((bedId, result) => harvest(bedId, result));
 
   return {
-    offer, accept, accepted, lease, harvest, settleClaim, noteTaught, sealTart, deliver, hire, enter,
-    measureView, trackableView, markerIds, regard, snapshot, restore,
+    offer, accept, accepted, lease, harvest, settleClaim, noteTaught, sealTart, deliver, hire, tick, enter,
+    measureView, trackableView, trackableViews, markerIds, journal, registerArc, arc: id => arcs.get(id) ?? null, regard, snapshot, restore,
     get stage() { return state.stage; },
     get caricas() { return copy(c()); },
     get shares() { return { ...state.shares }; },
@@ -445,6 +639,16 @@ export function createLizeemFarmlands({ skills = null, magic = null, farming = n
     handsReturned: () => [...c().hands],
   };
 }
+
+/**
+ * The objective a free start shows while the main quest waits (src/minora-opening.js
+ * `FREE_ROAM_GUIDANCE`): Taleth's, until his charge is taken, and then the charge itself, so the
+ * tracker stops sending Rollo back to a man he has already answered (6 October 2026).
+ */
+export const CHARGE_GUIDANCE = freeze({ title: 'Walk the Measure of the River',
+  detail: 'Taleth has sent you down both banks of the Lizeem to bring the farm countries back to work. The Farmlands of the Lizeem shows the next step. Jojo or Glun in Drent, or Iven in Nothom, can still introduce you to the main quest whenever you choose.',
+  destinationIds: freeze([]) });
+export const freeRoamGuidance = (farmlands, before) => (farmlands?.accepted?.() ? CHARGE_GUIDANCE : before);
 
 /**
  * Taleth's half of the Caricas arc, for his own conversation (src/taleth.js) to splice into its

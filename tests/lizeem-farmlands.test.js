@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createLizeemFarmlands, validateLizeemFarmlands, talethFarmlandsChoices, measureLineFor,
+  createLizeemFarmlands, validateLizeemFarmlands, talethFarmlandsChoices, measureLineFor, measureEntriesFor, freeRoamGuidance,
   NORTH_BEDS, CARICAS_BEDS, NORTH_SEED_BENCH, LIZEEM_XP, LIZEEM_ROLES, CALL_THE_DEW, TART_ITEM, TALETH_ID,
-  CARICAS_STAGES, MEASURE_LEAVES, LIZEEM_FARMLANDS,
+  CARICAS_STAGES, MEASURE_LEAVES, LIZEEM_FARMLANDS, LIZEEM_RECIPES, HAND_WAGE, CHARGE_GUIDANCE,
 } from '../src/lizeem-farmlands.js';
+import { lizeemConversation, LIZEEM_PEOPLE } from '../src/lizeem-people.js';
+import { FREE_ROAM_GUIDANCE } from '../src/minora-opening.js';
+import { GAME_DAY_SECONDS } from '../src/merchants.js';
 import { REGIONAL_FARM_ROWS } from '../src/regional-farmland.js';
 import { normalizeTrackableQuests } from '../src/quest-tracker.js';
 import { buildJournalEntries } from '../src/journal-entries.js';
@@ -393,4 +396,179 @@ test('The real farm hands every Caricas harvest to the quest, and what the holde
   assert.equal(q.caricas.stage, 'swap');
   round([[B1, 'bridge-rye']]);
   assert.equal(q.caricas.stage, 'claim');
+});
+
+// ---------------------------------------------------------------------------------------------
+// The groundwork for Builds 2 to 5 (the user, 6 October 2026: "keep building everything").
+// These register arcs, which the save's validator remembers for the rest of the file, so they come last.
+// ---------------------------------------------------------------------------------------------
+
+test('A Prize harvest is written in the Measure the moment it is reaped, on its own country’s leaf', () => {
+  const h = harness(), q = h.make();
+  assert.equal(h.reap(B1, rye('prize')), null, 'before the charge nothing is written');
+  q.accept();
+  h.reap(B1, rye('prize'));
+  assert.equal(q.measureView().leaves[0].lines.find(line => line.id === 'bridge-rye').grade, 'prize', 'Prize at harvest, before the lease even');
+  const fine = h.make(); fine.accept();
+  h.reap(B1, rye('fine'));
+  assert.equal(fine.measureView().leaves[0].lines.find(line => line.id === 'bridge-rye').filled, false, 'Fine waits for the seal and Seshat');
+  assert.deepEqual(measureEntriesFor('bridge-rye-fine'), [{ leaf: 'caricas', line: 'bridge-rye' }, { leaf: 'nesdor', line: 'rye' }], 'the Nesdor rye is bridge rye');
+  assert.deepEqual(measureEntriesFor('smoked-fish'), [{ leaf: 'nethereum', line: 'dish' }]);
+});
+
+test('Messor is paid six copper a game day, stops when a day goes unpaid, and reaps the North fields while he is paid', () => {
+  let purse = 20, now = 0;
+  const reaped = [], events = [];
+  const farming = { onHarvest: () => () => {}, rowState: (bed, at) => ({ stage: bed === B2 && at >= 100 ? 'ripe' : 'sown' }),
+    harvest: (bed, at, options) => { reaped.push([bed, at, options]); return { ok: true }; } };
+  const q = createLizeemFarmlands({ farming, clock: () => now, pay: copper => (purse >= copper ? ((purse -= copper), true) : false), onEvent: event => events.push(event) });
+  walkTo(q, 'done');
+  assert.equal(HAND_WAGE, 6);
+  assert.equal(q.hire('messor'), true);
+  assert.equal(purse, 14, 'the first day is paid at the hire');
+  assert.deepEqual(q.snapshot().caricas.paid, { messor: 0 });
+  assert.equal(validateLizeemFarmlands(q.snapshot()), true);
+  q.tick(100);
+  assert.deepEqual(reaped, [[B2, 100, { hand: 'messor' }]], 'he reaps what is ripe, as a hand');
+  q.tick(100.5);
+  assert.equal(reaped.length, 1, 'once a whole second');
+  now = 1080;
+  q.tick(1080);
+  assert.equal(purse, 8, 'the next morning, six more');
+  now = 1080 + 2 * GAME_DAY_SECONDS;
+  q.tick(now);
+  assert.equal(purse, 2, 'one more day paid, and the next could not be');
+  assert.deepEqual(q.caricas.hired, [], 'so he stops');
+  assert.equal(events.at(-1).type, 'lizeem-hand-unpaid');
+  const count = reaped.length;
+  q.tick(now + 5);
+  assert.equal(reaped.length, count, 'and reaps nothing for nothing');
+  assert.equal(q.hire('messor'), false, 'six copper to have him back');
+  purse = 6;
+  assert.equal(q.hire('messor'), true);
+  // A save from before the wage loads, and his first morning after it is charged.
+  const old = q.snapshot(); delete old.caricas.paid;
+  assert.equal(validateLizeemFarmlands(old), true);
+  assert.equal(validateLizeemFarmlands({ ...old, caricas: { ...old.caricas, paid: { occator: 1 } } }), false, 'only a hired hand is paid');
+  const again = createLizeemFarmlands({ farming, clock: () => now, pay: copper => (purse >= copper ? ((purse -= copper), true) : false) });
+  purse = 6;
+  assert.equal(again.restore(old), true);
+  again.tick(now + 10);
+  assert.equal(purse, 0);
+  assert.deepEqual(again.caricas.hired, ['messor']);
+});
+
+test('Once the charge is taken the free-roam objective stops sending Rollo back to Taleth', () => {
+  const q = harness().make();
+  assert.equal(freeRoamGuidance(q, FREE_ROAM_GUIDANCE), FREE_ROAM_GUIDANCE);
+  q.offer();
+  assert.equal(freeRoamGuidance(q, FREE_ROAM_GUIDANCE), FREE_ROAM_GUIDANCE, 'an offer is not a charge taken');
+  q.accept();
+  assert.equal(freeRoamGuidance(q, FREE_ROAM_GUIDANCE), CHARGE_GUIDANCE);
+  assert.notEqual(CHARGE_GUIDANCE.title, FREE_ROAM_GUIDANCE.title);
+  assert.deepEqual(CHARGE_GUIDANCE.destinationIds, []);
+  assert.match(CHARGE_GUIDANCE.detail, /main quest/, 'the main quest is still offered');
+});
+
+test('A recipe counts as taught only when the kitchen takes it', () => {
+  const q = createLizeemFarmlands(), shown = [], notes = [];
+  let kitchen = { ok: false, reason: 'Learn Fire Making from Lee Anne, or take a lesson at a teacher’s already-lit fire.' };
+  const ctx = { farmlands: q, cooking: { learn: () => kitchen }, notify: (text, kicker) => notes.push([text, kicker]),
+    openDialogue: (npc, lines, event, label, options = {}) => shown.push(options.choices ?? []), closeDialogue: () => {} };
+  const vertumnus = LIZEEM_PEOPLE.find(person => person.id === LIZEEM_ROLES.vertumnus);
+  const choose = id => { const choice = [...shown].reverse().find(list => list.length).find(entry => entry.id === id); assert.ok(choice, id); choice.action(); };
+  q.accept(); q.lease();
+  lizeemConversation(vertumnus, ctx); choose('lizeem-vertumnus-recipes');
+  assert.deepEqual(q.caricas.taught, [], 'the kitchen refused, so nothing is taught');
+  assert.match(notes.at(-1)[0], /Fire Making/);
+  lizeemConversation(vertumnus, ctx);
+  assert.ok(shown.at(-1).some(choice => choice.id === 'lizeem-vertumnus-recipes'), 'and the lesson is offered again');
+  kitchen = { ok: true };
+  choose('lizeem-vertumnus-recipes');
+  assert.deepEqual(q.caricas.taught, [LIZEEM_RECIPES.pottage, LIZEEM_RECIPES.ryeLoaf]);
+});
+
+/** An arc as a country's module would make it: a stage, a card, marks, a journal, its lines, a save. */
+function fakeArc(id, { stage = 'arrive', validate = data => data === undefined || (!!data && typeof data.stage === 'string') } = {}) {
+  let state = { stage };
+  return { restored: [],
+    stage: () => state.stage,
+    set: next => { state.stage = next; },
+    trackableView: () => ({ title: `${id} card`, detail: `The ${id} step.`, destinationIds: [`${id}-person`], stage: state.stage }),
+    markerIds: () => [`${id}-person`],
+    journal: () => (state.stage === 'done' ? { title: `${id}: done`, detail: 'It is done.', rewards: ['Quicken'] } : null),
+    measureLines: () => [{ id: 'flood-oats', name: 'Flood oats from the silt' }],
+    snapshot: () => ({ ...state }),
+    restore(data) { this.restored.push(data); state = data === undefined ? { stage } : { ...data }; return true; },
+    validate };
+}
+
+test('A country’s arc is registered with the hub: its card, its marks, its leaf of the Measure and its journal', () => {
+  const q = harness().make(), arc = fakeArc('nethereum');
+  assert.equal(q.registerArc('caricas', arc), false, 'Caricas is built in');
+  assert.equal(q.registerArc('atlantis', arc), false, 'an arc is one of the river’s');
+  assert.equal(q.registerArc('nethereum', { stage: () => 'x' }), false, 'an arc saves and restores');
+  assert.equal(q.registerArc('Nethereum', arc), true);
+  assert.equal(q.arc('nethereum'), arc);
+  assert.deepEqual(q.trackableViews().map(card => card.id), [LIZEEM_FARMLANDS.id], 'nothing shows before the charge');
+  assert.deepEqual(q.markerIds(), []);
+  walkTo(q, 'bridge');
+  const cards = q.trackableViews();
+  assert.deepEqual(cards.map(card => card.id), [LIZEEM_FARMLANDS.id, `${LIZEEM_FARMLANDS.id}-nethereum`]);
+  assert.deepEqual([cards[1].slateId, cards[1].type, cards[1].active, cards[1].detail], [LIZEEM_FARMLANDS.id, 'skill', true, 'The nethereum step.']);
+  assert.deepEqual(q.trackableView().arcs.map(card => card.id), [cards[1].id], 'the hub’s card lists the arcs under way');
+  const tracked = normalizeTrackableQuests({ optional: q.trackableViews(), live: id => ['main', 'lizeem-farmlands'].includes(id) });
+  assert.ok(tracked.some(card => card.id === `${LIZEEM_FARMLANDS.id}-nethereum`), 'the tracker takes the arc’s card on the hub’s slate');
+  assert.deepEqual(q.markerIds(), [LIZEEM_ROLES.egeria, 'nethereum-person']);
+  // Its leaf of the Measure is open, with the arc's names over the hub's.
+  const leaf = () => q.measureView().leaves.find(entry => entry.id === 'nethereum');
+  assert.deepEqual([leaf().walked, leaf().note, leaf().lines[0].name], [true, undefined, 'Flood oats from the silt']);
+  assert.equal(q.enter('flood-oats-fine', 'fine').country, 'nethereum');
+  assert.equal(q.enter('oatcakes', 'prize').line, 'dish', 'either dish fills the dish line');
+  assert.deepEqual(leaf().lines.map(entry => entry.grade), ['fine', null, null, 'prize']);
+  assert.match(q.trackableView().notes, /Nethereum: flood oats from the silt \(Fine\)/);
+  assert.equal(q.enter('white-bread', 'fine').ok, false, 'Nesdor is not walked yet');
+  // Done, it leaves the tracker for the journal.
+  arc.set('done');
+  assert.deepEqual(q.trackableViews().length, 1);
+  assert.deepEqual(q.markerIds(), [LIZEEM_ROLES.egeria]);
+  assert.deepEqual(q.journal().map(entry => [entry.id, entry.status, entry.type, entry.title]), [[`${LIZEEM_FARMLANDS.id}-nethereum`, 'complete', 'skill', 'nethereum: done']]);
+  const finished = walkTo(createLizeemFarmlands(), 'done');
+  finished.registerArc('nethereum', fakeArc('nethereum', { stage: 'done' }));
+  assert.doesNotMatch(finished.trackableView().detail, /Nethereum/, 'a country walked is not listed as still to walk');
+  assert.match(finished.trackableView().detail, /Nesdor and Ovesos are not yet walked/);
+});
+
+test('The hub’s save nests each arc’s under `arcs`, hands it back on restore, and keeps the save of an arc it has not registered', () => {
+  const q = harness().make(), arc = fakeArc('nethereum');
+  q.registerArc('nethereum', arc);
+  walkTo(q, 'sowing');
+  q.enter('flood-oats', 'fine');
+  arc.set('hatch');
+  const saved = q.snapshot();
+  assert.deepEqual(saved.arcs, { nethereum: { stage: 'hatch' } });
+  assert.deepEqual(saved.measure.nethereum, { 'flood-oats': 'fine' });
+  assert.equal(validateLizeemFarmlands(saved), true);
+  assert.equal(validateLizeemFarmlands({ ...saved, arcs: { nethereum: { stage: 7 } } }), false, 'the arc’s own validator is asked');
+  assert.equal(validateLizeemFarmlands({ ...saved, arcs: { atlantis: {} } }), false, 'an arc nobody registered');
+  assert.equal(validateLizeemFarmlands({ ...saved, arcs: [] }), false);
+  const { arcs, ...withoutArcs } = saved;
+  assert.equal(validateLizeemFarmlands(withoutArcs), true, 'a save from before the arcs loads');
+  // A second game's hub with its own arc gets the arc's save back.
+  const other = fakeArc('nethereum'), again = harness().make();
+  again.registerArc('nethereum', other);
+  assert.equal(again.restore(saved), true);
+  assert.deepEqual(other.restored.at(-1), { stage: 'hatch' });
+  assert.deepEqual(again.snapshot(), saved);
+  assert.equal(again.restore(withoutArcs), true);
+  assert.equal(other.restored.at(-1), undefined, 'no save for it is a fresh arc');
+  // The save's checker copies the section through a hub with no arcs registered: the arc's save rides along.
+  const bare = createLizeemFarmlands();
+  assert.equal(bare.restore(saved), true);
+  assert.deepEqual(bare.snapshot(), saved);
+  const late = fakeArc('nethereum');
+  bare.registerArc('nethereum', late);
+  assert.deepEqual(late.restored, [{ stage: 'hatch' }], 'an arc registered after the save was read is handed it then');
+  assert.equal(again.restore({ ...saved, arcs: { nethereum: { stage: 7 } } }), false);
+  assert.deepEqual(again.snapshot(), { ...withoutArcs, arcs: { nethereum: { stage: 'arrive' } } }, 'a refused restore leaves the hub and its arc as they were');
 });
