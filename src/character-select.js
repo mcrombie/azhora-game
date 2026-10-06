@@ -45,6 +45,9 @@ export function tileColours(look) {
  */
 export function createCharacterSelect({ root, detail = null, lookFor = () => null, onChange = () => {}, selected = DEFAULT_PLAYER, hidden = null, entries = SELECTABLE } = {}) {
   if (!root) throw new TypeError('The character line needs somewhere to stand.');
+  // Rollo is Developer Start's alone (the user, 5 October 2026): never a tile on this line,
+  // whatever list the caller hands over (src/player-characters.js `developerOnly`).
+  entries = entries.filter(entry => !entry.developerOnly);
   const doc = root.ownerDocument;
   let chosen = selected===null?null:entries.some(e=>e.id===selected)?selected:entries[0]?.id;
   const tiles = new Map();

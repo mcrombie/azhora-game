@@ -1,0 +1,157 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { SCHOOLS, SPELLS, SORCERY, castWith, learnableSpell, fieldXp, soundingText } from '../src/sorcery.js';
+import { createMagic, validateMagicSnapshot } from '../src/magic.js';
+import { createCombat } from '../src/combat.js';
+import { SKILLS, createSkills } from '../src/skills.js';
+import { createWeapons, WEAPON_TYPES } from '../src/weapons.js';
+import { createInventoryState } from '../src/inventory.js';
+import { createFarming, ALL_FARM_ROWS } from '../src/farming.js';
+
+/**
+ * **Field sorcery** (the user, 5 October 2026): the farming techniques are sorcery cast with the
+ * staff, and Taleth, Master Sorcerer of the Guild, is the only one who teaches them. Two workings
+ * in this build: Sound the Soil, given with his charge, and Call the Dew, earned in Caricas.
+ */
+function fixture({ farming = null, beds = undefined, weapon = 'oak-staff', at = { x: 0, z: 0 }, clock = () => 77 } = {}) {
+  const world = { bounds: { minX: -5000, maxX: 5000, minZ: -5000, maxZ: 5000 }, colliders: [], heightAt: () => 0 };
+  const position = { x: at.x, y: 0, z: at.z, yaw: 0 }, events = [];
+  const inventory = createInventoryState(); inventory.grant(weapon);
+  const weapons = createWeapons({ inventory }); weapons.setCondition(weapon, WEAPON_TYPES[weapon].maxDurability); weapons.equip(weapon);
+  const skills = createSkills();
+  const combat = createCombat({ world, position, getWeapon: () => weapons.profile() });
+  const magic = createMagic({ skills, inventory, weapons, combat, world, position, farming, clock,
+    ...(beds === undefined ? {} : { fieldBeds: beds }), onEvent: event => events.push(event) });
+  return { magic, skills, weapons, inventory, position, events };
+}
+
+/** A farm that records what it was asked. */
+function fakeFarm({ watered = 0 } = {}) {
+  const asked = [];
+  return { asked,
+    describeBed: (id, now) => { asked.push(['describe', id, now]); return { heart: 2, last: 'beans', likes: ['rye'], readiness: 'ready', text: `The ground at ${id} is in fair heart.` }; },
+    waterAllWithin: (point, radius, now) => { asked.push(['water', point, radius, now]);
+      return watered ? { ok: true, count: watered, watered: Array.from({ length: watered }, (_, i) => `bed-${i}`) } : { ok: false, count: 0, watered: [], reason: 'Nothing here is growing.' }; } };
+}
+
+test('field sorcery is a released school with two workings, and only Taleth teaches it', () => {
+  assert.deepEqual([...SCHOOLS.field.spells], ['sound-the-soil', 'call-the-dew']);
+  assert.equal(SCHOOLS.field.reserved, undefined, 'a school anybody may be taught, by the one man who teaches it');
+  assert.equal(SKILLS.field.name, 'Field Sorcery');
+  assert.equal(SKILLS.field.group, 'Sorcery');
+  assert.match(SKILLS.field.teacher, /Taleth/);
+  for (const id of ['sound-the-soil', 'call-the-dew']) {
+    assert.equal(SPELLS[id].school, 'field');
+    assert.equal(learnableSpell(id), true, `${id} can be taught`);
+  }
+  // The user's rulings stand: Frost and Wards are nobody's to teach, and nor is Time.
+  for (const id of ['frost', 'wards', 'time']) { assert.equal(SCHOOLS[id].reserved, true); assert.equal(SKILLS[id].reserved, true); }
+  assert.equal(learnableSpell('slow'), false);
+});
+
+test('the workings cost five and twenty focus at the first level, hurt nobody, and still want a staff or a wand', () => {
+  const sound = castWith('sound-the-soil', { level: 1, weapon: 'oak-staff' }), dew = castWith('call-the-dew', { level: 1, weapon: 'oak-staff' });
+  assert.equal(sound.cost, 5);
+  assert.equal(dew.cost, 20);
+  assert.equal(sound.field, 'sound'); assert.equal(dew.field, 'water');
+  assert.equal(sound.range, 6, 'the nearest bed within six metres');
+  assert.equal(dew.range, 40, 'every bed within forty');
+  assert.equal(sound.damage + dew.damage, 0);
+  assert.equal(sound.cast, 0, 'planted, not thrown');
+  assert.ok(castWith('call-the-dew', { level: 99, weapon: 'wand' }).cost < dew.cost, 'cheaper with practice');
+  assert.equal(castWith('sound-the-soil', { level: 1, weapon: 'simple-sword' }), null, 'a sword casts nothing');
+  assert.equal(castWith('fireball', { level: 1, weapon: 'oak-staff' }).field, null, 'and fire is not field work');
+});
+
+test('Sound the Soil reads the nearest bed within reach through the farm, for five focus', () => {
+  const farm = fakeFarm();
+  const game = fixture({ farming: farm, beds: [{ id: 'far', name: 'The far bed', x: 0, z: 5.5 }, { id: 'near', name: 'The near bed', x: 2, z: 1 }, { id: 'out', x: 0, z: 30 }] });
+  assert.equal(game.magic.cast('sound-the-soil').ok, false, 'not before Taleth has shown it');
+  assert.equal(game.magic.learn('sound-the-soil', { announce: false }).ok, true);
+  assert.equal(game.inventory.has('wand'), false, 'the staff is focus enough; no spare wand');
+  const before = game.magic.view().focus;
+  const result = game.magic.cast('sound-the-soil');
+  assert.equal(result.ok, true);
+  assert.equal(result.bedId, 'near', 'the nearest bed answers');
+  assert.equal(result.name, 'The near bed');
+  assert.equal(result.text, 'The ground at near is in fair heart.');
+  assert.deepEqual(farm.asked, [['describe', 'near', 77]], 'read on the play clock');
+  assert.equal(game.magic.view().focus, before - 5);
+  assert.equal(game.skills.xp('field'), SORCERY.xp.perSounding, 'a sounding that reached a bed pays the school');
+  const event = game.events.find(entry => entry.type === 'field-working');
+  assert.equal(event?.text, result.text, 'the host is told what to show');
+  // Too far from any bed: refused, and it costs nothing.
+  game.position.z = 20;
+  const refused = game.magic.cast('sound-the-soil');
+  assert.equal(refused.ok, false);
+  assert.match(refused.reason, /6 paces of a crop bed/);
+  assert.equal(game.magic.view().focus, before - 5, 'bare earth costs nothing');
+  // A sword in the hand is no staff.
+  game.position.z = 0; game.inventory.grant('simple-sword'); game.weapons.equip('simple-sword');
+  assert.equal(game.magic.cast('sound-the-soil').ok, false);
+});
+
+test('Sound the Soil reads a real bed of the farm, from where its beds are', () => {
+  const farming = createFarming({ skills: createSkills() });
+  const bed = ALL_FARM_ROWS.find(row => row.region === 'Caricas') ?? ALL_FARM_ROWS[0];
+  const game = fixture({ farming, at: { x: bed.x + 1.5, z: bed.z } });
+  game.magic.learn('sound-the-soil', { announce: false });
+  const result = game.magic.cast('sound-the-soil');
+  assert.equal(result.ok, true, result.reason);
+  assert.equal(result.bedId, bed.id);
+  assert.ok(result.text.length > 20, 'and it says something about the ground');
+});
+
+test('Call the Dew waters every growing bed within forty metres, for twenty focus, and costs nothing when nothing wanted water', () => {
+  const farm = fakeFarm({ watered: 3 });
+  const game = fixture({ farming: farm, at: { x: 10, z: -4 } });
+  game.magic.learn('call-the-dew', { announce: false });
+  const before = game.magic.view().focus;
+  const result = game.magic.cast('call-the-dew');
+  assert.equal(result.ok, true);
+  assert.equal(result.count, 3);
+  assert.deepEqual(result.bedIds, ['bed-0', 'bed-1', 'bed-2']);
+  assert.match(result.text, /3 growing beds/);
+  assert.deepEqual(farm.asked, [['water', { x: 10, z: -4 }, 40, 77]], 'from where he stands, forty metres round, on the play clock');
+  assert.equal(game.magic.view().focus, before - 20);
+  assert.equal(game.skills.xp('field'), 3 * SORCERY.xp.perBedWatered, 'paid for each bed it watered');
+  // Nothing growing: the farm's own reason, and the focus kept.
+  const dry = fixture({ farming: fakeFarm({ watered: 0 }) });
+  dry.magic.learn('call-the-dew', { announce: false });
+  const kept = dry.magic.view().focus, refused = dry.magic.cast('call-the-dew');
+  assert.equal(refused.ok, false);
+  assert.equal(refused.reason, 'Nothing here is growing.');
+  assert.equal(dry.magic.view().focus, kept);
+  assert.equal(dry.skills.xp('field'), 0);
+  // And a real farm with nothing sown says so.
+  const real = fixture({ farming: createFarming({ skills: createSkills() }), at: { x: ALL_FARM_ROWS[0].x, z: ALL_FARM_ROWS[0].z } });
+  real.magic.learn('call-the-dew', { announce: false });
+  assert.equal(real.magic.cast('call-the-dew').ok, false);
+});
+
+test('a harvest gives a little focus back, never past the pool, and the workings survive a save', () => {
+  const game = fixture({ farming: fakeFarm({ watered: 2 }) });
+  game.magic.learn('sound-the-soil', { announce: false }); game.magic.learn('call-the-dew', { announce: false });
+  game.magic.cast('call-the-dew');
+  const low = game.magic.view().focus;
+  assert.equal(game.magic.refocus(), SORCERY.harvestFocus);
+  assert.equal(game.magic.view().focus, low + SORCERY.harvestFocus);
+  game.magic.refocus(10_000);
+  assert.equal(game.magic.view().focus, game.magic.view().maxFocus, 'never past the pool');
+  const saved = game.magic.snapshot();
+  assert.equal(validateMagicSnapshot(saved), true);
+  const again = fixture();
+  assert.equal(again.magic.restore(saved), true);
+  assert.equal(again.magic.known('sound-the-soil') && again.magic.known('call-the-dew'), true);
+});
+
+test('what the ground says is read from the farm’s whole line, or from its parts when there is no line', () => {
+  assert.equal(soundingText({ heart: 2, likes: ['rye'], text: ' Rested and rich. ' }), 'Rested and rich.');
+  assert.equal(soundingText({ heart: 'Rested.', last: 'Beans last.', likes: { text: 'Rye next.' }, readiness: 'Ready.' }), 'Rested. Beans last. Rye next. Ready.');
+  assert.equal(soundingText('Wet.'), 'Wet.');
+  assert.equal(soundingText(null), '');
+  assert.equal(fieldXp('sound'), SORCERY.xp.perSounding);
+  assert.equal(fieldXp('sound', 0), 0);
+  assert.equal(fieldXp('water', 4), 4 * SORCERY.xp.perBedWatered);
+  assert.equal(fieldXp('fire', 4), 0);
+});

@@ -37,13 +37,15 @@ export const SORCERY_VERSION = 1;
 export const SORCERY_HEADING = 'Sorcery';
 
 /**
- * The schools. Ben teaches Fireball, Liz Summon Bees, and Troy Mind Read.
- * Frost and Wards remain named places for later spells.
+ * The schools. Ben teaches Fireball, Liz Summon Bees, and Troy Mind Read. Taleth, and nobody else,
+ * teaches field sorcery (the user, 5 October 2026). Frost and Wards remain named places for later
+ * spells, unteachable by the user's ruling, whoever asks.
  */
 export const SCHOOLS = Object.freeze({
   fire: Object.freeze({ id: 'fire', name: SKILLS.fire.name, spells: Object.freeze(['fireball']) }),
   mind: Object.freeze({ id: 'mind', name: SKILLS.mind.name, spells: Object.freeze(['mindread']) }),
   beast: Object.freeze({ id: 'beast', name: SKILLS.beast.name, spells: Object.freeze(['summon-bees']) }),
+  field: Object.freeze({ id: 'field', name: SKILLS.field.name, spells: Object.freeze(['sound-the-soil', 'call-the-dew']) }),
   frost: Object.freeze({ id: 'frost', name: SKILLS.frost.name, reserved: true, spells: Object.freeze([]) }),
   wards: Object.freeze({ id: 'wards', name: SKILLS.wards.name, reserved: true, spells: Object.freeze([]) }),
   /** Begun, with one spell, and nobody's to learn yet: Subtractidaughter casts it (src/combat.js). */
@@ -75,7 +77,16 @@ export const SORCERY = Object.freeze({
      * for a cast. A read that turns nothing up pays nothing.
      */
     perReading: 34,
+    /**
+     * **Field sorcery is paid for the ground it touches** (5 October 2026, first pass). A sounding
+     * that reaches a bed pays once; a dew pays for every bed it actually waters. Casting at bare
+     * earth pays nothing and costs nothing.
+     */
+    perSounding: 10,
+    perBedWatered: 6,
   }),
+  /** "Harvesting gives a little focus back" (docs/lizeem-farmlands-design.md, section 3; first pass). */
+  harvestFocus: 4,
 });
 
 /**
@@ -131,6 +142,32 @@ export const SPELLS = Object.freeze({
     range: 16, speed: 12, radius: .34,
     slow: Object.freeze({ factor: .45, seconds: Object.freeze({ low: 3, high: 6 }) }),
   }),
+  /**
+   * **Sound the Soil** (Taleth's, given with the charge of the Lizeem farmlands; the user, 5 October
+   * 2026: the farming techniques are sorcery cast with the staff). Plant the staff by a bed and the
+   * ground says what it needs: how rested, what it last carried, what would do best in it next, and
+   * the farmer's test of the cord. Nothing is thrown and nothing is hurt; it reaches the nearest
+   * crop bed within `range` metres, and costs nothing if there is none.
+   */
+  'sound-the-soil': Object.freeze({
+    id: 'sound-the-soil', school: 'field', name: 'Sound the Soil',
+    cost: Object.freeze({ low: 5, high: 3 }),
+    cast: Object.freeze({ low: 0, high: 0 }),
+    damage: Object.freeze({ low: 0, high: 0 }),
+    range: 6, speed: 0, radius: 0, field: 'sound',
+  }),
+  /**
+   * **Call the Dew** (Taleth's, for Caricas brought back to work): every growing bed within `range`
+   * metres is watered at once, each as if by hand. Learned through the quest (src/lizeem-farmlands.js),
+   * not at the tower door; costs nothing if no bed within reach wanted water.
+   */
+  'call-the-dew': Object.freeze({
+    id: 'call-the-dew', school: 'field', name: 'Call the Dew',
+    cost: Object.freeze({ low: 20, high: 12 }),
+    cast: Object.freeze({ low: 0, high: 0 }),
+    damage: Object.freeze({ low: 0, high: 0 }),
+    range: 40, speed: 0, radius: 0, field: 'water',
+  }),
 });
 export const SPELL_IDS = Object.freeze(Object.keys(SPELLS));
 /** Whether a spell can be taught at all: a spell of a reserved school cannot, whoever asks. */
@@ -163,7 +200,7 @@ export function castWith(spellId, { level = 1, weapon = null } = {}) {
     cast: +(between(spell.cast, level) * tool.cast).toFixed(3),
     damage: Math.round(between(spell.damage, level) * tool.damage),
     range: spell.range, speed: spell.speed, radius: spell.radius,
-    spoken: !!spell.spoken, swarm: !!spell.swarm,
+    spoken: !!spell.spoken, swarm: !!spell.swarm, field: spell.field ?? null,
     ...(spell.swarm ? { stay: between(spell.stay, level), sting: spell.sting } : {}),
     ...(spell.slow ? { slow: Object.freeze({ factor: spell.slow.factor, seconds: +between(spell.slow.seconds, level).toFixed(2) }) } : {}),
   });
@@ -176,6 +213,23 @@ export function focusAt(level = 1) {
 
 /** What a reading pays Mind, when it actually turned something up. */
 export const readingXp = ({ learned = false } = {}) => (learned ? SORCERY.xp.perReading : 0);
+
+/** What a field working pays: a sounding that reached a bed, or a dew for each bed it watered. */
+export const fieldXp = (kind, count = 1) => kind === 'sound' ? (count > 0 ? SORCERY.xp.perSounding : 0)
+  : kind === 'water' ? Math.max(0, Math.floor(Number(count) || 0)) * SORCERY.xp.perBedWatered : 0;
+
+/**
+ * What the ground says when it is sounded, as one line. The farming module's `describeBed` answers
+ * `{ heart, last, likes, readiness, text }` (src/farming.js); its `text` is the whole reading.
+ * Anything without a `text` is read from whatever of its parts are words.
+ */
+export function soundingText(found) {
+  if (typeof found === 'string') return found.trim();
+  if (typeof found?.text === 'string' && found.text.trim()) return found.text.trim();
+  return ['heart', 'last', 'likes', 'readiness'].map(key => found?.[key])
+    .map(part => (typeof part === 'string' ? part : typeof part?.text === 'string' ? part.text : ''))
+    .filter(part => part.trim()).join(' ');
+}
 
 /** What a spell's damage pays its school, the way a blow pays its weapon's family. */
 export const spellXp = (damage, { killing = false } = {}) => {

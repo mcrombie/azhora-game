@@ -12,12 +12,12 @@ const HEAD = '<svg viewBox="0 0 36 36" fill="none" stroke="currentColor" stroke-
 test('every skill and specialization has its own mark, drawn the way the satchel draws its items', () => {
   // The registry keeps every skill in the build, so a save that holds any of their experience
   // still validates. What the sheet draws is a mode's business (tests/game-mode.test.js).
-  // Twenty-two about the world, seven about fighting, and six about sorcery (src/sorcery.js) -
-  // of which three can be taught, one teacher each: Ben fire, Troy mind, Liz beast. Time is the
-  // sixth, begun for Subtractidaughter and reserved.
-  assert.equal(SKILL_IDS.length, 38, 'twenty-four of the world, one guarded specialization, seven of fighting, six of sorcery');
+  // Twenty-two about the world, seven about fighting, and seven about sorcery (src/sorcery.js) -
+  // of which four can be taught, one teacher each: Ben fire, Troy mind, Liz beast, and Taleth
+  // field (5 October 2026). Time is begun for Subtractidaughter and reserved.
+  assert.equal(SKILL_IDS.length, 39, 'twenty-four of the world, one guarded specialization, seven of fighting, seven of sorcery');
   const shown = SKILL_IDS.filter(id => !hiddenSkillsIn('normal').includes(id));
-  assert.equal(shown.length, 37, 'normal mode keeps the specialization and excludes the linguist');
+  assert.equal(shown.length, 38, 'normal mode keeps the specialization and excludes the linguist');
   assert.equal(shown.filter(id => SKILLS[id].group === undefined).length, 24, 'twenty-three ordinary skills and one specialization');
   assert.deepEqual(Object.keys(SKILL_ICONS), [...SKILL_IDS], 'one mark each, in the skills’ own order');
   const seen = new Set();

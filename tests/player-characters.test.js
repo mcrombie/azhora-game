@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PLAYABLE, PLAYABLE_IDS, SELECTABLE, SELECTABLE_IDS, DEFAULT_PLAYER, PLAYER_ALIASES, canonicalPlayerId, companyFor, playableCharacter, isPlayableId,
-  playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter } from '../src/player-characters.js';
+  playerLook, rosterEntryFor, startingSkills, startingInventory, startingLanguages, savedPlayerCharacter, validatePlayerCharacter,
+  COMPANY_PLAYABLE, DEVELOPER_PLAYER, ROLLO_LOOK, BOOT_KIT, startingGear, startingSpells, startingWithout } from '../src/player-characters.js';
+import { createCharacterSelect } from '../src/character-select.js';
+import { createMagic } from '../src/magic.js';
+import { createCombat } from '../src/combat.js';
+import * as THREE from '../vendor/three.module.js';
 import { MERCENARY_ROSTER, MERCENARY_COMPANY_SIZE, CROMB, CROMB_OLD_ID, landingMateNote, mateIsEscorting,
   LETTER_STAGE, ESCORT_MODES, LANDING_ESCORT, mercenaryById, mercenaryLines,
   mercenaryStyleLines, mercenaryWeapon, tradeOffer, KIT_WEAPON_ITEM } from '../src/mercenaries.js';
@@ -16,16 +21,20 @@ import { createRoadCheckpoint } from '../src/road-checkpoint.js';
 import { METRES_PER_HEX } from '../src/world-scale.js';
 import { sourceModule } from './module-loader.js';
 
-const { createCharacter } = await sourceModule('../src/characters.js');
+const { createCharacter, RAISED_HOOD } = await sourceModule('../src/characters.js');
 /** How main.js builds the player: the chosen one's look on the traveler's role. */
 const buildPlayer = id => { const look = playerLook(id); return createCharacter(look ? { role: 'traveler', tunic: look.tunic, skin: look.skin, look } : {}); };
 
-/** The order the user gave, which the opening screen walks in and nothing may quietly reorder. */
-const ORDER = ['cromb', 'gotwood', 'word', 'jerry', 'christin', 'ciaran', 'lakota', 'eliana', 'matt', 'altun', 'mus'];
+/**
+ * The order the user gave, which the opening screen walks in and nothing may quietly reorder, and
+ * Rollo after the eleven (the user, 5 October 2026), who is Developer Start's and nobody's line.
+ */
+const ORDER = ['cromb', 'gotwood', 'word', 'jerry', 'christin', 'ciaran', 'lakota', 'eliana', 'matt', 'altun', 'mus', 'rollo'];
 
-test('eleven people can be played, in the order they were asked for, with Cromb first', () => {
-  assert.equal(PLAYABLE.length, 11);
+test('twelve people can be played: the eleven in the order they were asked for with Cromb first, and Rollo after them', () => {
+  assert.equal(PLAYABLE.length, 12);
   assert.deepEqual(PLAYABLE_IDS, ORDER);
+  assert.deepEqual(COMPANY_PLAYABLE.map(entry => entry.id), ORDER.slice(0, 11), 'the company is still eleven');
   assert.equal(PLAYABLE[0].id, 'cromb');
   assert.equal(DEFAULT_PLAYER, 'cromb');
   assert.equal(PLAYABLE[0].roster, null, 'Cromb is nobody on the roster: he is the traveler');
@@ -35,7 +44,7 @@ test('eleven people can be played, in the order they were asked for, with Cromb 
     assert.ok(entry.name && entry.title && entry.blurb, `${entry.id} needs a name, a title and a line`);
     assert.ok(Object.isFrozen(entry) && Object.isFrozen(entry.skills), `${entry.id} is data, not a scratchpad`);
   }
-  assert.equal(new Set(PLAYABLE_IDS).size, 11, 'no two of them are the same person');
+  assert.equal(new Set(PLAYABLE_IDS).size, 12, 'no two of them are the same person');
 });
 
 test('the company the world places is always the ten you are not', () => {
@@ -47,8 +56,8 @@ test('the company the world places is always the ten you are not', () => {
     assert.ok(!company.some(entry => entry.id === mine), `${id} is not also standing on his own road`);
     // Cromb takes the vacated slot, in place, so the arrivals keep their shape.
     const cromb = company.filter(entry => entry.id === CROMB.id);
-    assert.equal(cromb.length, id === 'cromb' ? 0 : 1, `${id}: Cromb stands in exactly the slot that opened`);
-    if (id !== 'cromb') {
+    assert.equal(cromb.length, mine === null ? 0 : 1, `${id}: Cromb stands in exactly the slot that opened`);
+    if (mine !== null) {
       assert.equal(company.findIndex(entry => entry.id === CROMB.id),
         MERCENARY_ROSTER.findIndex(entry => entry.id === mine), `${id}: Cromb keeps the place in the line`);
       assert.deepEqual(cromb[0].look, CROMB.look, 'Cromb brings his own look');
@@ -58,6 +67,7 @@ test('the company the world places is always the ten you are not', () => {
     for (const entry of company) assert.ok(Object.isFrozen(entry), `${id}: the placed company is frozen`);
   }
   assert.equal(companyFor('cromb'), MERCENARY_ROSTER, 'playing as Cromb leaves the roster untouched');
+  assert.equal(companyFor('rollo'), MERCENARY_ROSTER, 'and so does playing as Rollo, who was never one of them');
   assert.throws(() => companyFor('nobody'), TypeError);
   assert.equal(companyFor().length, 10, 'no argument is the default game');
 });
@@ -78,6 +88,15 @@ test('every playable character wears a hired sword off the roster, and Cromb wea
     if (entry.id === 'cromb') {
       assert.equal(rosterEntryFor('cromb'), null);
       assert.equal(playerLook('cromb'), null, 'the default game is built exactly as it always was');
+      continue;
+    }
+    if (entry.id === 'rollo') {
+      // On nobody's roster, and still a look of his own (the user, 5 October 2026).
+      assert.equal(rosterEntryFor('rollo'), null);
+      const look = playerLook('rollo');
+      for (const field of fields) assert.deepEqual(look[field], ROLLO_LOOK[field], `Rollo's own ${field}`);
+      assert.equal(look.weapon, 'staff');
+      assert.equal(look.trades, false);
       continue;
     }
     const merc = MERCENARY_ROSTER.find(m => m.id === entry.roster);
@@ -524,10 +543,122 @@ test('a checkpoint taken after the letter restores with nobody at your shoulder'
  * built out. The cast is untouched - the other ten are the company's hired swords, and a save
  * written as one of them still loads as him. This is the choosing, not the cast.
  */
-test('only Cromb is offered at the opening, and the eleven are all still there', () => {
+test('only Cromb is offered at the opening, and the twelve are all still there', () => {
   assert.deepEqual([...SELECTABLE_IDS], ['cromb'], 'put an id back and he is on the opening screen again');
   assert.deepEqual(SELECTABLE.map(entry => entry.id), [...SELECTABLE_IDS]);
-  assert.equal(PLAYABLE.length, 11, 'and nobody has been removed from the game');
+  assert.equal(PLAYABLE.length, 12, 'and nobody has been removed from the game');
   for (const id of SELECTABLE_IDS) assert.ok(isPlayableId(id), `${id} is one of the eleven`);
   assert.ok(SELECTABLE_IDS.includes(DEFAULT_PLAYER), 'and the one offered is the one a save defaults to');
+});
+
+/** Just enough of a document for the character line to lay its tiles out (src/character-select.js). */
+function fakeLine() {
+  const element = tag => ({ tagName: tag, children: [], dataset: {}, attributes: {}, style: { setProperty() {} }, classList: { toggle() {} },
+    set textContent(value) { this.children = []; }, append(...children) { this.children.push(...children); },
+    setAttribute(name, value) { this.attributes[name] = value; }, addEventListener() {}, focus() {} });
+  const document = { createElement: element };
+  return Object.assign(element('div'), { ownerDocument: document });
+}
+
+/**
+ * **Rollo** (the user, 5 October 2026): a twelfth playable character, offered only by Developer
+ * Start. He is saveable like anybody else (the save test above walks every id) and he is never a
+ * tile on the Chapter 1 line, whatever list it is handed.
+ */
+test('Rollo is Developer Start’s alone: off the Chapter 1 line, and still somebody a save can name', () => {
+  assert.equal(DEVELOPER_PLAYER, 'rollo');
+  const rollo = playableCharacter('rollo');
+  assert.equal(rollo.name, 'Rollo');
+  assert.match(rollo.title, /sorcerer of the Guild/);
+  assert.equal(rollo.developerOnly, true);
+  assert.equal(rollo.roster, null, 'he was never one of the company');
+  assert.ok(PLAYABLE.filter(entry => entry.id !== 'rollo').every(entry => !entry.developerOnly), 'nobody else is kept back');
+  assert.ok(!SELECTABLE_IDS.includes('rollo') && !COMPANY_PLAYABLE.includes(rollo));
+  for (const entries of [PLAYABLE, COMPANY_PLAYABLE, SELECTABLE]) {
+    const line = createCharacterSelect({ root: fakeLine(), entries, selected: null });
+    assert.equal(line.tile('rollo'), null, 'no tile for Rollo, whatever list the line was handed');
+    assert.equal(line.select('rollo'), null, 'and he cannot be chosen there');
+  }
+  assert.equal(createCharacterSelect({ root: fakeLine(), entries: PLAYABLE, selected: null }).element.children.length, 11, 'the line is the eleven');
+  assert.equal(validatePlayerCharacter('rollo'), true, 'a save written as Rollo loads');
+  assert.equal(savedPlayerCharacter('rollo'), 'rollo');
+});
+
+test('Rollo starts with the oak staff in his hand, no sword and no shield, and knows Fireball', () => {
+  assert.deepEqual(startingInventory('rollo'), [{ id: 'oak-staff', quantity: 1 }]);
+  assert.equal(playableCharacter('rollo').weapon, 'oak-staff');
+  assert.equal(startingGear('rollo'), null, 'no shield');
+  assert.deepEqual(startingSpells('rollo'), ['fireball']);
+  assert.deepEqual(startingWithout('rollo'), ['simple-sword'], 'the boot satchel’s sword is taken back');
+  for (const id of PLAYABLE_IDS.filter(id => id !== 'rollo')) {
+    assert.deepEqual(startingWithout(id), [], `${id} keeps the sword`);
+    assert.deepEqual(startingSpells(id), [], `${id} knows no spell at the start`);
+  }
+  assert.deepEqual([...BOOT_KIT], ['simple-sword']);
+  // What grantStartingKit() does with it, in the same order: the boot satchel, the sword taken
+  // back, the kit granted and equipped, and the spell learned without a banner.
+  const world = { bounds: { minX: -100, maxX: 100, minZ: -100, maxZ: 100 }, colliders: [], heightAt: () => 0 };
+  const position = { x: 0, y: 0, z: 0, yaw: 0 };
+  const inventory = createInventoryState(); inventory.grant('simple-sword');
+  const weapons = createWeapons({ inventory }), skills = createSkills();
+  const combat = createCombat({ world, position, getWeapon: () => weapons.profile() });
+  const magic = createMagic({ skills, inventory, weapons, combat, world, position });
+  for (const id of startingWithout('rollo')) inventory.remove(id);
+  for (const item of startingInventory('rollo')) if (!inventory.has(item.id) && inventory.grant(item.id)) weapons.setCondition(item.id, WEAPON_TYPES[item.id].maxDurability);
+  assert.equal(weapons.equip(playableCharacter('rollo').weapon), true);
+  for (const spell of startingSpells('rollo')) assert.equal(magic.learn(spell, { equip: false, announce: false }).ok, true);
+  assert.equal(inventory.has('simple-sword'), false, 'no sword');
+  assert.equal(inventory.has('wand'), false, 'and no spare wand, because he has a staff');
+  assert.equal(weapons.equippedId, 'oak-staff');
+  assert.equal(magic.known('fireball'), true, 'Fireball from the first moment');
+  assert.equal(magic.readiness('fireball').ok, true, 'cast through the staff he is holding');
+});
+
+/** The colour a ray first meets on the figure, read from the batched vertex colours. */
+function firstColour(actor, from, direction) {
+  const meshes = [];
+  actor.group.traverse(object => { if (object.isMesh) { for (let node = object; node; node = node.parent) if (!node.visible) return; meshes.push(object); } });
+  const hit = new THREE.Raycaster(from, direction.clone().normalize()).intersectObjects(meshes, false)[0];
+  if (!hit) return null;
+  const colours = hit.object.geometry.attributes.color;
+  return colours ? new THREE.Color().fromBufferAttribute(colours, hit.face.a) : hit.object.material.color.clone();
+}
+const sameColour = (a, hex) => !!a && Math.hypot(a.r - new THREE.Color(hex).r, a.g - new THREE.Color(hex).g, a.b - new THREE.Color(hex).b) < 1e-3;
+
+test('Rollo is drawn as the user described him: grey beard and robe, a long brown cloak, and a dark brown hood worn up', () => {
+  const actor = buildPlayer('rollo');
+  assert.equal(actor.setWeapon('oak-staff'), true);
+  actor.group.updateMatrixWorld(true);
+  // The parts by name: the hood worn up, the long beard, the robe and the cloak on its own pivot.
+  assert.ok(actor.group.getObjectByName('mercenary-headgear-raised-hood'), 'a hood worn up');
+  assert.ok(actor.group.getObjectByName('Raised hood'));
+  assert.ok(actor.group.getObjectByName('mercenary-beard-long'), 'a long beard');
+  assert.ok(actor.group.getObjectByName('mercenary-hair-long-loose'), 'long hair under the hood');
+  assert.ok(actor.group.getObjectByName('mercenary-garment-robe'), 'the robe to the ankle');
+  const cloak = actor.group.getObjectByName('Long cloak');
+  assert.ok(cloak, 'a long cloak');
+  assert.equal(cloak.parent.name, 'Chest', 'hung from the shoulders, so it follows them');
+  const staff = actor.group.getObjectByName('Oak staff');
+  assert.ok(staff?.visible, 'the oak staff');
+  for (let node = staff; node; node = node.parent) if (/Wrist/.test(node.name)) { assert.equal(node.name, 'Right Wrist', 'in the right hand'); break; }
+  assert.equal(ROLLO_LOOK.hood, 0x3b2a1d); assert.equal(ROLLO_LOOK.longCloak, 0x5e4331);
+  assert.ok(RAISED_HOOD.opening > .5 && RAISED_HOOD.opening < 1.2);
+  // And as a camera sees him. Looking at his face, the eyes show through the opening of the hood.
+  const head = actor.group.getObjectByName('Head');
+  const eye = head.localToWorld(new THREE.Vector3(0.065, 0.226, 0.19));
+  const atEye = firstColour(actor, eye.clone().add(new THREE.Vector3(0, 0, 3)), new THREE.Vector3(0, 0, -1));
+  assert.ok(sameColour(atEye, 0x282d23) || sameColour(atEye, 0xf3e9cc), 'his eyes, not the inside of a hood');
+  // The beard lies on his chest, in front of it, grey. (Every ray here is a little off the centre
+  // line, where the low-poly beard and cloak have an edge a ray can slip through.)
+  const chest = head.localToWorld(new THREE.Vector3(0.015, -0.18, 0.2));
+  assert.ok(sameColour(firstColour(actor, chest.clone().add(new THREE.Vector3(0, 0, 3)), new THREE.Vector3(0, 0, -1)), ROLLO_LOOK.hair), 'a grey beard on the chest');
+  // From behind, the follow camera's view: the hood over the head, and the brown cloak to the ankle.
+  const crown = head.localToWorld(new THREE.Vector3(0.03, 0.25, 0));
+  assert.ok(sameColour(firstColour(actor, crown.clone().add(new THREE.Vector3(0, 0, -3)), new THREE.Vector3(0, 0, 1)), ROLLO_LOOK.hood), 'the hood is up');
+  for (const y of [1.1, 0.7, 0.3]) {
+    assert.ok(sameColour(firstColour(actor, new THREE.Vector3(0.03, y, -3), new THREE.Vector3(0, 0, 1)), ROLLO_LOOK.longCloak), `the cloak covers his back at ${y} m`);
+  }
+  // Below the cloak's front opening, the grey robe.
+  const robe = firstColour(actor, new THREE.Vector3(0.06, 0.5, 3), new THREE.Vector3(0, 0, -1));
+  assert.ok(robe && Math.abs(robe.r - robe.g) < .02 && Math.abs(robe.g - robe.b) < .03, 'a grey robe in front');
 });

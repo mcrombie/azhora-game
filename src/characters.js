@@ -64,6 +64,13 @@ export const MERCENARY_BUILDS = Object.freeze({
   slight: Object.freeze({ height: 0.94, girth: 0.9, shoulders: -0.03 }),
 });
 
+/**
+ * The hood worn up (`headgear: 'raised-hood'`): the half-angle of the opening round the face, how
+ * far the opening is tipped down, and the shell's width, depth and height in head units. Tests
+ * look through the opening at the eyes (tests/player-characters.test.js), so they read these too.
+ */
+export const RAISED_HOOD = Object.freeze({ opening: 0.78, tilt: 0.2, scale: Object.freeze([0.29, 0.3, 0.33]) });
+
 function material(color, extra = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.91, flatShading: true, ...extra });
 }
@@ -1474,8 +1481,9 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   part(body, torsoShape, cloth, [0, 1.12, 0], [isDyer ? 0.86 : 1, 1, isDyer ? 0.64 : 0.68]);
   if (isMercenary) {
     // The plain laced jerkin is the company's only shared piece, and the two men
-    // in a quilted coat or a sleeveless cut do not wear even that.
-    if (garment !== 'gambeson') {
+    // in a quilted coat or a sleeveless cut do not wear even that. Nor does a sorcerer of the
+    // Guild under his robe (`jerkin: false`; Rollo and Taleth, the user, 5 October 2026).
+    if (garment !== 'gambeson' && look?.jerkin !== false) {
       part(body, new THREE.CylinderGeometry(0.262, 0.228, 0.34, 8), leather, [0, 1.105, 0], [1, 1, 0.7]);
       for (const y of [1.2, 1.1, 1.0]) box(body, bootMat, [0, y, 0.187], [0.05, 0.02, 0.012]);
     }
@@ -1636,6 +1644,16 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
         fork.rotation.z = side * 0.2;
         round(jaw, hairMat, [side * 0.076, -0.115, 0.108], [0.038, 0.058, 0.038]);
       }
+      moustache(); chops();
+    } else if (facialHair === 'long') {
+      // **A long beard** (Rollo's grey and Taleth's white; the user, 5 October 2026): the full
+      // beard, and under it a fall to the breastbone that narrows to a point, tipped forward so it
+      // lies on the chest rather than in it. Mark's beard is the precedent, though his face sits
+      // deeper in his hood than anybody else's.
+      round(jaw, hairMat, [0, 0.085, 0.132], [0.13, 0.086, 0.098]);
+      round(jaw, hairMat, [0, 0.03, 0.122], [0.12, 0.082, 0.092]);
+      const fall = part(jaw, new THREE.ConeGeometry(0.112, 0.4, 7), hairMat, [0, -0.15, 0.158], [1, 1, 0.6]);
+      fall.rotation.set(-0.24, 0, Math.PI);
       moustache(); chops();
     } else if (facialHair !== 'clean') {
       round(jaw, hairMat, [0, 0.085, 0.13], [0.125, 0.082, 0.094]);
@@ -2210,6 +2228,36 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
         const shoulderFold = round(body, hoodFold, [side * 0.196, 1.278, -0.02], [0.14, 0.07, 0.14]);
         shoulderFold.rotation.z = side * -0.14;
       }
+    } else if (headgear === 'raised-hood') {
+      // **A hood worn up** (Rollo; the user, 5 October 2026: "a dark brown hood"). The kit's
+      // `hood` is a cowl pushed back off the brow; this one is drawn over the head and forward of
+      // it. It is a shell with a round opening cut at one pole, the pole turned to face forward
+      // and tipped a little down, so the brim stands out over the brow, the opening clears the
+      // chin and the beard, and the face does the talking from inside it. Its colour is its own
+      // (`look.hood`), because a sorcerer's hood is seldom the colour of his robe; without one it
+      // is the tunic's, darkened. Mark the doomsayer's deep hood is his own and is not this.
+      const hoodColour = Number.isInteger(look?.hood) ? look.hood : new THREE.Color(tunic).multiplyScalar(0.5).getHex();
+      const hoodMat = material(hoodColour);
+      const hoodFold = material(new THREE.Color(hoodColour).lerp(new THREE.Color(0xc9b08a), 0.16));
+      const frame = new THREE.Group(); frame.name = 'Raised hood'; worn.add(frame);
+      frame.position.set(0, 0.2, -0.02); frame.rotation.x = Math.PI / 2 + RAISED_HOOD.tilt;
+      // In the frame, y runs out through the opening, x across the face and z down the back.
+      const [width, depth, height] = RAISED_HOOD.scale, open = RAISED_HOOD.opening;
+      part(frame, new THREE.SphereGeometry(1, 12, 9, 0, Math.PI * 2, open, Math.PI - open), hoodMat, [0, 0, 0], [width, depth, height]);
+      // The edge of the opening, rolled, so the cloth has a thickness where the eye meets it.
+      const rim = part(frame, new THREE.TorusGeometry(1, 0.07, 4, 16), hoodFold, [0, depth * Math.cos(open), 0],
+        [width * Math.sin(open), height * Math.sin(open), 0.3]);
+      rim.rotation.x = Math.PI / 2;
+      // A little point at the crown, falling back, so the shape reads as a hood and not a helmet.
+      const point = part(worn, new THREE.ConeGeometry(0.11, 0.3, 6), hoodMat, [0, 0.47, -0.2]);
+      point.rotation.x = -2.1;
+      // Where it falls on the shoulders: a broad fold round the neck, over the top of the cloak.
+      round(body, hoodMat, [0, 1.3, -0.06], [0.32, 0.11, 0.25]);
+      round(body, hoodFold, [0, 1.36, -0.2], [0.2, 0.1, 0.1]);
+      for (const side of [-1, 1]) {
+        const shoulderFold = round(body, hoodMat, [side * 0.2, 1.282, -0.02], [0.15, 0.075, 0.15]);
+        shoulderFold.rotation.z = side * -0.14;
+      }
     }
   }
 
@@ -2681,6 +2729,16 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       }
       // Wide sleeves that hang below the elbow.
       for (const side of [-1, 1]) part(worn, new THREE.CylinderGeometry(0.086, 0.134, 0.24, 8), robeMat, [side * 0.238, 1.02, 0], [1, 1, 0.9]);
+    }
+    if (Number.isInteger(look?.longCloak)) {
+      // **A long cloak with a colour of its own** (Rollo; the user, 5 October 2026: "wears a brown
+      // cloak"). Over whatever garment he wears, from the shoulders to just above the ankle, open
+      // down the front so the robe shows, and wider at the hem than the robe it covers. It hangs on
+      // its own pivot and swings a little behind the walk, as the traveler's short one does; the
+      // inside is the same cloth, seen through the opening.
+      const cloakMat = material(look.longCloak, { side: THREE.DoubleSide });
+      clothPivot = new THREE.Group(); clothPivot.name = 'Long cloak'; clothPivot.position.set(0, 1.2, -0.03); body.add(clothPivot);
+      part(clothPivot, new THREE.CylinderGeometry(0.32, 0.45, 1.06, 12, 3, true, Math.PI * 0.36, Math.PI * 1.28), cloakMat, [0, -0.53, 0], [1, 1, 0.82]);
     }
   }
   if (isDoomsayer) {

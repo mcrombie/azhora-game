@@ -1,4 +1,5 @@
-import { SPELLS, SPELL_IDS, FOCUS_WEAPONS, castWith, focusAt, spellXp, readingXp, learnableSpell } from './sorcery.js';
+import { SPELLS, SPELL_IDS, FOCUS_WEAPONS, SORCERY, castWith, focusAt, spellXp, readingXp, learnableSpell, fieldXp, soundingText } from './sorcery.js';
+import { ALL_FARM_ROWS } from './farming.js';
 import { meleeLineClear } from './melee-contact.js';
 import { forestSegmentHit } from './forest-sightline.js';
 import { forestBodyHit } from './forest-arrows.js';
@@ -11,6 +12,9 @@ const alive = actor => finite(actor) && !actor.dead && actor.active !== false &&
   && !(Number.isFinite(actor.hp) && actor.hp <= 0);
 const gap = (a,b) => Math.hypot(a.x-b.x,a.z-b.z);
 const forestRanger = actor => (actor.npcId ?? actor.id)?.startsWith('ibenwood-ranger-');
+/** How many beds a dew reached, whatever shape the farm answered in (src/farming.js `waterAllWithin`). */
+const wateredCount = answer => Number.isFinite(answer) ? Math.max(0, Math.floor(answer))
+  : Array.isArray(answer) ? answer.length : Number.isFinite(answer?.count) ? answer.count : Array.isArray(answer?.watered) ? answer.watered.length : 0;
 
 /** Thoughts are authored flavour, never extra testimony or a substitute for Troy's case. */
 export function thoughtOf(npc) {
@@ -37,9 +41,13 @@ export function validateMagicSnapshot(data) {
 /** Small spell runtime shared by the game and tests. Only learned spells are castable:
  * level one in a school does not mean its teacher has already shown the spell.
  * `damageWorld` applies one external NPC contact and returns actual {damage,hp,maxHp,dead}.
+ * Field sorcery (Taleth's, 5 October 2026) works on the farm: `farming` is the farming model
+ * (`describeBed`, `waterAllWithin`), `clock` the play clock it grows on, and `fieldBeds` where
+ * the beds are; a working that finds nothing to work on costs nothing.
  */
 export function createMagic({ skills, inventory, weapons, combat, position, world,
-  getBodies = () => [], damageWorld = () => null, getCastOrigin = () => null, onEvent = () => {} } = {}) {
+  getBodies = () => [], damageWorld = () => null, getCastOrigin = () => null, onEvent = () => {},
+  farming = null, clock = () => 0, fieldBeds = ALL_FARM_ROWS } = {}) {
   const learned = new Set(), read = new Set();
   let selected = null, focus = 60, pending = null, recovery = null, sequence = 0;
   const projectiles = [], swarms = [];
@@ -118,11 +126,43 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
     return result(true,'ready');
   }
 
+  /** The bed nearest a point, within `reach` metres, or null. */
+  function nearestBed(at, reach) {
+    let best = null, gapTo = Infinity;
+    for (const bed of fieldBeds ?? []) { const d = gap(bed, at); if (d <= reach && d < gapTo) { best = bed; gapTo = d; } }
+    return best;
+  }
+
+  /**
+   * A field working, cast with the staff on the ground in front of him: no throw and no hit. Sound
+   * the Soil reads the nearest bed through the farm (`describeBed`); Call the Dew waters every
+   * growing bed within reach (`waterAllWithin`). Focus is spent only when the ground answered.
+   */
+  function work(id, profile, from) {
+    const now = Number(typeof clock === 'function' ? clock() : clock) || 0;
+    if (profile.field === 'sound') {
+      const bed = nearestBed(from, profile.range);
+      if (!bed) return {ok:false,code:'no-bed',reason:`Stand within ${profile.range} paces of a crop bed, then plant the staff.`};
+      const reading = farming?.describeBed?.(bed.id, now) ?? null, text = reading ? soundingText(reading) : '';
+      if (!text) return {ok:false,code:'silent',reason:'The ground here does not answer.'};
+      focus -= profile.cost; selected = id; skills.gain(profile.school, fieldXp('sound'));
+      const result = {ok:true,id,kind:'sound',bedId:bed.id,name:bed.name ?? 'The ground',text,reading};
+      emit('field-working', result); return result;
+    }
+    const answer = farming?.waterAllWithin?.({x:from.x,z:from.z}, profile.range, now) ?? null, count = wateredCount(answer);
+    if (!count) return {ok:false,code:'dry',reason:answer?.reason ?? 'No growing bed within reach wants water.'};
+    focus -= profile.cost; selected = id; skills.gain(profile.school, fieldXp('water', count));
+    const result = {ok:true,id,kind:'water',count,bedIds:Array.isArray(answer?.watered) ? [...answer.watered] : [],name:SPELLS[id].name,
+      text:`The dew settles on ${count === 1 ? 'one growing bed' : `${count} growing beds`} and the ground drinks.`};
+    emit('field-working', result); return result;
+  }
+
   function cast(id = selected, { target = null, yaw = caster()?.yaw ?? 0 } = {}) {
     const ready = readiness(id);
     if (!ready.ok) return ready;
     const profile = castWith(id, {level:skills.level(SPELLS[id].school),weapon:ready.weaponId});
     const from = {...caster()};
+    if (profile.field) return work(id, profile, from);
     if (profile.spoken) {
       const candidates = bodies();
       const person = target ? candidates.find(body => body.id === target.id || body.npcId === target.id) :
@@ -229,8 +269,10 @@ export function createMagic({ skills, inventory, weapons, combat, position, worl
     selected=data.selected??[...learned][0]??null;focus=Math.min(data.focus,capacity().focus);stop();return true;
   }
   function select(id) {if(!learned.has(id))return false;selected=id;return true;}
+  /** Focus given back from outside a cast: a harvest pays a little (`SORCERY.harvestFocus`, design section 3). */
+  function refocus(amount = SORCERY.harvestFocus) {const before=focus;focus=Math.min(capacity().focus,focus+Math.max(0,Number(amount)||0));return focus-before;}
   function cycle() {const ids=[...learned];if(ids.length)selected=ids[(ids.indexOf(selected)+1)%ids.length];return selected;}
-  return {learn,cast,readiness,update,select,cycle,restore,stop,pose,known:id=>learned.has(id),
+  return {learn,cast,readiness,update,select,cycle,restore,stop,pose,refocus,known:id=>learned.has(id),
     snapshot:()=>({version:MAGIC_VERSION,learned:[...learned],selected,focus,read:[...read]}),
     view:()=>({learned:[...learned],selected,focus,maxFocus:capacity().focus,casting:pending?.profile.id??null,readiness:readiness(),
       remaining:pending?.remaining??0,projectiles:projectiles.map(ball=>({...ball})),swarms:swarms.map(swarm=>({...swarm}))})};

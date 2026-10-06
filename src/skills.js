@@ -225,7 +225,10 @@ export const SKILLS = Object.freeze({
       unlock(1, 'Water each planting once: 4 experience, earlier growth and one extra crop'),
       unlock(1, 'Four reusable commons rows; Stanley shares seeds and farm recipes'),
       unlock(1, 'Pick Applegarth orchard apples; trees bear again in ten minutes'),
+      unlock(1, 'Bridge rye on the Caricas farms: four minutes, 30 experience; it wants lean ground'),
+      unlock(1, 'Field beans on the Caricas farms: 150 seconds, 26 experience; they put heart back into a bed'),
       unlock(2, 'Beets: 150 seconds, 32 experience per harvest'),
+      unlock(3, 'Soft fruit on the Caricas farms: five minutes, 40 experience; it wants rich, rested ground'),
       unlock(5, 'Drent leaf: eight minutes, 45 experience per harvest')]),
   }),
   visualarts: Object.freeze({
@@ -352,6 +355,22 @@ export const SKILLS = Object.freeze({
     unlocks: Object.freeze([unlock(1, 'After Liz’s lesson: summon bees to harry an enemy'),
       unlock(25, 'They stay longer and sting harder'), unlock(50, 'Twice the swarm of that first one'),
       unlock(75, 'They come quicker and cost less'), unlock(99, 'Sixteen seconds of them, and they do not lose interest')]),
+  }),
+  /**
+   * **Field Sorcery** (the user, 5 October 2026: the farming techniques are sorcery cast with the
+   * staff, and Taleth, Master Sorcerer of the Guild at Minora, teaches them). A fourth released
+   * school, and nobody else's to teach: Sound the Soil when he gives the charge of the Lizeem
+   * farmlands, Call the Dew when Caricas is brought back to work (src/sorcery.js).
+   */
+  field: Object.freeze({
+    id: 'field', name: 'Field Sorcery', group: SORCERY_HEADING,
+    blurb: 'The ground, the water and what grows between them. It will never kill a spider, and it has fed more people than every fireball ever thrown.',
+    teacher: 'Taleth, Master Sorcerer of the Guild, outside the tower in Minora, if you take his charge',
+    thresholds: RUNESCAPE_TABLE,
+    unlocks: Object.freeze([unlock(1, 'After Taleth’s charge: Sound the Soil tells you what a bed needs'),
+      unlock(1, 'After Caricas is restored: Call the Dew waters every growing bed on a farm at once'),
+      unlock(50, 'Call the Dew for sixteen focus rather than twenty'),
+      unlock(99, 'Call the Dew for twelve, and Sound the Soil for three')]),
   }),
   frost: Object.freeze({
     id: 'frost', name: 'Frost', group: SORCERY_HEADING, reserved: true,
