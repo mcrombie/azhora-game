@@ -222,6 +222,17 @@ export const gradePoints = ({ fit = 0, watered = false, level = 1, regarded = fa
   fit + (watered ? 1 : 0) + (level >= 5 ? 1 : 0) + (level >= 20 ? 1 : 0) + (regarded ? 1 : 0);
 export const gradeFor = (points, level = 1) => points >= 5 && level >= 20 ? 'prize' : points >= 4 ? 'fine' : points >= 2 ? 'good' : 'plain';
 export const isFineGrade = grade => grade === 'fine' || grade === 'prize';
+/**
+ * A picking from a kept tree that has a fine kind (`fine`, Idunn's hazels) is graded by the farmer's hand
+ * alone, since nothing is sown or watered: Fine at Farming 16 and Prize at 20, coming in as the fine kind, and
+ * Plain below (settled at integration, 6 October 2026, so the Measure's hazelnut line can be filled). A tree
+ * with no fine kind, an Applegarth apple, is always Plain.
+ */
+export const PICK_FINE_LEVEL = 16;
+export const PICK_PRIZE_LEVEL = 20;
+export const pickGrade = (tree, level = 1) => (typeof tree?.fine !== 'string' ? 'plain' : level >= PICK_PRIZE_LEVEL ? 'prize' : level >= PICK_FINE_LEVEL ? 'fine' : 'plain');
+/** The most one handler may add to a harvest (`onHarvest`, `added`). */
+const MOST_ADDED = 99;
 
 /**
  * The fox's regard (design §5.1, the Caricans' vel-caric-oss). The farmlands quest marks a planting
@@ -502,7 +513,8 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
    * A share taken at harvest (design §7.3). `handler(bedId, result)` is called with the harvest
    * as it stands, `{ crop, produce, count, grade, grown }`, where `count` is what is left after
    * any handler before it; it may return `{ taken, note }`, and that many units are withheld
-   * before the rest reaches the satchel. Returns a function that removes the handler.
+   * before the rest reaches the satchel, or `{ added }` (6 October 2026, Airmid's harvest basket),
+   * and that many more of the produce reach it. Returns a function that removes the handler.
    */
   function onHarvest(handler) {
     if (typeof handler !== 'function') return () => false;
@@ -541,18 +553,20 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     if (here.stage === 'sown') return { ok: false, reason: `Not for another ${Math.ceil(here.left)} seconds. It grows whether you are watching it or not.` };
     const kind = CROPS[here.crop], grade = here.grade, produce = isFineGrade(grade) ? kind.fine : kind.item, grown = here.quantity;
     if (inventory?.add && !inventory.add(produce, grown)) return { ok: false, reason: 'There is no room for the harvest in your satchel. The crop is still in the row.' };
-    let count = grown;
+    let count = grown, taken = 0, added = 0;
     const notes = [];
     // The country's own hook first (6 October 2026), then the share-takers, in the order they came.
     const own = countryOf(id)?.onHarvest;
     for (const handler of [...(own ? [own] : []), ...shares]) {
       let share = null;
       try { share = handler(id, freeze({ crop: kind.id, produce, count, grade, grown })); } catch { share = null; }
-      const taken = Math.max(0, Math.min(count, Math.floor(Number(share?.taken) || 0)));
-      count -= taken;
+      const withheld = Math.max(0, Math.min(count, Math.floor(Number(share?.taken) || 0)));
+      count -= withheld; taken += withheld;
+      // A handler may add to the harvest (Airmid's basket): the satchel takes the more, or nothing is added.
+      const more = Math.max(0, Math.min(MOST_ADDED, Math.floor(Number(share?.added) || 0)));
+      if (more && (!inventory?.add || inventory.add(produce, more))) { count += more; added += more; }
       if (typeof share?.note === 'string' && share.note) notes.push(share.note);
     }
-    const taken = grown - count;
     if (taken && inventory?.remove) inventory.remove(produce, taken);
     // A crop the ground grows by itself (meadow hay) gives no seed back.
     if (inventory?.add && kind.seed) inventory.add(kind.seed, 1);
@@ -561,7 +575,7 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     state.rows.delete(id);
     state.reaped++;
     const xp = hand ? 0 : here.xp, gained = pay(xp);
-    const result = { row: id, crop: kind.id, produce, count, grade, grown, taken, notes, item: produce, quantity: count, seed: kind.seed, xp,
+    const result = { row: id, crop: kind.id, produce, count, grade, grown, taken, added, notes, item: produce, quantity: count, seed: kind.seed, xp,
       regarded: here.regarded, heart, levelled: !!gained?.levelled, level: gained?.level ?? level(), ...(hand ? { hand } : {}), ...(working ? { working } : {}) };
     onEvent({ type: 'row-reaped', ...result });
     return { ok: true, ...result };
@@ -633,11 +647,13 @@ export function createFarming({ skills = null, inventory = null, onEvent = () =>
     if (!tree) return { ok: false, reason: 'There is no such tree.' };
     if (tree.stage === 'picked') return { ok: false, reason: `This one is picked out. It will bear again in about ${Math.ceil(tree.left)} seconds.` };
     if (level() < tree.level) return { ok: false, reason: `This tree wants farming level ${tree.level}.` };
-    if (inventory?.add && !inventory.add(tree.item, 1)) return { ok: false, reason: `There is no room for ${tree.item === ORCHARD_ITEM ? 'the apple' : 'it'} in your satchel. It is still on the tree.` };
+    // Graded by the picker's hand (`pickGrade`, 6 October 2026): Fine and Prize come in as the tree's fine kind.
+    const grade = pickGrade(tree, level()), item = isFineGrade(grade) ? tree.fine : tree.item, xp = Math.round(tree.xp * GRADE_XP[grade]);
+    if (inventory?.add && !inventory.add(item, 1)) return { ok: false, reason: `There is no room for ${tree.item === ORCHARD_ITEM ? 'the apple' : 'it'} in your satchel. It is still on the tree.` };
     state.trees.set(id, now(playSeconds));
-    const gained = pay(tree.xp);
-    onEvent({ type: 'tree-picked', tree: id, item: tree.item, xp: tree.xp, level: gained?.level ?? level(), levelled: !!gained?.levelled });
-    return { ok: true, tree: id, item: tree.item, quantity: 1, xp: tree.xp, levelled: !!gained?.levelled, level: gained?.level ?? level() };
+    const gained = pay(xp);
+    onEvent({ type: 'tree-picked', tree: id, item, grade, xp, country: tree.country ?? null, level: gained?.level ?? level(), levelled: !!gained?.levelled });
+    return { ok: true, tree: id, item, grade, quantity: 1, xp, levelled: !!gained?.levelled, level: gained?.level ?? level() };
   }
 
   /** The whole farm at a moment of play, for the journal and for whoever draws the rows. */
