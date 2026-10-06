@@ -5,7 +5,11 @@ import { yunethreReserved } from './yunethre-world.js';
 import { menoraReserved } from './menora-city.js';
 import { caricasSettlementReserved } from './caricas-settlement.js';
 import { regionalFarmlandClear } from './regional-farmland.js';
-const frontierReserved=(x,z)=>menoraReserved(x,z,2)||caricasSettlementReserved(x,z,2)||regionalFarmlandClear(x,z,2)||yunethreReserved(x,z,1);
+import { nethereumFarmReserved } from './nethereum-farm.js';
+import { nesdorFarmReserved } from './nesdor-farm.js';
+// Haethom, its levee, meadow and weir (src/nethereum-farm.js), and Ninehands, the hazel wood, the inn and the Way
+// (src/nesdor-farm.js), 6 October 2026, keep the scatter off as the towns do.
+const frontierReserved=(x,z)=>menoraReserved(x,z,2)||caricasSettlementReserved(x,z,2)||regionalFarmlandClear(x,z,2)||yunethreReserved(x,z,1)||nethereumFarmReserved(x,z,1)||nesdorFarmReserved(x,z,1);
 import { registerWorldTree, worldTreeId } from './tree-registry.js';
 import { hexOwnerAt, REGION_CELLS, SURVEY, hexAt, hexCentre, METRES_PER_HEX, landDistance } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
