@@ -79,7 +79,8 @@ function normalize(quest, id, type = typeFor(quest)) {
     target: copyTarget(quest.target),
   };
   for (const key of ['objective', 'region']) if (typeof quest[key] === 'string') view[key] = quest[key];
-  for (const key of ['notes', 'actions', 'steps']) if (quest[key] !== undefined) view[key] = copyValue(quest[key]);
+  // `measure` is the Farmlands of the Lizeem's ledger page (src/lizeem-farmlands.js `measureView`).
+  for (const key of ['notes', 'actions', 'steps', 'measure']) if (quest[key] !== undefined) view[key] = copyValue(quest[key]);
   if (quest.trackable === false) view.trackable = false;
   return view;
 }

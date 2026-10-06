@@ -14,6 +14,7 @@ import { ELAGOS_REACHES, inElagosWater } from '../src/elagos-world.js';
 import { groundWithRiver } from '../src/world-terrain.js';
 import { SUBREGIONS } from '../src/map-fog.js';
 import { regionBuildStatus } from '../src/build-status.js';
+import { LIZEEM_CARICAS_IDS } from '../src/lizeem-people.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const { WEST_LIFE_ZONES, createWestLife } = await sourceModule('../src/west-regions-life.js');
@@ -170,8 +171,11 @@ test('Nesdor is charted and listed, and nobody lives there', () => {
     assert.equal(hexOwnerAt(landmark.x, landmark.z), 'Nesdor', `${landmark.id} stands in Nesdor`);
   assert.ok(SUBREGIONS.filter(area => area.region === 'Nesdor').length >= 3);
   assert.equal(regionBuildStatus('Nesdor').playable, true);
-  // Every western region is terrain and wildlife: not one of them places a person.
-  for (const name of ['Vastos', 'Meneth', 'Caricas', 'Nesdor'])
+  // Every western region is terrain and wildlife, except that Caricas now has the people of the
+  // Farmlands of the Lizeem (the user, 5 October 2026; src/lizeem-people.js), and may list them and nobody else.
+  for (const name of ['Vastos', 'Meneth', 'Nesdor'])
     assert.deepEqual([...regions.find(region => region.name === name).npcIds], [], `${name} places nobody`);
+  assert.ok(regions.find(region => region.name === 'Caricas').npcIds.every(id => LIZEEM_CARICAS_IDS.includes(id)),
+    'Caricas places only the farmlands’ people');
   assert.equal(NESDOR_BECK.fordUntil, 1, 'the beck is shallow enough to walk through, like every beck out here');
 });

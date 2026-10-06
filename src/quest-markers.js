@@ -81,7 +81,7 @@ export function magicTeacherIds({ spider, cat, murder, knownSpells = [] } = {}) 
  * the open one, and the two are decided together.
  *
  * `view`: { questStage, busy, heardDoom, ids: {…MARKER_ROLES}, arcDestinations,
- * chapterDestinations, longWay, skillTeachers, lockedSkillTeachers, magicTeachers, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
+ * chapterDestinations, longWay, skillTeachers, lockedSkillTeachers, magicTeachers, farmlandsDestinations, acornQuestOpen, feederWantsCook, hasRod, birdingLearned,
  * archaeologyReport, forestOpen, wineRecommended }.
  */
 /**
@@ -121,6 +121,9 @@ export function markerFor(id, view = {}) {
   // Its host stops supplying a destination once it is completed or failed.
   if (!busy && holds(view.escortDestinations, id)) kinds.push('plot');
   if (!busy && holds(view.deedDestinations, id)) kinds.push('deed');
+  // The Farmlands of the Lizeem (src/lizeem-farmlands.js `markerIds`; the user, 5 October 2026). Taleth's
+  // charge begins in Minora rather than on the shore, so its people wear the green book from the first morning.
+  if (!busy && live('lizeem-farmlands') && holds(view.farmlandsDestinations, id)) kinds.push('skill');
   // And nothing else until the tutorial is behind the traveler.
   if (!ashore && stage < 2) return mark(strongestMarker(kinds));
   // A first lesson is a live opportunity even when optional quest chains are parked.

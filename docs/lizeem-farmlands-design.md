@@ -208,7 +208,7 @@ The arcs can be taken in any order. Each country's first crop needs no level, an
 **The steps.**
 
 1. Cross the bridge and find the North Farm idle. The Voice of the Council lends it for a season, for a share of what it bears.
-2. Sow rye in two beds and beans in two. Harvest, swap them over, and see the rye come up Good on the bean ground.
+2. Sow rye in two beds and beans in two. Harvest, swap them over, and see the rye come up Good on the bean ground. *(Built differently, 6 October 2026: under the rotation rules in `src/farming.js` rye straight after beans comes up Plain, because beans leave fresh ground too rich for rye. The swap step accepts any grade and Vertumnus says so; the Fine rotation is beans, a day's rest, fruit or barley, then rye.)*
 3. The trouble (see question 1): either the garrison captain's quartermaster claims part of the first harvest for Cedric's granary, and Rollo hands it over or hides a share for the families in the upland; or rust takes a bed sown rye after rye and has to be broken with beans and a rest.
 4. Bring in Fine rye.
 5. Bake the tart, have it sealed at the grain court, and carry it to Taleth.
