@@ -1,6 +1,8 @@
-/** Authored fields on Feradom's seaward plains and the first dry ground outside Ambron.
- * Coordinates only: no terrain, world, farming-model, or renderer dependency. Fields are
- * anonymous working places, not settlements and not invitations to invent residents. */
+/** Authored fields on Feradom's seaward plains, the first dry ground outside Ambron, and the
+ * five idle farmsteads of Caricas. Coordinates only: no terrain, world, farming-model, or renderer
+ * dependency. Fields are anonymous working places, not settlements and not invitations to invent
+ * residents. The Caricas beds farm by rotation and alone grow bridge rye, field beans and soft
+ * fruit (src/farming.js, docs/lizeem-farmlands-design.md §5.1); their seed benches stock them. */
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
 const local = (farm, x, z) => point(farm.x + x, farm.z + z);
@@ -54,6 +56,9 @@ export const FARMSTEADS = freeze(SPECS.map(([id, name, region, x, z, main, side,
   });
 }));
 export const REGIONAL_FARM_ROWS = freeze(FARMSTEADS.flatMap(farm => farm.rows));
+/** The five Caricas farmsteads and their seventeen beds, which the farmlands quest lends out. */
+export const CARICAS_FARMSTEADS = freeze(FARMSTEADS.filter(farm => farm.region === 'Caricas'));
+export const CARICAS_FARM_ROWS = freeze(CARICAS_FARMSTEADS.flatMap(farm => farm.rows));
 export const REGIONAL_SEED_STATIONS = freeze(FARMSTEADS.map(farm => farm.seedStation));
 // Light, pedestrian access joins the pass floors and existing city approaches.
 // The distant coastal orchard instead joins its neighbouring plain farm. These

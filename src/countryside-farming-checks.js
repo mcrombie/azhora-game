@@ -1,10 +1,12 @@
-import { FARMSTEADS } from './regional-farmland.js';
+import { FARMSTEADS, REGIONAL_FARM_ROWS, CARICAS_FARM_ROWS } from './regional-farmland.js';
 /** Exercise the actual field UI, then reload its ordinary session checkpoint. */
 export async function checkCountrysideFarming(h, {check,capture,travel}) {
   const tap=code=>{h.press(code);h.release(code);};
   const choose=async id=>{const b=document.querySelector(`#dialogue-choices [data-choice="${id}"]`);check(b&&!b.disabled,`${id} is available at this regional bed`);b.click();await h.frames(2);};
   check(h.world.farmlandMetrics?.farms===FARMSTEADS.length,'All regional farm sites are rendered');
-  check(h.world.farmlandMetrics?.gardenBeds===30,'Thirty regional garden beds connect to the farming system');
+  check(h.world.farmlandMetrics?.gardenBeds===REGIONAL_FARM_ROWS.length,`All ${REGIONAL_FARM_ROWS.length} regional garden beds connect to the farming system`);
+  // The Caricas crops are sown only on its seventeen beds (src/farming.js, 6 October 2026).
+  check(CARICAS_FARM_ROWS.length===17&&h.farming.sowable(REGIONAL_FARM_ROWS.find(row=>row.region==='Feradom').id).every(kind=>!kind.region),'Caricas crops stay on the Caricas farms');
   for(const id of ['feradom-middle-fields','ambron-south-allotments']) {
     const farm=FARMSTEADS.find(f=>f.id===id),row=farm.rows[0];
     await travel(farm.region);

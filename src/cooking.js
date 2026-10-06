@@ -29,6 +29,23 @@ export const RECIPES = Object.freeze({
     note: 'Acorns leached in three waters until the bitterness is gone, ground to a coarse meal, worked with water into a stiff dough and cooked flat on a stone at the edge of the fire.' }),
   'honey-cake': recipe('honey-cake', { name: 'Honey cake', xp: 35, needs: Object.freeze({ acorn: 2, honeycomb: 1 }), makes: 'honey-cake',
     note: 'The same meal, a comb of Troy\u2019s honey worked through it while the wax is still soft, and a little longer on the stone. It is a cake the way a hedge is a wall, and it will get you up a hill.' }),
+  // The Caricas kitchen (docs/lizeem-farmlands-design.md \u00a77.6), taught by the people of the
+  // farmlands quest with `learn` as every recipe is. Each dish has a fine form: its own row and
+  // its own satchel item, cooked from the fine kind of each crop in it and healing 10 more. It is
+  // known as soon as the plain dish is, so the fire offers it with nothing more to learn.
+  'rye-cheese-loaf': recipe('rye-cheese-loaf', { name: 'Rye loaf with onion and river cheese', xp: 25, needs: Object.freeze({ 'bridge-rye': 2, 'ewe-cheese': 1 }), makes: 'rye-cheese-loaf', fine: 'rye-cheese-loaf-fine',
+    note: 'Two sheaves of bridge rye baked dark with an onion through the dough, and a wedge of ewe\u2019s cheese melted over the top at a lit fire. Restores up to 25 health.' }),
+  'rye-cheese-loaf-fine': recipe('rye-cheese-loaf-fine', { name: 'Fine rye loaf with onion and river cheese', xp: 35, needs: Object.freeze({ 'bridge-rye-fine': 2, 'ewe-cheese': 1 }), makes: 'rye-cheese-loaf-fine', fineOf: 'rye-cheese-loaf',
+    note: 'The same loaf from two Fine bridge rye and a wedge of ewe\u2019s cheese. Restores up to 35 health.' }),
+  'bean-pottage': recipe('bean-pottage', { name: 'Bean pottage', xp: 30, needs: Object.freeze({ 'field-beans': 2, barley: 1 }), makes: 'bean-pottage', fine: 'bean-pottage-fine',
+    note: 'Two field beans and a barley, soaked and simmered at a lit fire until the beans give. Restores up to 40 health.' }),
+  'bean-pottage-fine': recipe('bean-pottage-fine', { name: 'Fine bean pottage', xp: 40, needs: Object.freeze({ 'field-beans-fine': 2, 'barley-fine': 1 }), makes: 'bean-pottage-fine', fineOf: 'bean-pottage',
+    note: 'Bean pottage from two Fine field beans and a Fine barley. Restores up to 50 health.' }),
+  'soft-fruit-tart': recipe('soft-fruit-tart', { name: 'Soft-fruit tart', xp: 40, needs: Object.freeze({ 'soft-fruit': 2, 'bridge-rye': 1 }), makes: 'soft-fruit-tart', fine: 'soft-fruit-tart-fine',
+    note: 'Two soft fruit in a crust of bridge-rye meal, baked at a lit fire until the juice runs. Restores up to 45 health.' }),
+  // 50, not 55: tests/foods.test.js holds every food at 50 or less (src/consumables.js).
+  'soft-fruit-tart-fine': recipe('soft-fruit-tart-fine', { name: 'Fine soft-fruit tart', xp: 50, needs: Object.freeze({ 'soft-fruit-fine': 2, 'bridge-rye-fine': 1 }), makes: 'soft-fruit-tart-fine', fineOf: 'soft-fruit-tart',
+    note: 'The tart from two Fine soft fruit and a Fine bridge rye. Restores up to 50 health.' }),
 });
 export const RECIPE_IDS = Object.freeze(Object.keys(RECIPES));
 
@@ -55,11 +72,14 @@ export function validateCookingSnapshot(data, { allowMissing = true } = {}) {
 
 export function createCooking({ skills, onEvent = () => {}, canUseFire = () => true } = {}) {
   const state = { met: false, known: new Set(), made: {}, cups: 0, lastCup: -Infinity };
+  /** A fine dish is known with its plain one; learning the fine form learns the plain. */
+  const knows = id => state.known.has(id) || (!!RECIPES[id]?.fineOf && state.known.has(RECIPES[id].fineOf));
 
   /** A recipe learned; the first one teaches the skill. */
-  function learn(id, { preparedFire = false } = {}) {
-    if (!RECIPES[id]) return { ok: false, reason: 'Nobody makes that.' };
+  function learn(requested, { preparedFire = false } = {}) {
+    if (!Object.hasOwn(RECIPES, requested ?? '')) return { ok: false, reason: 'Nobody makes that.' };
     if (!preparedFire && !canUseFire()) return { ok: false, reason: 'Learn Fire Making from Lee Anne, or take a lesson at a teacher’s already-lit fire.' };
+    const id = RECIPES[requested].fineOf ?? requested;
     const first = !state.met, known = state.known.has(id);
     state.met = true; state.known.add(id);
     const learned = skills?.learn?.(COOKING_SKILL) ?? { ok: false };
@@ -83,9 +103,9 @@ export function createCooking({ skills, onEvent = () => {}, canUseFire = () => t
   /** Make it at a lit fire (the host checks the fire). */
   function make(id, inventory, { preparedFire = false } = {}) {
     if (!preparedFire && !canUseFire()) return { ok: false, reason: 'Learn Fire Making from Lee Anne before cooking.' };
-    const entry = RECIPES[id];
+    const entry = Object.hasOwn(RECIPES, id ?? '') ? RECIPES[id] : null;
     if (!entry) return { ok: false, reason: 'Nobody makes that.' };
-    if (!state.known.has(id)) return { ok: false, reason: `You do not know how to make ${entry.name.toLowerCase()} yet.` };
+    if (!knows(id)) return { ok: false, reason: `You do not know how to make ${entry.name.toLowerCase()} yet.` };
     const lacking = missing(id, inventory);
     if (lacking.length) return { ok: false, reason: `You need ${lacking.join(' and ')}.`, lacking };
     const used = [];
@@ -115,7 +135,7 @@ export function createCooking({ skills, onEvent = () => {}, canUseFire = () => t
   }
 
   function view() {
-    const knownHere = id => state.known.has(id) || (id === 'cooked-fish' && state.met);
+    const knownHere = id => knows(id) || (id === 'cooked-fish' && state.met);
     const entries = RECIPE_IDS.map(id => ({ id, known: knownHere(id), made: state.made[id] ?? 0,
       name: RECIPES[id].name, detail: knownHere(id) ? RECIPES[id].note : 'A recipe you have not learned.' }));
     return { met: state.met, cups: state.cups, knownCount: entries.filter(entry => entry.known).length, total: RECIPE_IDS.length, entries };
@@ -130,5 +150,5 @@ export function createCooking({ skills, onEvent = () => {}, canUseFire = () => t
   }
 
   return { learn, cup, make, missing, noteMade, view, snapshot, restore,
-    get met() { return state.met; }, get cups() { return state.cups; }, knows: id => state.known.has(id) };
+    get met() { return state.met; }, get cups() { return state.cups; }, knows };
 }

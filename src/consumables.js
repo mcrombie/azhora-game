@@ -61,6 +61,20 @@ export const FOODS = Object.freeze({
   'salt-pork': define(35, 'You have no salt pork. The army’s barrels come up the coast from the Elagosi lake country.'),
   'smoked-whitefish': define(45, 'You have no smoked whitefish. Ambron’s lake fleet smokes it for the army’s supply trains.'),
   'narcoshi-cheese': define(45, 'You have no Narcoshi cheese. The eastern-valley cheese sells dear on the Iberos coast and rarely reaches Drent.'),
+
+  // The Caricas farms (docs/lizeem-farmlands-design.md §5.1, §7.6), and the fine kind of every
+  // crop that is eaten raw. Bridge rye and field beans are not eaten as they stand. The fine
+  // tart heals 50, not 55: tests/foods.test.js holds every food at 50 or less.
+  'soft-fruit': define(15, 'You have no soft fruit. The canes grow only on the Caricas farms, from Farming level 3.'),
+  'soft-fruit-fine': define(20, 'You have no fine soft fruit. Canes on rich, rested Caricas ground, watered and well kept, come up Fine.'),
+  'carrot-fine': define(20, 'You have no fine carrots. A well-kept bed, watered, in the hands of a practised farmer, comes up Fine.'),
+  'beet-fine': define(25, 'You have no fine beets. A well-kept bed, watered, in the hands of a practised farmer, comes up Fine.'),
+  'rye-cheese-loaf': define(25, 'You have no rye loaf with cheese. Bake two bridge rye and a wedge of ewe\u2019s cheese at a lit fire, once a Carican has shown you how.'),
+  'rye-cheese-loaf-fine': define(35, 'You have no fine rye loaf. Bake it from two Fine bridge rye and a wedge of ewe\u2019s cheese.'),
+  'bean-pottage': define(40, 'You have no bean pottage. Stew two field beans and a barley at a lit fire, once a Carican has shown you how.'),
+  'bean-pottage-fine': define(50, 'You have no fine bean pottage. Stew it from two Fine field beans and a Fine barley.'),
+  'soft-fruit-tart': define(45, 'You have no soft-fruit tart. Bake two soft fruit and a bridge rye at a lit fire, once the orchard-wife has shown you how.'),
+  'soft-fruit-tart-fine': define(50, 'You have no fine soft-fruit tart. Bake it from two Fine soft fruit and a Fine bridge rye.'),
 });
 
 export function createConsumables({ inventory, combat, onEvent = () => {} }) {
