@@ -1,4 +1,4 @@
-import {PLAYABLE} from './player-characters.js';
+import {COMPANY_PLAYABLE} from './player-characters.js';
 import {BORDER_ARENA} from './border-chapter.js';
 import {chapterOneEncounter,CHAPTER_ONE_REPORTS} from './chapter-one.js';
 
@@ -11,9 +11,9 @@ export async function runChapterOneChecks(h){
   try{await h.ready();}finally{clearInterval(loadingProgress);}h.freeze(true);
   document.getElementById('begin-chapter-one').click();
   check(!document.getElementById('opening-characters').classList.contains('hidden'),'Chapter 1 opens character selection');
-  check(document.querySelectorAll('#opening-characters [data-character]').length===PLAYABLE.length,'All eleven mercenaries are offered');
+  check(document.querySelectorAll('#opening-characters [data-character]').length===COMPANY_PLAYABLE.length,'All eleven mercenaries are offered');
   check(document.getElementById('chapter-one-enter').disabled,'No mercenary is preselected');
-  h.select(PLAYABLE[4].id);h.begin();h.freeze(true);
+  h.select(COMPANY_PLAYABLE[4].id);h.begin();h.freeze(true);
   check(h.state().chapterOne?.player===PLAYABLE[4].id,'Selected mercenary starts Chapter 1');
   check(h.column.positions().length===20,'Twenty allied soldiers are assembled');
   check(h.border.view().stage==='take-orders','The Solis envoy quest precedes battle');

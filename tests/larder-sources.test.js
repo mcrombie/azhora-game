@@ -26,13 +26,15 @@ const SOURCES = readdirSync(SRC).filter(name => name.endsWith('.js'))
 const shops = new Set(PEDDLER_STOCK.map(entry => entry.id));
 const cooked = new Set(Object.values(RECIPES).map(entry => entry.makes));
 const gathered = new Set(Object.values(PLANT_SPECIES).map(entry => entry.item).filter(Boolean));
-const farmed = new Set([...Object.values(CROPS).map(entry => entry.item), ORCHARD_ITEM]);
+// A Fine or Prize harvest comes in as the crop's fine kind, so the farm is where those come from too.
+const farmed = new Set([...Object.values(CROPS).flatMap(entry => [entry.item, entry.fine]), ORCHARD_ITEM]);
 /**
  * Anything a module other than the two that merely *describe* food names by id: a reward table,
  * a shop's stock, a recipe's output, an `inventory.add`. A food that appears nowhere outside
  * `inventory.js` and `consumables.js` is a food nobody in Azhora has ever been written holding.
  */
-const DESCRIBERS = new Set(['inventory.js', 'consumables.js', 'foods.js']);
+// prices.js and merchants.js price and post foods by id (the Lizeem market, 6 October 2026); neither hands one over.
+const DESCRIBERS = new Set(['inventory.js', 'consumables.js', 'foods.js', 'prices.js', 'merchants.js']);
 const handedOver = id => SOURCES.some(file => !DESCRIBERS.has(file.name) && file.text.includes(`'${id}'`));
 
 /** Where a food comes from, or null if the answer is nowhere. */
@@ -77,4 +79,17 @@ test('docs/known-issues.md no longer says the larder is unreachable', () => {
   for (const id of ['hazelnuts', 'bramble-berries', 'acorn-flatbread', 'honey-cake', 'roasted-chestnuts'])
     assert.doesNotMatch(known, new RegExp(`^.*${id}.*(cannot be|no way|nowhere|unobtainable).*$`, 'mi'),
       `${id} is still listed as unreachable, and it is not`);
+});
+
+test('the Caricas farms feed the larder: their fruit, the fine kind of every eaten crop, and the three dishes', () => {
+  // docs/lizeem-farmlands-design.md §5.1 and §7.6, built 6 October 2026.
+  for (const id of ['soft-fruit', 'soft-fruit-fine', 'carrot-fine', 'beet-fine']) assert.equal(source(id), 'the farm', id);
+  for (const id of ['rye-cheese-loaf', 'bean-pottage', 'soft-fruit-tart', 'rye-cheese-loaf-fine', 'bean-pottage-fine', 'soft-fruit-tart-fine'])
+    assert.equal(source(id), 'a recipe', id);
+  // And every ingredient of every dish is something a traveler can be holding.
+  for (const id of ['rye-cheese-loaf', 'bean-pottage', 'soft-fruit-tart', 'rye-cheese-loaf-fine', 'bean-pottage-fine', 'soft-fruit-tart-fine'])
+    for (const need of Object.keys(RECIPES[id].needs)) {
+      assert.ok(Object.hasOwn(INVENTORY_ITEMS, need), `${id} wants ${need}, which is not a thing`);
+      assert.ok(farmed.has(need) || source(need), `${id} wants ${need}, which nobody can get`);
+    }
 });

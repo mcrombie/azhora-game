@@ -188,8 +188,13 @@ import { createSkillAnnouncement } from './skill-announcement.js';
 import { createQuestChoice } from './quest-choice.js';
 import { companyRoadStops, legacyCompanyProgress } from './company-route.js';
 // Who you are: any of the eleven of the company, chosen at the opening (src/player-characters.js).
-import { DEFAULT_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingGear, startingInventory, startingLanguages, startingSkills } from './player-characters.js';
+import { DEFAULT_PLAYER, DEVELOPER_PLAYER, SELECTABLE, companyFor, playableCharacter, playerLook, savedPlayerCharacter, startingGear, startingInventory, startingLanguages, startingSkills, startingSpells, startingWithout } from './player-characters.js';
 import { createCharacterSelect } from './character-select.js';
+// The Farmlands of the Lizeem, Build 1 (the user, 5 October 2026: "go ahead and implement"): Taleth, the Caricas arc, its people and the market.
+import { TALETH, talethConversation } from './taleth.js';
+import { createLizeemFarmlands, talethFarmlandsChoices } from './lizeem-farmlands.js';
+import { LIZEEM_PEOPLE, LIZEEM_PEOPLE_IDS, isLizeemNpc, lizeemConversation, lizeemHiddenIds } from './lizeem-people.js';
+import { createMerchants, openTrade } from './merchants.js';
 import { cityPoint as imlamdrisPoint } from './south-suval-world.js';
 // Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
 import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE } from './opening-sequence.js';
@@ -749,6 +754,10 @@ async function init() {
   // Telemon is a watcher in the rule of the country (src/telemon-watch.js), so none of them is a town's atmosphere,
   // and the field hands are who a traveler who gets in unseen can speak to.
   for(const person of TELEMONIA_PEOPLE){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
+  // Taleth on the Guild forecourt, and the people of Minora and Caricas for the Farmlands of the Lizeem (src/taleth.js,
+  // src/lizeem-people.js; the user, 5 October 2026), stood up after the cast is trimmed as the Telemon are.
+  world.npcPositions[TALETH.id]={x:TALETH.x,z:TALETH.z};npcData.push({...TALETH});
+  for(const person of LIZEEM_PEOPLE){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createLazyCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,hat:npc.hat??false,armed:!!npc.armed},{onMaterialize:()=>{npc.shadows=undefined;npc.detailDirty=true;}});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     if(npc.scale)npc.actor.group.scale.setScalar(npc.scale);
@@ -1199,6 +1208,8 @@ async function init() {
     }
     const chosen=playableCharacter(playerId);
     if(chosen?.weapon&&inventory.has(chosen.weapon))weapons.equip(chosen.weapon);
+    // Rollo (the user, 5 October 2026): "equipped just an oaken staff", and Fireball from the first moment.
+    for(const id of startingWithout(playerId))if(inventory.has(id))inventory.remove(id,inventory.count(id));for(const id of startingSpells(playerId))magic?.learn(id,{equip:false,announce:false});
     // Restored rather than learned: a life lived before the game began does not put level-up
     // banners on the screen. An id this build's skills module does not know is simply not known.
     // A skill this mode does not show is not handed out either: nothing pays what is not on the
@@ -1403,15 +1414,23 @@ async function init() {
   // Farming, the fourteenth skill: four rows at the Mill Commons and Applegarth's kept orchard
   // (src/farming.js). The only skill with a clock of its own, which is the long road's own point.
   let sunflowerLesson=null;
-  const farming=createFarming({skills,inventory,onEvent:event=>{
+  const farming=createFarming({skills,inventory,clock:()=>playSeconds,onEvent:event=>{
     sunflowerLesson?.farmEvent(event);
     if(event.type==='row-sown')toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · FARMING`);
     if(event.type==='row-watered')toast('Watered. This crop will grow faster and yield more. +4 Farming XP.','FARMING');
-    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');
-      toast(event.type==='row-reaped'?`${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}. ${event.xp} farming.`:`An Avrel apple. ${event.xp} farming.`,
+    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');if(event.type==='row-reaped')magic?.refocus();
+      toast(event.type==='row-reaped'?`${event.grade==='good'?'Good harvest: ':event.grade==='prize'?'Prize harvest: ':''}${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}. ${event.xp} farming.`:`An Avrel apple. ${event.xp} farming.`,
         event.levelled?`FARMING LEVEL ${event.level}`:'FARMING');}
     if(hasRoadProgress())saveRoad(false);}});
   sunflowerLesson=createSunflowerLesson({farming,skills,inventory,onChange:()=>{refreshRoadSkills();},onTrack:selectQuest});
+  // **The Farmlands of the Lizeem** (docs/lizeem-farmlands-design.md; the user, 5 October 2026). The market (src/merchants.js)
+  // buys, sells and seals; the quest (src/lizeem-farmlands.js) takes the shares in kind through the farm's onHarvest. A harvest
+  // gives a little focus back (above); magic is made further down, so the quest asks for it when Call the Dew is taught.
+  const merchants=createMerchants({inventory,items:INVENTORY_ITEMS,playSeconds:()=>playSeconds,skills,onEvent:event=>{if(event.type==='sealed'&&event.grade==='prize')farmlands.enter(event.item,'prize');}});
+  const tradeContext=npc=>({merchants,openDialogue,closeDialogue,back:()=>{closeDialogue();conversation(npc);},onTrade:()=>{inventory.refresh();refreshSkillsSheet();audio?.effect('success');saveRoad(false);}});
+  const farmlands=createLizeemFarmlands({skills,farming,magic:{learn:(id,options)=>magic?.learn(id,options)??null},onEvent:event=>{if(event.type==='lizeem-caricas-restored')placeLizeemHands();inventory.refresh();refreshQuest();saveRoad(false);}});
+  function placeLizeemHands(){const hide=lizeemHiddenIds(farmlands);for(const id of LIZEEM_PEOPLE_IDS){const npc=npcById.get(id);if(!npc)continue;npc.hidden=hide.includes(id);if(npc.hidden)npc.actor.group.visible=false;}}
+  placeLizeemHands();
   const farmView=createFarmingView({scene,world,farming});
   let currentRow=null,currentAppleTree=null,nearArtEasel=false;
   const longRoad=createLongRoad();
@@ -3929,7 +3948,7 @@ async function init() {
     onJail:({seconds})=>{living.advance(seconds);playSeconds=living.clock();corpseHost.update(seconds,elapsed,{playing:true});if(riding.mounted)riding.dismount();
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
 
-  magic=createMagic({skills,inventory,weapons,combat,world,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
+  magic=createMagic({skills,inventory,weapons,combat,world,farming,clock:()=>playSeconds,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
     getCastOrigin:spellCast=>{
       // Sample the rendered hand at the release beat, even on a frame that
       // advances past it. The actual equipped model supplies its world-space tip.
@@ -3943,6 +3962,8 @@ async function init() {
     damageWorld:(body,damage)=>body.id?.startsWith('ibenwood-ranger-')?ibenwoodDefense.damage(body.id,damage):AMBUSH_REBELS.some(one=>one.id===body.id)?strikeWaitingAmbusher(body.id,damage):crime.assault({npcId:body.npcId??body.id,damage,source:'player'}),
     onEvent:event=>{if(event.type==='spell-learned'){inventory.refresh();refreshSkillsSheet();toast(`${SPELLS[event.id].name} learned. I opens equipment; equip a wand or staff, then Z casts. N changes spells.`, 'SPELL LEARNED');}
       if(event.type==='mind-read'){republic?.mindRead?.(event);toast(event.text,`MIND READ - ${event.name.toUpperCase()}`);saveRoad(false);}
+      // Field sorcery (Taleth's, 5 October 2026): what the staff heard in the ground, or how many beds the dew reached.
+      if(event.type==='field-working'){toast(event.text,event.kind==='sound'?`SOUND THE SOIL - ${event.name.toUpperCase()}`:'CALL THE DEW');inventory.refresh();refreshSkillsSheet();saveRoad(false);}
       if(event.type==='spell-impact'&&event.managed){crime.handleImpact({type:'melee-impact',id:event.id,source:'player',range:0,combatantIds:[...combat.state.enemies,...combat.state.allies].map(actor=>actor.id),
         hits:[{id:event.targetId,npcId:event.targetNpcId,team:event.team,hp:event.hp,maxHp:event.maxHp,spared:event.spared}]});}
     }});
@@ -4387,7 +4408,7 @@ async function init() {
   function questSource(){
     return {exploration:mainDormant()?FREE_ROAM_GUIDANCE:null,main:{active:!mainDormant()&&!(living?.player().imperialRefused&&living.player().allegiance!=='coalition'),title:$('quest-title').textContent,detail:$('quest-detail').textContent,kicker:$('quest-step').textContent},
       bridge:{stage:journey.state.bridge,sticks:inventory.count('forest-stick')},vastos:vastos.quest.view(),
-      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),cagneyQuest.trackableView(),...(jesseHost?[jesseHost.trackableView()]:[]),...(batmanHost?[batmanHost.trackableView()]:[]),race.trackableView(),cubQuestView(),sunflowerLesson.view(playSeconds),...(baldroHost?[baldroHost.introductionView()]:[]),sylviaIvy.view(),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
+      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),cagneyQuest.trackableView(),...(jesseHost?[jesseHost.trackableView()]:[]),...(batmanHost?[batmanHost.trackableView()]:[]),race.trackableView(),cubQuestView(),sunflowerLesson.view(playSeconds),farmlands.trackableView()/* the Farmlands of the Lizeem */,...(baldroHost?[baldroHost.introductionView()]:[]),sylviaIvy.view(),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
   }
   function resolveQuestPoint(id){
     const npc=npcById.get(id),point=npc?.actor?.group?.position||drent.point(id)||world.journeySites?.[id]||(id===LUSCIA_DISPATCH_SITE.id?LUSCIA_DISPATCH_SITE:null)||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||vastos.knownLocations().find(place=>place.id===id);
@@ -4572,7 +4593,8 @@ async function init() {
   function beginFreeRoam(){
     if(mode!=='opening')return false;
     if(deferUntilLoaded([MINORA_START],beginFreeRoam))return true;
-    setPlayerCharacter(DEFAULT_PLAYER);resetDragonDestruction();grantStartingKit();
+    // Developer Start plays Rollo outside the Guild tower in Minora (the user, 5 October 2026).
+    setPlayerCharacter(DEVELOPER_PLAYER);resetDragonDestruction();grantStartingKit();
     chapterOne=null;chapterColumn?.clear();for(const id of SKILL_IDS)skills.learn(id,{announce:false});cartography.learn();swimming.learn();
     skillAnnouncements.clear();freeStart=freshMinoraStart();peninsulaHost.restore();campaign.restore(createCampaign().snapshot());
     questStage=0;practiceHits=practiceGuards=practiceDodges=0;lessonSet=false;
@@ -4582,7 +4604,7 @@ async function init() {
     leaveOpening();mode='playing';testingEnabled=false;document.body.classList.add('playing');
     show('opening',false);show('testing-badge',false);show('cutscene',false);
     player.group.position.set(MINORA_START.x,world.heightAt(MINORA_START.x,MINORA_START.z),MINORA_START.z);
-    yaw=MINORA_START.yaw;player.group.rotation.y=yaw+Math.PI;pitch=.32;distance=targetDistance=9;grounded=true;verticalSpeed=0;
+    yaw=MINORA_START.yaw;player.group.rotation.y=yaw+Math.PI;pitch=MINORA_START.pitch;distance=targetDistance=9;grounded=true;verticalSpeed=0;
     mapFog.reveal(MINORA_START.x,MINORA_START.z);refreshQuest();refreshChart();inventory.refresh();stopInput();settleCamera();canvas.focus();
     saveRoad(false);return true;
   }
@@ -4969,7 +4991,7 @@ async function init() {
       detail:INVENTORY_ITEMS['harbor-letter'].description,discovered:true,actions:[{id:'satchel',label:'Read in satchel'}]});
     if(heardDoom)notes.push({id:'distant-cape',title:'The distant cape',detail:$('journal-doom').querySelector('p').textContent,discovered:true});
     const entries=buildJournalEntries({tracker,mainSteps,completedChapters,notes,bridge:journey.state.bridge,
-      batman:batmanHost.quest.state(),spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot(),vastos:vastos.quest.view(),drent:drent.quest.view()});
+      batman:batmanHost.quest.state(),spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot(),vastos:vastos.quest.view(),drent:drent.quest.view(),farmlands:farmlands.snapshot()/* the Farmlands of the Lizeem */});
     if(race.state().complete)entries.push({id:KAYLA_RACE.id,title:KAYLA_RACE.title,type:'tertiary',grade:'deed',status:'complete',detail:'You rode Kayla to victory over Ed the Chameleon. She shared three honeycombs and set off to find her cub.'});
     if(cubHost.quest.completed)entries.push({id:CUB_HONEY_QUEST_ID,title:'A Cub’s Share',type:'skill',grade:'skill',status:'complete',detail:'Bodhi, Kayla’s cub, taught you Stealth. You brought back a comb from Liz’s apiary.'});
     if(cagneyQuest.state.stage==='complete')entries.push({id:CAGNEY_QUEST.id,title:CAGNEY_QUEST.title,type:'secondary',grade:'plot',status:'complete',detail:'You escorted Cagney safely home to Ambron and received 45 copper.'});
@@ -5153,7 +5175,7 @@ async function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),merchants:merchants.snapshot(),lizeemFarmlands:farmlands.snapshot()/* the Lizeem market and farmlands, 5 October 2026 */,barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(mode==='opening'||restoringRoad||regionLoadDepth||strategicReturn)return false;
@@ -5238,6 +5260,8 @@ async function init() {
     magic.restore(saved.magic??{version:1,learned:[],selected:null,focus:60,read:[]});
     if(!saved.magic){for(const [model,id]of [[spiderQuest,'fireball'],[catQuest,'summon-bees'],[murder,'mindread']])
       if(model.snapshot().stage==='taught')magic.learn(id,{equip:false,announce:false});}
+    // The Lizeem market and the Farmlands of the Lizeem (5 October 2026): a save from before them starts both afresh.
+    merchants.restore(saved.merchants);farmlands.restore(saved.lizeemFarmlands);placeLizeemHands();
     inventory.refresh();
     ferry.restore(saved.ferry??createFerry().snapshot());
     renaLetters.restore(saved.renaLetters??createRenaLetters().snapshot());
@@ -5757,6 +5781,9 @@ async function init() {
     if(crime?.converse(npc))return;
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(telemonia?.converse(npc))return;
+    // Taleth and the people of the Farmlands of the Lizeem (src/taleth.js, src/lizeem-people.js; 5 October 2026).
+    if(talethConversation(npc,{openDialogue,closeDialogue,farmlands,magic,playerId:()=>playerId,notify:toast,onChange:()=>{refreshQuest();refreshSkillsSheet();inventory.refresh();saveRoad(false);},extraChoices:(who,back)=>talethFarmlandsChoices(who,{farmlands,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast})}))return;
+    if(isLizeemNpc(npc.id)&&lizeemConversation(npc,{farmlands,openDialogue,closeDialogue,inventory,cooking,merchants,notify:toast,openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who)),hireHand:()=>true,onMeasure:()=>{inventory.refresh();refreshQuest();saveRoad(false);}}))return;
     if(npc.id===CUB.id){cubHost.conversation({openDialogue,closeDialogue});return;}
     if(circusConversation(npc,{openDialogue,closeDialogue,kaylaNear:()=>!!bearFamily?.roaming}))return;
     if(npc.id===LIZ.id&&cubHost.state().alerted){toast('Liz is furious. Leave the apiary and give her time to calm down.','LIZ');return;}
@@ -5959,7 +5986,7 @@ async function init() {
     if(stage==='killed'){
       openDialogue(npc,[`We did it. The guild owes you ${SPIDER_QUEST.bounty} copper - or I can teach you Fireball, the first lesson in Fire Sorcery, and give you a spare wand. Choose one reward.`],
         null,'Choose your reward',{noWayfinding:true,choices:[
-          {id:'ben-lesson',label:'Learn Fireball + receive a spare wand',action:()=>{closeDialogue();payBen('lesson');}},
+          {id:'ben-lesson',label:'Learn Fireball + receive a spare wand',action:()=>{closeDialogue();payBen('lesson');},...(magic.known('fireball')?{disabled:true,reason:'You already know Fireball.'}:{})/* Rollo, 5 October 2026 */},
           {id:'ben-bounty',label:`Take the bounty - ${SPIDER_QUEST.bounty} copper`,action:()=>{closeDialogue();payBen('bounty');}},
           {id:'ben-decide-later',label:'Let me decide later.',action:closeDialogue}]});
       return;
@@ -6917,6 +6944,15 @@ async function init() {
     if(!autopilot.startQuest('ari'))return false;canvas.focus();return true;
   }
   $('test-ari-autoplay').onclick=testPlayAriQuest;
+  // The Farmlands of the Lizeem playtest card (5 October 2026): a fresh charge and Taleth on the forecourt, played by hand.
+  // The scripted walk through the Caricas arc is `--lizeem-farmlands-checks` (src/lizeem-farmlands-checks.js).
+  function testPlayLizeemFarmlands(){
+    if(deferUntilLoaded([TALETH],()=>testPlayLizeemFarmlands()))return true;
+    stopAutopilot();closeDialogue();questChoice.close();farmlands.restore();placeLizeemHands();
+    testGoTo({...(clearApproach(TALETH)??TALETH),facing:MINORA_START.yaw},'PLAYTEST - TALETH','Take Taleth’s charge and walk the Caricas arc: the North Farm, the swap, the claim, Fine rye and the tart.');
+    refreshQuest();canvas.focus();return true;
+  }
+  $('test-lizeem-farmlands').onclick=testPlayLizeemFarmlands;
   function testPlayDwarfQuest(){
     if(deferUntilLoaded([BALDRO_KINGDOMS.find(k=>k.id==='west-baldro').gate],()=>testPlayDwarfQuest()))return true;
     stopAutopilot();testingEnabled=true;show('testing-badge',true);closeDialogue();questChoice.close();
@@ -8247,7 +8283,7 @@ async function init() {
       {const ryan=npcById.get(RYAN.id);if(!ryan.fishingLessonActive){ryan.actor.setFishing(true);ryan.face=world.fishingSpots.find(s=>s.id==='willowmere').castPoint;}}
       const lusciaDestinations=chapterOne?chapterOneObjective(chapterOne,border.view()).destinationIds:(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const wineryLesson=wineryLessonsStatus({farmingLevel:skills.level('farming')});
-      const markerView={mainDormant:mainDormant(),peninsulaEnlistment:peninsulaHost.chosen&&!peninsulaHost.active&&!peninsulaHost.enlisted,lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:[...(cagneyQuest.state.over?[]:[CAGNEY.id]),...(!race.state().complete?[KAYLA.id]:[])],skillTeachers:[...sunflowerLesson.view(playSeconds).teacherIds,...(!cubHost.quest.completed?[CUB.id]:[]),...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],deedDestinations:sylviaIvy.view().complete?[]:[SYLVIA.id],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
+      const markerView={farmlandsDestinations:farmlands.markerIds()/* the Farmlands of the Lizeem */,mainDormant:mainDormant(),peninsulaEnlistment:peninsulaHost.chosen&&!peninsulaHost.active&&!peninsulaHost.enlisted,lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:[...(cagneyQuest.state.over?[]:[CAGNEY.id]),...(!race.state().complete?[KAYLA.id]:[])],skillTeachers:[...sunflowerLesson.view(playSeconds).teacherIds,...(!cubHost.quest.completed?[CUB.id]:[]),...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],deedDestinations:sylviaIvy.view().complete?[]:[SYLVIA.id],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
         arcDestinations:questStage===QUEST_DONE?journey.view().destinationIds:[],chapterDestinations:lusciaDestinations,
         // Chip's copper, which is on whenever his bridge is down and is nobody's step.
@@ -8837,6 +8873,14 @@ async function init() {
             yaw=ARI_STAND.yaw+.7;pitch=.42;distance=targetDistance=13;skillAnnouncements.clear();
             clearTimeout(toastTimer);$('toast').classList.remove('visible');settleCamera();await hooks.frames(4);}});
       },
+      // The Farmlands of the Lizeem, walked through the people and the farm (src/lizeem-farmlands-checks.js; 5 October 2026).
+      runLizeemFarmlandsChecks:async()=>{
+        const {runLizeemFarmlandsChecks}=await import('./lizeem-farmlands-checks.js');const hooks=roadSkillsHooks();
+        return runLizeemFarmlandsChecks({...hooks,farmlands,magic,placeHands:placeLizeemHands,saved:()=>JSON.stringify(checkpoint.read()),
+          prepare:async()=>{hooks.prepare();for(const id of pendingRegions([TALETH,...LIZEEM_PEOPLE]))await world.loading.ensureRegion(id);
+            const egeria=LIZEEM_PEOPLE.find(person=>person.id==='lizeem-egeria'),at=clearApproach(egeria)??egeria;hooks.warp(at.x,at.z);},
+          restore:saved=>{recoveryInfo={testing:true,encounterId:null};hooks.restore(saved);testingEnabled=true;}});
+      },
       runSilverAutoplayChecks:async()=>{
         const {runSilverAutoplayChecks}=await import('./silver-autoplay-checks.js');
         return runSilverAutoplayChecks({autoplay:autopilot,frames:()=>new Promise(requestAnimationFrame),
@@ -9227,7 +9271,7 @@ async function init() {
       },
       async minoraOpeningChecks(expected=null){
         const {runMinoraOpeningChecks}=await import('./minora-opening-smoke.js');
-        return runMinoraOpeningChecks({state,
+        return runMinoraOpeningChecks({state,player:()=>playerId,spells:()=>magic.view().learned/* Rollo, 5 October 2026 */,
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);},
           camera:()=>camera.position.toArray(),orbit:seconds=>{openingViewEpoch=performance.now()-seconds*1000;},
           canStand:()=>canStand(player.group.position.x,player.group.position.z,world,BODY.person),

@@ -102,6 +102,9 @@ import { createLongRoad, validateLongRoadSnapshot } from './long-road.js';
 import { createFarming, validateFarmingSnapshot } from './farming.js';
 import { createSunflowerLesson, validateSunflowerLesson } from './sunflower-lesson.js';
 import { createSylviaIvy, validateSylviaIvy } from './sylvia-ivy.js';
+// The Farmlands of the Lizeem and the Lizeem market (5 October 2026). Both sections are optional: older saves start them fresh.
+import { createLizeemFarmlands, validateLizeemFarmlands } from './lizeem-farmlands.js';
+import { validateMerchants } from './merchants.js';
 import { createLusciaChapter } from './luscia-chapter.js';
 import {validateLivingStorySnapshot} from './living-story.js';
 import {createLusciaCivilWar,validateLusciaCivilWarSnapshot} from './luscia-civil-war.js';
@@ -266,6 +269,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateBarrettGeography(data.barrettGeography,{playSeconds:data.playSeconds??0})) return failed('The saved conversation with Barrett is invalid.');
     if (!validateSunflowerLesson(data.sunflowerLesson)) return failed('The saved sunflower lesson is invalid.');
     if (!validateSylviaIvy(data.sylviaIvy)) return failed('The saved ivy clearing is invalid.');
+    if (!validateLizeemFarmlands(data.lizeemFarmlands)) return failed('The saved Farmlands of the Lizeem are invalid.');
+    if (!validateMerchants(data.merchants)) return failed('The saved market is invalid.');
     if (!validateFarmingSnapshot(data.farming, { playSeconds: Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity })) return failed('The saved rows at the commons are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
     if (Object.hasOwn(data, 'mercenaryWeapons')) {
@@ -471,6 +476,9 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (data.barrettGeography) result.barrettGeography={...data.barrettGeography,told:[...data.barrettGeography.told]};
     if (Object.hasOwn(data, 'sunflowerLesson')) { const lesson = createSunflowerLesson(); lesson.restore(data.sunflowerLesson); result.sunflowerLesson = lesson.snapshot(); }
     if (Object.hasOwn(data, 'sylviaIvy')) { const ivy = createSylviaIvy(); ivy.restore(data.sylviaIvy); result.sylviaIvy = ivy.snapshot(); }
+    if (Object.hasOwn(data, 'lizeemFarmlands')) { const quest = createLizeemFarmlands(); quest.restore(data.lizeemFarmlands); result.lizeemFarmlands = quest.snapshot(); }
+    // Copied as written: the market's appetites and orders are dated by game day, which only the running game's clock can read.
+    if (Object.hasOwn(data, 'merchants')) result.merchants = JSON.parse(JSON.stringify(data.merchants));
     if (Object.hasOwn(data, 'farming')) { const farm = createFarming(); farm.restore(data.farming); result.farming = farm.snapshot(); }
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }

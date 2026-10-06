@@ -87,6 +87,7 @@
     "test:winery": "node scripts/launch.cjs --smoke-test --winery-checks",
     "test:sylvia-ivy:desktop": "node scripts/launch.cjs --smoke-test --sylvia-ivy-checks",
     "test:sunflowers:desktop": "node scripts/launch.cjs --smoke-test --sunflower-checks",
+    "test:lizeem-farmlands": "node scripts/launch.cjs --smoke-test --lizeem-farmlands-checks",
     "test:silver-autoplay": "node scripts/launch.cjs --smoke-test --silver-autoplay-checks",
     "test:testing-tools": "node scripts/launch.cjs --smoke-test --testing-tools-checks",
     "test:climbing": "node --test --test-isolation=none tests/climbing.test.js tests/climbing-world.test.js tests/climbing-pose.test.js tests/climbing-combat.test.js tests/game-state.test.js tests/skills.test.js tests/skill-sheet.test.js tests/combat-skills.test.js tests/game-mode.test.js",

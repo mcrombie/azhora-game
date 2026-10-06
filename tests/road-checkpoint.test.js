@@ -34,6 +34,8 @@ import { createCubHoneyQuest, CUB_STAND, CUB_HONEY_ITEM, CUB_HONEY_SOURCE } from
 import { BEAR_HOME_ROUTE } from '../src/bear-family.js';
 import { LIZ_STAND } from '../src/cat-quest.js';
 import {createSevronState} from '../src/sevron-state.js';
+import { createLizeemFarmlands } from '../src/lizeem-farmlands.js';
+import { createMerchants } from '../src/merchants.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -777,4 +779,24 @@ test('canopy floor identity survives a checkpoint while legacy positions remain 
   assert.deepEqual(checkpoint.read().data.position, data.position);
   for (const surfaceId of [null, 42, '', 'a'.repeat(129), '../floor'])
     assert.equal(checkpoint.save({ ...data, position: { ...data.position, surfaceId } }).ok, false);
+});
+
+test('the Farmlands of the Lizeem and its market ride along in the checkpoint, and a save from before them loads fresh', () => {
+  // Build 1 of the farmlands (the user, 5 October 2026). A key src/road-checkpoint.js does not copy is dropped on save.
+  const { data, checkpoint } = fixture();
+  const quest = createLizeemFarmlands(); quest.offer(); quest.accept(); quest.lease();
+  const market = { version: 1, appetites: { consus: { day: 3, taken: 5 } }, standing: { nepri: 1 }, sealed: {}, prizes: [], bounties: [], orders: {} };
+  assert.equal(checkpoint.save({ ...data, lizeemFarmlands: quest.snapshot(), merchants: market }).ok, true);
+  const kept = checkpoint.read().data;
+  assert.deepEqual(kept.lizeemFarmlands, quest.snapshot());
+  assert.deepEqual(kept.merchants, market, 'the market is kept as written: its days are game days');
+  for (const bad of [{ lizeemFarmlands: { ...quest.snapshot(), stage: 'finished' } }, { merchants: { ...market, version: 2 } },
+    { merchants: { ...market, appetites: { nobody: { day: 1, taken: 1 } } } }])
+    assert.equal(checkpoint.save({ ...data, ...bad }).ok, false, Object.keys(bad)[0]);
+  assert.deepEqual(checkpoint.read().data.lizeemFarmlands, quest.snapshot(), 'a refused save leaves the last one alone');
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before the farmlands is still a save');
+  const old = checkpoint.read().data, farmlands = createLizeemFarmlands(), merchants = createMerchants();
+  assert.equal(Object.hasOwn(old, 'lizeemFarmlands') || Object.hasOwn(old, 'merchants'), false);
+  assert.equal(farmlands.restore(old.lizeemFarmlands), true); assert.equal(farmlands.stage, 'unmet');
+  assert.equal(merchants.restore(old.merchants), true); assert.deepEqual(merchants.snapshot().appetites, {});
 });
