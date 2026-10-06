@@ -192,7 +192,9 @@ import { DEFAULT_PLAYER, DEVELOPER_PLAYER, SELECTABLE, companyFor, playableChara
 import { createCharacterSelect } from './character-select.js';
 // The Farmlands of the Lizeem, Build 1 (the user, 5 October 2026: "go ahead and implement"): Taleth, the Caricas arc, its people and the market.
 import { TALETH, talethConversation } from './taleth.js';
-import { createLizeemFarmlands, talethFarmlandsChoices } from './lizeem-farmlands.js';
+import { createLizeemFarmlands, talethFarmlandsChoices, freeRoamGuidance } from './lizeem-farmlands.js';
+// Messor's wage comes out of the purse (src/economy.js `pay`; the groundwork for Builds 2 to 5, 6 October 2026).
+import { pay as payPurse } from './economy.js';
 import { LIZEEM_PEOPLE, LIZEEM_PEOPLE_IDS, isLizeemNpc, lizeemConversation, lizeemHiddenIds } from './lizeem-people.js';
 import { createMerchants, openTrade } from './merchants.js';
 import { cityPoint as imlamdrisPoint } from './south-suval-world.js';
@@ -1416,10 +1418,11 @@ async function init() {
   let sunflowerLesson=null;
   const farming=createFarming({skills,inventory,clock:()=>playSeconds,onEvent:event=>{
     sunflowerLesson?.farmEvent(event);
-    if(event.type==='row-sown')toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · FARMING`);
+    if(event.type==='row-sown'&&!event.working/* the Work of Nine shows one notice for the lot, 6 October 2026 */)toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · FARMING`);
     if(event.type==='row-watered')toast('Watered. This crop will grow faster and yield more. +4 Farming XP.','FARMING');
-    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');if(event.type==='row-reaped')magic?.refocus();
-      toast(event.type==='row-reaped'?`${event.grade==='good'?'Good harvest: ':event.grade==='prize'?'Prize harvest: ':''}${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}. ${event.xp} farming.`:`An Avrel apple. ${event.xp} farming.`,
+    if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');if(event.type==='row-reaped'&&!event.hand&&!event.working)magic?.refocus();
+      // 6 October 2026: Messor's reaping is his, not Rollo's (no focus back); a working's beds share its one notice; a hazel is not an apple.
+      if(!event.working)toast(event.type==='row-reaped'?`${event.hand?`${event.hand[0].toUpperCase()}${event.hand.slice(1)} reaped the north fields: `:''}${event.grade==='good'?'Good harvest: ':event.grade==='prize'?'Prize harvest: ':''}${event.quantity} × ${INVENTORY_ITEMS[event.item]?.name??event.item}.${event.hand?'':` ${event.xp} farming.`}`:`${event.item==='avrel-apple'?'An Avrel apple':`1 × ${INVENTORY_ITEMS[event.item]?.name??event.item}`}. ${event.xp} farming.`,
         event.levelled?`FARMING LEVEL ${event.level}`:'FARMING');}
     if(hasRoadProgress())saveRoad(false);}});
   sunflowerLesson=createSunflowerLesson({farming,skills,inventory,onChange:()=>{refreshRoadSkills();},onTrack:selectQuest});
@@ -1428,7 +1431,7 @@ async function init() {
   // gives a little focus back (above); magic is made further down, so the quest asks for it when Call the Dew is taught.
   const merchants=createMerchants({inventory,items:INVENTORY_ITEMS,playSeconds:()=>playSeconds,skills,onEvent:event=>{if(event.type==='sealed'&&event.grade==='prize')farmlands.enter(event.item,'prize');}});
   const tradeContext=npc=>({merchants,openDialogue,closeDialogue,back:()=>{closeDialogue();conversation(npc);},onTrade:()=>{inventory.refresh();refreshSkillsSheet();audio?.effect('success');saveRoad(false);}});
-  const farmlands=createLizeemFarmlands({skills,farming,magic:{learn:(id,options)=>magic?.learn(id,options)??null},onEvent:event=>{if(event.type==='lizeem-caricas-restored')placeLizeemHands();inventory.refresh();refreshQuest();saveRoad(false);}});
+  const farmlands=createLizeemFarmlands({skills,farming,magic:{learn:(id,options)=>magic?.learn(id,options)??null},pay:copper=>payPurse(inventory,copper),clock:()=>playSeconds/* Messor's wage, 6 October 2026 */,onEvent:event=>{if(event.type==='lizeem-caricas-restored')placeLizeemHands();if(event.type==='lizeem-hand-unpaid')toast(`${event.hand[0].toUpperCase()}${event.hand.slice(1)} has gone home. There was no ${event.wage} copper for his day, and he does not reap for nothing.`,'FARMING');inventory.refresh();refreshQuest();saveRoad(false);}});
   function placeLizeemHands(){const hide=lizeemHiddenIds(farmlands);for(const id of LIZEEM_PEOPLE_IDS){const npc=npcById.get(id);if(!npc)continue;npc.hidden=hide.includes(id);if(npc.hidden)npc.actor.group.visible=false;}}
   placeLizeemHands();
   const farmView=createFarmingView({scene,world,farming});
@@ -3963,7 +3966,7 @@ async function init() {
     onEvent:event=>{if(event.type==='spell-learned'){inventory.refresh();refreshSkillsSheet();toast(`${SPELLS[event.id].name} learned. I opens equipment; equip a wand or staff, then Z casts. N changes spells.`, 'SPELL LEARNED');}
       if(event.type==='mind-read'){republic?.mindRead?.(event);toast(event.text,`MIND READ - ${event.name.toUpperCase()}`);saveRoad(false);}
       // Field sorcery (Taleth's, 5 October 2026): what the staff heard in the ground, or how many beds the dew reached.
-      if(event.type==='field-working'){toast(event.text,event.kind==='sound'?`SOUND THE SOIL - ${event.name.toUpperCase()}`:'CALL THE DEW');inventory.refresh();refreshSkillsSheet();saveRoad(false);}
+      if(event.type==='field-working'){toast(event.text,event.kind==='sound'?`SOUND THE SOIL - ${event.name.toUpperCase()}`:(SPELLS[event.id]?.name??'Field sorcery').toUpperCase()/* Quicken and the Work of Nine, 6 October 2026 */);inventory.refresh();refreshSkillsSheet();refreshQuest();saveRoad(false);}
       if(event.type==='spell-impact'&&event.managed){crime.handleImpact({type:'melee-impact',id:event.id,source:'player',range:0,combatantIds:[...combat.state.enemies,...combat.state.allies].map(actor=>actor.id),
         hits:[{id:event.targetId,npcId:event.targetNpcId,team:event.team,hp:event.hp,maxHp:event.maxHp,spared:event.spared}]});}
     }});
@@ -4075,7 +4078,13 @@ async function init() {
   const magicUI=createMagicUI({container:document.body,magic,onCast:castSpell,onSelect:()=>saveRoad(false)});
   function castSpell(){if(mode!=='playing'||suspended()||raceHost?.mounted||inWater||riding.mounted||living.recall().status==='passenger')return false;
     const result=magic.cast(undefined,{target:currentNPC,yaw:player.group.rotation.y});
+    if(result.code==='choose-seed'){chooseNineSeed(result);return false;}
     if(!result.ok)toast(result.reason,'SORCERY');return result.ok;}
+  // The Work of Nine (src/magic.js; 6 October 2026): carrying more than one seed the bare beds will take, he is asked which, and nothing is spent until he answers.
+  function chooseNineSeed(asked){const spell=SPELLS['work-of-nine'];
+    openDialogue({id:'work-of-nine',name:spell.name,role:'Field sorcery'},[`${asked.bare===1?'One bed is':`${asked.bare} beds are`} bare${asked.ripe?`, and ${asked.ripe===1?'one is':`${asked.ripe} are`} ripe`:''}. ${asked.reason}`],null,'Not now',{noWayfinding:true,
+      choices:[...asked.choices.map(choice=>({id:`nine-seed-${choice.id}`,label:`${choice.name} · ${choice.seeds} seed`,action:()=>{closeDialogue();const done=magic.cast('work-of-nine',{seed:choice.id});if(!done.ok)toast(done.reason,'SORCERY');}})),
+        {id:'nine-seed-none',label:'Not now',action:closeDialogue}]});}
   const beginEncounter=combat.startEncounter;
   combat.startEncounter=(...args)=>{
     if(suspended())return false;
@@ -4338,7 +4347,7 @@ async function init() {
   let chapterShown=0;
   function refreshChapter(){
     if(chapterOne){const q=chapterOneObjective(chapterOne,border.view());$('chapter-heading').textContent=chapterOne.complete?'Chapter 2 - Awaiting orders':'Chapter 1 - The Border War';$('chapter-goal').textContent=q.detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);return;}
-    if(mainDormant()){$('quest-chapter').textContent='Your adventure';$('chapter-heading').textContent='The main quest awaits';$('chapter-goal').textContent=FREE_ROAM_GUIDANCE.detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);chapterShown=0;return;}
+    if(mainDormant()){$('quest-chapter').textContent='Your adventure';$('chapter-heading').textContent='The main quest awaits';$('chapter-goal').textContent=freeRoamGuidance(farmlands,FREE_ROAM_GUIDANCE).detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);chapterShown=0;return;}
     const state=storyState(),progress=chapterProgress(state),current=progress.current;
     $('quest-chapter').textContent=current?`Chapter ${current.number} of ${chapterCount} · ${chapterTitle(current,state)}`:'The war moves on';
     $('chapter-heading').textContent=chapterLabel(current,state);
@@ -4372,7 +4381,7 @@ async function init() {
   }
   function refreshMainQuest() {
     if(chapterOne){const q=chapterOneObjective(chapterOne,border.view());$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent=chapterOne.complete?'CHAPTER 2 - AWAITING ORDERS':'CHAPTER 1 - THE BORDER WAR';$('quest-chapter').textContent=chapterOne.complete?'Chapter 2':'Chapter 1 - The Border War';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.detail;return;}
-    if(mainDormant()){$('quest-title').textContent=FREE_ROAM_GUIDANCE.title;$('quest-detail').textContent=FREE_ROAM_GUIDANCE.detail;$('quest-step').textContent='EXPLORATION';$('quest-chapter').textContent='Your adventure';return;}
+    if(mainDormant()){const roam=freeRoamGuidance(farmlands,FREE_ROAM_GUIDANCE)/* the charge taken, 6 October 2026 */;$('quest-title').textContent=roam.title;$('quest-detail').textContent=roam.detail;$('quest-step').textContent='EXPLORATION';$('quest-chapter').textContent='Your adventure';return;}
     if(peninsulaHost?.objective()){const q=peninsulaHost.objective();$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent='PENINSULA TRAINING';$('quest-chapter').textContent='Prologue ? A first shore';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.hint??q.detail;return;}
     if(living?.recall().status==='passenger'){$('quest-title').textContent='Ride to the Moros muster';$('quest-detail').textContent=`${npcById.get(living.recall().courier)?.name??'The courier'} is taking you to the army. You can look around and open your journal during the ride.`;$('quest-step').textContent='RIDING WITH THE COURIER';return;}
     if(living?.player().allegiance==='coalition'&&border.state.started&&!border.state.complete){const v=border.view();$('quest-title').textContent=v.title;$('quest-detail').textContent=v.detail;$('quest-step').textContent=v.kicker;return;}
@@ -4406,9 +4415,9 @@ async function init() {
     target:q?.stage==='learning'?{...HONEY_STORE,id:'liz-honey',name:'Liz’s honey stores'}:null,
     detail:q?.stage==='carrying'?'Bring the honey to Bodhi, the bear cub, beside the river.':'Use X to sneak. Wait for Liz to look away, then take a honeycomb with F. Run if she spots you.'};}
   function questSource(){
-    return {exploration:mainDormant()?FREE_ROAM_GUIDANCE:null,main:{active:!mainDormant()&&!(living?.player().imperialRefused&&living.player().allegiance!=='coalition'),title:$('quest-title').textContent,detail:$('quest-detail').textContent,kicker:$('quest-step').textContent},
+    return {exploration:mainDormant()?freeRoamGuidance(farmlands,FREE_ROAM_GUIDANCE):null,main:{active:!mainDormant()&&!(living?.player().imperialRefused&&living.player().allegiance!=='coalition'),title:$('quest-title').textContent,detail:$('quest-detail').textContent,kicker:$('quest-step').textContent},
       bridge:{stage:journey.state.bridge,sticks:inventory.count('forest-stick')},vastos:vastos.quest.view(),
-      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),cagneyQuest.trackableView(),...(jesseHost?[jesseHost.trackableView()]:[]),...(batmanHost?[batmanHost.trackableView()]:[]),race.trackableView(),cubQuestView(),sunflowerLesson.view(playSeconds),farmlands.trackableView()/* the Farmlands of the Lizeem */,...(baldroHost?[baldroHost.introductionView()]:[]),sylviaIvy.view(),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
+      optional:[...activeOptionalQuests({spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot()}),cagneyQuest.trackableView(),...(jesseHost?[jesseHost.trackableView()]:[]),...(batmanHost?[batmanHost.trackableView()]:[]),race.trackableView(),cubQuestView(),sunflowerLesson.view(playSeconds),...farmlands.trackableViews()/* the Farmlands of the Lizeem, and each country's arc under way (6 October 2026) */,...(baldroHost?[baldroHost.introductionView()]:[]),sylviaIvy.view(),drent.trackableView(),...(republic?[republic.trackableView()]:[])]};
   }
   function resolveQuestPoint(id){
     const npc=npcById.get(id),point=npc?.actor?.group?.position||drent.point(id)||world.journeySites?.[id]||(id===LUSCIA_DISPATCH_SITE.id?LUSCIA_DISPATCH_SITE:null)||LUSCIA_SITES[id]||MOROS_SITES[id]||world.npcPositions[id]||vastos.knownLocations().find(place=>place.id===id);
@@ -4991,7 +5000,7 @@ async function init() {
       detail:INVENTORY_ITEMS['harbor-letter'].description,discovered:true,actions:[{id:'satchel',label:'Read in satchel'}]});
     if(heardDoom)notes.push({id:'distant-cape',title:'The distant cape',detail:$('journal-doom').querySelector('p').textContent,discovered:true});
     const entries=buildJournalEntries({tracker,mainSteps,completedChapters,notes,bridge:journey.state.bridge,
-      batman:batmanHost.quest.state(),spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot(),vastos:vastos.quest.view(),drent:drent.quest.view(),farmlands:farmlands.snapshot()/* the Farmlands of the Lizeem */});
+      batman:batmanHost.quest.state(),spider:spiderQuest.state,murder:murder.state,cat:catQuest.state,burying:burying.snapshot(),vastos:vastos.quest.view(),drent:drent.quest.view(),farmlands:farmlands.snapshot()/* the Farmlands of the Lizeem */});entries.push(...farmlands.journal()/* the countries' arcs once done, 6 October 2026 */);
     if(race.state().complete)entries.push({id:KAYLA_RACE.id,title:KAYLA_RACE.title,type:'tertiary',grade:'deed',status:'complete',detail:'You rode Kayla to victory over Ed the Chameleon. She shared three honeycombs and set off to find her cub.'});
     if(cubHost.quest.completed)entries.push({id:CUB_HONEY_QUEST_ID,title:'A Cub’s Share',type:'skill',grade:'skill',status:'complete',detail:'Bodhi, Kayla’s cub, taught you Stealth. You brought back a comb from Liz’s apiary.'});
     if(cagneyQuest.state.stage==='complete')entries.push({id:CAGNEY_QUEST.id,title:CAGNEY_QUEST.title,type:'secondary',grade:'plot',status:'complete',detail:'You escorted Cagney safely home to Ambron and received 45 copper.'});
@@ -6704,7 +6713,7 @@ async function init() {
     if(combat.state.phase!=='active'&&nearArtEasel&&!currentNPC){useArtEasel();return;}
     if(combat.state.phase!=='active'&&currentRow){workRow();return;}
     if(combat.state.phase!=='active'&&currentLivestock){const result=husbandry.care(currentLivestock,player.group.position,playSeconds);if(result.ok){roadLife.calm(result.id,result.calmSeconds)||westLife.calm?.(result.id,result.calmSeconds);refreshRoadSkills();}toast(result.message||result.reason,'ANIMAL HUSBANDRY');return;}
-    if(combat.state.phase!=='active'&&currentAppleTree){const picked=farming.pick(currentAppleTree.id,playSeconds);if(!picked.ok)toast(picked.reason,'APPLEGARTH’S ORCHARD');return;}
+    if(combat.state.phase!=='active'&&currentAppleTree){const picked=farming.pick(currentAppleTree.id,playSeconds);if(!picked.ok)toast(picked.reason,currentAppleTree.item==='avrel-apple'?'APPLEGARTH’S ORCHARD':'FARMING'/* a country's own trees, 6 October 2026 */);return;}
     if(combat.state.phase!=='active'&&currentStone){gatherStone();return;}
     if(combat.state.phase!=='active'&&currentDig){readDig();return;}
     if(combat.state.phase!=='active'&&currentVine){readVines();return;}
@@ -8150,7 +8159,7 @@ async function init() {
       } else show('ride-prompt',false);
       drentBirds.update(['playing','dialogue'].includes(mode)&&!reviewFrozen?dt:0,player.group.position,{feederHung:birding.feeder==='hung'});
       if(!riding.owned)refreshCompanyHorses();
-      farmView.update(playSeconds,player.group.position);
+      farmView.update(playSeconds,player.group.position);farmlands.tick(playSeconds)/* Messor's wage and reaping, 6 October 2026 */;
       currentLivestock=mode==='playing'&&combat.state.phase!=='active'?husbandry.nearby(player.group.position,[...roadLife.state().creatures,...westLife.state().creatures].filter(animal=>!crime.isDown(animal.id))):null;
       birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;watchBird();}
       if(mode!=='playing'){currentBird=null;birdWatch=null;}
@@ -8602,7 +8611,9 @@ async function init() {
       if(currentLivestock&&!currentNPC)$('interaction-label').textContent=`Care for ${currentLivestock.name} · Animal Husbandry`;
       if(currentRow&&!currentNPC)$('interaction-label').textContent=`Work ${currentRow.name} · ${currentRow.stage==='bare'?'choose a crop':currentRow.stage==='ripe'?currentRow.cropName+' ready':currentRow.cropName+' · '+farmWait(currentRow.left)+(currentRow.watered?'':' · water me')}`;
       if(nearArtEasel&&!currentNPC)$('interaction-label').textContent=visualArts.pose()?`Working on your study · ${Math.round(visualArts.pose().progress*100)}% · F to stop`:'Use the spare easel · Visual Arts';
-      if(currentAppleTree&&!currentNPC)$('interaction-label').textContent=!farming.met?'An apple tree somebody keeps'
+      if(currentAppleTree&&!currentNPC)$('interaction-label').textContent=currentAppleTree.item!=='avrel-apple'/* a country's own trees (src/farming.js registerTrees), 6 October 2026 */
+        ?(currentAppleTree.stage==='fruiting'?`${currentAppleTree.name} · pick ${(INVENTORY_ITEMS[currentAppleTree.item]?.name??currentAppleTree.item).toLowerCase()}`:`Picked out · bearing again in ${Math.ceil(currentAppleTree.left)} seconds`)
+        :!farming.met?'An apple tree somebody keeps'
         :currentAppleTree.stage==='fruiting'?'Pick an Avrel apple':`Picked out · bearing again in ${Math.ceil(currentAppleTree.left)} seconds`;
       if(currentStone&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant)$('interaction-label').textContent=geology.met?(geology.hasFound(currentStone.species)?`Pick up the ${currentStone.name.toLowerCase()}`:'Look at this stone'):'A stone catches your eye';
       if(currentDig&&!currentNPC&&!currentFeederHook&&!currentMushroom&&!currentPlant&&!currentStone)$('interaction-label').textContent=archaeology.met?(archaeology.hasFound(currentDig.id)?`${currentDig.name} \u00b7 written up`:'Read this place'):'A surveyor\u2019s peg with a red ribbon';
