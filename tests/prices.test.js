@@ -4,12 +4,12 @@ import { BANKS, DISH_PRICES, FARM_GOODS, GRADES, PRICE_TABLE, TRADE_RATES, WARES
 
 test('every good and dish in the design’s first-pass table has its base price', () => {
   const bases = {
-    carrot: 1, beet: 1, barley: 1, rye: 1, 'bridge-rye': 1, 'flood-oats': 1, millet: 1, 'field-beans': 1,
-    'soft-fruit': 2, hazelnuts: 2, floodwheat: 2, 'hard-wheat': 2, 'meadow-hay': 2, 'weir-fish': 2, flour: 3, 'dye-crop': 4,
+    carrot: 1, beet: 1, barley: 1, rye: 1, 'bridge-rye': 1, 'flood-oats': 1, 'silver-millet': 1, 'field-beans': 1,
+    'soft-fruit': 2, hazelnuts: 2, floodwheat: 2, 'hard-wheat': 2, 'meadow-hay': 2, 'weir-fish': 2, 'hard-wheat-flour': 3, madder: 4,
   };
   const dishes = { 'rye-cheese-loaf': 3, 'bean-pottage': 4, 'soft-fruit-tart': 7, oatcakes: 3, 'smoked-fish': 4, 'white-bread': 5, 'nut-cake': 8, flatbread: 4, 'millet-porridge': 2, 'fork-stew': 12 };
   // The contract for Builds 2 and 3 (6 October 2026): what the countries' people sell besides crops and dishes.
-  const wares = { salt: 2, butter: 3, manure: 1, ale: 3, hides: 2, 'harvest-basket': 20 };
+  const wares = { salt: 2, butter: 3, manure: 1, ale: 3, hides: 2, 'harvest-basket': 20, cloth: 8, mutton: 3 };
   assert.deepEqual(Object.fromEntries(Object.entries(FARM_GOODS).map(([id, good]) => [id, good.base])), bases);
   assert.deepEqual(Object.fromEntries(Object.entries(DISH_PRICES).map(([id, good]) => [id, good.base])), dishes);
   assert.deepEqual(Object.fromEntries(Object.entries(WARES).map(([id, good]) => [id, good.base])), wares);

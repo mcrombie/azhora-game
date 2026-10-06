@@ -1282,7 +1282,7 @@ const REGION_TEXT = {
   Isareos: { subtitle: 'Minora and the Imperial frontier', spawn: point(-2308, -7),
     description: 'Minora rises over the Isa-Lizeem fork: great white walls, an immense Sorcerers’ Guild tower and a sacred Imperial temple. Cedric keeps his claim to the crown here; Wilhelm and his army camp outside. Beyond the protected city, northern and western hills are exposed to centaur raids from Yunethre.',
     palette: { ground: '#6f9150', accent: '#d3dca6', fog: '#b7c8ac', sky: 0xaacfd3, haze: 0xb3d3d0, hazeDensity: .0020 },
-    npcIds: ['prince-cedric', 'prince-wilhelm'], landmarks: ['menora', 'menora-grand-temple', 'menora-sorcerers-guild', 'menora-army-muster', 'isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim'] },
+    npcIds: ['prince-cedric', 'prince-wilhelm'], landmarks: ['menora', 'menora-grand-temple', 'menora-sorcerers-guild', 'menora-army-muster', 'isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim', 'isareos-hamlet'/* Amalthea's, 6 October 2026 */] },
   // **Haethom** (the Farmlands of the Lizeem, Build 2: the design of 5 October 2026, built 6 October 2026): the ridge hamlet
   // on the north-east rim, the levee and its hatch, the flood meadow, Liban's house below the line, and Gwyddno's weir and
   // smoke-house on the Neth (src/nethereum-farm.js), with Haethom's seven people (src/lizeem-nethereum-people.js), stood
@@ -1364,6 +1364,12 @@ const REGION_TEXT = {
     description: 'The peninsula where it leaves the mainland: low grass at the neck between the Lizeem’s mouth and the western sea, and then the ground rising to a plateau of tawny grass and aromatic scrub, rugged and stony, and to the interior hills - two rounded rocky hills and the shoulder of a third, wooded in evergreen oak with pine on the tops, and green stain on the stone where the copper is. Cliffs along the western shore with seabirds on them; on the east the ground falls to sheltered bays between low headlands.',
     palette: { ground: '#aba66b', accent: '#e0d6a8', fog: '#c4cfc4', sky: 0xb3d6e0, haze: 0xcdd6d0, hazeDensity: .0045 },
     npcIds: [], landmarks: ['ascarth-neck', 'interior-hills', 'green-stone', 'ascarth-west-cliffs', 'ascarth-north-bay'] },
+  // **Velsorten** (the Farmlands of the Lizeem, Build 4: the design of 5 October 2026, built 6 October 2026, after the user's
+  // ruling of 5 October that Ovesos is a river kingdom, fertile along the water and drying toward the desert): a green belt
+  // along the Lizeem (src/oves-world.js `ovesosBelt`), the Water Council's village on the terrace, its canal from the divider
+  // to a dry tail with twelve plots on it, Ezina's and Uttu's mills and Lahar's camp (src/ovesos-farm.js), with Velsorten's
+  // eight people (src/lizeem-ovesos-people.js), stood up by the game after the cast is trimmed. The desert is still nobody's.
+  // What follows was written before them:
   // **Ovesos and the Oves Desert are terrain, climate, water, scenery and wildlife, and nothing that
   // belongs to anybody** (docs/oves-brief.md). The Water Council and every water right it allocates,
   // the five branch countries and the Branch Court between them, King Melos and the house Oveth-Hold,
@@ -1376,10 +1382,11 @@ const REGION_TEXT = {
   // terrain and water (src/oves-world.js). Ovesos gets a sky that is Gala's own steppe air, because
   // Gala's northern rows are this same country with another name on them; the desert's is the clearest
   // in the game, because the one thing a rain shadow has is distance to look at.
-  Ovesos: { subtitle: 'The Sorten and the upland grass', spawn: point(-1905, 706),
-    description: 'The middle Oveth, and a steppe rather than a garden: hot semi-arid grass over the whole of it, buff for eleven months of the year and green for a few weeks in spring. The northern rows are upland bunch grass in tussocks with the bare earth showing between them, six metres above the river; the southern rows are thinner and flatter, with grey wormwood and blue-grey saltbush wherever the grass gives out and stones on the rises. Along the south-western border runs the Oveth \u2014 waded over gravel at its head, deep through the Sorten, the wide seat of bottomland a metre below the plain where the river slows and spreads \u2014 with a narrow dark gallery of poplar, willow and tamarisk on it and nothing else in the country tall enough to cast a shadow. The Neth is the northern border and the Lizeem the eastern, and nothing on any bank of any of them is built by anybody.',
+  Ovesos: { subtitle: 'The Sorten, the canal and the upland grass', spawn: point(-1905, 706),
+    description: 'The middle Oveth, a river country on the edge of the steppe: green only where the water reaches it. Along the Lizeem a belt of greener grass runs under poplar, willow and tamarisk on the bank, and dries away from the river into buff upland bunch grass, and in the south and west into thin grass with grey wormwood and blue-grey saltbush where it gives out. Velsorten, the Water Council’s village, stands on the terrace above the Sorten round a square: the register house, a brewhouse and two mills. Its canal leaves the Lizeem at the divider and runs south over the plain to a dry tail, the oldest rights by the river and the newest at the end, and the herders keep their camp on the upland grass above its head. Along the south-western border runs the Oveth — waded over gravel at its head, deep through the Sorten, the wide seat of bottomland a metre below the plain — with a narrow dark gallery of trees of its own.',
     palette: { ground: '#a8a06a', accent: '#e2d6a6', fog: '#cdc9ae', sky: 0xc6dad8, haze: 0xdad5bc, hazeDensity: .0044 },
-    npcIds: [], landmarks: ['the-sorten', 'upper-oveth', 'oves-upland-grass', 'oveth-gully', 'oves-open-plain'] },
+    npcIds: ['enbilulu', 'nisaba', 'ziusudra', 'ashnan', 'lahar', 'ezina', 'ninkasi', 'uttu'],
+    landmarks: ['the-sorten', 'upper-oveth', 'oves-upland-grass', 'oveth-gully', 'oves-open-plain', 'oves-lizeem-bank', 'velsorten', 'velsorten-canal', 'the-divider', 'lahar-camp'] },
   'Oves Desert': { subtitle: 'The rain shadow and its dry channels', spawn: point(-2205, 902),
     description: 'The far tail of the Pyros rain shadow: a wedge of the Oveth basin falling from the rim hills in the north-west to the point in the east where the Oveth and the Caelin come together. Rocky rather than sandy \u2014 worn stone through a thin poor soil, gravel pavement wherever the rock is up, perennial scrub spaced wide enough to walk between, and a stubble of dead seed-heads in the pockets where a wet year\u2019s grasses would be. Three low rounded hills on the rim intercept what moisture the westerlies carry, and the cut channels run east-south-east off their feet with no water in any of them. There is no permanent water in the country at all: one reach of one channel holds it below the gravel, and that is the only green in the Oves.',
     palette: { ground: '#ab9f7c', accent: '#e6dcb4', fog: '#d4cdb4', sky: 0xcedcd2, haze: 0xe3dabd, hazeDensity: .0034 },

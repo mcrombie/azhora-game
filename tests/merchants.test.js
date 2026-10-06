@@ -171,9 +171,9 @@ test('the commissary pays six-tenths of the home price for anything priced, with
 
 test('the Carican factor buys what grows only on the west bank, and not Caricas’s own rye', () => {
   assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', 'bridge-rye'), false);
-  for (const id of ['flood-oats', 'meadow-hay', 'weir-fish', 'millet', 'hard-wheat', 'dye-crop', 'oatcakes', 'flatbread'])
+  for (const id of ['flood-oats', 'meadow-hay', 'weir-fish', 'silver-millet', 'hard-wheat', 'madder', 'hard-wheat-flour', 'oatcakes', 'flatbread'])
     assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', id), true, id);
-  for (const id of ['barley', 'flour', 'carrot']) assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', id), false, `${id} grows on both banks`);
+  for (const id of ['barley', 'carrot']) assert.equal(createMerchants({ inventory: satchel() }).wants('portunus', id), false, `${id} grows on both banks`);
 });
 
 test('a board posts the same three orders all day, paying half again the market and Farming experience', () => {

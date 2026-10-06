@@ -8,19 +8,32 @@
  * water left to the shine, drawn off with F) and one strip reaped by walking it (begun with F at the end post) work,
  * with screenshots. Gwyddno's weir is hauled once on the way.
  *
+ * Builds 4 and 5 (6 October 2026): at Velsorten it checks the scenery, the twelve plots and the eight people, and the
+ * divider's prompt outside Rollo's turn; then, entered in the register and with the play clock moved on to his turn, a
+ * barley plot at the tail sown and given two units at the divider with F; with screenshots at the divider and the mill.
+ * At Amalthea's hamlet it checks the hamlet and that she stands and talks; on the Guild forecourt it puts the
+ * Dividing's trestle out through the developer hook for a screenshot, and takes it in again.
+ *
  * Fast load builds a region only when it is visited, so each country is checked once its region has come in, and one
  * that does not come in, or fails, is written down rather than stopping the other: the result names what loaded.
  *
  * Hooks (src/main.js): the road-skill hooks (world, npcById, farming, inventory, frames, tap, warp, close, prepare,
  * advancePlay, getState), and scene, meadow, weir, reaping, goTo(point, facing), view(yaw, pitch, distance),
- * prompt() -> { shown, label, row, stripEnd, hatch, weir, npc, mode }, toasts(), capture(name), loaded(regionId).
+ * prompt() -> { shown, label, row, stripEnd, hatch, weir, divider, npc, mode }, toasts(), capture(name), loaded(regionId);
+ * and for Builds 4 and 5 farmlands, canal, ovesosArc, dividingProps, dialogue() -> { id, name, lines, choices } | null,
+ * with the road-skill hooks' choose(id), visit(id) and close().
  */
 import { NETHEREUM_SITES, NETHEREUM_FARM_ROWS, HAETHOM } from './nethereum-farm.js';
 import { NINEHANDS, NESDOR_FARM_ROWS, nesdorStrip } from './nesdor-farm.js';
 import { NETHEREUM_PEOPLE } from './lizeem-nethereum-people.js';
 import { NESDOR_PEOPLE } from './lizeem-nesdor-people.js';
+import { VELSORTEN, OVESOS_FARM_ROWS, OVESOS_DIVIDER, OVESOS_SITES } from './ovesos-farm.js';
+import { OVESOS_PEOPLE } from './lizeem-ovesos-people.js';
+import { ISAREOS_HAMLET } from './isareos-hamlet.js';
+import { MINORA_PEOPLE } from './lizeem-minora-people.js';
+import { DIVIDING_PLACES } from './dividing.js';
 
-const NETHEREUM_REGION = 17, NESDOR_REGION = 14;
+const NETHEREUM_REGION = 17, NESDOR_REGION = 14, OVESOS_REGION = 25, ISAREOS_REGION = 16;
 
 export async function runLizeemFarmsChecks(h) {
   const started = performance.now(), notes = [];
@@ -155,6 +168,83 @@ export async function runLizeemFarmsChecks(h) {
     await h.capture('ninehands-reaped');
   });
 
+  // ---- Velsorten (Build 4) ----------------------------------------------------------------------------------------
+  const ovesos = await country('Velsorten', OVESOS_REGION, { x: VELSORTEN.x, z: VELSORTEN.z + 4 }, async (assert, out) => {
+    const farm = h.world.ovesosFarm;
+    assert(!!farm?.root?.isObject3D && farm.metrics?.batches > 0, 'Velsorten, its canal, the divider and the mills are built');
+    assert(farm.canal.state() === 'running', 'the canal runs');
+    out.beds = bedsDrawn(OVESOS_FARM_ROWS, assert, 'Ovesos');
+    standing(OVESOS_PEOPLE, assert);
+    look(VELSORTEN, .3, 12); await h.capture('velsorten');
+    // Ezina's mill and its wheel on the canal, from the way.
+    h.warp(OVESOS_SITES.mill.x + 7, OVESOS_SITES.mill.z - 9); await h.frames(4);
+    look(OVESOS_SITES.mill, .28, 9); await h.capture('velsorten-mill');
+
+    // Entered in the register, the newest right on the canal.
+    if (!h.farmlands.accepted()) { h.farmlands.offer(); h.farmlands.accept(); }
+    if (h.ovesosArc.stage() === 'arrive') h.ovesosArc.enter();
+    assert(h.ovesosArc.stage() !== 'arrive' && h.canal.seniority() === 1, `Nisaba has entered Rollo at the tail (${h.ovesosArc.stage()}, ${h.canal.seniority()})`);
+    // The divider, from the bank beside its stone: outside his turn it says whose the water is.
+    let v = h.canal.view(now());
+    if (v.mine) { h.advancePlay(Math.ceil(v.endsIn) + 1); await h.frames(3); }
+    const stand = { x: OVESOS_DIVIDER.x - OVESOS_DIVIDER.width / 2 - 1.2, z: OVESOS_DIVIDER.z + 1 };
+    h.warp(stand.x, stand.z); await h.frames(6);
+    let prompt = h.prompt();
+    assert(prompt.divider && prompt.shown && /^The divider · the water is going to .+ · yours in \d+ s$/.test(prompt.label), `the divider puts up its prompt outside his turn (${JSON.stringify(prompt)})`);
+    out.waiting = prompt.label;
+    // His turn: the clock moved on to it, a barley plot at the tail sown, and two units given at the divider.
+    v = h.canal.view(now());
+    h.advancePlay(Math.ceil(v.nextIn) + 2); await h.frames(6);
+    v = h.canal.view(now());
+    assert(v.mine && v.left === 4, `it is Rollo's turn, with his measure of four (${JSON.stringify({ mine: v.mine, left: v.left, holder: v.holder?.name })})`);
+    assert(h.toasts().some(t => /^Your turn at the divider: 4 units/.test(t.title ?? '')), 'his turn is announced');
+    h.inventory.add('barley-seed', 2);
+    assert(h.farming.sow('ovesos-tail-1', 'barley', now()).ok, 'a tail plot is sown with barley');
+    h.warp(stand.x, stand.z); await h.frames(6);
+    prompt = h.prompt();
+    assert(prompt.divider && prompt.label === 'Divide your turn at the divider · 4/4 units left', `the divider offers his turn (${prompt.label})`);
+    look(OVESOS_DIVIDER, .34, 7); await h.capture('velsorten-divider');
+    h.tap('KeyF'); await h.frames(3);
+    let panel = h.dialogue();
+    assert(panel?.id === 'the-divider' && /^Measure 4\/4\./.test(panel.lines[0]) && panel.choices.includes('divider-ovesos-tail-1'), `F opens the divider on his measure (${JSON.stringify(panel)})`);
+    await h.choose('divider-ovesos-tail-1');
+    await h.choose('divider-give-2');
+    const bed = h.canal.view(now()).beds['ovesos-tail-1'];
+    assert(bed.units === 2 && bed.thirst === 2 && bed.fit === 2, `the barley has its two units (${JSON.stringify(bed)})`);
+    assert(h.canal.view(now()).left === 2, 'two of his four are left');
+    assert(/^2 units to .+: 2 of the 2 it wants, exactly enough\.$/.test(lastToast()?.title ?? ''), `the allotment is announced (${lastToast()?.title})`);
+    panel = h.dialogue();
+    assert(panel?.id === 'the-divider' && /^Measure 2\/4\./.test(panel.lines[0]), 'the divider comes back with what is left');
+    out.allotment = { bed: 'ovesos-tail-1', units: bed.units, thirst: bed.thirst, left: h.canal.view(now()).left, arc: h.ovesosArc.stage() };
+    h.close(); await h.frames(2);
+  });
+
+  // ---- Amalthea's hamlet (Build 5) -------------------------------------------------------------------------------
+  const hamlet = await country('Amalthea’s hamlet', ISAREOS_REGION, { x: ISAREOS_HAMLET.arrival.x, z: ISAREOS_HAMLET.arrival.z }, async (assert, out) => {
+    const built = h.world.isareosHamlet;
+    assert(!!built?.root?.isObject3D && built.metrics?.batches > 0, 'the hamlet is built');
+    standing(MINORA_PEOPLE.filter(person => person.id === 'amalthea'), assert);
+    look(ISAREOS_HAMLET, .3, 12); await h.capture('amalthea-hamlet');
+    await h.visit('amalthea');
+    const panel = h.dialogue();
+    assert(panel?.id === 'amalthea' && panel.lines.length > 0 && panel.choices.includes('amalthea-trade'), `Amalthea talks, and trades (${JSON.stringify(panel)})`);
+    out.talk = { line: panel.lines[0], choices: panel.choices };
+    h.close(); await h.frames(2);
+  });
+
+  // ---- The Dividing's props on the forecourt (Build 5), shown through the developer hook for a screenshot ------------
+  const forecourt = await country('The Guild forecourt', ISAREOS_REGION, { x: -2414, z: 63 }, async (assert, out) => {
+    const props = h.dividingProps, { trestle } = DIVIDING_PLACES;
+    assert(!props.visible(), 'the trestle is not out before the river is whole');
+    props.show(); await h.frames(4);
+    assert(props.visible() && props.root.visible && h.world.colliders.includes(props.collider), 'shown, the trestle stands and is solid');
+    h.warp(trestle.x + 3.5, trestle.z + 4.5); await h.frames(4);
+    look(trestle, .3, 6); await h.capture('dividing-forecourt');
+    props.hide(); await h.frames(2);
+    assert(!props.visible() && !props.root.visible && !h.world.colliders.includes(props.collider), 'hidden again, and no longer in the way');
+    out.props = { bowls: props.metrics?.bowls ?? null };
+  });
+
   const frameErrors = h.getState().frameErrors ?? null;
-  return { ok: nethereum.ok && nesdor.ok, nethereum, nesdor, notes, frameErrors, playSeconds: now(), elapsedMs: Math.round(performance.now() - started) };
+  return { ok: nethereum.ok && nesdor.ok && ovesos.ok && hamlet.ok && forecourt.ok, nethereum, nesdor, ovesos, hamlet, forecourt, notes, frameErrors, playSeconds: now(), elapsedMs: Math.round(performance.now() - started) };
 }

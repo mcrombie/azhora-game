@@ -49,6 +49,8 @@ const good = (base, kind, home) => freeze({ base, kind, home: freeze([...home]) 
  * old commons crops and grow anywhere. Ids for Builds 2 to 4 are priced now so the table is whole;
  * nothing can sell them until their crops exist. The Nethereum ids are the contract's of 6 October
  * 2026 (`flood-oats`, `meadow-hay`), and bridge rye grows on the Nesdor rises as well as in Caricas.
+ * The Ovesos ids are the canal's (Build 4, 6 October 2026): `silver-millet`, `madder` (the dye crop)
+ * and `hard-wheat-flour`, Ezina's, which keeps the kind `flour` so the Nesdor carter still buys it.
  */
 export const FARM_GOODS = freeze({
   carrot: good(1, 'root', ALL_FOUR),
@@ -57,7 +59,7 @@ export const FARM_GOODS = freeze({
   rye: good(1, 'grain', ['Nesdor']),
   'bridge-rye': good(1, 'grain', ['Caricas', 'Nesdor']),
   'flood-oats': good(1, 'grain', ['Nethereum']),
-  millet: good(1, 'grain', ['Ovesos']),
+  'silver-millet': good(1, 'grain', ['Ovesos']),
   'field-beans': good(1, 'pulse', ['Caricas']),
   'soft-fruit': good(2, 'fruit', ['Caricas']),
   hazelnuts: good(2, 'nut', ['Nesdor']),
@@ -65,8 +67,8 @@ export const FARM_GOODS = freeze({
   'hard-wheat': good(2, 'grain', ['Ovesos']),
   'meadow-hay': good(2, 'fodder', ['Nethereum']),
   'weir-fish': good(2, 'fish', ['Nethereum']),
-  flour: good(3, 'flour', ['Nesdor', 'Ovesos']),
-  'dye-crop': good(4, 'dye', ['Ovesos']),
+  'hard-wheat-flour': good(3, 'flour', ['Ovesos']),
+  madder: good(4, 'dye', ['Ovesos']),
 });
 
 /**
@@ -101,6 +103,9 @@ export const WARES = freeze({
   ale: good(3, 'drink', ['Nesdor']),
   hides: good(2, 'hide', ['Nesdor', 'Nethereum']),
   'harvest-basket': good(20, 'tool', ['Nethereum']),
+  // Uttu's fulled cloth and Lahar's mutton (Build 4, 6 October 2026).
+  cloth: good(8, 'cloth', ['Ovesos']),
+  mutton: good(3, 'meat', ['Ovesos']),
 });
 
 export const PRICE_TABLE = freeze({ ...FARM_GOODS, ...DISH_PRICES, ...WARES });

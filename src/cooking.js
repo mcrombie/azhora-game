@@ -9,6 +9,9 @@
 // The Nethereum and Nesdor kitchens (the Farmlands of the Lizeem, Builds 2 and 3; 6 October 2026), each with its fine forms.
 import { NETHEREUM_RECIPES } from './nethereum-produce.js';
 import { NESDOR_RECIPES } from './flats-ground.js';
+// Ezina's flatbread and Ashnan's porridge, and Taleth's fork stew (the Farmlands of the Lizeem, Builds 4 and 5; 6 October 2026).
+import { OVESOS_RECIPES } from './ovesos-produce.js';
+import { DIVIDING_RECIPES } from './dividing.js';
 export const COOKING_VERSION = 1;
 export const COOKING_SKILL = 'cooking';
 /** He will make you another cup, but not before you have had time to finish the last. Seconds of play. */
@@ -51,6 +54,8 @@ export const RECIPES = Object.freeze({
     note: 'The tart from two Fine soft fruit and a Fine bridge rye. Restores up to 50 health.' }),
   // Mererid's oatcakes and Gwyddno's smoked fish; Aegir's white bread and Idunn's nut cake (6 October 2026).
   ...NETHEREUM_RECIPES, ...NESDOR_RECIPES,
+  // Flatbread and millet porridge; fork stew with floodwheat or hard wheat (6 October 2026).
+  ...OVESOS_RECIPES, ...DIVIDING_RECIPES,
 });
 export const RECIPE_IDS = Object.freeze(Object.keys(RECIPES));
 

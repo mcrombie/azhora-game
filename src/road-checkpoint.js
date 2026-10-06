@@ -115,13 +115,23 @@ import { createNesdorArc, validateNesdorArc } from './lizeem-nesdor.js';
 import { registerNesdorFarming } from './flats-ground.js';
 import './lizeem-nethereum-people.js';
 import './lizeem-nesdor-people.js';
+// The Farmlands of the Lizeem, Builds 4 and 5 (6 October 2026): the Velsorten canal and Ezina's mill, and the Ovesos arc and
+// the Dividing nested in the farmlands' section. All optional: a save from before them starts them fresh. Importing the canal
+// registers Ovesos's beds and crops, and the people modules their buyers (the barge and Amalthea among them) and the register
+// board, so the farm and the market validate a save that has used them.
+import { createCanalTurns, createMill, validateCanalTurns, validateMill } from './canal-turns.js';
+import { createOvesosArc, validateOvesosArc } from './lizeem-ovesos.js';
+import { createDividing, validateDividing } from './dividing.js';
+import './lizeem-ovesos-people.js';
+import './lizeem-minora-people.js';
 import { createLusciaChapter } from './luscia-chapter.js';
 import {validateLivingStorySnapshot} from './living-story.js';
 import {createLusciaCivilWar,validateLusciaCivilWarSnapshot} from './luscia-civil-war.js';
 // Nesdor's beds (Baugi's long strip with them), floodwheat and Idunn's coppice, and both arcs on a hub, so the farmlands'
 // validator here knows them as the running game's does (6 October 2026).
 registerNesdorFarming(createFarming());
-{ const hub = createLizeemFarmlands(); hub.registerArc('nethereum', createNethereumArc()); hub.registerArc('nesdor', createNesdorArc()); }
+{ const hub = createLizeemFarmlands(); hub.registerArc('nethereum', createNethereumArc()); hub.registerArc('nesdor', createNesdorArc());
+  hub.registerArc('ovesos', createOvesosArc()); hub.registerArc('dividing', createDividing())/* Builds 4 and 5, 6 October 2026 */; }
 
 export const ROAD_CHECKPOINT_KEY = 'azhora-road-checkpoint-v1';
 export const ROAD_CHECKPOINT_VERSION = 1;
@@ -286,9 +296,13 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (!validateLizeemFarmlands(data.lizeemFarmlands)) return failed('The saved Farmlands of the Lizeem are invalid.');
     if (!validateNethereumArc(data.lizeemFarmlands?.arcs?.nethereum)) return failed('The saved Nethereum arc is invalid.');
     if (!validateNesdorArc(data.lizeemFarmlands?.arcs?.nesdor)) return failed('The saved Nesdor arc is invalid.');
+    if (!validateOvesosArc(data.lizeemFarmlands?.arcs?.ovesos)) return failed('The saved Ovesos arc is invalid.');
+    if (!validateDividing(data.lizeemFarmlands?.arcs?.dividing)) return failed('The saved Dividing is invalid.');
     { const at = Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity;
       if (!validateMeadowWater(data.meadow, { playSeconds: at })) return failed('The saved flood meadow is invalid.');
-      if (!validateWeir(data.weir, { playSeconds: at })) return failed('The saved weir is invalid.'); }
+      if (!validateWeir(data.weir, { playSeconds: at })) return failed('The saved weir is invalid.');
+      if (!validateCanalTurns(data.canal, { playSeconds: at })) return failed('The saved canal is invalid.');
+      if (!validateMill(data.mill)) return failed('The saved mill is invalid.'); }
     if (!validateMerchants(data.merchants)) return failed('The saved market is invalid.');
     if (!validateFarmingSnapshot(data.farming, { playSeconds: Number.isFinite(data.playSeconds) ? data.playSeconds : Infinity })) return failed('The saved rows at the commons are invalid.');
     if (Object.hasOwn(data, 'playSeconds') && (!Number.isFinite(data.playSeconds) || data.playSeconds < 0 || data.playSeconds > 1e8)) return failed('The saved play time is invalid.');
@@ -500,6 +514,8 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'merchants')) result.merchants = JSON.parse(JSON.stringify(data.merchants));
     if (Object.hasOwn(data, 'meadow')) { const water = createMeadowWater(); water.restore(data.meadow); result.meadow = water.snapshot(); }
     if (Object.hasOwn(data, 'weir')) { const trap = createWeir(); trap.restore(data.weir); result.weir = trap.snapshot(); }
+    if (Object.hasOwn(data, 'canal')) { const canal = createCanalTurns(); canal.restore(data.canal); result.canal = canal.snapshot(); }
+    if (Object.hasOwn(data, 'mill')) { const mill = createMill(); mill.restore(data.mill); result.mill = mill.snapshot(); }
     if (Object.hasOwn(data, 'farming')) { const farm = createFarming(); farm.restore(data.farming); result.farming = farm.snapshot(); }
     if (Object.hasOwn(data, 'oldTree')) { const tree = createTalkingTree(); tree.restore(data.oldTree); result.oldTree = tree.snapshot(); }
     if (Object.hasOwn(data, 'ferry')) { const boat = createFerry(); boat.restore(data.ferry); result.ferry = boat.snapshot(); }

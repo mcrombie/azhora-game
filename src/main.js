@@ -207,6 +207,16 @@ import { registerNesdorFarming, createReaping, stripEndNear, bedOpen, lockLong, 
 import { NESDOR_STRIPS } from './nesdor-farm.js';
 import { createNesdorArc, talethNesdorChoices, FORAGER_FIGHT } from './lizeem-nesdor.js';
 import { NESDOR_PEOPLE, isNesdorNpc, nesdorConversation } from './lizeem-nesdor-people.js';
+// The Farmlands of the Lizeem, Builds 4 and 5 (the design of 5 October 2026, built 6 October 2026): the Velsorten canal, Ezina's
+// mill, the Ovesos arc and its people; the Dividing and its props, the rest of Minora's people and Amalthea at her hamlet.
+// Importing the canal registers the twelve Ovesos plots and their crops.
+import { createCanalTurns, createMill } from './canal-turns.js';
+import { OVESOS_DIVIDER } from './ovesos-farm.js';
+import { createOvesosArc, talethOvesosChoices } from './lizeem-ovesos.js';
+import { OVESOS_PEOPLE, isOvesosNpc, ovesosConversation } from './lizeem-ovesos-people.js';
+import { createDividing, talethDividingChoices } from './dividing.js';
+import { createDividingScenery } from './dividing-scenery.js';
+import { MINORA_PEOPLE, isMinoraNpc, minoraConversation } from './lizeem-minora-people.js';
 import { cityPoint as imlamdrisPoint } from './south-suval-world.js';
 // Sailing in: the forty-four seconds from the roads to the pier, as data (docs/opening-sequence.md).
 import { stateAt, eventsBetween, variantFor, boatBob, SKIP_BY_VARIANT, ASHORE_PACE } from './opening-sequence.js';
@@ -773,6 +783,9 @@ async function init() {
   // Haethom's seven and the eight of Nesdor (src/lizeem-nethereum-people.js, src/lizeem-nesdor-people.js; 6 October 2026), stood
   // up after the trim as the rest of the farmlands' people are.
   for(const person of [...NETHEREUM_PEOPLE,...NESDOR_PEOPLE]){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
+  // Velsorten's eight, and the rest of Minora's people with Amalthea at her hamlet (src/lizeem-ovesos-people.js,
+  // src/lizeem-minora-people.js; Builds 4 and 5, 6 October 2026), stood up after the trim as the rest of the farmlands' are.
+  for(const person of [...OVESOS_PEOPLE,...MINORA_PEOPLE]){world.npcPositions[person.id]={x:person.x,z:person.z};npcData.push({...person});}
   for(const npc of npcData) {
     npc.actor=npc.make?npc.make():npc.ogre?createOgre():npc.dog?createDog({variant:0}):npc.cat?createCat({variant:0}):createLazyCharacter({tunic:npc.color,role:npc.modelRole||npc.id,skin:npc.skin,look:npc.look,hat:npc.hat??false,armed:!!npc.armed},{onMaterialize:()=>{npc.shadows=undefined;npc.detailDirty=true;}});const p=world.npcPositions[npc.id];if(npc.hidden)npc.actor.group.visible=false;
     if(npc.scale)npc.actor.group.scale.setScalar(npc.scale);
@@ -1431,8 +1444,9 @@ async function init() {
   // (src/farming.js). The only skill with a clock of its own, which is the long road's own point.
   let sunflowerLesson=null;
   let nethereum=null,nesdorArc=null;/* the Nethereum and Nesdor arcs (6 October 2026): made below, beside the quest, and heard by the farm */
+  let ovesosArc=null;/* the Ovesos arc (Build 4, 6 October 2026): made below with the canal, and heard by the farm */
   const farming=createFarming({skills,inventory,clock:()=>playSeconds,onEvent:event=>{
-    sunflowerLesson?.farmEvent(event);nesdorArc?.farmEvent(event)/* a sowing on the Nesdor strips, 6 October 2026 */;
+    sunflowerLesson?.farmEvent(event);nesdorArc?.farmEvent(event)/* a sowing on the Nesdor strips, 6 October 2026 */;ovesosArc?.hear(event)/* and on the Ovesos canal */;
     if(event.type==='row-sown'&&!event.working/* the Work of Nine shows one notice for the lot, 6 October 2026 */)toast(`Sown. ${Math.round((event.ripeAt-playSeconds))} seconds, and it does not go faster for being watched.`,`${CROPS[event.crop].name.toUpperCase()} · FARMING`);
     if(event.type==='row-watered')toast('Watered. This crop will grow faster and yield more. +4 Farming XP.','FARMING');
     if(event.type==='row-reaped'||event.type==='tree-picked'){inventory.refresh();refreshSkillsSheet();audio?.effect('success');if(event.type==='tree-picked'&&event.grade==='prize'&&event.country)farmlands.enter(event.item,'prize',{country:event.country})/* a Prize picking off Idunn's coppice, 6 October 2026 */;if(event.type==='row-reaped'&&!event.hand&&!event.working)magic?.refocus();
@@ -1473,8 +1487,18 @@ async function init() {
       if(event.type==='nesdor-foragers-stand')toast('The foragers are still between the strips. Baugi is in the yard.','NINEHANDS');
       inventory.refresh();refreshQuest();saveRoad(false);}});
   farmlands.registerArc('nesdor',nesdorArc);
+  // **Ovesos** (the Farmlands of the Lizeem, Build 4: the design of 5 October 2026, built 6 October 2026). The canal
+  // (src/canal-turns.js) runs the turns of water, judges each Ovesos planting at harvest from the water it was given, and keeps
+  // the salt and the dues; Ezina's mill grinds hard wheat for her sixteenth. The arc (src/lizeem-ovesos.js) keeps the story
+  // and Ziusudra's half turn, so the divider allots through it, and is registered with the quest like the others.
+  const canal=createCanalTurns({farming,clock:()=>playSeconds,onEvent:event=>{ovesosArc?.hear(event);
+    if(event.type==='canal-turn'&&ovesosArc?.accepted()&&ovesosArc.stage()!=='arrive'){const v=dividerView();toast(`Your turn at the divider: ${v.left} ${v.left===1?'unit':'units'} of water to divide, for the next ${Math.ceil(v.endsIn)} seconds.`,'VELSORTEN');}}});
+  const ovesosMill=createMill({clock:()=>playSeconds,inventory});
+  ovesosArc=createOvesosArc({farming,canal,mill:ovesosMill,skills,inventory,merchants,clock:()=>playSeconds,onEvent:event=>{if(event.note)toast(event.note,'VELSORTEN');inventory.refresh();refreshQuest();saveRoad(false);}});
+  farmlands.registerArc('ovesos',ovesosArc);
   const farmView=createFarmingView({scene,world,farming});
   let currentRow=null,currentAppleTree=null,nearArtEasel=false,currentStripEnd=null,currentHatch=null,currentWeir=null;/* a strip's end post, the meadow hatch, the weir head: 6 October 2026 */
+  let currentDivider=null;/* the divider at the head of the Velsorten canal, 6 October 2026 */
   const longRoad=createLongRoad();
   /** What the long road can see of the rest of the game, for deciding what is done. */
   const longRoadWorld=()=>({skills,acornQuest,journey:journey.state,mapFog,linguist,startingSkills:startingSkills(playerId),
@@ -1792,6 +1816,13 @@ async function init() {
   let currentStone=null;
   // Archaeology and wine, both taught by Lakota (src/archaeology.js, src/wine.js): his pegs at Rena, and Paradise Springs.
   const archaeology=createArchaeology({skills}),wine=createWine({skills}),cooking=createCooking({skills,canUseFire:()=>fireMaking.ready||skills.taught('cooking')}),wineAttic=createWineAttic(),puck=createPuck(),digs=createRenaDigs(scene,world);let currentDig=null,currentVine=null;
+  // **The Dividing** (the Farmlands of the Lizeem, Build 5: the design of 5 October 2026, built 6 October 2026). Once the four
+  // countries are restored Taleth holds it on the forecourt (src/dividing.js); it rides with the quest as its fifth arc, and the
+  // trestle and four bowls (src/dividing-scenery.js) stand on the forecourt from the day the river is whole, and stay.
+  const dividing=createDividing({farmlands,inventory,cooking,skills,onEvent:()=>{refreshQuest();refreshSkillsSheet();}});
+  farmlands.registerArc('dividing',dividing);
+  const dividingProps=createDividingScenery({parent:scene,heightAt:world.heightAt,colliders:world.colliders,reindex:()=>world.reindexColliders?.()});
+  let dividingPropsShown=null,dividingPropsAt=-1;/* what the quest last put out, checked once a second of play; a developer hook may show them between */
   const roadLessons=createRoadsideLessons({inventory,cooking,geology,skills});
   const husbandry=createAnimalHusbandry({skills});let currentLivestock=null;
   const acting=createActing({skills,onEvent:event=>{if(event.type==='acting-completed')refreshRoadSkills();}});
@@ -3635,6 +3666,7 @@ async function init() {
     // Baugi's long strip until he lends it, and Liban's deep plots until she lets them (6 October 2026).
     if(currentRow&&!bedOpen(currentRow.id)){toast(LONG_STRIP_LOCKED,'NINEHANDS');return;}
     if(currentRow&&currentRow.stage==='bare'){const gate=nethereum.canSow(currentRow.id);if(!gate.ok){toast(gate.reason,'THE DEEP PLOTS');return;}}
+    if(currentRow&&currentRow.stage==='bare'){const gate=ovesosArc.canSow(currentRow.id);if(!gate.ok){toast(gate.reason,'VELSORTEN');return;}}/* the Ovesos plots open by seniority, 6 October 2026 */
     if(currentRow)farmRowConversation(currentRow.id,farmingContext());return;
 
   }
@@ -3658,6 +3690,30 @@ async function init() {
     if(!result.ok){toast(result.reason,'GWYDDNO’S WEIR');return;}
     inventory.refresh();audio?.effect('success');
     toast(`${result.count} × ${INVENTORY_ITEMS[result.item]?.name??result.item}${result.fine?', bright from the trap':''}.`,'GWYDDNO’S WEIR');saveRoad(false);
+  }
+  // The divider at the head of the Velsorten canal (the Farmlands of the Lizeem, Build 4; 6 October 2026). Outside Rollo's turn
+  // it says whose the water is and when his comes; in his turn it divides his measure among his growing plots, a few units at
+  // a time, through the arc (which holds Ziusudra's half turn), and comes back to itself until he leaves the rest.
+  const DIVIDER_PANEL={id:'the-divider',name:'The Divider',role:'The Velsorten canal · the turns of water'};
+  /** The canal now (src/canal-turns.js `view`), with what Ziusudra's half turn leaves of Rollo's measure. */
+  function dividerView(){const v=canal.view(playSeconds),m=canal.measure(),short=v.mine&&ovesosArc.snapshot().short===v.turn,allowed=short?m-Math.floor(m/2):v.measure;
+    return {...v,allowed,short,left:v.mine?Math.max(0,Math.min(v.left,allowed-v.used)):0};}
+  function openDivider(){
+    const v=dividerView(),bedName=id=>farming.rowState(id,playSeconds)?.name??id,cropName=id=>CROPS[id]?.name??id;
+    if(!v.mine){openDialogue(DIVIDER_PANEL,[`The water is going to ${v.holder.name}; yours in ${Math.ceil(v.nextIn)} s.`],null,'Back to the canal',{noWayfinding:true});return;}
+    const beds=Object.entries(v.beds).filter(([id,bed])=>bed.crop&&bed.thirst&&farming.rowState(id,playSeconds)?.stage==='sown');
+    const choices=beds.map(([id,bed])=>({id:`divider-${id}`,label:`${bedName(id)} · ${cropName(bed.crop)} · ${bed.units}/${bed.thirst}`,disabled:!v.left,reason:v.left?'':'Your measure is spent this turn.',
+      action:()=>openDialogue(DIVIDER_PANEL,[`${cropName(bed.crop)} in ${bedName(id)} has had ${bed.units} of the ${bed.thirst} ${bed.thirst===1?'unit':'units'} it wants${bed.salt?', and there is salt in the bed':''}. ${v.left} of your measure ${v.left===1?'is':'are'} left.`],null,'Back to the divider',{noWayfinding:true,choices:[
+        ...[1,2,3].filter(n=>n<=v.left).map(n=>({id:`divider-give-${n}`,label:`Give ${n} ${n===1?'unit':'units'}`,action:()=>giveWater(id,n)})),
+        {id:'divider-back',label:'Back to the divider',action:openDivider}]})}));
+    choices.push({id:'divider-leave',label:'Leave the rest',action:closeDialogue});
+    openDialogue(DIVIDER_PANEL,[`Measure ${v.left}/${v.allowed}. ${v.short?'Ziusudra’s house drew half this turn in the night. ':''}${beds.length?'Your turn is running: lift a sluice for a growing plot.':'Nothing of yours is growing on the canal, and the water runs on to the tail and the sand.'} The turn ends in ${Math.ceil(v.endsIn)} seconds.`],null,'Leave the rest',{noWayfinding:true,choices});
+  }
+  function giveWater(bedId,units){
+    const result=ovesosArc.allot(bedId,units,playSeconds),name=farming.rowState(bedId,playSeconds)?.name??bedId;
+    if(!result?.ok){toast(result?.reason??'The sluice will not lift.','THE DIVIDER');openDivider();return;}
+    toast(`${result.units} ${result.units===1?'unit':'units'} to ${name}: ${result.total} of the ${result.thirst} it wants${result.salted?', and the rest will come up as salt':result.total===result.thirst?', exactly enough':''}.`,'THE DIVIDER');
+    inventory.refresh();refreshQuest();saveRoad(false);openDivider();
   }
   function gatherStone(){
     if(!currentStone)return;
@@ -4014,7 +4070,7 @@ async function init() {
     onJail:({seconds})=>{living.advance(seconds);playSeconds=living.clock();corpseHost.update(seconds,elapsed,{playing:true});if(riding.mounted)riding.dismount();
       mode='playing';show('modal-backdrop',false);show('defeat',false);stopInput();grounded=true;verticalSpeed=0;settleCamera();}});
 
-  magic=createMagic({skills,inventory,weapons,combat,world,farming,clock:()=>playSeconds,fieldOpen:id=>nethereum.canSow(id).ok/* Liban's deep plots, 6 October 2026 */,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
+  magic=createMagic({skills,inventory,weapons,combat,world,farming,clock:()=>playSeconds,fieldOpen:id=>nethereum.canSow(id).ok&&ovesosArc.canSow(id).ok/* Liban's deep plots, and the Ovesos plots above Rollo's right, 6 October 2026 */,position:()=>({...player.group.position,yaw:player.group.rotation.y}),
     getCastOrigin:spellCast=>{
       // Sample the rendered hand at the release beat, even on a frame that
       // advances past it. The actual equipped model supplies its world-space tip.
@@ -5251,7 +5307,7 @@ async function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),merchants:merchants.snapshot(),lizeemFarmlands:farmlands.snapshot()/* the Lizeem market and farmlands, 5 October 2026 */,meadow:meadow.snapshot(),weir:weir.snapshot()/* the Haethom meadow and Gwyddno's weir, 6 October 2026 */,barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),merchants:merchants.snapshot(),lizeemFarmlands:farmlands.snapshot()/* the Lizeem market and farmlands, 5 October 2026 */,meadow:meadow.snapshot(),weir:weir.snapshot()/* the Haethom meadow and Gwyddno's weir, 6 October 2026 */,canal:canal.snapshot(),mill:ovesosMill.snapshot()/* the Velsorten canal and Ezina's mill, 6 October 2026 */,barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(mode==='opening'||restoringRoad||regionLoadDepth||strategicReturn)return false;
@@ -5340,6 +5396,8 @@ async function init() {
     // The Haethom meadow and the weir (6 October 2026): a save from before them has a broken hatch and a full trap. No reap is ever
     // saved, and Baugi's long strip is shut until the Nesdor arc, restored with the farmlands below, says he has lent it.
     reaping.cancel();lockLong();meadow.restore(saved.meadow);weir.restore(saved.weir);
+    // The Velsorten canal and Ezina's mill (6 October 2026): a save from before them is the newest right on the canal, the toll owed.
+    canal.restore(saved.canal);ovesosMill.restore(saved.mill);
     merchants.restore(saved.merchants);farmlands.restore(saved.lizeemFarmlands);placeLizeemHands();
     inventory.refresh();
     ferry.restore(saved.ferry??createFerry().snapshot());
@@ -5861,7 +5919,7 @@ async function init() {
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(telemonia?.converse(npc))return;
     // Taleth and the people of the Farmlands of the Lizeem (src/taleth.js, src/lizeem-people.js; 5 October 2026).
-    if(talethConversation(npc,{openDialogue,closeDialogue,farmlands,magic,playerId:()=>playerId,notify:toast,onChange:()=>{refreshQuest();refreshSkillsSheet();inventory.refresh();saveRoad(false);},extraChoices:(who,back)=>[...talethFarmlandsChoices(who,{farmlands,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethNethereumChoices(who,{nethereum,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethNesdorChoices(who,{nesdor:nesdorArc,openDialogue,closeDialogue,onComplete:back,notify:toast})]/* Nethereum's dish and Nesdor's bread and cake, 6 October 2026 */}))return;
+    if(talethConversation(npc,{openDialogue,closeDialogue,farmlands,dividing/* his later charges after it, 6 October 2026 */,magic,playerId:()=>playerId,notify:toast,onChange:()=>{refreshQuest();refreshSkillsSheet();inventory.refresh();saveRoad(false);},extraChoices:(who,back)=>[...talethFarmlandsChoices(who,{farmlands,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethNethereumChoices(who,{nethereum,inventory,merchants,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethNesdorChoices(who,{nesdor:nesdorArc,openDialogue,closeDialogue,onComplete:back,notify:toast})/* Nethereum's dish and Nesdor's bread and cake, 6 October 2026 */,...talethOvesosChoices(who,{ovesos:ovesosArc,openDialogue,closeDialogue,onComplete:back,notify:toast}),...talethDividingChoices(who,{dividing,openDialogue,closeDialogue,onComplete:back,notify:toast,onChange:()=>{refreshQuest();refreshSkillsSheet();inventory.refresh();saveRoad(false);},speaker:id=>npcById.get(id)??null})]/* Ovesos's flatbread and the Dividing, 6 October 2026 */}))return;
     if(isLizeemNpc(npc.id)&&lizeemConversation(npc,{farmlands,openDialogue,closeDialogue,inventory,cooking,merchants,notify:toast,openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who)),hireHand:()=>true,onMeasure:()=>{inventory.refresh();refreshQuest();saveRoad(false);}}))return;
     // Haethom's seven and the eight of Nesdor (src/lizeem-nethereum-people.js, src/lizeem-nesdor-people.js; 6 October 2026).
     if(isNethereumNpc(npc.id)&&nethereumConversation(npc,{nethereum,openDialogue,closeDialogue,inventory,cooking,notify:toast,openTrade:who=>openTrade(who,tradeContext(who)),
@@ -5870,6 +5928,11 @@ async function init() {
     if(isNesdorNpc(npc.id)&&nesdorConversation(npc,{nesdor:nesdorArc,openDialogue,closeDialogue,inventory,cooking,merchants,notify:toast,onChange:()=>{inventory.refresh();refreshQuest();saveRoad(false);},
       openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who)),
       startFight:config=>{saveRoad(false);const begun=combat.startEncounter(config);if(begun)stopInput();return begun;}}))return;
+    // Velsorten's eight, and the rest of Minora's people with Amalthea (src/lizeem-ovesos-people.js, src/lizeem-minora-people.js; 6 October 2026).
+    if(isOvesosNpc(npc.id)&&ovesosConversation(npc,{ovesos:ovesosArc,openDialogue,closeDialogue,inventory,cooking,notify:toast,playerName:()=>PLAYABLE.find(entry=>entry.id===playerId)?.name??'Rollo',
+      openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who)),onChange:()=>{inventory.refresh();refreshQuest();saveRoad(false);}}))return;
+    if(isMinoraNpc(npc.id)&&minoraConversation(npc,{farmlands,dividing,openDialogue,closeDialogue,inventory,cooking,notify:toast,onChange:()=>{inventory.refresh();refreshQuest();saveRoad(false);},
+      openTrade:who=>openTrade(who,tradeContext(who)),openOrders:who=>merchants.ordersConversation(who,tradeContext(who))}))return;
     if(npc.id===CUB.id){cubHost.conversation({openDialogue,closeDialogue});return;}
     if(circusConversation(npc,{openDialogue,closeDialogue,kaylaNear:()=>!!bearFamily?.roaming}))return;
     if(npc.id===LIZ.id&&cubHost.state().alerted){toast('Liz is furious. Leave the apiary and give her time to calm down.','LIZ');return;}
@@ -6766,6 +6829,7 @@ async function init() {
     if(combat.state.phase!=='active'&&(reaping.pose()||currentStripEnd)){reapStripEnd();return;}
     if(combat.state.phase!=='active'&&currentHatch){useMeadowHatch();return;}
     if(combat.state.phase!=='active'&&currentWeir){haulWeir();return;}
+    if(combat.state.phase!=='active'&&currentDivider){openDivider();return;}/* the Velsorten divider, 6 October 2026 */
     if(currentNPC){conversation(currentNPC);return;}
     if(!currentNPC&&peninsulaHost?.nearby()&&combat.state.phase!=='active'){peninsulaHost.interact();return;}
     if(!currentNPC&&jesseHost.nearby()&&combat.state.phase!=='active'){jesseHost.interact(jesseHost.nearby());return;}
@@ -7039,7 +7103,7 @@ async function init() {
   // The scripted walk through the Caricas arc is `--lizeem-farmlands-checks` (src/lizeem-farmlands-checks.js).
   function testPlayLizeemFarmlands(){
     if(deferUntilLoaded([TALETH],()=>testPlayLizeemFarmlands()))return true;
-    stopAutopilot();closeDialogue();questChoice.close();farmlands.restore();placeLizeemHands();reaping.cancel();meadow.restore();weir.restore()/* the arcs' ground with them, 6 October 2026 */;
+    stopAutopilot();closeDialogue();questChoice.close();farmlands.restore();placeLizeemHands();reaping.cancel();meadow.restore();weir.restore()/* the arcs' ground with them, 6 October 2026 */;canal.restore();ovesosMill.restore()/* and the canal and the mill */;
     testGoTo({...(clearApproach(TALETH)??TALETH),facing:MINORA_START.yaw},'PLAYTEST - TALETH','Take Taleth’s charge and walk the Caricas arc: the North Farm, the swap, the claim, Fine rye and the tart.');
     refreshQuest();canvas.focus();return true;
   }
@@ -8253,6 +8317,10 @@ async function init() {
       meadow.update(playSeconds);nethereum.tick(playSeconds);
       {const water=meadow.view(playSeconds),hatch=!water.mended?'broken':water.open?'open':'shut';
         if(hatch!==meadowLook.hatch||water.phase!==meadowLook.water){meadowLook.hatch=hatch;meadowLook.water=water.phase;world.nethereumFarm.hatch.set(hatch);world.nethereumFarm.meadowWater.set(water.phase);}}
+      // Velsorten (6 October 2026): Rollo's turn at the divider announced, the canal and the plots read into the arc; and the
+      // Dividing's props put out when the river is whole.
+      canal.update(playSeconds);ovesosArc.tick(playSeconds);
+      if(Math.floor(playSeconds)!==dividingPropsAt){dividingPropsAt=Math.floor(playSeconds);const want=dividing.propsVisible();if(want!==dividingPropsShown){dividingPropsShown=want;dividingProps.set(want);}}
       currentLivestock=mode==='playing'&&combat.state.phase!=='active'?husbandry.nearby(player.group.position,[...roadLife.state().creatures,...westLife.state().creatures].filter(animal=>!crime.isDown(animal.id))):null;
       birdClock-=dt;if(birdClock<=0){birdClock=.1;currentBird=mode==='playing'&&birding.met&&combat.state.phase!=='active'?drentBirds.observable(player.group.position,camera,observeRange(skills.level('birding'))):null;watchBird();}
       if(mode!=='playing'){currentBird=null;birdWatch=null;}
@@ -8658,7 +8726,10 @@ async function init() {
         const npcAway=currentNPC?(np?Math.hypot(np.x-pp.x,np.z-pp.z):0):Infinity,near=(at,reach)=>{const d=Math.hypot(at.x-pp.x,at.z-pp.z);return working&&d<reach&&d<npcAway;};
         const end=working?stripEndNear(pp,1.5):null;currentStripEnd=end&&end.distance<npcAway?end:null;if(currentStripEnd)currentRow=null;
         const hatch=NETHEREUM_SITES.hatch;currentHatch=!currentRow&&!currentStripEnd&&(near(hatch.approach,2)||near(hatch,1.6))?hatch:null;
-        currentWeir=!currentRow&&!currentStripEnd&&!currentHatch&&near(NETHEREUM_SITES.weir,2.4)?NETHEREUM_SITES.weir:null;}
+        currentWeir=!currentRow&&!currentStripEnd&&!currentHatch&&near(NETHEREUM_SITES.weir,2.4)?NETHEREUM_SITES.weir:null;
+        // The divider at the head of the Velsorten canal (6 October 2026), worked from beside its stone ahead of Enbilulu.
+        const divider=OVESOS_DIVIDER,dividerGap=Math.hypot(Math.max(0,Math.abs(pp.x-divider.x)-divider.width/2),Math.max(0,Math.abs(pp.z-divider.z)-divider.length/2));
+        currentDivider=working&&!currentRow&&!currentStripEnd&&!currentHatch&&!currentWeir&&dividerGap<2.6&&dividerGap<npcAway?divider:null;}
       currentDig=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?digs.nearest(player.group.position):null;
       currentVine=mode==='playing'&&combat.state.phase!=='active'&&!currentDig?vinePlateNear(player.group.position):null;
       currentTree=mode==='playing'&&combat.state.phase!=='active'&&!currentMushroom&&!currentPlant&&!currentStone?specimenTrees.nearest(player.group.position):null;
@@ -8699,7 +8770,7 @@ async function init() {
       currentHomeDoor=mode==='playing'?(brandyHome.nearby()??homeResidents.nearby()):null;
       const currentCorpse=mode==='playing'?corpseHost.nearest():null;
       if(currentChop&&(currentRow||currentAppleTree||currentAcorn||currentStick||currentFruit||currentMushroom||currentPlant||currentStone||currentFire||currentIvy||currentHomeDoor||currentCorpse||currentJourneySite||currentForestSite||currentRegionalSite||nearOldTree))currentChop=null;
-      const prompting=mode==='playing'&&!suspended()&&living.recall().status!=='passenger'&&(!urubondHost.active&&!sevronHost.active&&!baldroHost.active||(!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby()))&&((!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby())||!!jesseHost.nearby()||!!batmanHost.nearby()||!!currentNPC||!!currentHomeDoor||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!cubHost.nearby||!!rivalLight?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentStripEnd||!!currentHatch||!!currentWeir||!!reaping.pose()||nearArtEasel||!!currentIvy||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&!raceHost.mounted&&combat.state.phase!=='active';show('interaction',prompting);
+      const prompting=mode==='playing'&&!suspended()&&living.recall().status!=='passenger'&&(!urubondHost.active&&!sevronHost.active&&!baldroHost.active||(!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby()))&&((!!baldroHost.nearby()||!!urubondHost.nearby()||!!sevronHost.nearby()||!!peninsulaHost.nearby())||!!jesseHost.nearby()||!!batmanHost.nearby()||!!currentNPC||!!currentHomeDoor||!!currentCorpse||droppedSatchelNear||!!republic?.nearby||!!cubHost.nearby||!!rivalLight?.nearby||!!drent.nearby||!!vastos.nearby||currentFeederHook||!!currentMushroom||!!currentPlant||!!currentStone||!!currentDig||!!currentVine||!!currentCask||!!currentTree||!!currentChop||!!currentBench||!!currentPlot||!!currentPost||nearOldTree||!!currentHideoutSite||!!currentForestSite||!!currentRegionalSite||!!currentLusciaSite||!!currentMorosSite||!!currentJourneySite||!!currentFire||nearFishing||!!currentAcorn||!!currentStick||!!currentFruit||!!currentRow||!!currentStripEnd||!!currentHatch||!!currentWeir||!!currentDivider||!!reaping.pose()||nearArtEasel||!!currentIvy||!!currentAppleTree||!!currentLivestock||nearRepair||nearBorder)&&(!currentFoundWeapon||!!currentNPC)&&!raceHost.mounted&&combat.state.phase!=='active';show('interaction',prompting);
       if(currentNPC)$('interaction-label').textContent=currentNPC.greet?currentNPC.greet:currentNPC.dog?'Greet the dog':currentNPC.cat?'Greet the cat':'Speak with '+currentNPC.name;else if(currentFire)$('interaction-label').textContent='Tend the fire · cooking';else if(nearFishing)$('interaction-label').textContent=inventory.has('fishing-rod')?'Cast a line':`Fishing bank · ${currentFishingSpot?.id==='avrel-pool'?'ask Stanley for a lesson':currentFishingSpot?.id==='reedwater'?'ask Chip for a rod':currentFishingSpot?.id==='willowmere'?'ask Ryan by the pond':'ask Glun, Mark, Jean or Stanley to teach you'}`;else if(nearRepair)$('interaction-label').textContent='Repair weapons · free';else if(currentFruit)$('interaction-label').textContent='Gather ripe pawpaw · +25 health';else if(currentStick)$('interaction-label').textContent='Gather fallen stick';else if(currentAcorn)$('interaction-label').textContent='Gather acorn';else if(nearBorder)$('interaction-label').textContent='Read the border notice';
       if(currentNPC?.marker?.visible&&currentNPC.markerKind==='skill')$('interaction-label').textContent+=' \u00b7 Skill teacher';
       if(currentJourneySite&&!currentNPC)$('interaction-label').textContent=journey.availableActions().find(action=>action.objectiveId===currentJourneySite.id)?.label||(['sticks','fruit'].includes(currentJourneySite.type)?'Gather '+currentJourneySite.name:currentJourneySite.name);
@@ -8734,6 +8805,7 @@ async function init() {
         :currentStripEnd.open?`Reap ${currentStripEnd.name} · ${reaping.timeFor(currentStripEnd.id)} seconds`:`${currentStripEnd.name[0].toUpperCase()}${currentStripEnd.name.slice(1)} · Baugi lends it at Farming 24`;
       if(currentHatch){const water=meadow.view(playSeconds);$('interaction-label').textContent=!water.mended?'The meadow hatch · broken':water.open?`Draw the water off · ${water.phase[0].toUpperCase()}${water.phase.slice(1)}`:'Open the meadow hatch';}
       if(currentWeir){const trap=weir.view(playSeconds);$('interaction-label').textContent=trap.ready?`Haul the weir trap · ${trap.count} fish${trap.fresh?', fresh':''}`:'The weir trap · empty until tomorrow';}
+      if(currentDivider){const v=dividerView();$('interaction-label').textContent=v.mine?(v.left?`Divide your turn at the divider · ${v.left}/${v.allowed} units left`:'The divider · your measure is spent this turn'):`The divider · the water is going to ${v.holder.name} · yours in ${Math.ceil(v.nextIn)} s`;}/* 6 October 2026 */
       if(currentHideoutSite&&!currentNPC)$('interaction-label').textContent=currentHideoutSite==='supplies'?'Lift the stolen stores':'Survey Bramble Scout Camp · keep your distance';
       if(cubHost.nearby)$('interaction-label').textContent=cubHost.nearby.prompt;
       if(rivalLight?.nearby&&!currentNPC)$('interaction-label').textContent=rivalLight.nearby.prompt;
@@ -9002,10 +9074,11 @@ async function init() {
       // Haethom and Ninehands in the running game (src/lizeem-farms-smoke.js; the Farmlands of the Lizeem, Builds 2 and 3, 6 October 2026).
       runLizeemFarmsChecks:async()=>{
         const {runLizeemFarmsChecks}=await import('./lizeem-farms-smoke.js');const hooks=roadSkillsHooks();
-        return runLizeemFarmsChecks({...hooks,scene,meadow,weir,reaping,toasts:()=>reviewLog.toasts.slice(-12),
+        return runLizeemFarmsChecks({...hooks,scene,meadow,weir,reaping,farmlands,canal,ovesosArc,dividingProps/* Velsorten, the hamlet and the forecourt, 6 October 2026 */,toasts:()=>reviewLog.toasts.slice(-12),
+          dialogue:()=>mode==='dialogue'&&activeDialogue?{id:activeDialogue.npc?.id??null,name:activeDialogue.npc?.name??null,lines:[...activeDialogue.lines],choices:(activeDialogue.choices||[]).map(choice=>choice.id)}:null,
           goTo:async point=>{const pending=testGoTo({x:point.x,z:point.z},'THE FARMLANDS OF THE LIZEEM','Haethom and Ninehands.');if(pending&&typeof pending.then==='function')await pending;await hooks.frames(2);},
           view:(turn,tilt=.32,away=8)=>{yaw=turn;pitch=tilt;distance=targetDistance=away;settleCamera();},
-          prompt:()=>({shown:!$('interaction').classList.contains('hidden'),label:$('interaction-label').textContent,row:currentRow?.id??null,stripEnd:currentStripEnd?.id??null,hatch:!!currentHatch,weir:!!currentWeir,npc:currentNPC?.id??null,mode}),
+          prompt:()=>({shown:!$('interaction').classList.contains('hidden'),label:$('interaction-label').textContent,row:currentRow?.id??null,stripEnd:currentStripEnd?.id??null,hatch:!!currentHatch,weir:!!currentWeir,divider:!!currentDivider,npc:currentNPC?.id??null,mode}),
           capture:async name=>{await hooks.frames(4);console.log('FARMS_CAPTURE '+name);await new Promise(resolve=>setTimeout(resolve,700));},
           loaded:id=>!world.loading||world.loading.isReady(id)});
       },

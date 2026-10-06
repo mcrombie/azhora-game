@@ -7,6 +7,9 @@ import { MERCHANT_ITEMS } from './merchants.js';
 import { NETHEREUM_ITEMS } from './nethereum-produce.js';
 import { NESDOR_ITEMS } from './flats-ground.js';
 import { NESDOR_ARC_ITEMS } from './lizeem-nesdor.js';
+// The goods of Ovesos and the fork stew (the Farmlands of the Lizeem, Builds 4 and 5; 6 October 2026).
+import { OVESOS_ITEMS } from './ovesos-produce.js';
+import { DIVIDING_ITEMS } from './dividing.js';
 import { SLOT_NAMES, SLOTS, gearId } from './gear.js';
 
 export const INVENTORY_ITEMS = Object.freeze({
@@ -15,6 +18,8 @@ export const INVENTORY_ITEMS = Object.freeze({
   ...MERCHANT_ITEMS,
   // Flood oats, hay, weir fish and Haethom's wares; floodwheat, white bread, nut cake, ale and hides; the rebellion's paper (6 October 2026).
   ...NETHEREUM_ITEMS, ...NESDOR_ITEMS, ...NESDOR_ARC_ITEMS,
+  // Hard wheat, silver millet, madder, flour, flatbread, porridge, cloth and mutton; the fork stew (6 October 2026).
+  ...OVESOS_ITEMS, ...DIVIDING_ITEMS,
   // Authored entries below preserve old item IDs and descriptions; every other
   // timber species gets its own stack and can be sold or used as firewood.
   ...Object.fromEntries(Object.values(WOOD_SPECIES).filter(wood => wood.log).map(wood => [wood.log, Object.freeze({

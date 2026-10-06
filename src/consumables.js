@@ -8,6 +8,9 @@ import { ATTIC_WINES, ATTIC_WINE_IDS } from './attic-wines.js';
 // The larders of Nethereum and Nesdor (the Farmlands of the Lizeem, Builds 2 and 3; 6 October 2026).
 import { NETHEREUM_FOODS } from './nethereum-produce.js';
 import { NESDOR_FOODS } from './flats-ground.js';
+// The larders of Ovesos and the Dividing (the Farmlands of the Lizeem, Builds 4 and 5; 6 October 2026).
+import { OVESOS_FOODS } from './ovesos-produce.js';
+import { DIVIDING_FOODS } from './dividing.js';
 
 const define = (healing, missing) => Object.freeze({ healing, missing });
 
@@ -80,6 +83,8 @@ export const FOODS = Object.freeze({
   'soft-fruit-tart-fine': define(50, 'You have no fine soft-fruit tart. Bake it from two Fine soft fruit and a Fine bridge rye.'),
   // Weir fish, oatcakes, smoked fish and butter; white bread, nut cake and ale (6 October 2026).
   ...NETHEREUM_FOODS, ...NESDOR_FOODS,
+  // Flatbread, porridge and mutton; fork stew, the one food over 50 (6 October 2026).
+  ...OVESOS_FOODS, ...DIVIDING_FOODS,
 });
 
 export function createConsumables({ inventory, combat, onEvent = () => {} }) {

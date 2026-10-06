@@ -39,6 +39,9 @@ import { createMerchants } from '../src/merchants.js';
 import { createMeadowWater, createWeir } from '../src/meadow-water.js';
 import { createNethereumArc } from '../src/lizeem-nethereum.js';
 import { createNesdorArc } from '../src/lizeem-nesdor.js';
+import { createCanalTurns, createMill } from '../src/canal-turns.js';
+import { createOvesosArc } from '../src/lizeem-ovesos.js';
+import { createDividing } from '../src/dividing.js';
 
 function memoryStorage() {
   const values = new Map();
@@ -833,4 +836,42 @@ test('the Haethom meadow, the weir and the Nethereum and Nesdor arcs ride along,
   assert.equal(['meadow', 'weir'].some(key => Object.hasOwn(old, key)), false);
   assert.equal(water.restore(old.meadow), true); assert.equal(water.view(0).hatch, 'broken');
   assert.equal(trap.restore(old.weir), true); assert.equal(trap.view(0).ready, true);
+});
+
+test('the Velsorten canal, Ezina’s mill, the Ovesos arc and the Dividing ride along, and a save from before them loads fresh', () => {
+  // Builds 4 and 5 of the farmlands (6 October 2026): the canal and the mill are sections of their own; the Ovesos arc and
+  // the Dividing ride nested in the farmlands' section; the twelve Ovesos plots are the farm's.
+  const { data, checkpoint } = fixture();
+  const quest = createLizeemFarmlands(), ovesos = createOvesosArc(), dividing = createDividing({ farmlands: quest });
+  quest.registerArc('ovesos', ovesos); quest.registerArc('dividing', dividing);
+  quest.offer(); quest.accept(); assert.equal(ovesos.enter(), true);
+  const canal = createCanalTurns(); assert.equal(canal.setSeniority(3).ok, true); assert.equal(canal.shortNext(.5, 100).ok, true);
+  const held = new Map([['hard-wheat', 6]]);
+  const bag = { count: id => held.get(id) ?? 0, remove: (id, n) => { held.set(id, (held.get(id) ?? 0) - n); return true; }, add: (id, n) => { held.set(id, (held.get(id) ?? 0) + n); return true; } };
+  const mill = createMill(); assert.equal(mill.grind(bag, 6, { item: 'hard-wheat' }).ok, true);
+  const farming = { version: 2, met: true, reaped: 0, trees: {}, beds: {},
+    rows: { 'ovesos-tail-1': { crop: 'barley', sownAt: 10 }, 'ovesos-tail-2': { crop: 'silver-millet', sownAt: 10 }, 'ovesos-head-1': { crop: 'hard-wheat', sownAt: 20 } } };
+  const saved = { ...data, playSeconds: 500, lizeemFarmlands: quest.snapshot(), canal: canal.snapshot(), mill: mill.snapshot(), farming };
+  assert.equal(checkpoint.save(saved).ok, true);
+  const kept = checkpoint.read().data;
+  assert.deepEqual(kept.lizeemFarmlands.arcs, { ovesos: ovesos.snapshot(), dividing: dividing.snapshot() });
+  assert.deepEqual([kept.canal, kept.mill], [canal.snapshot(), mill.snapshot()]);
+  assert.deepEqual(Object.keys(kept.farming.rows).sort(), ['ovesos-head-1', 'ovesos-tail-1', 'ovesos-tail-2']);
+  for (const bad of [{ canal: { ...canal.snapshot(), version: 2 } }, { canal: { ...canal.snapshot(), seniority: 9 } },
+    { canal: { ...canal.snapshot(), plantings: { 'ovesos-tail-9': { crop: 'barley', units: 1 } } } },
+    { mill: { ...mill.snapshot(), tolls: 5 } }, { mill: { ...mill.snapshot(), waived: 'yes' } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, ovesos: { ...ovesos.snapshot(), stage: 'done' } } } },
+    { lizeemFarmlands: { ...quest.snapshot(), arcs: { ...quest.snapshot().arcs, dividing: { version: 1, stage: 'feasting' } } } },
+    { farming: { ...farming, rows: { 'ovesos-tail-9': { crop: 'barley', sownAt: 10 } } } }])
+    assert.equal(checkpoint.save({ ...saved, ...bad }).ok, false, JSON.stringify(bad));
+  assert.deepEqual(checkpoint.read().data.canal, canal.snapshot(), 'a refused save leaves the last one alone');
+  assert.equal(checkpoint.save(data).ok, true, 'a save from before Builds 4 and 5 is still a save');
+  const old = checkpoint.read().data, water = createCanalTurns(), stones = createMill();
+  assert.equal(['canal', 'mill'].some(key => Object.hasOwn(old, key)), false);
+  assert.equal(water.restore(old.canal), true); assert.equal(water.seniority(), 1);
+  assert.equal(stones.restore(old.mill), true); assert.deepEqual(stones.view(), { milled: 0, tolls: 0, waived: false, toNextToll: 16 });
+  const fresh = createLizeemFarmlands(), arc = createOvesosArc(), feast = createDividing();
+  fresh.registerArc('ovesos', arc); fresh.registerArc('dividing', feast);
+  assert.equal(fresh.restore(old.lizeemFarmlands), true);
+  assert.deepEqual([arc.stage(), feast.stage()], ['arrive', 'waiting']);
 });
