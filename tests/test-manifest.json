@@ -1,4 +1,5 @@
 [
+  "tests/chapter-one.test.js",
   "tests/terrain-seeds.test.js",
   "tests/scenery-residency.test.js",
   "tests/timber-coverage.test.js",

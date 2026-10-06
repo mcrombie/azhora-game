@@ -471,7 +471,7 @@ export function createSkills({ onEvent = () => {}, begins = [] } = {}) {
    * A teacher shows you something. It is `first` only if you have never done it — which is the
    * question every caller was really asking, and the one the save already answers.
    */
-  function learn(id) {
+  function learn(id, { announce = true } = {}) {
     if (!Object.hasOwn(SKILLS, id)) return { ok: false, reason: 'There is no such skill.' };
     // New the first time this teacher's own lesson lands, and never again: `taught` is saved.
     const first = !taught.has(id);
@@ -479,7 +479,7 @@ export function createSkills({ onEvent = () => {}, begins = [] } = {}) {
     if (parent && !learned.has(parent)) learned.set(parent, 0);
     if (!learned.has(id)) learned.set(id, 0);
     taught.add(id);
-    if (first) onEvent({ type: 'skill-learned', id });
+    if (first && announce) onEvent({ type: 'skill-learned', id });
     return { ok: true, first, ...skillLevel(id, learned.get(id)) };
   }
 

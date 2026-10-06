@@ -379,6 +379,7 @@ export function chooseReply(choices, snapshot, { side = 'empire' } = {}) {
   // Every chapter that can put a reply in front of the traveler, not just the
   // road and Luscia: without the Moros camp here the autopilot reaches the camp
   // gate, finds nothing it recognises, says goodbye and walks away again.
+  if(snapshot.chapterOne){for(const id of ['chapter-report','chapter-passage','chapter-retry'])if(enabled.some(c=>c.id===id))return id;}
   const wanted = new Set([snapshot.journey, snapshot.luscia, snapshot.moros, snapshot.border, snapshot.aftermath]
     .flatMap(chapter => chapter?.actions ?? []).filter(action => action.enabled).map(action => action.id));
   // The paid-for horse is a reward handover, outside the chapter's action list.
@@ -468,6 +469,17 @@ export function planGoal(snapshot, world) {
       if (bench) return { kind: 'use', target: bench, radius: 1.6, check: 'nearRepair', intent: 'Falling back to mend the blade' };
     }
     return { kind: 'fight', intent: 'Fighting' };
+  }
+  if(snapshot.chapterOne){
+    const q=snapshot.chapterOne.objective;
+    if(snapshot.chapterOne.complete)return {kind:'done',intent:'Chapter 1 complete',reason:q.detail};
+    if(snapshot.chapterOne.winner){
+      let id=q.destinationIds?.[0];
+      if(snapshot.chapterOne.reported&&snapshot.border.side==='coalition'&&Math.hypot(snapshot.position.x-world.npcPositions['izol-quartermaster'].x,snapshot.position.z-world.npcPositions['izol-quartermaster'].z)>100)id='solis-captain';
+      return {kind:'talk',target:world.npcPositions[id],npcId:id,intent:q.title};
+    }
+    if(snapshot.border.stage==='march')return {kind:'walk',target:world.npcPositions[snapshot.border.destinationIds[0]],radius:6,intent:'Following the column to the battlefield'};
+    return borderGoal(snapshot,world);
   }
   if (!bypassIntro && snapshot.tutorial?.completed && !snapshot.tutorial.enlisted
     && ['tutorial','skip'].includes(snapshot.tutorial.path)) return { kind:'talk',target:snapshot.tutorialEnlistment??world.npcPositions['post-landing'],npcId:'post-landing',intent:"Taking Glun's letter to Footman Ottar in Tidewater Haven" };

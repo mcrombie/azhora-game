@@ -2,9 +2,8 @@ import { PLAYABLE, SELECTABLE, DEFAULT_PLAYER, isPlayableId, shortName } from '.
 import { SKILLS, skillLevel } from './skills.js';
 
 /**
- * The line of eleven at the opening: who you are, chosen before you step ashore. Cromb stands
- * first and selected, so clicking straight through plays exactly the game that was there
- * before anybody could choose.
+ * Mercenary selection. Legacy callers retain their default character; Chapter 1
+ * passes all eleven entries and no selection, requiring an explicit choice.
  *
  * The tiles are built from PLAYABLE and nothing else, so the character profiles will show up
  * here the moment they are written. A tile's portrait is painted in the character's own three
@@ -44,16 +43,16 @@ export function tileColours(look) {
  * @param onChange  called with the chosen id whenever the choice moves
  * @param hidden    skill ids this game does not show, so nobody claims one (src/game-mode.js)
  */
-export function createCharacterSelect({ root, detail = null, lookFor = () => null, onChange = () => {}, selected = DEFAULT_PLAYER, hidden = null } = {}) {
+export function createCharacterSelect({ root, detail = null, lookFor = () => null, onChange = () => {}, selected = DEFAULT_PLAYER, hidden = null, entries = SELECTABLE } = {}) {
   if (!root) throw new TypeError('The character line needs somewhere to stand.');
   const doc = root.ownerDocument;
-  let chosen = isPlayableId(selected) ? selected : DEFAULT_PLAYER;
+  let chosen = selected===null?null:entries.some(e=>e.id===selected)?selected:entries[0]?.id;
   const tiles = new Map();
 
   root.textContent = '';
   root.setAttribute('role', 'radiogroup');
   root.setAttribute('aria-label', 'Who you are');
-  for (const entry of SELECTABLE) {
+  for (const entry of entries) {
     const tile = doc.createElement('button');
     tile.type = 'button';
     tile.className = 'character-tile';
@@ -81,10 +80,10 @@ export function createCharacterSelect({ root, detail = null, lookFor = () => nul
   root.addEventListener('keydown', event => {
     let next = null;
     if (Object.hasOwn(STEP, event.key)) {
-      const at = PLAYABLE.findIndex(entry => entry.id === chosen);
-      next = PLAYABLE[(at + STEP[event.key] + PLAYABLE.length) % PLAYABLE.length].id;
-    } else if (event.key === 'Home') next = PLAYABLE[0].id;
-    else if (event.key === 'End') next = PLAYABLE[PLAYABLE.length - 1].id;
+      const at = entries.findIndex(entry => entry.id === chosen);
+      next = entries[(at + STEP[event.key] + entries.length) % entries.length].id;
+    } else if (event.key === 'Home') next = entries[0].id;
+    else if (event.key === 'End') next = entries[entries.length - 1].id;
     if (!next) return;
     event.preventDefault();
     event.stopPropagation();
@@ -98,12 +97,13 @@ export function createCharacterSelect({ root, detail = null, lookFor = () => nul
       tile.classList.toggle('chosen', is);
       tile.setAttribute('aria-checked', is ? 'true' : 'false');
       // One stop on the way to Step ashore: the line is a single control, as a radio group is.
-      tile.tabIndex = is ? 0 : -1;
+      tile.tabIndex = is || chosen===null&&id===entries[0]?.id ? 0 : -1;
     }
     if (!detail) return;
     const entry = PLAYABLE.find(item => item.id === chosen);
     detail.textContent = '';
     const name = doc.createElement('b');
+    if(!entry){detail.textContent='Choose one of the eleven mercenaries. Each brings their own equipment and experience.';return;}
     name.textContent = entry.name;
     const line = doc.createElement('span');
     line.textContent = entry.blurb;
@@ -113,7 +113,7 @@ export function createCharacterSelect({ root, detail = null, lookFor = () => nul
   }
 
   function select(id, { announce = true } = {}) {
-    if (!isPlayableId(id)) return chosen;
+    if (!entries.some(e=>e.id===id)) return chosen;
     const changed = id !== chosen;
     chosen = id;
     paint();

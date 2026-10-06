@@ -3,7 +3,7 @@
 import { CLIMBING } from './climbing.js';
 
 export const TERRAIN_FALL = Object.freeze({ stepDown: .45, gravity: CLIMBING.gravity,
-  safeDrop: CLIMBING.safeDrop, damagePerMetre: 5, maxDamage: 100, maxDriftSpeed: 8 });
+  safeDrop: CLIMBING.safeDrop, damagePerMetre: 5, maxDamage: 100, maxDriftSpeed: 11.5, jumpVelocity: 8.2, airAcceleration: 8 });
 
 export function shouldStartTerrainFall({ before, after, floor, groundSlope = 0 }) {
   if (!before || !after || ![before.x, before.y, before.z, after.x, after.z, floor].every(Number.isFinite)) return false;
@@ -54,7 +54,7 @@ export function createTerrainFall() {
       const start = surfaceAt(position.x, position.z, { maxY: beforeY });
       const steepContact = !start.water && start.slope > CLIMBING.grabSlope
         && position.y <= start.height + .08 && velocity <= 0;
-      drift.x += sx / magnitude * 3 * step; drift.z += sz / magnitude * 3 * step;
+      drift.x += sx / magnitude * TERRAIN_FALL.airAcceleration * step; drift.z += sz / magnitude * TERRAIN_FALL.airAcceleration * step;
       if (steepContact) {
         // A broad cliff can be touched many times during one fall. Gravity pulls the feet
         // downslope until they reach a walkable shelf; those touches do not erase the drop.

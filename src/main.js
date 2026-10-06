@@ -55,6 +55,10 @@ import { createCampcraft } from './campcraft.js';
 import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, fireMakingStands, fireMakingConversation } from './fire-making.js';
 import { createWorldMap } from './world-map.js';
 import { MENORA } from './menora-city.js';
+import { PLAYABLE } from './player-characters.js';
+import { freshChapterOne, chapterOneEncounter, chapterOneObjective, CHAPTER_ONE_REPORTS, CHAPTER_ONE_ARENA } from './chapter-one.js';
+import { ARMY_BATTLE_ID } from './army-battle.js';
+import { createChapterOneColumn } from './chapter-one-column.js';
 import { CAMPAIGN_BUILD_REGIONS, worldScope, regionEnabled } from './world-scope.js';
 import { MINORA_START, MAIN_QUEST_RECRUITERS, FREE_ROAM_GUIDANCE, freshMinoraStart, mainQuestDormant, minoraOpeningView } from './minora-opening.js';
 import { NYLON, NYLON_BUILDINGS } from './nylon-city.js';
@@ -279,7 +283,7 @@ import { createDeveloperDestruction } from './developer-destruction.js';
 import { forestSegmentHit } from './forest-sightline.js';
 import { createClimbing, canWalkSlope, CLIMBING } from './climbing.js';
 import { canPushThrough } from './undergrowth.js';
-import { createTerrainFall, shouldStartTerrainFall } from './terrain-fall.js';
+import { TERRAIN_FALL, createTerrainFall, shouldStartTerrainFall } from './terrain-fall.js';
 import { WALK_STEP, colliderOverlapsHeight, restoreWalkPosition } from './walk-surfaces.js';
 import { createLotharnCaveWalk } from './east-lotharn-cave-walk.js';
 import { nearestPlain as caveNearest } from './east-lotharn-caves.js';
@@ -419,7 +423,7 @@ async function init() {
   startup.stage('Preparing the scene');await yieldStartup();
   const campaign=createCampaign();
   let peninsulaHost=null,sevronHost=null,urubondHost=null;
-  let ferry=null, freeStart=null;
+  let ferry=null, freeStart=null, chapterOne=null, chapterColumn=null;
   const mainDormant=()=>mainQuestDormant(freeStart);
   let openingViewEpoch=performance.now(), returnedToMenu=false;
   const hasRoadProgress=()=>!!freeStart||!!peninsulaHost?.chosen||questStage>=1||campaign.view().imperialRecall||(ferry?.state.crossings??0)>0;
@@ -484,10 +488,16 @@ async function init() {
     regionLoadingPromise=task;return task;
   }
   function deferUntilLoaded(points,action){const pending=pendingRegions(points);if(!pending.length)return false;waitForRegions(pending,action);return true;}
-  function regionTraversalReady(x,z){const pending=pendingRegions([{x,z}]);if(!pending.length)return true;if(!regionLoadDepth)waitForRegions(pending);return false;}
+  let scopeNoticeAt=0;
+  function campaignGroundAllowed(x,z){
+    if(!world.enabledRegions||world.isRegionEnabled(x,z))return true;
+    if(performance.now()-scopeNoticeAt>4000){scopeNoticeAt=performance.now();toast('This adventure follows the war route. Choose Developer Start or Load full developer world in F8 to explore beyond it.','CAMPAIGN BOUNDARY');}return false;
+  }
+  function regionTraversalReady(x,z){if(!campaignGroundAllowed(x,z))return false;const pending=pendingRegions([{x,z}]);if(!pending.length)return true;if(!regionLoadDepth)waitForRegions(pending);return false;}
   function guardRegionBoundary(){
     if(!world.loading)return false;
     const at=player.group.position,pending=pendingRegions([at]);
+    if(!campaignGroundAllowed(at.x,at.z)&&lastReadyPosition){at.set(lastReadyPosition.x,lastReadyPosition.y,lastReadyPosition.z);return false;}
     if(!pending.length){lastReadyPosition={x:at.x,y:at.y,z:at.z};return false;}
     if(regionLoadDepth)return true;
     const destination={x:at.x,y:at.y,z:at.z},safe=lastReadyPosition??{...world.spawn,y:world.heightAt(world.spawn.x,world.spawn.z)};
@@ -1446,7 +1456,7 @@ async function init() {
         model:{role:'mercenary',tunic:m.look.tunic,skin:m.look.skin,look:{...m.look,weapon:m.weapon,trades:false}}};
     });
   }
-  function walkTheAmbush(){
+  function walkTheAmbush(){if(chapterOne)return;
     if(reviewFrozen||reviewTarget||mode!=='playing'||combat.state.phase==='active')return;
     const open=roadParties().filter(party=>!ambush.state.settled.includes(party.id));
     if(!open.length)return;
@@ -4306,6 +4316,7 @@ async function init() {
   const storyState=()=>({onwardEntry:!!campaign.snapshot().entryOrigin,questStage,journey:journey.view(),luscia:{...luscia.state},moros:moros.view(),border:border.view(),aftermath:aftermath.view(),side:campaign.view().side,home:atSideSeat(campaign.view().side,player.group.position,aftermath.view().complete?aftermath.view().variant:null)});
   let chapterShown=0;
   function refreshChapter(){
+    if(chapterOne){const q=chapterOneObjective(chapterOne,border.view());$('chapter-heading').textContent=chapterOne.complete?'Chapter 2 - Awaiting orders':'Chapter 1 - The Border War';$('chapter-goal').textContent=q.detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);return;}
     if(mainDormant()){$('quest-chapter').textContent='Your adventure';$('chapter-heading').textContent='The main quest awaits';$('chapter-goal').textContent=FREE_ROAM_GUIDANCE.detail;$('chapter-list').replaceChildren();show('chapter-long-way',false);chapterShown=0;return;}
     const state=storyState(),progress=chapterProgress(state),current=progress.current;
     $('quest-chapter').textContent=current?`Chapter ${current.number} of ${chapterCount} · ${chapterTitle(current,state)}`:'The war moves on';
@@ -4339,8 +4350,9 @@ async function init() {
     chapterShown=reached;
   }
   function refreshMainQuest() {
+    if(chapterOne){const q=chapterOneObjective(chapterOne,border.view());$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent=chapterOne.complete?'CHAPTER 2 - AWAITING ORDERS':'CHAPTER 1 - THE BORDER WAR';$('quest-chapter').textContent=chapterOne.complete?'Chapter 2':'Chapter 1 - The Border War';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.detail;return;}
     if(mainDormant()){$('quest-title').textContent=FREE_ROAM_GUIDANCE.title;$('quest-detail').textContent=FREE_ROAM_GUIDANCE.detail;$('quest-step').textContent='EXPLORATION';$('quest-chapter').textContent='Your adventure';return;}
-    if(peninsulaHost?.objective()){const q=peninsulaHost.objective();$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent='PENINSULA TRAINING';$('quest-chapter').textContent='A first shore';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.hint??q.detail;return;}
+    if(peninsulaHost?.objective()){const q=peninsulaHost.objective();$('quest-title').textContent=q.title;$('quest-detail').textContent=q.detail;$('quest-step').textContent='PENINSULA TRAINING';$('quest-chapter').textContent='Prologue ? A first shore';$('lesson-title').textContent=q.title;$('lesson-hint').textContent=q.hint??q.detail;return;}
     if(living?.recall().status==='passenger'){$('quest-title').textContent='Ride to the Moros muster';$('quest-detail').textContent=`${npcById.get(living.recall().courier)?.name??'The courier'} is taking you to the army. You can look around and open your journal during the ride.`;$('quest-step').textContent='RIDING WITH THE COURIER';return;}
     if(living?.player().allegiance==='coalition'&&border.state.started&&!border.state.complete){const v=border.view();$('quest-title').textContent=v.title;$('quest-detail').textContent=v.detail;$('quest-step').textContent=v.kicker;return;}
     if(living?.player().imperialRefused&&living.player().allegiance!=='coalition'){$('quest-title').textContent='Your own road';$('quest-detail').textContent='You refused the Imperial campaign. Other quests remain open. Republican recruitment is possible through the living, free Nothom operative.';$('quest-step').textContent='IMPERIAL CAMPAIGN REFUSED';return;}
@@ -4406,7 +4418,7 @@ async function init() {
   }
   function trackerStamp(){
     const {stage,benDown,spiderDown}=spiderQuest.state;
-    return JSON.stringify([freeStart,peninsulaHost?.chosen?[peninsulaHost.view().lessons,peninsulaHost.view().signedOffAt,peninsulaHost.view().enlisted,peninsulaHost.objective()?.detail]:null,questStage,chartLesson.stage,journey.state.bridge,inventory.count('forest-stick'),
+    return JSON.stringify([chapterOne,freeStart,peninsulaHost?.chosen?[peninsulaHost.view().lessons,peninsulaHost.view().signedOffAt,peninsulaHost.view().enlisted,peninsulaHost.objective()?.detail]:null,questStage,chartLesson.stage,journey.state.bridge,inventory.count('forest-stick'),
       sunflowerLesson.view(playSeconds).stage,baldroHost&&[baldroHost.snapshot(),baldroHost.current],sylviaIvy.snapshot(),drent.state(),republic?.state(),living?.satchel().status,living?.player(),living?.recall().status,Math.floor((living?.clock()??0)/10),vastos.quest.view().stage,{stage,benDown,spiderDown},murder.state.stage,murder.state.heard,catQuest.state.stage,cagneyQuest.state.stage,jesseHost&&[jesseQuest.view().stage,jesseQuest.view().collected.length,jesseQuest.view().assembly],race.state().stage,cubHost.state().stage,burying.snapshot()]);
   }
   function refreshQuest(){
@@ -4487,7 +4499,9 @@ async function init() {
       const url=new URL(location.href);url.searchParams.set('launch',path);
       url.searchParams.set('load',world.loadingMode??'full');location.replace(url.href);return;
     }
-    if(path==='tutorial')begin('tutorial');else beginFreeRoam();
+    if(path==='start'&&world.enabledRegions){const url=new URL(location.href);url.searchParams.set('world','developer');url.searchParams.set('launch','start');location.replace(url.href);return;}
+    if(path==='chapter'){show('opening-main-actions',false);show('opening-characters',true);$('chapter-one-back').focus();return;}
+    if(path==='tutorial'){setPlayerCharacter(DEFAULT_PLAYER);begin('tutorial');}else beginFreeRoam();
   }
   function enterMainMenu(){
     if(deferUntilLoaded([MINORA_START],enterMainMenu))return;
@@ -4499,7 +4513,7 @@ async function init() {
     player.group.position.set(MINORA_START.x,world.heightAt(MINORA_START.x,MINORA_START.z),MINORA_START.z);
     player.group.visible=false;document.body.classList.remove('playing','cutscene');
     for(const id of ['modal-backdrop','pause','journal','testing','defeat','dialogue','interaction','testing-badge','exit-menu-confirm'])show(id,false);
-    show('opening',true);$('opening').style.opacity='1';$('opening').style.transform='none';
+    show('opening-main-actions',true);show('opening-characters',false);chapterColumn?.clear();show('opening',true);$('opening').style.opacity='1';$('opening').style.transform='none';
     const saved=checkpoint.read();$('continue-road').disabled=!(saved.ok&&saved.data);
     (saved.ok&&saved.data?$('continue-road'):$('begin-skip-tutorial')).focus();
   }
@@ -4509,11 +4523,58 @@ async function init() {
     $('exit-menu-message').textContent='Your current progress could not be saved. You can stay and save on dry ground outside combat, or exit and keep only your last saved adventure.';
     show('exit-menu-confirm',true);$('exit-menu-stay').focus();
   }
+  function beginChapterOne({testing=false,direct=false,autoplay=false}={}){
+    if(deferUntilLoaded([world.npcPositions[MOROS_LEGATE_ID],BORDER_ARENA.center],()=>beginChapterOne({testing,direct,autoplay})))return true;
+    freeStart=null;peninsulaHost.restore();chapterOne=freshChapterOne(playerId,Math.floor(Math.random()*0x100000000));
+    stopAutopilot();fallen.restore(createFallen().snapshot());grantStartingKit();border.restore(createBorderChapter().snapshot());
+    for(const id of ['walking','running','arms'])if(SKILL_IDS.includes(id))skills.learn(id);
+    questTracker.select('main');
+    if(!beginStoryStart(storyStart('solis-parley')))return false;
+    testingEnabled=testing;show('testing-badge',testing);show('opening-characters',false);
+    chapterColumn.stage(playerId);player.group.visible=true;skillAnnouncements.clear();
+    if(direct)for(const action of ['take-legate-terms','enter-solis','side-empire'])borderAct(action);
+    refreshQuest();saveRoad(false);if(autoplay)startAutopilot();toast('Speak with Marshal Venmor. Your fellow mercenaries are assembled on the parade ground.','CHAPTER 1 · THE BORDER WAR');return true;
+  }
+  function chapterOnePassage(){
+    const at=world.npcPositions['izol-quartermaster'];
+    if(deferUntilLoaded([at],chapterOnePassage))return;
+    const spot=startingSpot(at,(x,z)=>canStand(x,z,world,.45));if(!spot)return;
+    player.group.position.set(spot.x,world.heightAt(spot.x,spot.z),spot.z);grounded=true;verticalSpeed=0;
+    playSeconds+=60;mapFog.reveal(spot.x,spot.z);settleCamera();refreshQuest();saveRoad(false);toast('The dispatch boat sets you ashore at Izolveth.','WEST IZOL');
+  }
+  function chapterOneConversation(npc){
+    if(!npc||mode!=='playing')return false;
+    const side=border.view().side,commander=side==='coalition'?'solis-captain':MOROS_LEGATE_ID;
+    if(chapterOne.reported&&side==='coalition'&&npc.id===commander){
+      openDialogue(npc,['A dispatch boat will take you to Izolveth. Tulle Barr is waiting on the strand.'],null,'Leave',{choices:[
+        {id:'chapter-passage',label:'Take passage to West Izol',action:()=>{closeDialogue();chapterOnePassage();}},
+        {id:'chapter-later',label:'Not yet',action:closeDialogue}]});return true;
+    }
+    if(chapterOne.winner&&npc.id===commander){
+      const won=chapterOne.winner===side;
+      openDialogue(npc,[won?'The field is ours. Carry this report to '+(side==='coalition'?'Tulle Barr on the strand at Izolveth in West Izol.':'the Lord Marshal’s representative in Ambron.'):'We have lost the line. We can regroup and attempt it again.'],null,'Leave',{choices:[
+        {id:won?'chapter-report':'chapter-retry',label:won?'Accept the report':'Regroup for battle',action:()=>{closeDialogue();if(won){chapterOne.reported=true;}else{chapterOne.winner=null;chapterOne.seed=(chapterOne.seed+1)>>>0;combat.revive();border.endEncounter(BORDER_ENCOUNTER_ID);borderAct('sound-advance');}refreshQuest();saveRoad(false);}},
+        {id:'chapter-later',label:'Not yet',action:closeDialogue}]});return true;
+    }
+    if(chapterOne.reported&&npc.id===CHAPTER_ONE_REPORTS[side]){
+      openDialogue(npc,[chapterOne.complete?'Your report is on record. Your next assignment is not ready yet.':'Your account agrees with the dispatches. Your service in this campaign is recorded. Chapter 1 is complete; your next orders will begin Chapter 2.'],null,'Leave',{onComplete:()=>{chapterOne.complete=true;refreshQuest();saveRoad(false);}});return true;
+    }
+    if(!chapterOne.winner&&border.view().stage==='join-line'&&['battle-tribune','coalition-captain'].includes(npc.id)){
+      openDialogue(npc,['Twenty soldiers hold each line. Join the advance and help us take the field.'],null,'Leave',{choices:[
+        {id:'sound-advance',label:'Sound the advance',action:()=>{closeDialogue();borderAct('sound-advance');}},
+        {id:'chapter-later',label:'Not yet',action:closeDialogue}]});return true;
+    }
+    if(!chapterOne.winner&&[MOROS_LEGATE_ID,'coalition-envoy','solis-captain','solis-gate-captain','battle-tribune','coalition-captain'].includes(npc.id)){
+      if(borderConversation(npc,{border,openDialogue,closeDialogue,act:borderAct,musterCount:11}))return true;
+    }
+    return false;
+  }
   function beginFreeRoam(){
     if(mode!=='opening')return false;
     if(deferUntilLoaded([MINORA_START],beginFreeRoam))return true;
     setPlayerCharacter(DEFAULT_PLAYER);resetDragonDestruction();grantStartingKit();
-    freeStart=freshMinoraStart();peninsulaHost.restore();campaign.restore(createCampaign().snapshot());
+    chapterOne=null;chapterColumn?.clear();for(const id of SKILL_IDS)skills.learn(id,{announce:false});cartography.learn();swimming.learn();
+    skillAnnouncements.clear();freeStart=freshMinoraStart();peninsulaHost.restore();campaign.restore(createCampaign().snapshot());
     questStage=0;practiceHits=practiceGuards=practiceDodges=0;lessonSet=false;
     journey.restore(createJourney().snapshot());longRoad.restore(createLongRoad().snapshot());
     playSeconds=0;refugeeHold=0;companionOffTheClock=false;resetLivingStory();rebuildCompany();settleMercenaries();
@@ -4534,6 +4595,7 @@ async function init() {
     refreshQuest();inventory.refresh();selectQuest('main');saveRoad(false);return true;
   }
   function begin(path='tutorial') {
+    chapterOne=null;chapterColumn?.clear();
     if(mode!=='opening')return;
     if(deferUntilLoaded([TUTORIAL_A.arrival],()=>begin(path)))return;
     freeStart=null;
@@ -5025,8 +5087,10 @@ async function init() {
     return result;
   }
   function borderAct(action){
+    if(chapterOne&&action==='reach-line'&&!chapterColumn.arrived)return {ok:false,reason:'The column has not arrived yet.'};
     if(action==='march-out'&&living.player().allegiance==='coalition')living.arrivePlayerMuster('coalition');
     const result=border.act(action);if(!result.ok){toast(result.reason,'THE BORDER');return result;}
+    if(action==='march-out'&&chapterOne){chapterColumn.stage(playerId,border.view().side,border.view().side==='coalition'?world.npcPositions['solis-captain']:null);chapterColumn.start();}
     if(action==='march-out'){const side=border.view().side;living.departMuster(side);living.departMuster(side==='empire'?'coalition':'empire');}
     if(result.side&&!result.startEncounter){living.setPlayerSide(result.side,'solis-choice');const chosen=campaign.chooseSide(result.side);if(!chosen.ok)toast(chosen.reason,'THE BORDER');}
     if(result.reward){inventory.add(result.reward.id,result.reward.quantity);inventory.refresh();}
@@ -5035,9 +5099,9 @@ async function init() {
       const side=border.view().side;
       // **The line is laid for the company that is actually there**, counted now and kept nowhere
       // (`borderLine`, src/border-chapter.js). Sounding the advance again counts again.
-      if(!combat.startEncounter(livingBorderEncounter(side))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
+      if(!combat.startEncounter(chapterOne?chapterOneEncounter(playerId,side,chapterOne.seed):livingBorderEncounter(side))){border.endEncounter(BORDER_ENCOUNTER_ID);toast('The line is not ready. Stand with your commander south-west of the stockade.','THE BORDER');return {ok:false,reason:'The encounter could not start.'};}
       living.departMuster(side);living.departMuster(side==='empire'?'coalition':'empire');
-      stopInput();toast(side==='empire'?'The Coalition comes on in three waves. Hold your corner of the field.':'The army comes on in three waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
+      refreshQuest();stopInput();toast(chapterOne?'Twenty soldiers on each side. Your intervention can decide the battle.':side==='empire'?'The Coalition comes on in three waves. Hold your corner of the field.':'The army comes on in three waves. Hold your corner of the field.','THE BORDER BATTLE');audio?.effect('bell');
       return result;
     }
     refreshQuest();audio?.effect('success');
@@ -5089,7 +5153,7 @@ async function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,chapterOne:chapterOne?{...chapterOne}:null,worldScope:world.enabledRegions?'campaign':'developer',freeStart:freeStart?{...freeStart}:null,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(mode==='opening'||restoringRoad||regionLoadDepth||strategicReturn)return false;
@@ -5107,7 +5171,7 @@ async function init() {
   function continueRoad(fromRecovery=false){
     const restoringSession=fromRecovery===true;
     const result=(restoringSession?sessionCheckpoint:checkpoint).read();if(!result.ok||!result.data){toast(result.reason||'No road checkpoint has been saved yet.','CHECKPOINT');return false;}
-    const saved=result.data;if(deferUntilLoaded([saved.position],()=>continueRoad(fromRecovery)))return true;resetDragonDestruction();cancelClimbing();developerBat.cancel();for(const mount of Object.values(developerMounts))mount.group.visible=false;developerBank=0;flightNarration(null);restoringRoad=true;try{
+    const saved=result.data;if(world.enabledRegions&&(saved.worldScope==='developer'||!regionEnabled(world.regionAt(saved.position.x,saved.position.z)?.name))){const url=new URL(location.href);url.searchParams.set('world','developer');url.searchParams.set('launch','continue');location.replace(url.href);return true;}if(deferUntilLoaded([saved.position],()=>continueRoad(fromRecovery)))return true;resetDragonDestruction();cancelClimbing();developerBat.cancel();for(const mount of Object.values(developerMounts))mount.group.visible=false;developerBank=0;flightNarration(null);restoringRoad=true;try{
     // **Nothing borrowed survives a reload.** A bout cannot be saved in the first place -
     // `saveRoad` refuses while a fight is on - so no checkpoint carries a loan; this is here so
     // that loading one *during* a bout cannot leave a man holding somebody else's pike.
@@ -5121,6 +5185,7 @@ async function init() {
     trackedPlaceId=null;trailMarker.visible=false;
     for(const id of inventory.items())inventory.remove(id,inventory.count(id));
     for(const item of saved.inventory)inventory.add(item.id,item.quantity);
+    chapterOne=saved.chapterOne?{...saved.chapterOne}:null;chapterColumn?.clear();
     freeStart=saved.freeStart?{...saved.freeStart}:null;
     urubondHost?.leave({relocate:false});peninsulaHost.restore(saved.peninsulaTutorial);sevronHost.restore(saved.sevron);
     weapons.restore(saved.weapons);journey.restore(saved.journey);questStage=saved.questStage;practiceHits=saved.woodland?.practiceHits??2;practiceDodges=saved.woodland?.practiceDodges??1;
@@ -5210,6 +5275,7 @@ async function init() {
     batmanHost.restore(saved);
     if(tutorialResume.boundary.encounter){mode='tutorial-boundary';stopAutopilot();stopInput();
       if(tutorialResume.boundary.encounter.elapsed>=3.15){combat.state.player.hp=0;player.animate(walkTime,0,true,{action:'dead',progress:1});}}
+    if(chapterOne&&!chapterOne.winner){const atLine=border.view().stage==='join-line';chapterColumn.stage(playerId,border.view().side??'empire',atLine?CHAPTER_ONE_ARENA.checkpoint:border.view().side==='coalition'?world.npcPositions['solis-captain']:null);if(border.view().stage==='march')chapterColumn.start();}
     syncJourney();refreshQuest();questTracker.select(saved.trackedQuestId??'main');refreshQuest();inventory.refresh();stopInput();settleCamera();canvas.focus();skillAnnouncements.clear();toast('The road is where you left it.','CONTINUING YOUR JOURNEY');return true;
     }finally{restoringRoad=false;}
   }
@@ -5679,6 +5745,7 @@ async function init() {
     openDialogue(npc,['Done. Mind it; it has seen more than you have.'],null,'Back to the road');
   }
   function conversation(npc) {
+    if(chapterOne&&chapterOneConversation(npc))return;
     if(mainDormant()&&MAIN_QUEST_RECRUITERS.includes(npc.id)&&!crime?.isDown(npc.id)){
       openDialogue(npc,['The army is taking recruits. If you want a place on the main road, I can put your name forward. The choice is yours.'],null,'Leave',{choices:[
         {id:'minora-join-main',label:'Join the main quest',action:()=>joinMainQuest(npc.id)},
@@ -6693,12 +6760,19 @@ async function init() {
   // The character line above Step ashore: eleven tiles in the user's order, Cromb chosen, so
   // that clicking straight through plays the game that was there before anybody could choose.
   const crombOpeningLine=$('opening-who').textContent;
-  const characterSelect=createCharacterSelect({root:$('character-line'),detail:$('character-detail'),lookFor:playerLook,selected:playerId,hidden:hiddenSkills,
-    onChange:id=>{setPlayerCharacter(id);const chosen=playableCharacter(id);
+  const characterSelect=createCharacterSelect({root:$('character-line'),entries:PLAYABLE,detail:$('character-detail'),lookFor:playerLook,selected:null,hidden:hiddenSkills,
+    onChange:id=>{$('chapter-one-enter').disabled=false;setPlayerCharacter(id);const chosen=playableCharacter(id);
       $('opening-who').textContent=id===DEFAULT_PLAYER?crombOpeningLine:`${chosen.name}: ${chosen.title.toLowerCase()}.`;}});
   // Only Cromb can be chosen for now (src/player-characters.js), so the row of tiles has
   // nothing to choose between and the opening does not ask.
   show('opening-characters',false);
+  chapterColumn=createChapterOneColumn(scene,world);
+  $('begin-chapter-one').onclick=()=>chooseOpening('chapter');
+  $('chapter-one-back').onclick=()=>{show('opening-characters',false);show('opening-main-actions',true);$('begin-chapter-one').focus();};
+  $('chapter-one-enter').onclick=()=>beginChapterOne();
+  $('test-chapter-one-battle').onclick=()=>beginChapterOne({testing:true,direct:true,autoplay:true});
+  $('test-chapter-one-parley').onclick=()=>beginChapterOne({testing:true,autoplay:true});
+  $('test-full-world').onclick=()=>{const url=new URL(location.href);url.searchParams.set('world','developer');url.searchParams.set('launch','start');location.replace(url.href);};
   $('skip-cutscene').onclick=skipOpening;
   $('begin').onclick=()=>chooseOpening('tutorial');$('begin-skip-tutorial').onclick=()=>chooseOpening('start');$('dialogue-next').onclick=nextSpeech;$('resume').onclick=closeModal;$('recover').onclick=recover;$('retry').onclick=returnToSafety;
   $('defeat-restore').onclick=retry;$('defeat-saved').onclick=()=>{stopAutopilot();continueRoad();};
@@ -7167,7 +7241,7 @@ async function init() {
     enclosures:world.enclosures,
     sideSeat:(side,conquest)=>sideSeat(side,conquest)};
   const autopilotMovementSpeeds=()=>{const pace=locomotion.stats(),p=combat.state.player,run=locomotion.pace({run:true,stamina:p.stamina,maxStamina:p.maxStamina,inCombat:combat.state.phase==='active'}),scale=combat.movementScale();return {walking:pace.walkSpeed*scale,running:run.speed*scale,swimming:swimSpeed(skills.level(SWIMMING_SKILL)||1)*scale};};
-  const autopilotRead=()=>({mode,movementSpeeds:autopilotMovementSpeeds(),tutorial:peninsulaHost.view(),tutorialEnlistment:!peninsulaHost.active?peninsulaHost.objective()?.at:null,tutorialTeachers:Object.fromEntries(Object.keys(world.npcPositions).filter(id=>['harbormaster','instructor','willowmere-barrett','willowmere-ryan','boatman'].includes(id)).map(id=>[id,{...world.npcPositions[id],available:true}])),campcraft:{phase:campcraft.state.phase},inWater,selectedItem:inventory.selectedId(),questStage,practiceHits,practiceGuards,practiceDodges,lessonSet,chartLesson:chartLesson.stage,position:{x:player.group.position.x,z:player.group.position.z},
+  const autopilotRead=()=>({mode,chapterOne:chapterOne?{...chapterOne,objective:chapterOneObjective(chapterOne,border.view())}:null,movementSpeeds:autopilotMovementSpeeds(),tutorial:peninsulaHost.view(),tutorialEnlistment:!peninsulaHost.active?peninsulaHost.objective()?.at:null,tutorialTeachers:Object.fromEntries(Object.keys(world.npcPositions).filter(id=>['harbormaster','instructor','willowmere-barrett','willowmere-ryan','boatman'].includes(id)).map(id=>[id,{...world.npcPositions[id],available:true}])),campcraft:{phase:campcraft.state.phase},inWater,selectedItem:inventory.selectedId(),questStage,practiceHits,practiceGuards,practiceDodges,lessonSet,chartLesson:chartLesson.stage,position:{x:player.group.position.x,z:player.group.position.z},
     combat:{encounterId:combat.state.encounterId,phase:combat.state.phase,action:combat.state.player.action,stamina:combat.state.player.stamina,hp:combat.state.player.hp,hasShield:hasCarriedShield(),guardCost:arms.margins().guardCost,enemies:combat.state.enemies.map(e=>({id:e.id,x:e.x,z:e.z,yaw:e.yaw,action:e.action,progress:e.progress,active:e.active,hp:e.hp,guarded:!!e.guarded}))},
     weapon:weapons.profile(),inventory:{sticks:inventory.count('forest-stick'),cookedFish:inventory.count('cooked-fish'),pawpaws:inventory.count('pawpaw')},
     dialogue:mode==='dialogue'?{npcId:activeDialogue?.npc?.id,choices:[...document.querySelectorAll('#dialogue-choices button')].map(b=>({id:b.dataset.choice,label:b.textContent,enabled:!b.disabled}))}:null,
@@ -7177,7 +7251,7 @@ async function init() {
     mapTutorial:mapTutorial.step,campaign:campaign.view(),
     luscia:{stage:luscia.view().stage,complete:luscia.view().complete,destinationIds:luscia.view().destinationIds,actions:luscia.availableActions(),soldierDead:republic.state().soldier==='dead'},
     moros:{stage:moros.view().stage,complete:moros.view().complete,destinationIds:moros.view().destinationIds,actions:moros.availableActions()},
-    border:{stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
+    border:{side:border.view().side,stage:border.view().stage,complete:border.view().complete,destinationIds:border.view().destinationIds,actions:border.availableActions()},
     riding:{owned:riding.owned,mounted:riding.mounted,horse:riding.horse,waiting:horseWaiting({inventory,riding})},
     aftermath:{stage:aftermath.view().stage,variant:aftermath.view().variant,complete:aftermath.view().complete,built:aftermathBuilt(aftermath.spec),destinationIds:aftermath.view().destinationIds,actions:aftermath.availableActions()},
     interaction:{fireId:peninsulaHost.nearby()?.fireId??null,nearFishing:peninsulaHost.nearby()?.kind==='fishing',npcId:currentNPC?.id??null,siteId:currentJourneySite?.id??currentLusciaSite?.id??currentMorosSite?.id??null,nearRepair:!!nearRepair,stickId:currentStick?.id??null}});
@@ -7335,7 +7409,7 @@ async function init() {
       keys.add(e.code);
       if(e.code==='Space'&&climbing?.active){climbBurst=true;return;}
       if(e.code==='Space'&&tryClimbing())return;
-      if(e.code==='Space'&&!urubondHost?.active&&!sevronHost?.active&&!baldroHost?.active&&!lotharnCave.active&&!suspended()&&grounded&&!raceHost?.mounted&&!riding.mounted&&living.recall().status!=='passenger'&&combat.state.player.action==='idle'){rememberFoothold();beginTerrainFall(6.3);}
+      if(e.code==='Space'&&!urubondHost?.active&&!sevronHost?.active&&!baldroHost?.active&&!lotharnCave.active&&!suspended()&&grounded&&!raceHost?.mounted&&!riding.mounted&&living.recall().status!=='passenger'&&combat.state.player.action==='idle'){rememberFoothold();beginTerrainFall(TERRAIN_FALL.jumpVelocity);}
     }
   });
   document.addEventListener('keyup',e=>keys.delete(e.code));
@@ -7392,6 +7466,7 @@ async function init() {
     if(living?.recall().status==='passenger')return {...world.npcPositions[MOROS_LEGATE_ID],name:'The Moros muster'};
     if(mainDormant()||living?.player().imperialRefused&&living.player().allegiance!=='coalition')return null;
 
+    if(chapterOne){const id=chapterOneObjective(chapterOne,border.view()).destinationIds[0];return id?resolveQuestPoint(id):null;}
     if(border.state.started&&!border.state.complete){const id=border.view().objectiveId;return id?resolveQuestPoint(id):null;}
     if(campaign.snapshot().entryOrigin){const ids=aftermath.state.variant?aftermath.view().destinationIds:border.state.started?border.view().destinationIds:moros.view().destinationIds;return ids.map(resolveQuestPoint).find(Boolean)??null;}
     if(questStage===0)return{x:0,z:20,name:'Village landing'};
@@ -7432,6 +7507,7 @@ async function init() {
   const allyBlows=[];
   function handleCombatEvents() {
     const events=combatEvents.splice(0);
+    for(const e of events)if(e.type==='army-result'&&chapterOne){chapterOne.winner=e.winner==='allies'?border.view().side:border.view().side==='empire'?'coalition':'empire';chapterColumn.clear();refreshQuest();toast(chapterOneObjective(chapterOne,border.view()).detail,'THE FIELD IS DECIDED');saveRoad(false);}
     for(const e of events)if(e.type==='ally-hit'||e.type==='ally-down'){allyBlows.push({t:+playSeconds.toFixed(2),type:e.type,id:e.id,by:e.by??null,source:e.source??null,damage:e.damage??null});if(allyBlows.length>40)allyBlows.shift();}
     // Record every physical impact before death rendering and terminal encounter callbacks.
     for(const event of events){if(strategicBattle)continue;const elfHits=ibenwoodDefense?.impact(event)??0;if(elfHits&&event.type==='melee-impact'){weapons.contact(event.weaponId);inventory.refresh();}
@@ -7680,7 +7756,7 @@ async function init() {
     $('practice-guard').textContent=practiceGuards?'✓ Shield held':'0 / 1 guard';
     $('practice-dodge').textContent=practiceDodges?'✓ Dodge tried':'0 / 1 dodge';
     // Ordinary encounters use the same world HUD. Only an army battle needs a shared objective banner.
-    show('encounter-status',active&&mode==='playing'&&(combat.state.encounterId===BORDER_ENCOUNTER_ID||inAftermathFight()));
+    show('encounter-status',active&&mode==='playing'&&([BORDER_ENCOUNTER_ID,ARMY_BATTLE_ID].includes(combat.state.encounterId)||inAftermathFight()));
     $('raiders-left').textContent=lawEncounter?'':combat.state.enemies.filter(e=>e.kind!=='dummy'&&e.hp>0).length;
     const goal=destination();
     const pin=trackedPlace(),pinDistance=pin?Math.hypot(pin.x-player.group.position.x,pin.z-player.group.position.z):Infinity;
@@ -7698,7 +7774,7 @@ async function init() {
       if(mode==='playing'&&currentRegionId!==region.id){currentRegionId=region.id;enterRegion(region);}
     }
     $('encounter-enemies').textContent=lawEncounter?'':combat.state.encounterId===ambushEncounter.id?'rebel ambushers remaining':'enemies remaining';
-    $('encounter-title').textContent=lawEncounter?'':combat.state.encounterId===DRENT_FIGHT_ID?'CIVIL WAR IN DRENT \u00b7 KILLIAN':combat.state.encounterId===ambushEncounter.id?'REBEL AMBUSH - THE DRENT ROAD':combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':combat.state.encounterId===BORDER_ENCOUNTER_ID?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():combat.state.encounterId===greenwayEncounter.id?'DEFEND THE GREENWAY':'';
+    $('encounter-title').textContent=lawEncounter?'':combat.state.encounterId===DRENT_FIGHT_ID?'CIVIL WAR IN DRENT \u00b7 KILLIAN':combat.state.encounterId===ambushEncounter.id?'REBEL AMBUSH - THE DRENT ROAD':combat.state.encounterId===OGRE_ENCOUNTER.id?'MALLEC, AT THE PASS STONES':combat.state.encounterId==='meadow-raiders'?'THE AVREL CLEARING RAIDERS':combat.state.encounterId===hideoutEncounter.id?'BRAMBLE SCOUT CAMP':combat.state.encounterId===LUSCIA_WOLVES.id?'WOLVES ON THE BURIAL LINE':[BORDER_ENCOUNTER_ID,ARMY_BATTLE_ID].includes(combat.state.encounterId)?'THE BORDER BATTLE':inAftermathFight()?aftermath.spec.title.toUpperCase():combat.state.encounterId===greenwayEncounter.id?'DEFEND THE GREENWAY':'';
     const nearestPlace=world.landmarks.reduce((best,place)=>Math.hypot(place.x-player.group.position.x,place.z-player.group.position.z)<Math.hypot(best.x-player.group.position.x,best.z-player.group.position.z)?place:best);
     $('area-name').textContent=region?.name.endsWith('Ibenwood')?(subregionsAt(player.group.position.x,player.group.position.z).find(p=>p.region===region.name)?.name??region.subtitle):nearestPlace.name;
     $('objective-distance').textContent=goal?`${goal.name} · ${Math.round(Math.hypot(goal.x-player.group.position.x,goal.z-player.group.position.z))} m`:'';
@@ -7987,6 +8063,7 @@ async function init() {
           saveRoad(false);
         }
       }
+      if(chapterOne&&chapterColumn?.active){const arrived=chapterColumn.frame(dt,{playing:mode==='playing'&&!reviewFrozen,visible:!chapterOne.winner&&combat.state.encounterId!==ARMY_BATTLE_ID});if(arrived&&border.view().stage==='march')borderAct('reach-line');}
       if(mode==='defeated'){combat.update(dt);combatClock+=dt;walkTime+=dt;}
       else if(['playing','fishing','opening','arriving'].includes(mode)&&!reviewFrozen)walkTime+=dt;
       republic?.frame(dt,{playing:mode==='playing'&&!reviewFrozen});
@@ -8065,7 +8142,7 @@ async function init() {
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
       if(['playing','fishing'].includes(mode)&&!reviewFrozen){living.tick(dt);playSeconds=living.clock();}
       updateLivingRoutes(dt);
-      livingHost?.frame();
+      if(!chapterOne)livingHost?.frame();
       peninsulaHost.frame(reviewFrozen?0:dt);
       urubondHost.frame();
       sevronHost.frame(reviewFrozen?0:dt);
@@ -8117,7 +8194,7 @@ async function init() {
         }
       }
       escortLandingMate();
-      {const cast=new Set(border.cast({solisHolder:heldControl?.['West Suval']??'coalition'}));for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=!cast.has(person.id);}}
+      {const cast=new Set(border.cast({solisHolder:heldControl?.['West Suval']??'coalition'}));for(const person of BORDER_NPCS){const npc=npcById.get(person.id);npc.hidden=chapterOne?(person.marches||(!cast.has(person.id)&&!(chapterOne.winner&&person.id==='solis-captain'))):!cast.has(person.id);}}
       fogClock-=dt;if(fogClock<=0){fogClock=.5;if(mode==='playing'&&!strategicBattle){
         const p=player.group.position,widened=mapFog.reveal(p.x,p.z);
         // A hex the fog has just given up is a hex of some country, and the chart of countries counts it.
@@ -8131,7 +8208,7 @@ async function init() {
       peninsulaHost.sync();
       for(const npc of (stakedNpcs??=npcData.filter(entry=>stakeOf(entry))))npc.hidden=!isOut(stakeOf(npc),heldControl);
       for(const prop of world.stakedProps||[])prop.object.visible=isOut(prop,heldControl);wallWatch.update(player.group.position,heldControl,walkTime);
-      westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?borderMercenaries(border.state.side??'empire').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
+      if(!chapterOne)westSuval.frame({npcById,player,border,control:heldControl,aftermath:aftermath.state,mustered:border.view().stage==='march'?borderMercenaries(border.state.side??'empire').slice(0,4).map(p=>p.id):[],fightingAllies:combat.state.allies?.map(a=>a.id)??[],encounterId:['active','defeated'].includes(combat.state.phase)?combat.state.encounterId:null,playing:mode==='playing'&&combat.state.phase!=='active',arrive:()=>borderAct('reach-line')});
       izol.frame({npcById,control:heldControl});
       // The aftermath's people stand wherever that day's work is; they are moved while out of sight, never walked across the map.
       {const cast=new Map(aftermath.cast().map(entry=>[entry.id,aftermathSite(entry.site)]));for(const person of AFTERMATH_NPCS){const npc=npcById.get(person.id),site=cast.get(person.id)??null;npc.hidden=!site;if(site&&site!==npc.site){world.npcPositions[person.id]={x:site.x,z:site.z};npc.actor.group.position.set(site.x,world.heightAt(site.x,site.z),site.z);npc.actor.group.rotation.y=site.yaw??0;}npc.site=site;}}
@@ -8168,7 +8245,7 @@ async function init() {
       updateGlunWood(dt);
       updateFishingLessons(dt);
       {const ryan=npcById.get(RYAN.id);if(!ryan.fishingLessonActive){ryan.actor.setFishing(true);ryan.face=world.fishingSpots.find(s=>s.id==='willowmere').castPoint;}}
-      const lusciaDestinations=(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
+      const lusciaDestinations=chapterOne?chapterOneObjective(chapterOne,border.view()).destinationIds:(questStage===QUEST_DONE&&luscia.state.started||campaign.snapshot().entryOrigin)?[...luscia.view().destinationIds,...moros.view().destinationIds,...border.view().destinationIds,...aftermath.view().destinationIds,...(horseWaiting({inventory,riding})?[OSTLER_NPC.id]:[])]:[];
       const wineryLesson=wineryLessonsStatus({farmingLevel:skills.level('farming')});
       const markerView={mainDormant:mainDormant(),peninsulaEnlistment:peninsulaHost.chosen&&!peninsulaHost.active&&!peninsulaHost.enlisted,lockedSkillTeachers:wineryLesson.requirementMet?[]:[VINTNER.id],magicTeachers:magicTeacherIds({spider:spiderQuest.state,cat:catQuest.state,murder:murder.state,knownSpells:SPELL_IDS.filter(id=>magic.known(id))}),escortDestinations:[...(cagneyQuest.state.over?[]:[CAGNEY.id]),...(!race.state().complete?[KAYLA.id]:[])],skillTeachers:[...sunflowerLesson.view(playSeconds).teacherIds,...(!cubHost.quest.completed?[CUB.id]:[]),...availableSkillTeachers(),...(wineryLesson.requirementMet?[VINTNER.id]:[])],deedDestinations:sylviaIvy.view().complete?[]:[SYLVIA.id],drentDestinations:drent.markerIds,silverDestinations:vastos.markerIds(),questStage,busy:combat.state.phase==='active',heardDoom,
         ids:{harbourmaster:HARBOURMASTER,instructor:INSTRUCTOR.id,warden:'warden',doomsayer:null,acornCook:'acorn-cook',pondFisher:'pond-fisher',forestStory:FOREST_STORY_NPC.id,gardenKeeper:GARDEN_KEEPER.id,birdWatcher:BIRD_WATCHER.id,vintner:VINTNER.id},
@@ -8202,6 +8279,7 @@ async function init() {
       const fightAt=combat.state.phase==='active'?combat.state.center:null;
       const fightingPeople=combatPresence(combat.state);
       for(const npc of npcData) {
+        if(chapterOne&&mercenaryIds.has(npc.id)||world.enabledRegions&&!world.isRegionEnabled(world.npcPositions[npc.id]?.x,world.npcPositions[npc.id]?.z)){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         if(npc.role==='aevis-soldier'&&world.loading&&!world.loading.isReady(AEVIS.region)){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         if(crime.isDown(npc.id)||corpseHost.ownsNpc(npc.id)){npc.actor.group.visible=false;npc.marker.visible=false;onStage(npc,false);continue;}
         const fighter=fightingPeople.get(npc.id);
@@ -8582,14 +8660,14 @@ async function init() {
   if(world.loading){updateRegionLoadingStatus();regionStatusTimer=setInterval(updateRegionLoadingStatus,500);}
   openingViewEpoch=performance.now();
   requestAnimationFrame(render);
-  if(['start','tutorial'].includes(testingQuery.get('launch'))){
+  if(['start','tutorial','chapter','continue'].includes(testingQuery.get('launch'))){
     const path=testingQuery.get('launch'),url=new URL(location.href);url.searchParams.delete('launch');history.replaceState(null,'',url.href);
-    requestAnimationFrame(()=>chooseOpening(path));
+    requestAnimationFrame(()=>path==='continue'?continueRoad():chooseOpening(path));
   }
   setTimeout(()=>{$('loading').style.opacity='0';setTimeout(()=>show('loading',false),850);},250);
 
   if(new URLSearchParams(location.search).has('test')) {
-    const state=()=>({freeStart:freeStart?{...freeStart}:null,arrivalClock:arrivalClock(),peninsulaTutorial:peninsulaHost.view(),sevron:sevronHost.snapshot(),loading:world.loading?.state()??null,sceneryResidency:world.sceneryResidency?.state()??null,loadingMode:world.loadingMode??'full',waitingForRegion:regionLoadDepth>0,frontierRaids:frontierRaids?.state(),ibenwoodDefense:ibenwoodDefense?.state(),lotharnCave:lotharnCave.snapshot(),...batmanHost.snapshot(),flight:batmanHost.flight.state(),developerBat:developerBat.view(),developerMount:{kind:developerMountKind,visible:developerBatView.group.visible},dragonFire:dragonFire.view(),dragonDestruction:dragonDestruction.state(),climbing:climbing.view(),terrainFall:terrainFall.view(),grounded,inWater,lastFoothold:lastFoothold?{...lastFoothold}:null,kaylaRace:race.state(),cubHoney:cubHost.state(),bearFamily:bearFamily.snapshot(),apiaryBees:apiaryBees.state(),kayla:kaylaHost.state(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+    const state=()=>({chapterOne:chapterOne?{...chapterOne}:null,chapterColumn:chapterColumn?.positions(),freeStart:freeStart?{...freeStart}:null,arrivalClock:arrivalClock(),peninsulaTutorial:peninsulaHost.view(),sevron:sevronHost.snapshot(),loading:world.loading?.state()??null,sceneryResidency:world.sceneryResidency?.state()??null,loadingMode:world.loadingMode??'full',waitingForRegion:regionLoadDepth>0,frontierRaids:frontierRaids?.state(),ibenwoodDefense:ibenwoodDefense?.state(),lotharnCave:lotharnCave.snapshot(),...batmanHost.snapshot(),flight:batmanHost.flight.state(),developerBat:developerBat.view(),developerMount:{kind:developerMountKind,visible:developerBatView.group.visible},dragonFire:dragonFire.view(),dragonDestruction:dragonDestruction.state(),climbing:climbing.view(),terrainFall:terrainFall.view(),grounded,inWater,lastFoothold:lastFoothold?{...lastFoothold}:null,kaylaRace:race.state(),cubHoney:cubHost.state(),bearFamily:bearFamily.snapshot(),apiaryBees:apiaryBees.state(),kayla:kaylaHost.state(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),frameErrors:frameErrors.view(),mode,testingEnabled,heardDoom,mapTutorial:mapTutorial.step,chartLesson:chartLesson.stage,trackedQuestId:questTracker.selectedId,drent:drent.state(),stealth:drent.awareness,playSeconds,mercenaries:company.summary(playSeconds),journey:journey.state,journeyView:journey.view(),campaign:campaign.view(),luscia:luscia.view(),burying:burying.snapshot(),moros:moros.view(),border:border.view(),autoplay:autopilot.active,mounted:riding.mounted,retries:retriesTaken,meadowCleared,region:world.regionAt(player.group.position.x,player.group.position.z).id,campcraft:campcraft.state,questStage,practiceHits,practiceDodges,inventory:inventory.items(),weapons:weapons.snapshot(),sticks:inventory.count('forest-stick'),pawpaws:inventory.count('pawpaw'),acorns:inventory.count('acorn'),sideQuest:acornQuest.status,chapter:chapterProgress(storyState()).number,ardryLetters:renaLetters.snapshot(),ardryFriendship:renaLetters.friendship('rena-lorn'),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.view(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushroomSites:mushrooms.state().sites.length,botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),plantSites:flora.state().sites.length,geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),woodlot:WOODLOT_TREES.filter(t=>!wood.standing(t.id)).map(t=>t.id),stoneSites:stones.state().sites.length,oldTree:oldTree.view(),specimenTrees:specimenTrees.state().trees.length,refugees:refugees.snapshot(),fallen:fallen.snapshot(),refugeesArrived:refugees.arrived,skills:skills.view(),birds:drentBirds.state(),birdWatch,birdPointer:birdPointer.visible,chart:mapFog.snapshot(),cartography:cartography.snapshot(),chartRevealed,lysaFriendship:acornQuest.friendship,selectedItem:inventory.selectedId(),phase:combat.state.phase,hp:combat.state.player.hp,playerAction:combat.state.player.action,enemies:combat.state.enemies.map(e=>({id:e.id,hp:e.hp,action:e.action,progress:e.progress,x:e.x,z:e.z})),position:player.group.position.toArray(),discoveries:[...discoveries],frames:frameCount,averageFrameMs:Math.round(1000*frameDeltas.reduce((a,b)=>a+b,0)/frameDeltas.length),drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
     const focusedRoadHooks=()=>({world,player,journey,inventory,weapons,campcraft,combat,checkpoint,journeyAct,saveRoad,continueRoad,
       frames:async(count=1)=>{for(let i=0;i<count;i++)await new Promise(resolve=>requestAnimationFrame(resolve));},
       // The opening sequence, for a harness that would rather not sit through forty-four seconds.
@@ -9131,6 +9209,21 @@ async function init() {
           save:()=>{recoveryInfo={testing:testingEnabled,encounterId:null};return writeRoadCheckpoint(sessionCheckpoint,false);},
           reload:()=>continueRoad(true),
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}});
+      },
+      async chapterOneChecks(){
+        const {runChapterOneChecks}=await import('./chapter-one-smoke.js');
+        return runChapterOneChecks({world,combat,border,column:chapterColumn,state,
+          ready:async()=>{for(const id of world.enabledRegions??[])await world.loading?.ensureRegion(id);},
+          frames:async()=>{await new Promise(requestAnimationFrame);},freeze:v=>{reviewFrozen=v;},
+          select:id=>{document.querySelector('[data-character="'+id+'"]').click();},begin:()=>beginChapterOne({testing:true}),
+          reset:side=>{mode='playing';beginChapterOne({testing:true});for(const a of ['take-legate-terms','enter-solis','side-'+side])borderAct(a);},
+          act:borderAct,events:handleCombatEvents,
+          place:p=>{player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);},
+          win:side=>{chapterOne.winner=side;chapterColumn.clear();mode='playing';},
+          talk:id=>{mode='playing';chapterOneConversation(npcById.get(id));},
+          reply:id=>{while(activeDialogue&&activeDialogue.index<activeDialogue.lines.length-1)nextSpeech();const button=document.querySelector('#dialogue-choices [data-choice="'+id+'"]');if(!button)throw new Error('Missing reply '+id);button.click();},
+          finishDialogue:()=>{for(let i=0;i<20&&activeDialogue;i++)nextSpeech();},
+          save:()=>{recoveryInfo={testing:true,encounterId:null};return writeRoadCheckpoint(sessionCheckpoint,false);},reload:()=>continueRoad(true)});
       },
       async minoraOpeningChecks(expected=null){
         const {runMinoraOpeningChecks}=await import('./minora-opening-smoke.js');

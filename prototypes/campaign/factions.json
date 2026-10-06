@@ -1,0 +1,521 @@
+[
+  {
+    "id": "minoran-league",
+    "name": "Minoran League",
+    "regions": [
+      "Isareos",
+      "Nethereum",
+      "Caricas",
+      "Nesdor",
+      "Ovesos"
+    ],
+    "capital": "Minora, Isareos",
+    "relationship": "Recently independent league whose central government has been seized by Cedric. Caricas, Nethereum, Ovesos and Nesdor are separately fighting for independence and loosely coordinating."
+  },
+  {
+    "id": "pyrosi-empire",
+    "name": "Pyrosi Empire",
+    "regions": [
+      "West Pyros",
+      "East Pyros",
+      "Nether Desert",
+      "Oves Desert",
+      "Navarth",
+      "Ganesh Plain",
+      "Ganesh Desert",
+      "Cape Heth"
+    ],
+    "capital": "Pyra, spanning West Pyros and East Pyros",
+    "relationship": "Independent sprawling empire; potential adversary on Marosh's fortified Dinelv frontier."
+  },
+  {
+    "id": "telemonia",
+    "name": "Telemonia",
+    "regions": [
+      "Telemonia",
+      "Legemum"
+    ],
+    "capital": "Telemonia; capital settlement not specified in this request",
+    "relationship": "Independent state; Legemum supplies slave-tilled agricultural production."
+  },
+  {
+    "id": "ascarth",
+    "name": "Ascarth",
+    "regions": [
+      "Southern Ascarth",
+      "Northern Ascarth",
+      "Gala"
+    ],
+    "capital": "Aevis, Southern Ascarth",
+    "relationship": "Independent state."
+  },
+  {
+    "id": "nylon",
+    "name": "Nylon / Eer",
+    "regions": [
+      "Eer"
+    ],
+    "capital": "Nylon, Eer",
+    "relationship": "Independent, strongly defended city-state."
+  },
+  {
+    "id": "selemis",
+    "name": "Selemis",
+    "regions": [
+      "Selemi",
+      "Iscare Archipeligo",
+      "Aurumlis Archipeligo",
+      "Azhor Stones",
+      "Babon",
+      "Trogo"
+    ],
+    "capital": "Selemis, Selemi",
+    "relationship": "Maritime state controlling the listed island regions."
+  },
+  {
+    "id": "marosh",
+    "name": "Marosh",
+    "regions": [
+      "Marosh",
+      "Central Meroshe Desert",
+      "South Meroshe Desert",
+      "North Meroshe Desert",
+      "West Meroshe Desert",
+      "Dinelv Highlands"
+    ],
+    "capital": "New town in Marosh; name and site undecided",
+    "relationship": "Independent state with fortified Dinelv defenses against Pyros."
+  },
+  {
+    "id": "hama",
+    "name": "Hama",
+    "regions": [
+      "Hama"
+    ],
+    "capital": "Small town in Hama; name not specified",
+    "relationship": "Independent small state."
+  },
+  {
+    "id": "izol",
+    "name": "Izol",
+    "regions": [
+      "West Izol",
+      "East Izol"
+    ],
+    "capital": "West Izol; capital settlement undecided",
+    "relationship": "Independent human state."
+  },
+  {
+    "id": "west-suval",
+    "name": "West Suval",
+    "regions": [
+      "West Suval"
+    ],
+    "capital": "Solis, West Suval",
+    "relationship": "Independent successor state in the three-way Suval division."
+  },
+  {
+    "id": "elod",
+    "name": "Elod",
+    "regions": [
+      "East Suval"
+    ],
+    "capital": "Elod, East Suval",
+    "relationship": "Independent state in the three-way Suval division."
+  },
+  {
+    "id": "south-suval",
+    "name": "South Suval",
+    "regions": [
+      "South Suval"
+    ],
+    "capital": "Lamdris, South Suval (probable transcript resolution)",
+    "relationship": "Independent successor state in the three-way Suval division."
+  },
+  {
+    "id": "ambroni-empire",
+    "name": "Ambroni Empire",
+    "regions": [
+      "Elagos",
+      "Drent",
+      "Amod",
+      "Pueth",
+      "Luscia",
+      "Moros Plain",
+      "Vastos",
+      "Meneth",
+      "Peblos",
+      "East Lotharn Mountains",
+      "West Lotharn Mountains"
+    ],
+    "capital": "Ambron, Elagos",
+    "relationship": "Nominal vassal of the High King of the Stone Fist, now stronger than Lond and effectively autonomous. Maintains the oath for Cref tradition while adopting southern ways. Independent Feradom is its ally."
+  },
+  {
+    "id": "feradom",
+    "name": "Feradom",
+    "regions": [
+      "Feradom"
+    ],
+    "capital": "Not specified",
+    "relationship": "Independent ally of the Ambroni Empire."
+  },
+  {
+    "id": "mithala",
+    "name": "Mithala",
+    "regions": [
+      "North Mithala",
+      "East Mithala",
+      "South Mithala",
+      "West Mithala"
+    ],
+    "capital": "Mithala, the joint city spanning all four Mithala regions",
+    "relationship": "Nominal vassal of the High King of the Stone Fist; distance leaves the High King with little practical sway. Uneasy peace with Henborth centaurs."
+  },
+  {
+    "id": "celder",
+    "name": "Celder",
+    "regions": [
+      "North Celder",
+      "South Celder"
+    ],
+    "capital": "Not specified",
+    "relationship": "One human state, nominally a vassal of the High King of the Stone Fist; distance leaves the High King with little practical sway. Uneasy peace with Henborth centaurs."
+  },
+  {
+    "id": "yunethre-free-state",
+    "name": "Yunethre Free State",
+    "regions": [
+      "Yunethre"
+    ],
+    "capital": "Lakeside Free Town, Yunethre",
+    "relationship": "Independent town-led polity allied with the distinct Yunethre centaur polity; shared region."
+  },
+  {
+    "id": "yunethre-centaurs",
+    "name": "Yunethre Centaurs",
+    "regions": [
+      "Yunethre"
+    ],
+    "capital": "Mobile camps; existing Bane's Camp is an anchor, not a sedentary capital",
+    "relationship": "Mobile centaur society allied with the Yunethre Free State; shared region rather than subordinate subjects."
+  },
+  {
+    "id": "henborth-centaurs",
+    "name": "Henborth Centaurs",
+    "regions": [
+      "Henborth"
+    ],
+    "capital": "Mobile camps; no fixed capital specified",
+    "relationship": "Distinct centaur polity controlling Henborth; uneasy peace with Mithala and Celder after centuries of conflict."
+  },
+  {
+    "id": "mountain-elfland",
+    "name": "Mountain Elfland",
+    "regions": [
+      "West Oremindi Mountains",
+      "East Oremindi Mountains",
+      "South Oremindi Mountains",
+      "North Oreminidi Mountains"
+    ],
+    "capital": "Sevron, West Oremindi Mountains",
+    "relationship": "Separate elven realm centered on Sevron, with a campaign system broadly closer to human settled states."
+  },
+  {
+    "id": "wood-elfland",
+    "name": "Wood Elfland",
+    "regions": [
+      "Central Ibenwood",
+      "North Ibenwood",
+      "East Ibenwood",
+      "South Ibenwood",
+      "West Ibenwood"
+    ],
+    "capital": "Royal heart in Central Ibenwood; settlement name undecided",
+    "relationship": "Elven realm claiming all five Ibenwood regions; cooperative trade with Ibenal and Alezhor."
+  },
+  {
+    "id": "ibenal",
+    "name": "Ibenal",
+    "regions": [
+      "North Ibenal",
+      "South Ibenal"
+    ],
+    "capital": "Not specified",
+    "relationship": "Peaceful isolationist human state; cooperates and trades selectively with Wood Elfland; tension with Alezhor over trade and sea passage."
+  },
+  {
+    "id": "alezhor",
+    "name": "Alezhor",
+    "regions": [
+      "Alezhor"
+    ],
+    "capital": "Not specified",
+    "relationship": "Open maritime human merchant state with far-ranging explorers; friendly to Wood Elfland; tension with Ibenal over access to its seas."
+  },
+  {
+    "id": "thalmagars-empire",
+    "name": "Thalmagar's Empire",
+    "regions": [
+      "Cape Thalmagar",
+      "Urubond",
+      "Narcosh"
+    ],
+    "capital": "Public seat: Black Fortress, Cape Thalmagar. Secret true capital: Urubond.",
+    "relationship": "Overarching antagonist on the default resistance path; siding with him remains a reserved future option. Early/middle mustering, fortification and limited expansion lead to a major middle-to-late offensive. Seeks partners or subjects among the older peoples."
+  },
+  {
+    "id": "caricas-independence",
+    "name": "Caricas independence movement",
+    "regions": [
+      "Caricas"
+    ],
+    "capital": "Leadership and seat unspecified",
+    "relationship": "Separate independence war against the Cedric-controlled Minoran League; loose coordination with the other three member rebellions."
+  },
+  {
+    "id": "nethereum-independence",
+    "name": "Nethereum independence movement",
+    "regions": [
+      "Nethereum"
+    ],
+    "capital": "Leadership and seat unspecified",
+    "relationship": "Separate independence war against the Cedric-controlled Minoran League; loose coordination with the other three member rebellions."
+  },
+  {
+    "id": "ovesos-independence",
+    "name": "Ovesos independence movement",
+    "regions": [
+      "Ovesos"
+    ],
+    "capital": "Leadership and seat unspecified",
+    "relationship": "Separate independence war against the Cedric-controlled Minoran League; loose coordination with the other three member rebellions."
+  },
+  {
+    "id": "nesdor-independence",
+    "name": "Nesdor independence movement",
+    "regions": [
+      "Nesdor"
+    ],
+    "capital": "Leadership and seat unspecified",
+    "relationship": "Separate independence war against the Cedric-controlled Minoran League; loose coordination with the other three member rebellions."
+  },
+  {
+    "id": "stonefist-lond",
+    "name": "High Kingdom of the Stonefist / Lond",
+    "regions": [],
+    "proposedRegions": [
+      "Central Lond",
+      "North Lond",
+      "East Lond",
+      "South Lond",
+      "West Lond"
+    ],
+    "capital": "Stonefist; exact atlas placement to confirm",
+    "relationship": "Overlord of eight northern lower kingdoms and nominal overlord of Mithala, Celder and Ambron. The three distant crowns are effectively autonomous; Ambron is stronger than Lond. Allied to the Acorwood honorary king."
+  },
+  {
+    "id": "endevor",
+    "name": "Endevor",
+    "regions": [],
+    "proposedRegions": [
+      "North Endevor",
+      "East Endevor",
+      "South Endevor",
+      "West Endevor"
+    ],
+    "capital": "Not specified in the request; Stroven is an existing lore candidate",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "nonoth",
+    "name": "Nonoth",
+    "regions": [
+      "North Nonoth",
+      "South Nonoth",
+      "Nothwood",
+      "Noth Hills"
+    ],
+    "capital": "North Nonoth; settlement unspecified",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "thoth",
+    "name": "Thoth",
+    "regions": [
+      "North Thoth",
+      "Central Thoth",
+      "South Thoth"
+    ],
+    "capital": "Not specified",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "orse",
+    "name": "Orse",
+    "regions": [
+      "North Orsa",
+      "South Orsa"
+    ],
+    "capital": "Not specified",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "witherst",
+    "name": "Witherst",
+    "regions": [
+      "West Witherst",
+      "East Witherst",
+      "Cold Stones"
+    ],
+    "capital": "West Witherst; settlement unspecified",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "riesov",
+    "name": "Riesov",
+    "regions": [
+      "North Riesov",
+      "South Riesov"
+    ],
+    "capital": "South Riesov; settlement unspecified",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "ganun",
+    "name": "Ganun",
+    "regions": [
+      "South Ganun",
+      "East Ganun",
+      "West Ganun",
+      "North Ganun"
+    ],
+    "capital": "South Ganun; settlement unspecified",
+    "relationship": "Lower kingdom / vassal of Stonefist"
+  },
+  {
+    "id": "ithzel",
+    "name": "Ithzel",
+    "regions": [
+      "East Ithzel"
+    ],
+    "capital": "East Ithzel; named settlement unclear in transcript",
+    "relationship": "Returning human lower king of the Stone Fist, reclaiming Ithzel from the Blood Prince's undead. Holds the east while the west remains under the prince's faction."
+  },
+  {
+    "id": "acorwood-satyrs",
+    "name": "Acreland (Acorwood realm)",
+    "regions": [
+      "North Acorwood",
+      "West Acorwood",
+      "East Acordwood",
+      "South Acordwood"
+    ],
+    "capital": "Not specified",
+    "relationship": "Independent Acorwood polity allied to Stonefist; honorary lower kingship, not an ordinary human vassal"
+  },
+  {
+    "id": "west-baldro-dwarves",
+    "name": "Western dwarf kingdom (working name)",
+    "regions": [],
+    "proposedRegions": [
+      "West Baldro Mountains"
+    ],
+    "capital": "Not specified",
+    "relationship": "Separate dwarf state, mutually at peace with the other Baldro dwarf state, each of the four independent Goblinland factions and the Eshtor undead polity against human expansion. This establishes neither secret vassalage to Thalmagar nor automatic military passage."
+  },
+  {
+    "id": "east-baldro-dwarves",
+    "name": "Eastern dwarf kingdom (working name)",
+    "regions": [],
+    "proposedRegions": [
+      "East Baldro Mountains"
+    ],
+    "capital": "Not specified",
+    "relationship": "Separate dwarf state, mutually at peace with the other Baldro dwarf state, each of the four independent Goblinland factions and the Eshtor undead polity against human expansion. This establishes neither secret vassalage to Thalmagar nor automatic military passage."
+  },
+  {
+    "id": "eshtor-undead",
+    "name": "Undead Land (working name)",
+    "regions": [
+      "Eshtor Plateau"
+    ],
+    "capital": "Forsaken Citadel, Eshtor Plateau",
+    "relationship": "Separate undead polity outside Ganun's effective control; its duke is a secret vassal of Thalmagar. Mutually at peace with each of the four independent Goblinland factions and both Baldro dwarf states against human expansion. North Gorgi separately has confirmed secret Thalmagar vassalage; the other partners do not acquire it through this peace.",
+    "actualOverlord": "thalmagars-empire",
+    "publicAllegiance": "Ganun"
+  },
+  {
+    "id": "orgmala-goblins",
+    "name": "Orgmala goblin faction",
+    "regions": [
+      "Orgmala"
+    ],
+    "capital": "Not specified",
+    "relationship": "Independent goblin faction allied with the other three members of the loose Goblinland confederation, with little coordination and no shared command. Mutually at peace with the Eshtor undead polity and both Baldro dwarf states.",
+    "confederation": "goblinland",
+    "allies": [
+      "south-gorgi-goblins",
+      "gorgiwood-goblins",
+      "north-gorgi-goblins"
+    ]
+  },
+  {
+    "id": "south-gorgi-goblins",
+    "name": "South Gorgi goblin faction (working atlas resolution)",
+    "regions": [
+      "South Gorgi Mountains"
+    ],
+    "capital": "Not specified",
+    "relationship": "Independent goblin faction allied with the other three members of the loose Goblinland confederation, with little coordination and no shared command. Mutually at peace with the Eshtor undead polity and both Baldro dwarf states.",
+    "confederation": "goblinland",
+    "allies": [
+      "orgmala-goblins",
+      "gorgiwood-goblins",
+      "north-gorgi-goblins"
+    ]
+  },
+  {
+    "id": "gorgiwood-goblins",
+    "name": "Gorgiwood goblin faction",
+    "regions": [
+      "Gorgiwood"
+    ],
+    "capital": "Not specified",
+    "relationship": "Independent goblin faction allied with the other three members of the loose Goblinland confederation, with little coordination and no shared command. Mutually at peace with the Eshtor undead polity and both Baldro dwarf states.",
+    "confederation": "goblinland",
+    "allies": [
+      "orgmala-goblins",
+      "south-gorgi-goblins",
+      "north-gorgi-goblins"
+    ]
+  },
+  {
+    "id": "north-gorgi-goblins",
+    "name": "North Gorgi goblin faction",
+    "regions": [
+      "North Gorgi Mountains"
+    ],
+    "capital": "Not specified",
+    "relationship": "Independent goblin faction allied with the other three members of the loose Goblinland confederation, with little coordination and no shared command. Mutually at peace with the Eshtor undead polity and both Baldro dwarf states. Secretly a vassal of Thalmagar; this allegiance does not bind the other confederation members.",
+    "actualOverlord": "thalmagars-empire",
+    "publicAllegiance": "Independent allied member of Goblinland",
+    "confederation": "goblinland",
+    "allies": [
+      "orgmala-goblins",
+      "south-gorgi-goblins",
+      "gorgiwood-goblins"
+    ]
+  },
+  {
+    "id": "wilhelm-undead",
+    "name": "Blood Prince's island faction",
+    "regions": [
+      "West Ithzel"
+    ],
+    "capital": "Island seat unspecified; Wilhelm is personally in Minora",
+    "relationship": "Second northern undead faction, ruled by the Blood Prince and secretly subordinate to Thalmagar. Contests Ithzel against the returned human lower king.",
+    "actualOverlord": "thalmagars-empire",
+    "ruler": "prince-wilhelm"
+  }
+]

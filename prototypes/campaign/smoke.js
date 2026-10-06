@@ -1,0 +1,40 @@
+// Renderer interaction checks for the standalone prototype, invoked only by --test.
+export async function runChecks(){
+  const $=id=>document.getElementById(id), checks=[];
+  const check=(value,label)=>{if(!value)throw Error(label);checks.push(label);};
+  const click=selector=>{const b=document.querySelector(selector);if(!b)throw Error(`Missing ${selector}`);b.click();};
+  const ui=window.campaignUIPreview;
+  check(ui.ready&&ui.getState().regionCount===132,'Existing atlas loads all 132 regions');
+  check(document.querySelectorAll('#campaign-overlays .hit').length===132,'All authored regions are selectable');
+  check(ui.getState().zoom===1,'Atlas initially opens at whole-map scale');
+  check(ui.getState().selected==='Isareos','Latest opening selects Minora in Isareos');
+  $('search').value='North Gorgi';$('search').dispatchEvent(new Event('input'));
+  $('search').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+  check(ui.getState().selected==='North Gorgi Mountains','Keyboard search selects and focuses a region');
+  check(!$('detail-content').textContent.includes('Vassal of Thalmagar'),'Opening diplomacy conceals North Gorgi allegiance');
+  $('author-view').click();check($('detail-content').textContent.includes('Vassal of Thalmagar'),'Author knowledge exposes the selected secret');
+  $('author-view').click();check(!$('detail-content').textContent.includes('Vassal of Thalmagar'),'Leaving author view restores undiscovered information');
+  click('[data-layer="unrest"]');check(ui.getState().layer==='unrest','Unrest layer switches');
+  click('[data-tab="quests"]');check($('detail-content').textContent.includes('Available · East Witherst'),'Northern quest initially available');
+  $('advance').click();check($('detail-content').textContent.includes('Lost · community transformed'),'Sample advance removes lost quest');
+  click('[data-mode="hero"]');check(ui.getState().stage===1&&$('detail-content').textContent.includes('INTERFACE PREVIEW'),'Hero view preserves campaign date');
+  check($('detail-content').textContent.includes('Minora · Isareos'),'Hero starts in Minora');
+  click('[data-mode="observe"]');$('play').click();check(ui.getState().playing,'Observer can play the fixture');$('play').click();check(!ui.getState().playing,'Pause stops the fixture');
+  click('[data-stage="2"]');ui.selectRegion('North Gorgi Mountains');check($('detail-content').textContent.includes('Vassal of Thalmagar'),'Later discoveries update ordinary diplomacy');
+  click('[data-tab="factions"]');check(document.querySelectorAll('[data-faction]').length===46,'Faction browser includes 46 actors with both undead factions');
+  click('[data-faction="orgmala-goblins"]');check(ui.getState().selected==='Orgmala','Faction row locates its region');
+  click('[data-action="aid"]');$('aid-type').value='A defensive company';$('draft-aid').click();check($('detail-content').textContent.includes('Draft request · preview only'),'Diplomatic draft is visibly a preview');
+  click('[data-stage="3"]');ui.selectRegion('Yunethre',{focus:true});click('[data-action="hero-handoff"]');check($('dialog').open&&$('dialog-body').textContent.includes('does not teleport'),'Battle panel explains physical approach');$('return-map').click();
+  click('[data-stage="4"]');check($('advance').disabled&&!ui.getState().playing,'Sample sequence stops in the aftermath');
+  click('[data-tab="quests"]');check($('detail-content').textContent.includes('Lost · community transformed'),'Aftermath preserves lost quest');
+  $('feedback').click();$('feedback-text').value='Map and chronology test note';$('feedback-text').dispatchEvent(new Event('input'));$('dialog').close();
+  $('reset').click();check(ui.getState().stage===0&&ui.getState().zoom===1&&!ui.getState().author,'Reset restores opening map and knowledge');
+  check(ui.getState().notes==='Map and chronology test note','Reset retains session feedback');
+  $('focus-island').click();check(ui.getState().selected==='West Ithzel'&&!$('detail-content').textContent.includes('Vassal of Thalmagar'),'Western island opens without exposing the hidden superior');
+  click('[data-island="human"]');check($('detail-content').textContent.includes('Returned Lower King · sample victory'),'Human island victory is previewable');
+  click('[data-island="undead"]');check($('detail-content').textContent.includes('Wilhelm’s island faction · sample victory'),'Western island victory is previewable');
+  click('[data-island="reset"]');check(ui.getState().islandOutcome===null,'Island can return to its divided opening');
+  $('reset').click();
+  check(!Object.keys(localStorage).length,'Prototype does not write local game storage');
+  return checks;
+}

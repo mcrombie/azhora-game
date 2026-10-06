@@ -1,3 +1,4 @@
+import { ARMY_BATTLE_ID, createArmyExchanges } from './army-battle.js';
 import { canStand, moveCharacter } from './game-state.js';
 import { BODY, bodyWorld } from './bodies.js';
 import { countryHealth, countryDamage, COUNTRY, allyHealthScale, allyDamageScale, maxHealth, TOP_LEVEL } from './combat-skills.js';
@@ -212,6 +213,7 @@ const DEFAULT_ENCOUNTER = Object.freeze({
  */
 export function fightBox(encounter) {
   const axis = encounter.retreatAxis === 'x' ? 'x' : 'z', across = axis === 'x' ? 'z' : 'x', c = encounter.center;
+  if(encounter.id===ARMY_BATTLE_ID)return {minX:c.x-38,maxX:c.x+38,minZ:c.z-38,maxZ:c.z+38};
   const sign = encounter.retreatSign === -1 ? -1 : 1;
   const [lo, hi] = sign > 0 ? [c[axis] - 21, c[axis] + 18] : [c[axis] - 18, c[axis] + 21];
   const box = { [`min${axis.toUpperCase()}`]: lo, [`max${axis.toUpperCase()}`]: hi, [`min${across.toUpperCase()}`]: c[across] - 12, [`max${across.toUpperCase()}`]: c[across] + 12 };
@@ -244,7 +246,7 @@ function encounterConfig(config) {
   if (!identifier(config.id) || !point(config.center) || !point(config.checkpoint)
     || !Number.isFinite(line) || sign * (line - config.center[axis]) <= 0
     || beyond(config.checkpoint) || !Array.isArray(config.enemies)
-    || !config.enemies.length || config.enemies.length > 12) return null;
+    || !config.enemies.length || config.enemies.length > (config.id===ARMY_BATTLE_ID?20:12)) return null;
   // The country's own level, which everything in the fight is measured against. An encounter
   // that does not say carries 0, and 0 is today's game to the digit.
   const level = Number.isFinite(config.level) ? Math.floor(config.level) : 0;
@@ -278,8 +280,8 @@ function encounterConfig(config) {
     if (enemy.currentHp !== undefined && (!Number.isFinite(enemy.currentHp) || enemy.currentHp < 0 || enemy.currentHp > 100000)) return null;
     const hp = enemy.hp ?? 75, entry = enemy.entry ?? 0;
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
-      || Math.abs(enemy[across] - config.center[across]) > 12 || along(enemy) < -21
-      || along(enemy) > 18 || beyond(enemy)) return null;
+      || Math.abs(enemy[across] - config.center[across]) > (config.id===ARMY_BATTLE_ID?38:12) || along(enemy) < (config.id===ARMY_BATTLE_ID?-38:-21)
+      || along(enemy) > (config.id===ARMY_BATTLE_ID?38:18) || beyond(enemy)) return null;
     // Keep authored health in the reusable encounter. Scale when making the actor,
     // so retrying a country-level encounter cannot multiply its health again.
     seen.add(enemy.id); if (enemy.npcId) seen.add(enemy.npcId);
@@ -289,7 +291,7 @@ function encounterConfig(config) {
   }
   const allies = [];
   if (config.allies !== undefined) {
-    if (!Array.isArray(config.allies) || config.allies.length > MAX_ALLIES) return null;
+    if (!Array.isArray(config.allies) || config.allies.length > (config.id===ARMY_BATTLE_ID?20:MAX_ALLIES)) return null;
     for (const ally of config.allies) {
       if (!ally || !identifier(ally.id) || seen.has(ally.id) || (ally.npcId && seen.has(ally.npcId)) || !point(ally) || !Object.hasOwn(ALLY_KINDS, ally.kind)
         || (ally.name !== undefined && typeof ally.name !== 'string')
@@ -302,8 +304,8 @@ function encounterConfig(config) {
         || (ally.spared !== undefined && typeof ally.spared !== 'boolean') || (ally.capturable !== undefined && typeof ally.capturable !== 'boolean') || (ally.armed !== undefined && typeof ally.armed !== 'boolean')
         || (ALLY_KINDS[ally.kind].flees && !point(ally.refuge ?? null))
         || (ally.refuge !== undefined && (!point(ally.refuge) || !insideBox(fightBox({ ...config, retreatSign: sign }), ally.refuge)))
-        || Math.abs(ally[across] - config.center[across]) > 12 || along(ally) < -21
-        || along(ally) > 18 || beyond(ally)) return null;
+        || Math.abs(ally[across] - config.center[across]) > (config.id===ARMY_BATTLE_ID?38:12) || along(ally) < (config.id===ARMY_BATTLE_ID?-38:-21)
+        || along(ally) > (config.id===ARMY_BATTLE_ID?38:18) || beyond(ally)) return null;
       seen.add(ally.id); if (ally.npcId) seen.add(ally.npcId);
       allies.push({ id: ally.id, name: ally.name ?? 'Soldier', kind: ally.kind, x: ally.x, z: ally.z, ...(ally.hp !== undefined ? { hp: ally.hp } : {}), ...(ally.level !== undefined ? { level: ally.level } : {}), ...(ally.toughness !== undefined ? { toughness: ally.toughness } : {}), ...(ally.model ? { model: { ...ally.model } } : {}),
         ...(ally.currentHp !== undefined ? { currentHp: ally.currentHp } : {}),
@@ -312,7 +314,7 @@ function encounterConfig(config) {
   }
   return { id: config.id, center: { x: config.center.x, z: config.center.z },
     checkpoint: { x: config.checkpoint.x, z: config.checkpoint.z },
-    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, level, bout, independent, enemies, allies };
+    retreatZ: line, retreatLine: line, retreatAxis: axis, retreatSign: sign, level, bout, independent, seed:Number.isSafeInteger(config.seed)?config.seed:0, enemies, allies };
 }
 
 /**
@@ -371,7 +373,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   const player = state.player;
   const enemyTimers = new Map();
   const allyTimers = new Map();
-  let time = 0;
+  let time = 0, armyExchange=null;
   let meleeSequence = 0;
   let allySpells = 0;
   let actionTime = 0;
@@ -556,7 +558,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // added to whatever the encounter already authored - the border battle brings its side's four
     // soldiers, and the company stands *with* them - and a fight that wants to be fought alone
     // (Drent's three teaching fights) simply gets none.
-    const friends = getAllies ? getAllies(country) : [];
+    const friends = country?.id===ARMY_BATTLE_ID?[]:getAllies ? getAllies(country) : [];
     // The same named person can already be authored into a fight (or carried by
     // its retry). Their encounter ID and world NPC ID are aliases of one body.
     // Authored roles win, including an enemy/sparring role; never add a second
@@ -587,13 +589,27 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // the same fighter back on his feet beside his own remains. Keep the full
     // authored encounter for validation/retries, but instantiate only survivors.
     // Lessons deliberately bypass this death-only host policy.
-    const survives = actor => next.bout || !isFallen?.(next.id, actor.id, actor);
+    const survives = actor => next.id===ARMY_BATTLE_ID || next.bout || !isFallen?.(next.id, actor.id, actor);
     state.enemies = next.enemies.filter(survives).map(enemy => enemyFromSpec(enemy, next.level));
     allyTimers.clear();
     state.allies = next.allies.filter(survives).map((ally, index) => makeAlly(ally, index));
     state.phase = 'active';
     state.encounterId = next.id;
     state.center = { x: next.center.x, z: next.center.z };
+    armyExchange=null;
+    if(next.id===ARMY_BATTLE_ID){
+      armyExchange=createArmyExchanges({allies:state.allies,enemies:state.enemies,seed:next.seed,lineClear:(a,b)=>meleeLineClear(a,b,world),
+        player:Object.defineProperties({}, {x:{get:()=>position.x},z:{get:()=>position.z},hp:{get:()=>player.hp}}),
+        move:(actor,target,dt,team)=>{actor.speed=(team==='ally'?steerAlly:steerEnemy)(actor,target,Math.min(3.8*dt,Math.max(0,distance(actor,target)-1.9)))/dt;},
+        attackPlayer:(actor,damage)=>hurtPlayer(actor,damage,{source:'enemy',sourceId:actor.id}),
+        hit:({target,source,team,damage})=>{
+          if(!target.active)return;
+          target.hp=Math.max(0,target.hp-damage);target.active=target.hp>0;
+          emit(team==='ally'?'ally-hit':'hit',{id:target.id,targetId:target.id,damage,x:target.x,z:target.z,source:team==='ally'?'enemy':'ally',sourceId:source.id});
+          if(!target.active){target.action='dead';target.progress=0;target.speed=0;
+            emit(team==='ally'?'ally-down':'enemy-defeated',{id:target.id,x:target.x,z:target.z,source:'battle',sourceId:source.id});}
+        }});
+    }
     nextAttackerAt = time + .6;
     if (state.enemies.every(enemy => !enemy.active)) {
       state.phase = 'won';
@@ -1084,7 +1100,8 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     if (lastEncounter.bout && !enemy.active) { endBout('traveler'); return; }
     if (state.phase === 'active' && state.enemies.every(target => !target.active)) {
       state.phase = 'won';
-      emit('victory', { encounterId: state.encounterId });
+      if(state.encounterId===ARMY_BATTLE_ID){armyExchange=null;emit('army-result',{winner:'allies',allies:state.allies.filter(a=>a.active).length,enemies:0});}
+      else emit('victory', { encounterId: state.encounterId });
     }
   }
 
@@ -1903,7 +1920,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       const step = Math.min(remaining, 1 / 120);
       remaining -= step;
       time += step;
-      if (state.phase === 'active' && !independentFightHeld() && (beyondTheLine(position)
+      if (state.phase === 'active' && !armyExchange && !independentFightHeld() && (beyondTheLine(position)
         || (lastEncounter.id !== DEFAULT_ENCOUNTER.id && distance(position, lastEncounter.center) > LEASH))) {
         // Walking out of a bout is not a retreat and must never be reported as one: there is
         // nothing to catch your breath from and nobody held the ground without you.
@@ -1915,8 +1932,17 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       updatePlayer(step);
       updateArrows(step);
       updateFireballs(step);
-      state.enemies.forEach(enemy => updateEnemy(enemy, step));
-      state.allies.forEach(ally => updateAlly(ally, step));
+      if(armyExchange&&state.encounterId===ARMY_BATTLE_ID&&['active','defeated'].includes(state.phase)){
+        const result=armyExchange.tick(step);
+        for(const actor of [...state.enemies,...state.allies])if(!actor.active)actor.progress=Math.min(1,actor.progress+step/.85);
+        if(!result.enemies||(!result.allies&&(player.hp<=0||distance(position,lastEncounter.center)>28))){
+          const won=!result.enemies;state.phase=won?'won':'peaceful';armyExchange=null;
+          emit('army-result',{winner:won?'allies':'enemies',allies:result.allies,enemies:result.enemies});
+        }
+      }else if(state.encounterId!==ARMY_BATTLE_ID){
+        state.enemies.forEach(enemy => updateEnemy(enemy, step));
+        state.allies.forEach(ally => updateAlly(ally, step));
+      }
     }
   }
 

@@ -2831,7 +2831,7 @@ function standingProps(paths, heightAt, colliders, created=null) {
     return best;
   };
   const box = new THREE.Box3(), size = new THREE.Vector3(), mid = new THREE.Vector3(), axes = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
-  const add = (x, z, r) => { if (toRoad(x, z) > PROP_SOLID.lane + r && heightAt(x, z) >= .45) {const prop={ x, z, r, kind: 'prop' };colliders.push(prop);created?.push(prop);} };
+  const add = (x, z, r) => { if (toRoad(x, z) > PROP_SOLID.lane + r && heightAt(x, z) >= .45) {const prop={ x, z, r, kind: 'prop', minY:box.min.y, maxY:box.max.y };colliders.push(prop);created?.push(prop);} };
   // A thin pole in a doorway or a lane would close it: one that close to a wall stays passable.
   const built = createColliderGrid(colliders.slice()), gapTo = (x, z, r) => {
     let gap = Infinity;

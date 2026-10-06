@@ -41,9 +41,9 @@
   <div id="opening"><h2><em>Azhora</em></h2><div class="eyebrow opening-subtitle">An Adventure Game</div>
     <p class="opening-place">Minora <span>At the meeting of the rivers</span></p>
     <span id="opening-who" class="hidden">A traveler in plain cloth, with one simple sword.</span>
-    <section id="opening-characters" class="hidden" aria-label="Who you are"><div id="character-line"></div><p id="character-detail"></p></section>
-    <div class="opening-actions"><button id="begin" class="secondary">Tutorial</button><button id="begin-skip-tutorial">Start</button><button id="continue-road" class="secondary" disabled>Continue</button></div>
-    <div class="opening-note">Learn the basics on Drent's peninsula, or begin your own journey in Minora.</div>
+    <section id="opening-characters" class="hidden" aria-label="Who you are"><div id="character-line"></div><p id="character-detail"></p><button id="chapter-one-enter" disabled>Enter Chapter 1</button><button id="chapter-one-back" class="secondary">Back</button></section>
+    <div id="opening-main-actions" class="opening-actions"><button id="begin" class="secondary">Tutorial</button><button id="begin-chapter-one">Chapter 1</button><button id="begin-skip-tutorial" class="secondary">Developer Start</button><button id="continue-road" class="secondary" disabled>Continue</button></div>
+    <div class="opening-note">Tutorial begins the prologue in Drent. Chapter 1 joins the war. Developer Start opens the full world from Minora.</div>
     <button id="opening-newest" class="hidden">Start at the newest chapter</button><button id="opening-autoplay" class="hidden">Watch the computer play</button><button id="opening-testing" class="hidden">Explore testing tools</button>
   </div>
   <section id="lesson" class="hidden" aria-label="Current tutorial lesson"><span class="eyebrow" id="lesson-title">A first step</span><p id="lesson-hint"></p><div id="practice-progress" class="hidden"><span id="practice-hits">0 / 2 hits</span><span id="practice-guard">0 / 1 guard</span><span id="practice-dodge">0 / 1 dodge</span></div></section>
@@ -82,6 +82,7 @@
         <h3 id="test-autoplay-heading">Quest playtests</h3>
         <p class="test-autoplay-note">Fresh computer playtests. Any key or click takes control; <kbd>P</kbd> resumes. Your saved adventure stays unchanged.</p>
         <h4 id="test-main-heading" class="test-group-heading test-gold-heading">Gold &middot; Main quests</h4>
+        <button id="test-chapter-one-battle">Chapter 1 ? Battle playtest</button><button id="test-chapter-one-parley">Chapter 1 ? Full quest autoplay</button><button id="test-full-world">Load full developer world</button>
         <div id="test-main-quests" class="test-quest-grid" aria-labelledby="test-main-heading"></div>
         <h4 id="test-silver-heading" class="test-group-heading test-silver-heading">Silver &middot; Side stories</h4>
         <div class="test-quest-grid" aria-labelledby="test-silver-heading">

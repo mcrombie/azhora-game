@@ -2,7 +2,7 @@
 
 The civil-war campaign as specified by the voice-to-text brief of 16 September 2026, rewritten with the authored region names from World Builder. This is the design record; `src/campaign-world.js` and `src/campaign.js` are its executable form and their tests check that the two agree.
 
-The brief was cut off by the message limit at "You're going to meet some sage wizard-like figure who's going to be your…". Everything from the South Oremindi Mountains onward is a frontier, not a design.
+The original brief was cut off by the message limit at "You're going to meet some sage wizard-like figure who's going to be your…". The later [campaign and hero mode design](campaign-opening-design.md) governs the shared live world and revised opening. The [Thalmagar crisis and Forsaken Citadel design](thalmagar-crisis-design.md) now establishes the overarching alliance-building objective, the Dark Lord's preparation and invasion, and the separate undead faction on Eshtor Plateau. The detailed later chapter sequence remains open; these later designs are not yet implemented by the older campaign state machine.
 
 ## Premise
 

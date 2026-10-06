@@ -16,7 +16,7 @@ export async function runMinoraOpeningChecks(h, expected = null) {
   };
   assert(h.state().mode==='opening','Launch opens on the city panorama');
   const buttons=[...document.querySelectorAll('#opening button')].filter(b=>!b.hidden&&b.getClientRects().length);
-  assert(buttons.map(b=>b.textContent.trim()).join('|')==='Tutorial|Start|Continue','Opening offers exactly Tutorial, Start, Continue');
+  assert(buttons.map(b=>b.textContent.trim()).join('|')==='Tutorial|Chapter 1|Developer Start|Continue','Opening offers Tutorial, Chapter 1, Developer Start, Continue');
   if (!expected) {
     assert(document.getElementById('continue-road').disabled,'Continue is disabled when no save exists');
     await capture('title');

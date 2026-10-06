@@ -1,3 +1,4 @@
+import { validChapterOne } from './chapter-one.js';
 import { validMinoraStart, mainQuestDormant } from './minora-opening.js';
 import { createPeninsulaTutorial, validatePeninsulaTutorialSnapshot } from './peninsula-tutorial.js';
 import {validateBaldroSnapshot} from './baldro-state.js';
@@ -160,6 +161,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     const earlyFerry = validateFerrySnapshot(data.ferry, { allowMissing: false })
       && data.ferry.met && data.ferry.crossings > 0;
     if (!validatePeninsulaTutorialSnapshot(data.peninsulaTutorial)) return failed('The saved peninsula tutorial is invalid.');
+    if(!validChapterOne(data.chapterOne)||data.chapterOne&&data.chapterOne.player!==data.player)return failed('The Chapter 1 checkpoint is invalid.');
     if(!validMinoraStart(data.freeStart))return failed('The saved opening is invalid.');
     if(mainQuestDormant(data.freeStart)&&(data.questStage!==0||data.journey?.started))return failed('The unaccepted adventure has main-quest progress.');
     const peninsulaOpening = ['tutorial', 'skip'].includes(data.peninsulaTutorial?.path);
@@ -391,7 +393,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     // Store only the known schema. Fresh objects keep callers from modifying a
     // validated value through a previously retained array or nested reference.
     const result = {
-      version: ROAD_CHECKPOINT_VERSION, ambronLayoutVersion:AMBRON_LAYOUT_VERSION, ...(Object.hasOwn(data,'freeStart')?{freeStart:data.freeStart?{...data.freeStart}:null}:{}), worldScale: METRES_PER_HEX, questStage: data.questStage, journey: journey.snapshot(),
+      version: ROAD_CHECKPOINT_VERSION, ambronLayoutVersion:AMBRON_LAYOUT_VERSION, ...(data.chapterOne?{chapterOne:{...data.chapterOne}}:{}), ...(data.worldScope==='developer'?{worldScope:'developer'}:{}), ...(Object.hasOwn(data,'freeStart')?{freeStart:data.freeStart?{...data.freeStart}:null}:{}), worldScale: METRES_PER_HEX, questStage: data.questStage, journey: journey.snapshot(),
       inventory: [...stock].map(([id, quantity]) => ({ id, quantity })),
       weapons: { version: 1, equippedId: data.weapons.equippedId,
         sword: { ...data.weapons.sword }, stick: { ...data.weapons.stick }, ...(data.weapons.extra ? { extra: { ...data.weapons.extra } } : {}) },

@@ -6,6 +6,12 @@ Eshtor keeps its 34 authored hill hexes and cold continental climates. Its silho
 
 Long-Backs browse in the sheltered hollows. Hares, frostbacks, mountain goats and overhead plateau hawks complete the population. Trees retain their harvestable species. This is an environment build, without a settlement or quest arc.
 
+## Planned Forsaken Citadel
+
+The later 5 October campaign design assigns Eshtor to a separate undead faction and places the **Forsaken Citadel** here: an ancient, reputedly haunted site abandoned for centuries, now occupied by the undead Duke of North Ganun. Its small walled town surrounds a towering, many-storied structure. The duke claims the plateau for Ganun but secretly serves Thalmagar and spreads the fictional plague. **The Citadel is not in North Ganun.** Eshtor's earlier Goblinland assignment is superseded.
+
+This fortress, population and quest are not yet built. Choose their exact site within the existing authored plateau in a later placement pass; the discarded West Baldro adjacency of the first North Ganun proposal is not a constraint on Eshtor. See [Thalmagar crisis and the Forsaken Citadel](thalmagar-crisis-design.md).
+
 ## In the game
 
 Use **F8 → Go anywhere → Eshtor Plateau**. Its three map locations are the Wind-Ribbed Table, the Long-Back Hollows and the Summer Snow Pans. Runtime ID **113** is appended after the original 33 outer environments, preserving all earlier IDs.
