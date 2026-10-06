@@ -46,9 +46,22 @@
  * Compact, King Melos and the house Oveth-Hold, the Middle Reach dispute, the market towns, the
  * mills, the irrigated bottomland grain, the Sorten's grazing rights, the Telemon bands' routes and
  * the wells and watering points on them.
+ *
+ * **The green belt (the user's ruling of 5 October 2026; built 6 October 2026).** Ovesos is fertile
+ * along the river and dries toward the desert in the south and west: the least productive of the
+ * four farm countries of the Lizeem, but real farm country. That supersedes the ruling of 21
+ * September that it was green only along the Oveth. The atlas is not changed by it — every hex is
+ * still `BSh` and nothing here reads a climate — so the gradient is **distance from water**: a belt
+ * of denser, greener grass with poplar, willow and tamarisk along the Lizeem and, narrower, along the
+ * Neth (`ovesosBelt`), thinning to the old bunch grass, wormwood and saltbush toward the south-west.
+ * The belt is widest on the Lizeem's northern reach, where the river runs a metre or two under the
+ * plain, and narrows southward below the Carica's fall, where the Lizeem has cut four metres down
+ * and the plain beside it stands high and dry. The Sorten keeps its own green on the Oveth. The Water
+ * Council's village of Velsorten and its canal are src/ovesos-farm.js's, built on this ground; the
+ * rest of the list above is still nobody's.
  */
 import { hexAtlasCorners, TRANSFORM, terrainMix, hexCentre, hexOwnerAt, REGION_CELLS, REGION_TERRAIN } from './region-world.js';
-import { OVETH_UPPER, courseDistance } from './west-regions.js';
+import { LIZEEM, NETH, OVETH_UPPER, courseDistance } from './west-regions.js';
 
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
@@ -516,6 +529,34 @@ export function ovesGround(x, z) {
 export const ovesClear = (x, z, margin = 0) => onChannelFloor(x, z, margin);
 
 // ---------------------------------------------------------------------------
+// The green belt along the Lizeem and the Neth
+// ---------------------------------------------------------------------------
+/**
+ * **How green Ovesos's ground is, by its distance from the water** (the user's ruling of 5 October 2026):
+ * 1 within `full` metres of a river's middle, nothing past `dry`, and a smooth fall between. The
+ * Lizeem's belt is the broad one, and it narrows from `north` to `south`: on the northern reach the
+ * river runs a metre or two under the plain and the ground beside it is watered for a hundred and
+ * sixty metres; below the Carica's fall the Lizeem has cut down four metres and the plain beside it
+ * is dry at a hundred and twenty. The Neth is a smaller water and its belt is narrower. Nothing here
+ * is a climate — every hex is `BSh` — and the south-west of the country, farthest from both rivers,
+ * is the old steppe exactly as it was.
+ */
+export const OVESOS_BELT = freeze({
+  lizeem: freeze({ full: 45, dry: 165, fullSouth: 30, drySouth: 120 }),
+  neth: freeze({ full: 22, dry: 100 }),
+  north: 560, south: 900,
+});
+/** 0 to 1: how much of the river belt a point of Ovesos is in. Nothing outside the country's box. */
+export function ovesosBelt(x, z) {
+  if (!inBox(OVESOS_BOX, x, z)) return 0;
+  const B = OVESOS_BELT, south = smooth(B.north, B.south, z);
+  const full = B.lizeem.full + (B.lizeem.fullSouth - B.lizeem.full) * south, dry = B.lizeem.dry + (B.lizeem.drySouth - B.lizeem.dry) * south;
+  const lizeem = 1 - smooth(full, dry, courseDistance(LIZEEM, x, z, dry + 5));
+  if (lizeem >= 1) return 1;
+  return Math.max(lizeem, 1 - smooth(B.neth.full, B.neth.dry, courseDistance(NETH, x, z, B.neth.dry + 5)));
+}
+
+// ---------------------------------------------------------------------------
 // The colour of the ground
 // ---------------------------------------------------------------------------
 /**
@@ -523,8 +564,10 @@ export const ovesClear = (x, z, margin = 0) => onChannelFloor(x, z, margin);
  * coloured by it: the field says `plains` and means two different things.
  *
  * In **Ovesos** it means the open steppe and the Sorten's bottomland, and the difference between them
- * is the whole of what the river did — the bench is the one green ground in the country, and it is
- * forty metres wide where the hex it is in is a hundred.
+ * is the whole of what the river did — the bench is greener than the plain above it, and it is
+ * forty metres wide where the hex it is in is a hundred. Since the ruling of 5 October 2026 the
+ * river belt (`ovesosBelt`) greens both of Ovesos's grounds, the northern grassland's as well as the
+ * plains', from the Lizeem's and the Neth's banks outward, and the Sorten's green lies over that.
  *
  * In the **Oves Desert** it means the low-gradient pockets where "a thin, poor soil … accumulates"
  * and the exposures where it "is absent", and that alternation is the country's face; it changes over
@@ -536,6 +579,8 @@ export const ovesClear = (x, z, margin = 0) => onChannelFloor(x, z, margin);
  */
 export const OVES_GROUND = freeze({
   steppe: 0xa8a06a,   // Ovesos's plains, which is also `REGION_BIOMES.Ovesos.ground`
+  upland: 0x9ba566,   // Ovesos's northern grassland rows, `REGION_TERRAIN.Ovesos.byTerrain.grassland.ground`
+  belt: 0x86994f,     // the river belt at the bank: denser, greener grass (the ruling of 5 October 2026)
   sorten: 0x93a05d,   // the bench: greener, because the river put the soil there
   pocket: 0x9d9573,   // the desert's low-gradient ground, where there is soil to speak of
   pavement: 0xb2aa95, // the desert's exposures: worn rock under a gravel lag
@@ -545,13 +590,18 @@ const mixHex = (from, to, t) => {
   const channel = shift => { const a = (from >> shift) & 255, b = (to >> shift) & 255; return Math.round(a + (b - a) * k) & 255; };
   return (channel(16) << 16) | (channel(8) << 8) | channel(0);
 };
-/** The hex swatches this replaces: the two countries' own `plains` ground, and nothing else. */
+/** The hex swatches this replaces: the two countries' own `plains` ground, and Ovesos's grassland. */
 export const OVES_PLAINS_GROUND = freeze({ Ovesos: REGION_TERRAIN.Ovesos.ground, 'Oves Desert': REGION_TERRAIN['Oves Desert'].ground });
+export const OVESOS_GRASSLAND_GROUND = REGION_TERRAIN.Ovesos.byTerrain.grassland.ground;
 export function ovesTint(x, z, ground) {
   if (!inOvesBox(x, z)) return null;
-  if (ground === OVES_PLAINS_GROUND.Ovesos) {
-    const bench = clamp(ovesSorten(x, z) / (OVES_SORTEN.depth * .7), 0, 1);
-    return bench > 0 ? mixHex(OVES_GROUND.steppe, OVES_GROUND.sorten, bench) : null;
+  const plains = ground === OVES_PLAINS_GROUND.Ovesos;
+  if (plains || ground === OVESOS_GRASSLAND_GROUND) {
+    // The river belt first, over either of Ovesos's grounds; then the Sorten's bench over the plains.
+    const belt = ovesosBelt(x, z), bench = plains ? clamp(ovesSorten(x, z) / (OVES_SORTEN.depth * .7), 0, 1) : 0;
+    if (belt <= 0 && bench <= 0) return null;
+    const own = plains ? OVES_GROUND.steppe : OVES_GROUND.upland, base = belt > 0 ? mixHex(own, OVES_GROUND.belt, belt * .92) : own;
+    return bench > 0 ? mixHex(base, OVES_GROUND.sorten, bench) : base;
   }
   if (ground === OVES_PLAINS_GROUND['Oves Desert']) return mixHex(OVES_GROUND.pocket, OVES_GROUND.pavement, smooth(.28, .82, ovesLie(x, z)));
   return null;
@@ -594,15 +644,17 @@ const dampMiddle = (() => {
 
 export const OVES_LANDMARKS = freeze([
   freeze({ id: 'the-sorten', name: 'The Sorten', ...sortenMiddle,
-    description: 'The wide seat: a bench of bottomland a hundred and fifty paces across lying a metre below the plain, where the Oveth slows and spreads and leaves behind what it has carried out of the upland. It is the only green ground in the country and the reason the country has the river’s name on it. What is grown on it, and who is allowed the water, is not here.' }),
+    description: 'The wide seat: a bench of bottomland a hundred and fifty paces across lying a metre below the plain, where the Oveth slows and spreads and leaves behind what it has carried out of the upland. It is the green ground at the dry end of the country and the reason the country has the river’s name on it. Who may graze it is the Water Council’s to say.' }),
   freeze({ id: 'upper-oveth', name: 'The Upper Oveth', ...(() => { const s = OVETH_UPPER.samples[Math.round(OVETH_UPPER.samples.length * .22)]; return { x: s.x + s.nx * 20 * OVESOS_SIDE, z: s.z + s.nz * 20 * OVESOS_SIDE }; })(),
-    description: 'The river coming down out of the plateau country: small, quick, waded anywhere along here, and running in a cut you do not see until you are at it. Poplar, willow and tamarisk stand along it in a dark line two trees deep, and on a steppe that is visible from a mile off, because nothing else here has a tree on it.' }),
+    description: 'The river coming down out of the plateau country: small, quick, waded anywhere along here, and running in a cut you do not see until you are at it. Poplar, willow and tamarisk stand along it in a dark line two trees deep, and at this dry end of the country that line is visible from a mile off.' }),
   freeze({ id: 'oves-upland-grass', name: 'The Upland Grass', x: -2050, z: 592,
-    description: 'The northern rows, six metres above the river and rolling: bunch grass in tussocks with the bare ground showing between them, buff for eleven months of the year and green for a few weeks in spring. The lore’s herders move their flocks between the summer plateau and the winter valley edge across this ground; none of them is here.' }),
+    description: 'The northern rows, rolling and higher than the plain: close green grass near the Lizeem and the Neth, going over to bunch grass in tussocks with the bare ground showing between them farther from the water. The upland herders hold this grass by agreement and keep their camp on it; they have no water right on the canal at all.' }),
   freeze({ id: 'oveth-gully', name: 'The Dry Gully', x: OVES_CHANNELS[3].points[2].x, z: OVES_CHANNELS[3].points[2].z,
     description: 'A shallow cut of grey gravel coming off the grass shoulder down toward the Sorten, dry from one year’s end to the next but for the few days after the rains. It stops a bowshot short of the river: water that only runs after rain does not keep a mouth open.' }),
+  freeze({ id: 'oves-lizeem-bank', name: 'The Lizeem Bank', x: -1985, z: 575,
+    description: 'The river belt (the ruling of 5 October 2026): close green grass along the Lizeem’s bank with poplar, willow and tamarisk standing on it, widest on the northern reach where the river runs a metre or two under the plain, and thinning away from the water to the steppe. The canal draws from the river here, and the oldest water rights lie along it.' }),
   freeze({ id: 'oves-open-plain', name: 'The Open Plain', x: -1800, z: 790,
-    description: 'The southern rows of Ovesos, thinner than the grass above them and flatter: short bunch grass going to bare ground, grey wormwood and blue-grey saltbush wherever the soil gives out, and stones on the rises. Walking south-west off it the grass thins further, the stone comes up, and nothing at all announces the desert.' }),
+    description: 'The southern rows of Ovesos, flatter than the grass above them: green along the Lizeem’s bank and drying westward away from it, to short bunch grass going to bare ground, grey wormwood and blue-grey saltbush wherever the soil gives out, and stones on the rises. Walking south-west off it the grass thins further, the stone comes up, and nothing at all announces the desert.' }),
   freeze({ id: 'rim-hills', name: 'The Rim Hills', x: OVES_RIM.crests[1].x, z: OVES_RIM.crests[1].z,
     description: 'Three low rounded hills stepping south-west down the desert’s north-western rim, broad-backed and worn, bare stone showing through a thin soil on their tops. They are not high — sixteen metres over the ground at their feet — and they are the whole reason the country behind them is a desert: what moisture the westerlies carry is spent on their far side.' }),
   freeze({ id: 'dry-channels', name: 'The Dry Channels', x: OVES_CHANNELS[0].points[2].x, z: OVES_CHANNELS[0].points[2].z,

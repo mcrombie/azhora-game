@@ -16,6 +16,18 @@ and are not built.
 Read `docs/six-regions-brief.md` first: it was written for both of these countries, and its
 Ovesos ruling is already settled by the user.
 
+> **Superseded in part, 6 October 2026.** The user's ruling of 5 October 2026 replaces the one of
+> 21 September quoted below ("green only along the Oveth"): Ovesos is fertile along the river and
+> dries toward the desert in the south and west, the least productive of the four farm countries of
+> the Lizeem but real farm country. It is built as a green belt measured by distance from the
+> Lizeem and the Neth (`ovesosBelt`, `src/oves-world.js`): denser, greener grass with poplar,
+> willow and tamarisk along the Lizeem's bank, thinning to the old bunch grass, wormwood and
+> saltbush toward the south-west. The atlas keeps `BSh` on every hex, so the gradient is distance
+> from water and not a climate. The same ruling puts the Water Council's village of Velsorten and
+> its canal on that ground (`src/ovesos-farm.js`; Build 4 of `docs/lizeem-farmlands-design.md`),
+> so "nothing that belongs to anybody" no longer holds for Ovesos. It still holds for the Oves
+> Desert.
+
 ## State of play
 
 - **Both are already in the survey.** `scripts/build-region-survey.mjs` lists `'Ovesos'` and
@@ -60,7 +72,9 @@ from upland country, gathering drainage before joining the Lizeem's upper reache
 river's: *oves-*, "lower valley, the wide place where hill country flattens into cultivable
 ground". **The user's standing ruling (six-regions brief, item 4) overrides the lore's orchards
 and fulling mills:** Ovesos is *steppe* — grass in the north, open plains in the south, green only
-along the Oveth, its living stock and river-bottom grain. Build that.
+along the Oveth, its living stock and river-bottom grain. Build that. *(Superseded by the ruling of
+5 October 2026: green along the Lizeem and the Neth, drying toward the south-west. See the note at
+the top.)*
 
 **The Oves Desert** (`azhora_lore/geography/regions/oves_desert.md`): "hills along the desert's own
 north-western rim run roughly north to south, low by continental standards but high enough to

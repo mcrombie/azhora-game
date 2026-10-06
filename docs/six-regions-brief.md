@@ -164,6 +164,14 @@ it has been written away.
    green only along the Oveth, and its living is stock and river-bottom grain rather than
    orchards. Everything downstream of that in this document has been re-derived; see the
    Ovesos section.
+   > **Superseded 5 October 2026** (built 6 October 2026): the user ruled that Ovesos is
+   > fertile along the river and dries toward the desert in the south and west, the least
+   > productive of the four farm countries of the Lizeem but real farm country. The "green
+   > only along the Oveth" of 21 September no longer stands. The atlas still reads `BSh` on
+   > every hex, so the green is a belt measured by distance from the Lizeem and the Neth, not
+   > a climate (`ovesosBelt`, `src/oves-world.js`; `docs/oves-brief.md`); the Water
+   > Council's village of Velsorten and its canal are built on it (`src/ovesos-farm.js`,
+   > `docs/lizeem-farmlands-design.md` 5.4).
 5. **Gala's compass is turned.** The lore has the Ascarth Peninsula's foothills to Gala's
    north and the Lizeem's delta to its east. The atlas has the dry Ovesos/Oves Desert
    interior to its north and Northern Ascarth to its **south-east**, with the Lizeem on its
@@ -450,6 +458,10 @@ lore's one land animal is the one that survives:
   country.
 
 ## Ovesos — the Sorten, and the dry edge of it
+
+> **6 October 2026:** what grows here, and whether anybody lives here, was changed by the user's
+> ruling of 5 October 2026 (item 4 above): a green belt along the Lizeem and the Neth, and the
+> village of Velsorten with its canal. The landform below is unchanged.
 
 **Landform.** "Where the Oveth crosses its widest valley — a stretch of bottomland the people
 of the region call the Sorten, 'the wide seat' … roughly twelve miles of valley floor where

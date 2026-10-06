@@ -5,12 +5,14 @@ import { registerWorldTree, worldTreeId } from './tree-registry.js';
 import { treeGroundingOffset } from './tree-grounding.js';
 import { hexOwnerAt, REGION_CELLS, relief } from './region-world.js';
 import { WORLD_SCALE } from './world-scale.js';
-import { OVETH_UPPER, OVES_BORDER_STREAM, OVES_RIVERS, westBareGround } from './west-regions.js';
+import { LIZEEM, NETH, OVETH_UPPER, OVES_BORDER_STREAM, OVES_RIVERS, westBareGround } from './west-regions.js';
 import { WEST_PROFILES, westWaterSurface } from './west-ground.js';
 import {
   OVES_CHANNELS, OVES_DAMP, OVETH_WALL, channelPlace, onChannelFloor,
-  onSorten, ovesClear, ovesLie, onRim, dampReach, ovesosShare,
+  onSorten, ovesClear, ovesLie, onRim, dampReach, ovesosShare, ovesosBelt,
 } from './oves-world.js';
+import { ovesosFarmReserved } from './ovesos-farm.js';
+import { OVES_WILDLIFE_ZONES } from './oves-wildlife.js';
 
 /**
  * What Ovesos and the Oves Desert look like where the ground alone is not enough: the Oveth's one
@@ -46,6 +48,16 @@ import {
  * no cairn on a route. Everything is placed on these two countries' own hexes (`hexOwnerAt`), from
  * one seeded stream of its own drawn after Gala's, so nothing already built anywhere else moves by a
  * centimetre for it.
+ *
+ * **The river belt (the user's ruling of 5 October 2026; built 6 October 2026).** Ovesos is fertile
+ * along the river and dries toward the desert: so along the Lizeem's bank, and more narrowly the
+ * Neth's, there is now a gallery of poplar, willow and tamarisk like the Oveth's, lone trees out on
+ * the greener ground behind it, and close green grass thick on the ground (`ovesosBelt`); the bunch
+ * grass already there takes the belt's colour, and the wormwood and saltbush give way to the grass
+ * where the belt is strong. All of that is drawn **after** everything above, from a second stream of
+ * its own, so the steppe, the desert and the Oveth's gallery stand exactly where they stood: the old
+ * scatter is only recoloured, or thinned where the belt or Velsorten (src/ovesos-farm.js) takes its
+ * ground. The village, its canal and its plots are kept clear of all of it (`ovesosFarmReserved`).
  */
 export function createOvesScenery(...args) { return finishBuild(createOvesScenerySteps(...args)); }
 
@@ -57,7 +69,8 @@ export function* createOvesScenerySteps(kit) {
   const random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
   const range = (a, b) => a + random() * (b - a);
   const smooth = (a, b, x) => { const v = Math.max(0, Math.min(1, (x - a) / (b - a))); return v * v * (3 - 2 * v); };
-  const metrics = { water: 0, blockers: 0, reeds: 0, gravel: 0, boulders: 0, pavement: 0, stones: 0, tufts: 0, shrubs: 0, scrub: 0, stubble: 0, trees: 0, tamarisk: 0 };
+  const metrics = { water: 0, blockers: 0, reeds: 0, gravel: 0, boulders: 0, pavement: 0, stones: 0, tufts: 0, shrubs: 0, scrub: 0, stubble: 0, trees: 0, tamarisk: 0,
+    beltTrees: 0, beltTufts: 0, cleared: 0 };
   const gy = (x, z) => groundHeight(x, z);
   const treeGroundAt = kit.renderedGroundHeight ?? gy;
   const OWN = new Set(['Ovesos', 'Oves Desert']);
@@ -65,6 +78,10 @@ export function* createOvesScenerySteps(kit) {
   const inDesert = (x, z) => hexOwnerAt(x, z) === 'Oves Desert';
   /** Ground something may grow on: one of these two countries' hexes, out of the water and off a channel floor. */
   const plantable = (x, z, margin) => own(x, z) && !westBareGround(x, z, margin) && westWaterSurface(x, z) === null && !ovesClear(x, z, margin);
+  /** Velsorten's ground: its houses, plots, canal, ways and camp (src/ovesos-farm.js), which nothing wild grows on. */
+  const reserved = (x, z, margin = 0) => ovesosFarmReserved(x, z, margin);
+  /** A fixed number for a place, 0 to 1, for thinning the old scatter without drawing on its stream. */
+  const spot = (x, z) => { const v = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return v - Math.floor(v); };
 
   // -------------------------------------------------------------------------
   // The water, and there are only two pieces of it
@@ -297,15 +314,22 @@ export function* createOvesScenerySteps(kit) {
     return geometry;
   })();
   function* tuftBatch(tufts, name, tint) {
-    if (!tufts.length) return;
-    const batch = new THREE.InstancedMesh(tuftGeometry, bladeMaterial, tufts.length);
-    yield* forEachBuild(tufts, function* (tuft, index) {
+    // Every tuft's colour is drawn, kept or not, so the stream reaches the next block exactly as it did
+    // before Velsorten cleared its ground (6 October 2026); only the kept ones are placed.
+    const kept = tufts.filter(tuft => !tuft.cleared).length;
+    if (!kept) { for (const tuft of tufts) { if (++buildWork % 32 === 0) yield; tint(tuft); } metrics.cleared += tufts.length; return; }
+    const batch = new THREE.InstancedMesh(tuftGeometry, bladeMaterial, kept);
+    let at = 0;
+    for (const tuft of tufts) {
+      if (++buildWork % 32 === 0) yield;
+      const colour = tint(tuft);
+      if (tuft.cleared) continue;
       dummy.position.set(tuft.x, gy(tuft.x, tuft.z) + .02, tuft.z);
       dummy.rotation.set(0, tuft.rot, 0); dummy.scale.set(tuft.s * tuft.wide, tuft.s, tuft.s * tuft.wide); dummy.updateMatrix();
-      batch.setMatrixAt(index, dummy.matrix); batch.setColorAt(index, tint(tuft));
-    });
+      batch.setMatrixAt(at, dummy.matrix); batch.setColorAt(at++, colour);
+    }
     batch.name = name; batch.receiveShadow = true; batch.computeBoundingSphere(); group.add(batch);
-    metrics.tufts += tufts.length;
+    metrics.tufts += kept; metrics.cleared += tufts.length - kept;
   }
   /** Dead annual seed-heads: a bleached stalk with nothing on it, drawn as a thin pale tuft. */
   function* stubbleBatch(spots, name) {
@@ -419,7 +443,8 @@ export function* createOvesScenerySteps(kit) {
         const here = inDesert(x, z) ? (1 - ovesLie(x, z)) * .20 * (1 - onRim(x, z)) : north ? .66 : .5 + soil * .34;
         if (random() > here) continue;
         tufts.push({ x, z, s: range(.75, 1.5) * (north ? 1.5 : soil ? 1.3 : 1.15) * (inDesert(x, z) ? .7 : 1),
-          wide: north ? 1.55 : 1.3, rot: random() * 6.28, north, soil, desert: inDesert(x, z), lie: ovesLie(x, z) });
+          wide: north ? 1.55 : 1.3, rot: random() * 6.28, north, soil, desert: inDesert(x, z), lie: ovesLie(x, z),
+          belt: inDesert(x, z) ? 0 : ovesosBelt(x, z), cleared: reserved(x, z, .6) });
       }
       // Sub-shrubs: Ovesos's wormwood and saltbush where the grass gives out, and the desert's own
       // perennial scrub, which is "the community's drought-tolerant tail" — the same plants half the
@@ -465,25 +490,110 @@ export function* createOvesScenerySteps(kit) {
       }
     }
     (yield* tuftBatch(tufts, 'Oves grass', tuft => {
-      // Buff on the steppe, greener and darker on the Sorten's bottomland, greyer and paler on the
-      // desert's pockets. Hex would not carry the Sorten's one green note, so this one is HSL and the
-      // lightnesses are chosen low for it (the renderer's working space: the old Meneth lesson).
-      const hue = .118 + tuft.soil * .035 + (tuft.desert ? -.006 : 0);
-      const sat = (tuft.desert ? .20 : .29 + tuft.soil * .06) + range(-.04, .04);
-      const light = (tuft.desert ? .50 : tuft.north ? .52 : .53) - tuft.soil * .06 + range(-.035, .035);
+      // Buff on the steppe, greener and darker on the Sorten's bottomland and in the river belt, greyer
+      // and paler on the desert's pockets. Hex would not carry the Sorten's one green note, so this one
+      // is HSL and the lightnesses are chosen low for it (the renderer's working space: the old Meneth
+      // lesson). Three draws a tuft, whatever its colour, so the stream does not move.
+      const green = Math.max(tuft.soil, tuft.belt);
+      const hue = .118 + green * .04 + (tuft.desert ? -.006 : 0);
+      const sat = (tuft.desert ? .20 : .29 + green * .07) + range(-.04, .04);
+      const light = (tuft.desert ? .50 : tuft.north ? .52 : .53) - green * .07 + range(-.035, .035);
       return color.setHSL(hue + range(-.012, .012), sat, light);
     }));
   }
-  (yield* bushBatch(shrubs, 'Oves wormwood and saltbush', bush => bush.salt
+  // The wormwood and saltbush give way to the river belt's grass, and to Velsorten's ground. Thinned here, after
+  // every block has drawn its places, so only the colours of the batches below move with it.
+  const keptShrubs = shrubs.filter(bush => !reserved(bush.x, bush.z, 1) && spot(bush.x, bush.z) >= ovesosBelt(bush.x, bush.z) * .9);
+  const keptStones = stones.filter(stone => !reserved(stone.x, stone.z, 1) && spot(stone.x, stone.z) >= ovesosBelt(stone.x, stone.z) * .6);
+  metrics.cleared += shrubs.length - keptShrubs.length + stones.length - keptStones.length;
+  (yield* bushBatch(keptShrubs, 'Oves wormwood and saltbush', bush => bush.salt
     ? color.set('#8b9591').offsetHSL(range(-.02, .02), range(-.04, .04), range(-.04, .05))
     : color.set('#999b85').offsetHSL(range(-.02, .02), range(-.04, .04), range(-.04, .05))));
   (yield* bushBatch(scrub, 'Oves desert scrub', bush => bush.grey
     ? color.set('#8e9083').offsetHSL(range(-.02, .02), range(-.04, .04), range(-.05, .05))
     : color.set('#7f8a6c').offsetHSL(range(-.02, .02), range(-.04, .05), range(-.04, .05))));
   (yield* stubbleBatch(stubble, 'Oves seed-bank stubble'));
-  (yield* stoneBatch(stones, 'Oves steppe stones', () => color.set('#8a8578').offsetHSL(0, range(-.03, .03), range(-.05, .05)), .16));
+  (yield* stoneBatch(keptStones, 'Oves steppe stones', () => color.set('#8a8578').offsetHSL(0, range(-.03, .03), range(-.05, .05)), .16));
   (yield* stoneBatch(pavement, 'Oves gravel pavement', spot => (spot.bald ? color.set('#928c7d') : color.set('#877f70')).offsetHSL(0, range(-.03, .03), range(-.05, .06)), .05));
-  metrics.shrubs = shrubs.length; metrics.scrub = scrub.length; metrics.stones += stones.length; metrics.pavement = pavement.length;
+  metrics.shrubs = keptShrubs.length; metrics.scrub = scrub.length; metrics.stones += keptStones.length; metrics.pavement = pavement.length;
+
+  // -------------------------------------------------------------------------
+  // The river belt (the ruling of 5 October 2026), from a stream of its own
+  // -------------------------------------------------------------------------
+  let beltSeed = 6100526;
+  const beltRandom = () => { beltSeed = (Math.imul(beltSeed, 1664525) + 1013904223) >>> 0; return beltSeed / 4294967296; };
+  const beltRange = (a, b) => a + beltRandom() * (b - a);
+  const homes = OVES_WILDLIFE_ZONES.filter(zone => !zone.air).flatMap(zone => zone.sites);
+  /** Ground the belt plants on: Ovesos's own, clear of water, channels, Velsorten and every animal's home. */
+  const beltGround = (x, z, margin) => hexOwnerAt(x, z) === 'Ovesos' && plantable(x, z, margin) && !reserved(x, z, 3)
+    && !homes.some(([hx, hz]) => Math.hypot(hx - x, hz - z) < 3.5);
+  const beltTrees = [], beltTamarisk = [];
+  const crowded = (x, z, gap) => beltTrees.some(t => Math.hypot(t.x - x, t.z - z) < gap) || beltTamarisk.some(t => Math.hypot(t.x - x, t.z - z) < 4.2);
+  const plantTree = (x, z, belt) => {
+    // Willow nearest the water, poplar on the bank, tamarisk where the belt runs thin.
+    const tamariskShare = .14 + (1 - belt) * .45;
+    if (beltRandom() < tamariskShare) {
+      if (crowded(x, z, 4)) return;
+      beltTamarisk.push({ x, z, s: beltRange(.8, 1.15), h: beltRange(3.8, 5.4), rot: beltRandom() * 6.28, girth: .78, bole: .5, top: .86, spread: .15, wide: .30, deep: .30 });
+      return;
+    }
+    if (crowded(x, z, 5.4)) return;
+    const poplar = beltRandom() < .55;
+    beltTrees.push({ x, z, poplar, s: beltRange(.95, 1.3), h: poplar ? beltRange(11, 15) : beltRange(7, 9.5), rot: beltRandom() * 6.28,
+      girth: poplar ? .8 : 1.15, bole: poplar ? .55 : .42, top: poplar ? .72 : .78, spread: poplar ? .07 : .2,
+      wide: poplar ? .17 : .34, deep: poplar ? .5 : .26 });
+  };
+  /**
+   * The gallery on the Ovesian bank of the Lizeem, and of the Neth more thinly: two or three trees deep,
+   * planted off the water rather than off the hexes, as the Oveth's is, and fewer where the belt narrows.
+   */
+  for (const course of [LIZEEM, NETH]) { if (++buildWork % 32 === 0) yield;
+    const lizeem = course === LIZEEM;
+    for (const sample of WEST_PROFILES.get(course.id)) { if (++buildWork % 32 === 0) yield;
+      if (sample.index % 2) continue;
+      let side = 0;
+      for (const sign of [1, -1]) if (hexOwnerAt(sample.x + sample.nx * (sample.half + 10) * sign, sample.z + sample.nz * (sample.half + 10) * sign) === 'Ovesos') side = sign;
+      if (!side) continue;
+      for (let i = 0; i < (lizeem ? 4 : 2); i++) { if (++buildWork % 32 === 0) yield;
+        const offset = sample.half + beltRange(2.5, lizeem ? 20 : 11);
+        const x = sample.x + sample.nx * offset * side, z = sample.z + sample.nz * offset * side;
+        if (!beltGround(x, z, 2.2)) continue;
+        const belt = ovesosBelt(x, z);
+        if (beltRandom() > belt * (lizeem ? .62 : .4)) continue;
+        plantTree(x, z, belt);
+      }
+    }
+  }
+  /** Lone trees out on the greener ground behind the gallery, standing well apart. */
+  const ovesosCells = (REGION_CELLS.Ovesos ?? []).slice().sort((a, b) => a.z - b.z || a.x - b.x);
+  for (const cell of ovesosCells) { if (++buildWork % 32 === 0) yield;
+    for (let i = 0; i < 14; i++) { if (++buildWork % 32 === 0) yield;
+      const x = cell.x + beltRange(-50, 50), z = cell.z + beltRange(-55, 55);
+      if (!beltGround(x, z, 2.5)) continue;
+      const belt = ovesosBelt(x, z);
+      if (belt < .45 || beltRandom() > (belt - .4) * .5) continue;
+      if (beltTrees.some(t => Math.hypot(t.x - x, t.z - z) < 16) || beltTamarisk.some(t => Math.hypot(t.x - x, t.z - z) < 16)) continue;
+      plantTree(x, z, belt);
+    }
+  }
+  /** The belt's own grass, close and green, the thicker the nearer the water. */
+  const beltTufts = [];
+  for (const cell of ovesosCells) { if (++buildWork % 32 === 0) yield;
+    for (let i = 0; i < perHex * 3; i++) { if (++buildWork % 32 === 0) yield;
+      const x = cell.x + beltRange(-50, 50), z = cell.z + beltRange(-55, 55);
+      if (hexOwnerAt(x, z) !== 'Ovesos' || !plantable(x, z, 1.2) || reserved(x, z, .6)) continue;
+      const belt = ovesosBelt(x, z);
+      if (belt <= .05 || beltRandom() > belt * .62) continue;
+      beltTufts.push({ x, z, s: beltRange(.85, 1.55) * 1.3, wide: 1.45, rot: beltRandom() * 6.28, belt, north: cell.terrain === 'grassland' });
+    }
+  }
+  (yield* treeBatch(beltTrees, 'Ovesos belt trees', tree => tree.poplar
+    ? color.set('#5d7a40').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .06))
+    : color.set('#71865a').offsetHSL(range(-.02, .02), range(-.05, .05), range(-.04, .05)), 'oves-tree'));
+  (yield* treeBatch(beltTamarisk, 'Ovesos belt tamarisk', () => color.set('#869173').offsetHSL(range(-.02, .02), range(-.05, .04), range(-.05, .06)), 'oves-tree'));
+  (yield* tuftBatch(beltTufts, 'Ovesos belt grass', tuft => color.setHSL(.165 + tuft.belt * .05 + range(-.012, .012),
+    .31 + tuft.belt * .08 + range(-.04, .04), .48 - tuft.belt * .08 + range(-.03, .03))));
+  metrics.beltTrees = beltTrees.length + beltTamarisk.length; metrics.tamarisk += beltTamarisk.length; metrics.beltTufts = beltTufts.length;
 
   return {
     group, metrics,
