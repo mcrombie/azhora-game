@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { TALETH, TALETH_TOPICS, TALETH_CHARGE, TALETH_LATER, TALETH_MEASURE, TALETH_TEACHES, SOUND_THE_SOIL_LESSON,
-  talethConversation, talethGreeting } from '../src/taleth.js';
+  TALETH_DIVIDING, TALETH_AFTER_DIVIDING, talethConversation, talethGreeting } from '../src/taleth.js';
 import { MINORA_START, FREE_ROAM_GUIDANCE } from '../src/minora-opening.js';
 import { MENORA_BUILDINGS, MENORA_CAMP, inMenora, menoraRiverClearance } from '../src/menora-city.js';
 import { SPELLS } from '../src/sorcery.js';
@@ -84,7 +84,8 @@ test('Taleth talks about the Guild, the river, the war and sorcery, and every to
   assert.equal(talethConversation({ id: 'ben-sorcerer' }, h.context), false, 'he answers for nobody else');
   assert.equal(talethConversation(TALETH, h.context), true);
   const ids = h.last().options.choices.map(choice => choice.id);
-  assert.deepEqual(ids, ['taleth-guild', 'taleth-river', 'taleth-war', 'taleth-sorcery', 'taleth-charge', 'taleth-second-charge', 'taleth-third-charge', 'taleth-leave']);
+  // The Dividing joined the locked topics with Build 5 (6 October 2026).
+  assert.deepEqual(ids, ['taleth-guild', 'taleth-river', 'taleth-war', 'taleth-sorcery', 'taleth-charge', 'taleth-dividing', 'taleth-second-charge', 'taleth-third-charge', 'taleth-leave']);
   for (const topic of TALETH_TOPICS) {
     talethConversation(TALETH, h.context);
     h.press(topic.id);
@@ -98,11 +99,11 @@ test('Taleth talks about the Guild, the river, the war and sorcery, and every to
   assert.deepEqual(h.calls.filter(call => call !== 'close'), [], 'talking is free: nothing taught, saved or offered');
 });
 
-test('the later charges are shown locked, with a reason, and do nothing', () => {
+test('the Dividing and the later charges are shown locked, with a reason, and do nothing', () => {
   const h = host();
   talethConversation(TALETH, h.context);
   const locked = h.last().options.choices.filter(choice => choice.disabled);
-  assert.deepEqual(locked.map(choice => choice.id), TALETH_LATER.map(later => later.id));
+  assert.deepEqual(locked.map(choice => choice.id), [TALETH_DIVIDING.id, ...TALETH_LATER.map(later => later.id)]);
   for (const choice of locked) { assert.ok(choice.reason.length > 20, 'it says why'); assert.match(choice.label, /locked/); }
 });
 
@@ -174,7 +175,7 @@ test('the quest can add its own business to his topics, ahead of the locked char
   const h = host({ accepted: true, known: true, extra: (npc, back) => { asked = { npc, back }; return [{ id: 'lizeem-deliver-tart', label: 'Give Taleth the sealed tart', action: () => back() }, { label: 'not a choice' }]; } });
   talethConversation(TALETH, h.context);
   const ids = h.last().options.choices.map(choice => choice.id);
-  assert.deepEqual(ids.slice(-4), ['lizeem-deliver-tart', 'taleth-second-charge', 'taleth-third-charge', 'taleth-leave']);
+  assert.deepEqual(ids.slice(-5), ['lizeem-deliver-tart', 'taleth-dividing', 'taleth-second-charge', 'taleth-third-charge', 'taleth-leave']);
   assert.equal(asked.npc, TALETH);
   h.press('lizeem-deliver-tart');
   assert.equal(h.last().options.choices[0].id, 'taleth-guild', 'and it is handed his way back');
@@ -191,4 +192,27 @@ test('he answers the first question before it is asked, and calls Rollo by name 
   const h = host({ playerId: () => 'cromb' });
   talethConversation(TALETH, h.context);
   assert.deepEqual(h.last().lines, stranger, 'the player can be asked for, not only told');
+});
+
+test('the Dividing opens when its own choice is handed in, and once it is held the later charges come after it, not yet written', () => {
+  // Build 5 (6 October 2026): src/dividing.js hands in a choice with the locked topic's id, which takes its place.
+  let opened = 0;
+  const open = host({ accepted: true, known: true, extra: () => [{ id: TALETH_DIVIDING.id, label: 'The Dividing', action: () => opened++ }] });
+  talethConversation(TALETH, open.context);
+  const dividing = open.last().options.choices.filter(choice => choice.id === TALETH_DIVIDING.id);
+  assert.equal(dividing.length, 1, 'one Dividing, not a locked one beside the open one');
+  assert.equal(dividing[0].disabled, undefined);
+  open.press(TALETH_DIVIDING.id);
+  assert.equal(opened, 1, 'and pressing it is the Dividing’s business');
+  // Not yet held: the later charges keep their own reasons.
+  talethConversation(TALETH, { ...open.context, dividing: { held: () => false } });
+  assert.deepEqual(open.last().options.choices.filter(choice => TALETH_LATER.some(later => later.id === choice.id)).map(choice => choice.reason),
+    TALETH_LATER.map(later => later.reason));
+  // Held: both are still locked, and say they come after the Dividing and are not yet written.
+  talethConversation(TALETH, { ...open.context, dividing: { held: () => true } });
+  const later = open.last().options.choices.filter(choice => TALETH_LATER.some(entry => entry.id === choice.id));
+  assert.equal(later.length, 2);
+  for (const choice of later) { assert.equal(choice.disabled, true); assert.equal(choice.reason, TALETH_AFTER_DIVIDING); }
+  assert.match(TALETH_AFTER_DIVIDING, /^After the Dividing: not yet written/);
+  assert.match(open.last().lines[0], /^Rollo\. Walker of the Measure/, 'and he greets the walker as one');
 });

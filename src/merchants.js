@@ -96,7 +96,9 @@ const DEFAULT_LINES = freeze({ open: '“I buy what I need, and I sell what I ha
  * bank, 'any', or a list of these sharing one appetite; `appetite` is units a game day at the full price
  * (as many again at six-tenths, then "enough until tomorrow"). `seals` makes him a sworn measurer,
  * `bounty` pays the Guild's bounty, `board` names his order board, `rate` buys everything without limit
- * at that share of the home price (the commissary), and `sealedOnly` takes only sealed goods. `lines`
+ * at that share of the home price (the commissary), and `sealedOnly` takes only sealed goods. A `rate`
+ * buyer with a finite appetite buys at his rate only up to it (the barge, Build 5, 6 October 2026);
+ * `fineOnly` takes only Fine or Prize units, and `secondLot: false` sells no second lot at six-tenths. `lines`
  * are `{ open, full, none, paid }`, where `paid` is a function of the copper paid or a string with
  * `{total}` in it; any left out are plain.
  */
@@ -110,7 +112,7 @@ function buyerOf(spec) {
   return freeze({ id: spec.id, name: spec.name, role: spec.role ?? '', where: placeName(spec.place ?? spec.where), at: spec.at ?? '',
     wants: freeze([...new Set(groups.flatMap(group => group.items))]), groups: freeze(groups), appetite: groups[0]?.appetite ?? 0,
     sells: freeze((spec.sells ?? []).map(entry => stock(entry.id, entry.price, entry.quantity ?? 1))), services: freeze(services),
-    sealedOnly: !!spec.sealedOnly, ...(spec.rate ? { rate: spec.rate } : {}), ...(spec.board ? { board: spec.board } : {}), lines: freeze(lines) });
+    sealedOnly: !!spec.sealedOnly, ...(spec.fineOnly ? { fineOnly: true } : {}), ...(spec.secondLot === false ? { secondLot: false } : {}), ...(spec.rate ? { rate: spec.rate } : {}), ...(spec.board ? { board: spec.board } : {}), lines: freeze(lines) });
 }
 
 /**
@@ -343,9 +345,10 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
   function appetiteLeft(id, want = 0) {
     const b = BUYERS[id];
     if (!b?.groups[want]) return { full: 0, reduced: 0 };
-    if (b.rate) return { full: Infinity, reduced: 0 };
+    // A rate without a limit is the commissary's; a rate with an appetite (the barge) is counted like anyone's.
+    if (b.rate && !Number.isFinite(appetiteOf(id, want))) return { full: Infinity, reduced: 0 };
     const cap = appetiteOf(id, want), taken = takenToday(id, want);
-    return { full: Math.max(0, cap - taken), reduced: Math.max(0, 2 * cap - Math.max(taken, cap)) };
+    return { full: Math.max(0, cap - taken), reduced: b.secondLot === false ? 0 : Math.max(0, 2 * cap - Math.max(taken, cap)) };
   }
 
   // ---- Seals -----------------------------------------------------------------------------------
@@ -386,7 +389,7 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
       { id, kind: 'prize', units: seal.prize, grade: 'prize' },
       { id, kind: 'sealed', units: seal.count - seal.prize, grade: fine ? 'fine' : 'plain' },
       { id, kind: 'unsealed', units: b.sealedOnly ? 0 : held - seal.count, grade: fine && home ? 'fine' : 'plain' },
-    ].filter(group => group.units > 0);
+    ].filter(group => group.units > 0 && (!b.fineOnly || group.grade !== 'plain'));
     for (const group of groups) { group.unit = unitPrice(b, id, group.grade); group.want = want; }
     return groups;
   }
@@ -459,7 +462,7 @@ export function createMerchants({ inventory, items = {}, playSeconds = () => 0, 
     if (!undo) return { ok: false, reason: 'Your satchel is lighter than it looks.' };
     if (!earn(inventory, offer.total)) { undo(); return { ok: false, reason: 'Your purse will not hold any more.' }; }
     // The commissary has no appetite to fill, so there is nothing of his to count or save.
-    if (!b.rate) {
+    if (!b.rate || b.groups.some(group => Number.isFinite(group.appetite))) {
       const taken = b.groups.map((group, want) => takenToday(buyerId, want));
       for (const part of offer.parts) taken[part.want] += part.units;
       state.appetites.set(buyerId, { day: today(), taken });

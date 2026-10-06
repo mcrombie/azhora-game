@@ -18,6 +18,11 @@
  * because an unavailable lesson is shown locked rather than granted as a placeholder
  * (docs/design-answers.md).
  *
+ * The Dividing (Build 5, 6 October 2026): a third locked topic, "The Dividing", until all four
+ * countries are restored. src/dividing.js opens it by handing in a choice with the same id through
+ * `extraChoices`, and once the Dividing is held (`context.dividing.held()`) the two later charges
+ * stay locked with the reason that they come after it and are not yet written.
+ *
  * Pure: no DOM, no three. The host supplies the dialogue box.
  */
 
@@ -101,13 +106,23 @@ export const TALETH_LATER = Object.freeze([
   Object.freeze({ id: 'taleth-second-charge', label: 'A second charge · locked', reason: 'Taleth has nothing more to ask while the Measure of the River is still to be taken.' }),
   Object.freeze({ id: 'taleth-third-charge', label: 'A third charge · locked', reason: 'Not before the Dividing has been held on the forecourt.' }),
 ]);
+/**
+ * The Dividing, shown locked until the river is whole (6 October 2026). src/dividing.js answers a choice with this
+ * id through `extraChoices` once all four countries are restored, and that choice takes this one's place.
+ */
+export const TALETH_DIVIDING = Object.freeze({ id: 'taleth-dividing', label: 'The Dividing · locked',
+  reason: 'Not until all four countries down the river are restored. The Dividing waits for the whole river.' });
+/** What the later charges say once the Dividing is held: they come after it, and Taleth has not written them. */
+export const TALETH_AFTER_DIVIDING = 'After the Dividing: not yet written.';
 
 /** The spell the charge teaches. */
 export const TALETH_TEACHES = 'sound-the-soil';
 
 /** How he greets you: he answers the first question a moment before it is asked. */
-export function talethGreeting({ playerId = null, accepted = false } = {}) {
+export function talethGreeting({ playerId = null, accepted = false, held = false } = {}) {
   const rollo = playerId === 'rollo';
+  // After the Dividing (6 October 2026).
+  if (accepted && held) return [rollo ? 'Rollo. Walker of the Measure, and still you climb the hill to ask me things. What else?' : 'Walker of the Measure. The bowls are still out, if you want to look at them. What else?'];
   if (accepted) return [rollo ? 'Rollo. The river has not moved since you last asked. What else?' : 'You again. The river has not moved since you last asked. What else?'];
   return rollo
     ? ['Yes, it still sticks. The door. You were about to ask, and I have saved you the breath.',
@@ -122,7 +137,7 @@ export function talethGreeting({ playerId = null, accepted = false } = {}) {
  * anybody who is not Taleth.
  *
  * `context`: `{ openDialogue, closeDialogue, farmlands: { offer, accept, accepted }, magic, notify,
- * onChange, playerId, extraChoices }`. Hearing the charge is `offer()`; taking it is `accept()` (or,
+ * onChange, playerId, extraChoices, dividing: { held } }`. Hearing the charge is `offer()`; taking it is `accept()` (or,
  * for a quest with no separate acceptance, `offer()`), and once it is taken Sound the Soil is
  * taught with `magic.learn`. `extraChoices(npc, back)` answers more choices for the hub.
  */
@@ -169,9 +184,16 @@ export function talethConversation(npc, context) {
       ] });
     } });
   }
-  for (const extra of context.extraChoices?.(npc, back) ?? []) if (extra?.id && typeof extra.action === 'function') choices.push(extra);
-  for (const later of TALETH_LATER) choices.push({ id: later.id, label: later.label, disabled: true, reason: later.reason, action: () => {} });
+  const extras = (context.extraChoices?.(npc, back) ?? []).filter(extra => extra?.id && typeof extra.action === 'function');
+  choices.push(...extras);
+  // The Dividing stays locked until src/dividing.js hands in its own choice; once it is held, the later
+  // charges are locked for a different reason (6 October 2026).
+  if (!extras.some(extra => extra.id === TALETH_DIVIDING.id))
+    choices.push({ id: TALETH_DIVIDING.id, label: TALETH_DIVIDING.label, disabled: true, reason: TALETH_DIVIDING.reason, action: () => {} });
+  let held = false;
+  try { held = !!context.dividing?.held?.(); } catch { held = false; }
+  for (const later of TALETH_LATER) choices.push({ id: later.id, label: later.label, disabled: true, reason: held ? TALETH_AFTER_DIVIDING : later.reason, action: () => {} });
   choices.push({ id: 'taleth-leave', label: 'Leave him to the step', action: closeDialogue });
-  openDialogue(npc, talethGreeting({ playerId, accepted: accepted() }), null, 'Leave him to the step', { choices });
+  openDialogue(npc, talethGreeting({ playerId, accepted: accepted(), held }), null, 'Leave him to the step', { choices });
   return true;
 }
