@@ -36,7 +36,7 @@ Keep the economy unbalanced if necessary for the first review, but report the ob
 
 ## Replacement branch and PR
 
-The intended handoff base is `mcrombie/azhora-game:hearthfall-sandbox-base`. It includes the current exploration and Lizeem foundation in addition to this sandbox. The local branch must be published before a collaborator can fetch it.
+The published handoff base is `mcrombie/azhora-game:hearthfall-sandbox-base`. It includes the current exploration and Lizeem foundation in addition to this sandbox.
 
 Create a fresh branch from that base in the contributor's fork. Bring over useful changes selectively, adapting imports to the current directory layout. Keep PR #1 open as a draft/reference until the replacement exists. The new PR initially targets `hearthfall-sandbox-base` in `mcrombie/azhora-game`, so its diff contains the settlement port rather than the foundation. Retarget to `main` after the foundation lands there.
 
@@ -58,3 +58,9 @@ npm run test:lizeem-world
 For the replacement PR, include desktop verification of all three menu choices, the Feradom boundary including turbo flight, independent save/load/continue, deterministic simulation replay, and the same seed over a longer unattended run. Document balance problems. Include a few screenshots and measured startup/frame observations. Opening Hearthfall must not contact a remote service or load the war/adventure controllers. Continue to enforce the repository's private-manuscript protections.
 
 The foundation's native check writes screenshots and a report under ignored `tests/artifacts/hearthfall-*`. It checks the real Electron renderer and storage bridge, not only mocks. Test profiles and test saves are isolated from player saves.
+
+## Foundation verification on 7 October 2026
+
+The Hearthfall native test passed 24 checks, including the real three-mode menu, only Feradom build jobs, turbo-flight confinement, forbidden cross-mode writes, and Continue in a fresh renderer. The exploration desktop test passed movement, full atlas, developer travel/mounts and save/reload checks. The focused Hearthfall, exploration, Lizeem world and independent campaign model suites passed 107 tests. Source layout and module graph checks passed. The menu and Feradom world view were visually inspected.
+
+The full existing Lizeem world desktop regression is not recorded as passed: two stale presentation assertions were updated to the current report/objective wording; a subsequent rerun stalled during wider terrain preparation and was stopped. Earlier runs verified war startup, map knowledge, timing, region travel, save isolation and entering combat before those presentation assertions. War runtime behavior was not changed as part of the sandbox handoff. This remains follow-up work on the shared foundation, not a requirement to fold terrain optimization into the settlement port.
