@@ -55,6 +55,8 @@ app.whenReady().then(async()=>{
         fs.writeFileSync(path.join(dir,'combat-testing-menu.png'),(await win.webContents.capturePage()).toPNG());
         await win.webContents.executeJavaScript(`document.querySelector('[data-combat-exercise="lesson"]').click()`);
         await waitReady();
+        await win.webContents.executeJavaScript(`new Promise(resolve=>{const poll=()=>window.__EXPLORATION__.state().mode==='skirmish'?requestAnimationFrame(()=>requestAnimationFrame(resolve)):setTimeout(poll,50);poll();})`);
+        fs.writeFileSync(path.join(dir,'combat-testing-camp.png'),(await win.webContents.capturePage()).toPNG());
         const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatExercises(window.__EXPLORATION__))`);
         fs.writeFileSync(path.join(dir,'combat-testing-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }

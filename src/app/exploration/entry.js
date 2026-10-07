@@ -26,6 +26,8 @@ async function start(id,data=null,combatExercise=null){
   combatMenu.hide();$('start-screen').hidden=true;$('loading-screen').hidden=false;
   const selection=MODES[id],begun=performance.now(),url=new URL(location.href);
   url.searchParams.delete('war');url.searchParams.delete('menu');url.searchParams.set('mode',id);history.replaceState(null,'',url);
+  document.querySelector('#loading-screen h1').textContent=id==='combat'?'Opening the combat camp.':'Opening the world.';
+  document.querySelector('#loading-screen small').textContent=id==='combat'?'Prepare once, then retry or switch exercises immediately.':'The country is prepared as you explore.';
   $('loading-message').textContent=id==='hearthfall'?'Preparing Feradom...':id==='combat'?'Preparing Minora combat camp...':'Preparing Minora...';
   try{
     const store=await storeFor(id),{startExploration}=await import('./exploration.js');

@@ -17,6 +17,10 @@ export async function checkCombatExercises(h){
   assert(h.state().launch==='combat'&&h.state().enabledRegions.join()==='16','Combat workspace limits construction to Minora');
   assert(!h.war&&!h.autoplay&&!h.journey&&!h.hearthfall,'Isolated combat has no running campaign or computer campaign scenario');
   assert(h.testWorld.loading.state().jobs.every(j=>j.regions.every(id=>id===16)),'Only Minora regional jobs are registered');
+  assert(h.testWorld.loading.state().jobs.map(j=>j.id).join()==='minora-camp-ground,minora-camp-scenery','Camp starts without West Lotharn or other regional construction');
+  const resources=performance.getEntriesByType('resource').map(r=>new URL(r.name).pathname);
+  assert(!resources.some(p=>p.endsWith('/src/world.js')||p.endsWith('/ui/map/world-map.js')),'Combat does not import the global world builder or campaign map');
+  assert(!resources.some(p=>/azhora-world-map\.(svg|json)$/.test(p)),'Combat does not download the unused campaign atlas');
   assert(!h.save().ok&&h.store.read().data===null,'Combat workspace has no save slot');
   const world=h.testWorld,completed=h.testWorld.loading.state().completed;
   for(const exercise of ['lesson','advanced','squad']){
@@ -39,7 +43,7 @@ export async function checkCombatExercises(h){
   document.dispatchEvent(new KeyboardEvent('keyup',{code:'Escape',bubbles:true}));
   assert(!h.practice.state().active&&h.state().mode==='combat-menu','Esc exits an unfinished fight directly to exercise selection');
   assert(!h.state().frameErrors.length,'Combat startup, retries and menu transitions have no frame errors');
-  return {checks:[...checks]};
+  return {checks:[...checks],startup:h.testWorld.startup,readyMs:h.state().readyMs,jobs:h.testWorld.loading.state().jobs,resourceCount:resources.length};
 }
 
 export async function checkCombatImpacts(h,stage){

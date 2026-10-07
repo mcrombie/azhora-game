@@ -19,6 +19,7 @@ export const LOCAL_VIEW = 100;
 export function createWorldMap({includeQuests=true}={}) {
   const $ = id => document.getElementById(id);
   const viewport = $('atlas-viewport'), image = $('atlas-image'), traveler = $('atlas-traveler');
+  if(image?.dataset.src&&!image.getAttribute('src'))image.src=image.dataset.src;
   const travelerArrow = traveler?.querySelector('b') ?? null;
   /** Which way the traveler is facing on the chart, in radians clockwise from the top of it. */
   let travelerHeading = null;

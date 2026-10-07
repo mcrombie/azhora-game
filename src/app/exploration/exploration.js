@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import {createCharacter,groundShadow} from '../../content/characters/characters.js';
 import {ROLLO_LOOK} from '../../content/characters/rollo-look.js';
-import {createWorldMap} from '../../ui/map/world-map.js';
 import {hexAt,TRANSFORM} from '../../world/terrain/region-world.js';
 import {canStand,canSwim} from '../../gameplay/movement/locomotion.js';
 import {loadExplorationWorld} from './world-adapter.js';
@@ -19,7 +18,7 @@ import {createOvesosPractice} from '../../dev/tools/ovesos-practice.js';
 import {MENORA_CAMP} from '../../content/regions/minora-frontier/menora-city.js';
 
 export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun,combatExercise=null,onCombatMenu=()=>{}}){
-  const hearthfallMode=launch.id==='hearthfall',combatMode=launch.id==='combat',startPoint=launch.start??START;
+  const hearthfallMode=launch.id==='hearthfall',combatMode=launch.id==='combat',startPoint=combatMode?MENORA_CAMP:launch.start??START;
   const $=id=>document.getElementById(id),canvas=$('exploration-canvas');
   const abort=new AbortController();
   const listen=(target,type,handler)=>target.addEventListener(type,handler,{signal:abort.signal});
@@ -30,7 +29,9 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   scene.add(new THREE.HemisphereLight(0xf0f2d8,0x53644b,1.65));
   const sun=new THREE.DirectionalLight(0xffe6ba,2.1);sun.position.set(-100,180,70);scene.add(sun);
   const loading=message=>{$('loading-message').textContent=message;console.log('EXPLORATION_LOADING '+message);};
-  const world=await loadExplorationWorld(scene,saved?.position??startPoint,loading,{enabledRegions:launch.regions});
+  const world=combatMode?await (await import('./combat-camp-world.js')).loadCombatCampWorld(scene,loading)
+    :await loadExplorationWorld(scene,saved?.position??startPoint,loading,{enabledRegions:launch.regions});
+  if(combatMode)scene.fog=new THREE.Fog(0xb6c8b0,100,300);
   const actor=createCharacter({role:'traveler',look:ROLLO_LOOK,armed:false,hat:false});actor.setArmed(false);scene.add(actor.group);
   const shadow=groundShadow(.28);scene.add(shadow);
   const position=new THREE.Vector3(),keys=new Set(),cells=new Set(saved?.cells??[]);
@@ -38,7 +39,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   let mode='playing',drag=false,frameId,last=performance.now(),disposed=false,statusTimer,dirty=false;
   let hearthfall=null,boundaryBlocked=false;
   let frameErrors=[],frames=0,streamClock=0,war=null,windowActive=true,skirmish=null,autoplay=null,journey=null,practice=null,waterBlocked=false,lastCrossing=null;
-  const movement=explorationMovement(position,world),map=createWorldMap({includeQuests:false});
+  const movement=explorationMovement(position,world),map=combatMode?null:(await import('../../ui/map/world-map.js')).createWorldMap({includeQuests:false});
   const mounts=createExplorationMounts({scene,actor,position,world,movement});
   const footHelp=$('exploration-help').textContent;
   const focus=new THREE.Vector3(),desired=new THREE.Vector3(),cameraOffset=new THREE.Vector3(0,1.55,0);
@@ -48,6 +49,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   function notice(message){$('exploration-status').classList.toggle('on-map',mode==='map');$('exploration-status').hidden=false;$('exploration-status').textContent=message;clearTimeout(statusTimer);statusTimer=setTimeout(()=>{$('exploration-status').hidden=true;},4500);}
   function discover(){const h=hexAt(position.x,position.z),key=`${h.q},${h.r}`;if(!cells.has(key)){cells.add(key);dirty=true;}}
   function updateChart(){
+    if(!map)return;
     const glimpsed=new Set();for(const key of cells){const [q,r]=key.split(',').map(Number);for(const [dq,dr] of [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]]){const near=`${q+dq},${r+dr}`;if(!cells.has(near))glimpsed.add(near);}}
     map.setChart({cells:[...cells],glimpsed:[...glimpsed],reveal:$('reveal-all').checked});
     map.setTraveler(TRANSFORM.worldToAtlas(position.x,position.z),{region:world.regionAt(position.x,position.z).name,heading:TRANSFORM.worldHeadingToAtlas(actor.group.rotation.y)});
@@ -222,17 +224,19 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   $('return-start').textContent='Exit to main menu without saving';$('return-start').onclick=()=>{const url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.delete('war');url.searchParams.set('menu','1');location.href=url.href;};
   $('reveal-all').onchange=()=>setReveal($('reveal-all').checked);$('developer-reveal').onchange=()=>setReveal($('developer-reveal').checked);
   $('open-developer').onclick=openDeveloper;$('close-developer').onclick=()=>setMode('playing');$('developer-map').onclick=openMap;
+  if(!combatMode){
   const atlas=await fetch('./assets/azhora-world-map.json').then(response=>{if(!response.ok)throw new Error('Region list could not load.');return response.json();});
   const available=new Map(explorationDestinations.map(r=>[r.name,r]));
   for(const region of [...atlas.regions].filter(r=>!hearthfallMode||r.name==='Feradom').sort((a,b)=>a.name.localeCompare(b.name))){
     const destination=available.get(region.name),option=new Option(region.name+(destination?'':' (atlas only)'),destination?String(destination.id):'atlas:'+region.name);
     option.disabled=!destination;$('developer-region').add(option);
   }
+  }
   $('developer-go').onclick=()=>travelToRegion($('developer-region').value);
   for(const button of document.querySelectorAll('[data-exploration-mount]'))button.onclick=()=>selectMount(button.dataset.explorationMount);
   listen(window,'pagehide',()=>{disposed=true;stopAutoplay();cancelAnimationFrame(frameId);clearTimeout(statusTimer);abort.abort();hearthfall?.dispose();war?.dispose();world.stop();renderer.dispose();});
-  place(saved?.position??(hearthfallMode?findRegionArrival({...explorationDestinations.find(r=>r.id===21),spawn:startPoint},world):START)??startPoint,saved?.heading??Math.PI);if(saved)dirty=false;
-  resize();updateLocation();updateCamera(true);if(!await map.ready)throw new Error('The world map could not initialize.');
+  place(saved?.position??(hearthfallMode?findRegionArrival({...explorationDestinations.find(r=>r.id===21),spawn:startPoint},world):startPoint)??startPoint,saved?.heading??Math.PI);if(saved)dirty=false;
+  resize();updateLocation();updateCamera(true);if(map&&!await map.ready)throw new Error('The world map could not initialize.');
   setReveal(launch.reveal);
   document.querySelector('#exploration-hud .eyebrow').textContent='TERESOD / '+launch.name.toUpperCase();
   if(hearthfallMode){
@@ -325,7 +329,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   const readyMs=Math.round(performance.now()-begun);console.log('EXPLORATION_READY '+readyMs+'ms');
   setMode('playing');frameId=requestAnimationFrame(frame);
   if(new URLSearchParams(location.search).has('test'))window.__EXPLORATION__={
-    state:()=>({launch:launch.id,character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map.state(),dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
+    state:()=>({launch:launch.id,character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
     war,hearthfall,autoplay,journey,practice,
     groundProbe(x,z){return {x,z,height:world.heightAt(x,z),water:world.waterAt(x,z),region:world.regionAt(x,z).id,ready:world.readyAt(x,z),clear:canStand(x,z,world,.62),colliders:world.nearColliders(x,z,1).map(c=>({...c}))};},
     testWorld:world,
