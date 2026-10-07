@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { MARKER_STYLE } from '../../gameplay/quests/quest-markers.js';
+import { MARKER_STYLE } from '../../world/actors/marker-style.js';
 import { BLANK_SLATE_COLOUR } from '../../world/actors/figure-lod.js';
 
 // Deliberately built from small, flat-shaded meshes: every villager is local,
@@ -719,6 +719,21 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       // Squared up between blows: fists at the chin.
       arm[0] = arm[1] = -0.95; elbow[0] = elbow[1] = -1.5; armOut[0] = armOut[1] = 0.05;
       stance = Math.max(stance, 0.05);
+    } else if (pose.attackStyle && (action === 'windup' || action === 'attack')) {
+      // Encounter-specific tells: point and extend for a thrust; draw the weapon
+      // out to the side and turn the torso through a wide horizontal sweep.
+      const winding=action==='windup',pull=THREE.MathUtils.smoothstep(progress,0,.85);
+      if(pose.attackStyle==='thrust'){
+        const drive=winding?0:samplePose(progress,[[0,0],[.4,1],[.65,1],[1,0]]);
+        arm[1]=winding?-.6-.35*pull:-.95-.35*drive;elbow[1]=winding?-.7-.8*pull:-1.5+1.4*drive;
+        armOut[1]=.06;chestY=winding?-.12*pull:-.12+.18*drive;chestX+=winding?-.08*pull:.25*drive;
+        hip[0]=-.25;hip[1]=.2;stance=.07;
+      }else{
+        const turn=winding?-.65*pull:samplePose(progress,[[0,-.65],[.2,-.5],[.76,.9],[1,.1]]);
+        arm[1]=-1.1;elbow[1]=winding?-.65:-.2;armOut[1]=winding?.3+.8*pull:1.1-1.35*THREE.MathUtils.smoothstep(progress,.15,.8);
+        chestY=turn;headY=-turn*.45;chestX=.04;hip[0]=-.18;hip[1]=.18;stance=.12;
+      }
+      arm[0]=-.7;elbow[0]=-.8;knee[0]=.38;knee[1]=.32;
     } else if (action === 'windup') {
       const pull = THREE.MathUtils.smoothstep(progress, 0, 0.85);
       arm[1] = THREE.MathUtils.lerp(-0.6, -2.15, pull);
@@ -1051,7 +1066,7 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
     if (pose.riding) {
       // Astride: thighs forward and apart, shins hanging, hands low on the reins. The seat follows the horse's stride,
       // and the rider leans into a canter. The host passes the horse's pace; the rider's own speed is zero.
-      const gait = THREE.MathUtils.clamp((Number(pose.riding.pace) || 0) / 12, 0, 1), beat = Math.sin(seconds * (5.5 + gait * 8) + offset);
+      const gait = THREE.MathUtils.clamp((Number(pose.riding.pace) || 0) / 12, 0, 1), beat = Number.isFinite(pose.riding.beat) ? pose.riding.beat : Math.sin(seconds * (5.5 + gait * 8) + offset);
       for (let i = 0; i < 2; i++) {
         hip[i] = -1.08 + beat * .035 * gait; knee[i] = 1.22; ankle[i] = -.12;
         arm[i] = -.52 + beat * .05 * gait; elbow[i] = -.78; armOut[i] = (i ? 1 : -1) * .1;
@@ -1192,18 +1207,18 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
     // leaves it edge-on to the blow, so the buckler is twisted on the forearm as it rises: on
     // guard its face points (-.62, -.30, .72) - forward and a little outward, which is how a
     // shield is actually carried across the body - and flat out to the side again when it drops.
-    if (buckler) buckler.rotation.y = pose.guarding ? GUARD_SHIELD.turn : 0;
+    if (buckler) buckler.rotation.y = pose.guarding || pose.shieldRaised ? GUARD_SHIELD.turn : 0;
     // **On guard.** The off arm brings the shield up across the front of the body, the weapon
     // hand drops back out of the way, and he turns a little shield-side-on. This is the picture
     // of `combat.guard` being true and nothing else: when the shield is not up - no wind, mid
     // swing, rocked - the host passes false and the arm hangs, so the player is never told he is
     // covered when he is not. Pose only: no timing, no tell, no window.
-    if (pose.guarding && !climbing) {
+    if ((pose.guarding || pose.shieldRaised) && !climbing) {
       // Measured, not guessed: this puts the buckler at (-.16, 1.31, .36) with its face pointing
       // .81 forward - across the centreline, at chin height, in front of him. The first draft
       // raised it but left it out at his side, where it read as a man holding a plate.
       arm[0] = -1.1; elbow[0] = -1.0; armOut[0] = .55;
-      if (!focusCasting) {
+      if (pose.guarding && !focusCasting) {
         arm[1] = -.22; elbow[1] = -.55; armOut[1] = .06;
         chestY = .16; chestX = .05; headY = -.06;
       }
@@ -4380,6 +4395,7 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
     for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
     rotate(body, 0, Math.sin(stridePhase) * 0.012 * movementBlend, 0);
     body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend * (1 - canter) + Math.max(0, Math.sin(stridePhase + 0.4)) * 0.09 * canter, 1 - Math.exp(-20 * dt));
+    return {phase:stridePhase};
   }
   return { animate };
 }

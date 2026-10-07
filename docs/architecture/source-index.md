@@ -1,5 +1,7 @@
 # Source file index
 
+For the separate exploration entry and shared extractions, see [the exploration guide](exploration.md). For the independent campaign core and five-region scenario, see [the simulation guide](lizeem-simulation.md). The table below remains the historical move index.
+
 Search for an original filename. Names were retained; links point to the current source. The [guide](README.md) explains responsibilities; [source-moves.json](source-moves.json) provides exact old and new paths. The index includes the original 710 moves and the 29 new modules integrated from Claude's Lizeem branch.
 
 Retained entry points: [boot.js](../../src/boot.js), [main.js](../../src/main.js), [world.js](../../src/world.js).

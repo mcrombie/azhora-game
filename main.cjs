@@ -204,7 +204,7 @@ if (ownsInstance) app.whenReady().then(async () => {
   server = http.createServer((req, res) => {
     let pathname;
     try { pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname); } catch { res.writeHead(400).end(); return; }
-    const target = path.resolve(__dirname, '.' + (pathname === '/' ? '/index.html' : pathname));
+    const target = path.resolve(__dirname, '.' + (pathname === '/' ? '/adventure.html' : pathname));
     if (!require('./scripts/public-file.cjs').isPublicFile(__dirname,target)) { res.writeHead(403).end(); return; }
     const mime = { '.html':'text/html', '.js':'text/javascript', '.css':'text/css', '.json':'application/json', '.jpg':'image/jpeg', '.svg':'image/svg+xml' };
     fs.readFile(target, (error, data) => {

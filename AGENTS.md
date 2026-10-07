@@ -22,6 +22,8 @@ dynamic readers, test sweeps and explicit server allowlists when moving modules.
 Run `npm run check:layout` and relevant model/native checks. Source-wide tests must
 scan recursively so moving modules cannot silently reduce coverage.
 
-`src/simulation/` is reserved for a future independent campaign core. The authored
-campaign and frontier experiment are not that core. Keep their status explicit.
+`src/simulation/` contains the independent campaign core, first exercised by the
+five-region Lizeem scenario. Keep it free of rendering, platform and legacy quest
+dependencies. The authored campaign and frontier experiment remain separate.
+See `docs/architecture/lizeem-simulation.md` for its current scope.
 Do not include `reference-private/` or its contents in indexes or backup tooling.

@@ -4,8 +4,9 @@ import {escapeHTML as esc,factionHTML,chapterHTML} from './campaign-map-info.js'
 import {cellKey,discoveredCells} from './campaign-map-discovery.js';
 
 // Alternate, read-only layers on the ordinary M map. No commands or simulation.
-export function createCampaignMapLayer({viewport,onResize,onFocus}){
+export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=true}){
   const root=document.getElementById('world-map'),toolbar=root.querySelector('.atlas-toolbar');
+  let simulation=null,authoredFactions=[];
   let view='regions',snapshot='opening',factions=[],metadata,svg,groups=new Map(),originals=[],regionCells=new Map(),countryLayer;
   let selected='ambroni-empire',tab='factions',path=null,transform={scale:1,x:0,y:0},start=null;
   let reveal=false,knownCells=[],knownKeys=new Set(),knownRegions=new Set(),knowledgeStamp='',clip,chartedContent;
@@ -16,24 +17,29 @@ export function createCampaignMapLayer({viewport,onResize,onFocus}){
   const aside=document.createElement('aside');aside.className='atlas-campaign-info';aside.setAttribute('aria-label','Political information');aside.hidden=true;
   aside.innerHTML='<nav aria-label="Campaign information"><button data-info-tab="factions" aria-pressed="true">Factions</button><button data-info-tab="quests" aria-pressed="false">Quests</button></nav><div class="atlas-campaign-content"></div>';
   body.append(aside);const content=aside.lastElementChild;
+  if(!includeQuests)aside.querySelector('[data-info-tab="quests"]').remove();
   const labels=document.createElement('div');labels.id='atlas-country-labels';labels.hidden=true;viewport.append(labels);
   const key=document.createElement('div');key.id='atlas-stability-key';key.hidden=true;key.innerHTML=Object.entries(stabilityColors).map(([id,color])=>`<span><i style="background:${color}"></i>${({stable:'Stable',unstable:'Unstable',conflict:'Conflict',unknown:'Unassessed'})[id]}</span>`).join('');viewport.append(key);
   const territories=id=>['yunethre-free-state','yunethre-centaurs'].includes(id)?(knownRegions.has('Yunethre')?['Yunethre']:[]):groups.get(id)?.regions||[];
-  const name=id=>factionName(id,factions);
+  const name=id=>simulation?(id==='unassigned'?'Outside scenario':factions.find(f=>f.id===id)?.short??id):factionName(id,factions);
+  const owner=region=>simulation?simulation.regions[region]?.owner??'unassigned':ownerOf(region,factions,snapshot);
+  const condition=region=>simulation?simulation.regions[region]?.condition??['Outside scenario','unknown']:stability(region,snapshot);
+  const color=id=>simulation?factions.find(f=>f.id===id)?.color??'#c4c8b8':factionColor(id,factions);
   function renderInfo(){
     aside.querySelectorAll('[data-info-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.infoTab===tab)));
-    if(tab==='quests'){content.innerHTML=chapterHTML(path,snapshot,{preview:false});return;}
+    if(includeQuests&&tab==='quests'){content.innerHTML=chapterHTML(path,snapshot,{preview:false});return;}
     if(tab==='region'){
       if(!knownRegions.has(selected)){content.innerHTML='<h2 class="title">Uncharted territory</h2><p>Explore this area to learn who controls it.</p>';return;}
-      const owner=ownerOf(selected,factions,snapshot),[condition]=stability(selected,snapshot);
-      content.innerHTML=`<span class="eyebrow">Region</span><h2 class="title">${esc(selected)}</h2><p>${esc(condition)}</p><div class="section"><h3>Territorial control</h3><button class="text-button" data-faction="${owner}">${esc(name(owner))}</button></div>${CHAPTER_REGIONS.includes(selected)?'<div class="section"><button class="text-button" data-chapter="overview">Chapter 1 · The Border War →</button></div>':''}`;return;
+      const heldBy=owner(selected),[status]=condition(selected);
+      content.innerHTML=`<span class="eyebrow">Region</span><h2 class="title">${esc(selected)}</h2><p>${esc(status)}</p><div class="section"><h3>Territorial control</h3><button class="text-button" data-faction="${heldBy}">${esc(name(heldBy))}</button></div>${includeQuests&&CHAPTER_REGIONS.includes(selected)?'<div class="section"><button class="text-button" data-chapter="overview">Chapter 1 · The Border War →</button></div>':''}`;return;
     }
     if(!selected||!reveal&&!territories(selected).length){content.innerHTML='<span class="eyebrow">Discovered territory</span><h2 class="title">Factions</h2>'+(factions.filter(f=>reveal||territories(f.id).length).map(f=>`<button class="faction-row" data-faction="${f.id}">${esc(name(f.id))}<small>${territories(f.id).length} ${reveal?'':'discovered '}regions</small></button>`).join('')||'<p>Explore the map to discover who controls the surrounding land.</p>');return;}
-    content.innerHTML=factionHTML(selected,{factions,territories:territories(selected),snapshot,limited:!reveal,knownRegions,relation:publicProfiles[selected]?.ties||'Only publicly established territory is shown here. Further diplomatic information is not yet specified.'});
+    if(simulation){content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Lizeem world test / Day ${simulation.day}</span><h2 class="title">${esc(name(selected))}</h2><p>${selected==='minora'?'Neutral city-state.':'A league in the East-West War.'}</p><h3>${reveal?'Controlled':'Discovered'} regions</h3><ul>${territories(selected).map(n=>`<li><button class="text-button" data-region="${esc(n)}">${esc(n)}</button></li>`).join('')}</ul>`;return;}
+    content.innerHTML=factionHTML(selected,{includeQuests,factions,territories:territories(selected),snapshot,limited:!reveal,knownRegions,relation:publicProfiles[selected]?.ties||'Only publicly established territory is shown here. Further diplomatic information is not yet specified.'});
   }
   function buildGroups(){
     groups=new Map();knownRegions=new Set();
-    for(const [region,allCells] of regionCells){const cells=discoveredCells(allCells,knownKeys,reveal);if(!cells.length)continue;knownRegions.add(region);const id=ownerOf(region,factions,snapshot);if(!groups.has(id))groups.set(id,{id,regions:[],cells:[]});groups.get(id).regions.push(region);groups.get(id).cells.push(...cells);}
+    for(const [region,allCells] of regionCells){const cells=discoveredCells(allCells,knownKeys,reveal);if(!cells.length)continue;knownRegions.add(region);const id=owner(region);if(!groups.has(id))groups.set(id,{id,regions:[],cells:[]});groups.get(id).regions.push(region);groups.get(id).cells.push(...cells);}
     for(const group of groups.values()){Object.assign(group,unionCells(group.cells));group.anchor=labelAnchor(group.cells,group.loops);}
   }
   function renderLabels(){
@@ -58,9 +64,9 @@ export function createCampaignMapLayer({viewport,onResize,onFocus}){
     svg.querySelector('#terrain').style.opacity=political?'.2':'1';svg.querySelector('#relief').style.opacity=political?'.1':'1';
     countryLayer.replaceChildren();countryLayer.style.display=political?'':'none';
     for(const group of groups.values()){
-      const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',group.path);p.setAttribute('fill',factionColor(group.id,factions));p.classList.add('atlas-country');p.dataset.faction=group.id;p.setAttribute('vector-effect','non-scaling-stroke');countryLayer.append(p);
+      const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',group.path);p.setAttribute('fill',color(group.id));p.classList.add('atlas-country');p.dataset.faction=group.id;p.setAttribute('vector-effect','non-scaling-stroke');countryLayer.append(p);
     }
-    for(const p of originals){const region=p.dataset.region;p.setAttribute('fill',political?'transparent':stabilityColors[stability(region,snapshot)[1]]);p.setAttribute('fill-opacity',political?'0':'.6');p.dataset.owner=ownerOf(region,factions,snapshot);}
+    for(const p of originals){const region=p.dataset.region;p.setAttribute('fill',political?'transparent':stabilityColors[condition(region)[1]]);p.setAttribute('fill-opacity',political?'0':'.6');p.dataset.owner=owner(region);}
     renderLabels();renderInfo();
   }
   function setView(next){
@@ -83,13 +89,13 @@ export function createCampaignMapLayer({viewport,onResize,onFocus}){
   viewport.addEventListener('pointerup',e=>{
     if(view==='regions'||!start||Math.hypot(e.clientX-start.x,e.clientY-start.y)>5)return;
     start=null;const region=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-campaign-region]')?.dataset.campaignRegion;if(!region||!knownRegions.has(region))return;
-    if(view==='geopolitical'){tab='factions';selected=ownerOf(region,factions,snapshot);}else{tab='region';selected=region;}
+    if(view==='geopolitical'){tab='factions';selected=owner(region);}else{tab='region';selected=region;}
     renderInfo();
   });
   root.dataset.campaignView=view;
   return {
     async load(data,source){
-      const response=await fetch('./assets/campaign-factions.json');if(!response.ok)throw Error('Campaign map roster missing');factions=await response.json();metadata=data;
+      const response=await fetch('./assets/campaign-factions.json');if(!response.ok)throw Error('Campaign map roster missing');authoredFactions=await response.json();factions=simulation?.factions??authoredFactions;metadata=data;
       svg=document.importNode(new DOMParser().parseFromString(source,'image/svg+xml').documentElement,true);svg.id='atlas-campaign-layer';
       svg.setAttribute('width',data.width);svg.setAttribute('height',data.height);svg.style.width=data.width+'px';svg.style.height=data.height+'px';
       svg.querySelector('#unbuilt-regions')?.remove();svg.querySelector('#ornaments')?.remove();
@@ -104,9 +110,10 @@ export function createCampaignMapLayer({viewport,onResize,onFocus}){
       viewport.insertBefore(svg,viewport.firstChild);buildGroups();render();views.querySelectorAll('button').forEach(b=>b.disabled=false);
     },
     setView,
+    setSimulation(value){const changed=simulation?.id!==value?.id;simulation=value?JSON.parse(JSON.stringify(value)):null;factions=simulation?.factions??authoredFactions;if(changed){selected=null;tab='factions';}if(metadata){buildGroups();render();}},
     setChapter(chapter,aftermath){const next=chapterSnapshot(chapter,aftermath);if(next===snapshot)return;snapshot=next;if(metadata){buildGroups();render();}},
     setKnowledge({cells=[],reveal:all=false}){const keys=cells.map(cellKey),stamp=JSON.stringify([!!all,keys]);if(stamp===knowledgeStamp)return;knowledgeStamp=stamp;reveal=!!all;knownCells=cells;knownKeys=new Set(keys);if(metadata){buildGroups();render();}},
     transform(scale,x,y){transform={scale,x,y};if(svg)svg.style.transform=`translate(${x}px,${y}px) scale(${scale})`;renderLabels();},
-    state:()=>({view,snapshot,reveal,knownRegions:[...knownRegions],owner:region=>knownRegions.has(region)?ownerOf(region,factions,snapshot):null,countries:groups.size}),
+    state:()=>({view,snapshot,simulation:simulation?{id:simulation.id,day:simulation.day}:null,reveal,knownRegions:[...knownRegions],owner:region=>knownRegions.has(region)?owner(region):null,countries:groups.size}),
   };
 }

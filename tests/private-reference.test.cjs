@@ -12,5 +12,5 @@ test('private paths are refused, including encoded URL and case variants; normal
 test('all root-serving hosts apply the privacy gate and distributions use positive file lists',()=>{
   for(const f of ['main.cjs','scripts/profile-startup.cjs','scripts/campaign-ui.cjs'])assert.match(fs.readFileSync(path.join(root,f),'utf8'),/isPublicFile\(/);
   const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));assert.ok(pkg.files.includes('!reference-private/**'));assert.ok(!pkg.files.includes('*'));
-  const build=fs.readFileSync(path.join(root,'scripts/build-web.mjs'),'utf8');assert.match(build,/PUBLISHED = \['index.html', 'src', 'vendor', 'assets'\]/);assert.match(build,/reference-private/);
+  const build=fs.readFileSync(path.join(root,'scripts/build-web.mjs'),'utf8');assert.match(build,/PUBLISHED = \['index.html', 'exploration.html', 'adventure.html', 'lizeem.html', 'src', 'vendor', 'assets'\]/);assert.match(build,/reference-private/);
 });

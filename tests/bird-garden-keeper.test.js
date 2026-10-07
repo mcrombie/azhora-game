@@ -67,7 +67,7 @@ test('the garden is Jean’s everywhere the game says so, and Lakota teaches non
 test('nothing left in the game teaches birding in Lakota’s name', () => {
   const stale = [/Speak with Lakota to learn birding/, /Lakota’s garden/, /Lakota's garden/, /Ansel in Tidehaven/,
     /the birder (of|in) Tidehaven/, /Tidehaven’s bird-watcher/, /Lakota[^.]{0,30}teaches (?:it|birding)[^.]{0,20}bird/i];
-  const names = ['index.html', 'README.md', ...readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(n => n.endsWith('.js')).map(n => `src/${n}`)];
+  const names = ['index.html', 'adventure.html', 'README.md', ...readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(n => n.endsWith('.js')).map(n => `src/${n}`)];
   for (const name of names) {
     const text = file(name);
     for (const pattern of stale) assert.doesNotMatch(text, pattern, `${name} still sends the player to Lakota for birding`);

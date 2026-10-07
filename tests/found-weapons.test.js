@@ -66,7 +66,7 @@ test('a weapon with nowhere to be is not lying anywhere', () => {
 });
 
 test('the host draws it, marks it, and lets you take it up', () => {
-  const main = source('main.js'), html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
+  const main = source('main.js'), html = readFileSync(fileURLToPath(new URL('../adventure.html', import.meta.url)), 'utf8');
   assert.match(main, /const foundWeapons=createFoundWeapons\(\{sources:\[fallenCompanions\(companions\)\]\}\);/,
     'the first source is the one that already exists');
   assert.match(main, /function refreshFoundWeapons\(\)\{/, 'one mesh a lying weapon');

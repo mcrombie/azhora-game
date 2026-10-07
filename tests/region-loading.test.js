@@ -33,6 +33,17 @@ test('travel promotes its destination and dependencies while waiters share the c
   assert.equal(f.loader.isReady(5), true);
 });
 
+test('route prefetch prioritizes a destination without raising the background budget',async()=>{
+  const f=fixture({nearbyOnly:true});f.add('near',[2],12);f.add('destination',[5],12);
+  f.loader.update({x:0,z:0}).prefetchRegion(5).start();f.frame();
+  assert.deepEqual(f.visits,['destination:0','destination:1']);
+  assert.equal(f.loader.state().currentBudgetMs,4);
+  f.loader.setTravelBudget(16);const ready=f.loader.ensureRegion(5);f.frame();
+  assert.equal(f.visits.length,10);assert.equal(f.loader.state().currentBudgetMs,16);
+  f.drain();await ready;assert(f.loader.isReady(5));assert.equal(f.loader.state().currentBudgetMs,4);
+  assert.throws(()=>f.loader.setTravelBudget(Infinity));
+});
+
 test('position changes reprioritize pending regions without rebuilding completed work', () => {
   const f = fixture({ regionAt: x => ({ id: x > 50 ? 4 : 1 }) });
   f.add('east', [2], 1); f.add('west', [3], 1); f.add('far', [4], 1);

@@ -7,6 +7,8 @@ const http=require('node:http');
 const root=path.resolve(__dirname,'..');
 const option=name=>(process.argv.find(arg=>arg.startsWith(`--${name}=`))??'').slice(name.length+3);
 const contentRoot=path.resolve(root,option('profile-root')||'.');
+// Older comparison checkouts predate the explicit legacy entry page.
+const entryPage=fs.existsSync(path.join(contentRoot,'adventure.html'))?'/adventure.html':'/index.html';
 const label=(option('profile-label')||'startup').replace(/[^a-z0-9_-]/gi,'');
 if(process.env.AZHORA_TEST_PROFILE)app.setPath('userData',process.env.AZHORA_TEST_PROFILE);
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -21,7 +23,7 @@ app.whenReady().then(async()=>{
   ipcMain.handle('azhora:terrain-cache',(_,operation,value)=>operation==='read'?cache.read():operation==='write'?cache.write(value):null);
   const server=http.createServer((req,res)=>{
     let pathname;try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400).end();return;}
-    const target=path.resolve(contentRoot,'.'+(pathname==='/'?'/index.html':pathname));
+    const target=path.resolve(contentRoot,'.'+(pathname==='/'?entryPage:pathname));
     if(!require('./public-file.cjs').isPublicFile(contentRoot,target)){res.writeHead(403).end();return;}
     fs.readFile(target,(error,data)=>{
       if(error){res.writeHead(404).end();return;}

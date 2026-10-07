@@ -58,7 +58,7 @@ test('nothing in the game still sends the player up the pier to Lakota', () => {
     /Lakota’s message/,
     /Lakota's message/,
   ];
-  const names = ['index.html', ...readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js')).map(name => `src/${name}`)];
+  const names = ['index.html', 'adventure.html', ...readdirSync(fileURLToPath(new URL('src/', root)), { recursive: true }).map(name => name.replaceAll('\\', '/')).filter(name => name.endsWith('.js')).map(name => `src/${name}`)];
   assert.ok(names.length > 40, 'the source was found');
   for (const name of names) {
     const text = file(name);

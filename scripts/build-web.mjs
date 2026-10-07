@@ -1,17 +1,8 @@
 /**
- * **The game as a static site.**
- *
- * Azhora is already a web page: `main.cjs` serves the folder over http on a loopback port and
- * Electron just loads it, which is why every stack trace in a smoke reads `http://127.0.0.1:.../
- * src/main.js`. Nothing in `src/` imports a node builtin, `three` arrives through the import map
- * in index.html, and the one Electron-only thing - the save bridge in preload.cjs - is already
- * written with a fallback: `window.azhoraRoadStorage || localStorage` (src/main.js).
- *
- * So there is no build, only a copy: this puts the four things a browser needs into `public/`
- * and leaves the desktop app, the tests, the scripts and the docs out of it.
- *
- *   node scripts/build-web.mjs            → public/
- *   node scripts/build-web.mjs --out dist → somewhere else
+ * Publish the shared main menu and explicit legacy/prototype entry pages as a static site.
+ * The exploration renderer uses its desktop save bridge or per-mode localStorage keys.
+ * Only public game files are copied; hosts, saves, tests, docs and private references stay out.
+ * Run `npm run build:web` for public/, or pass --out with a dedicated project directory.
  */
 import { cp, mkdir, rm, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +21,7 @@ if (!relativeOut || relativeOut.startsWith('..') || path.isAbsolute(relativeOut)
 }
 
 /** What a browser asks for, and nothing else. */
-const PUBLISHED = ['index.html', 'src', 'vendor', 'assets'];
+const PUBLISHED = ['index.html', 'exploration.html', 'adventure.html', 'lizeem.html', 'src', 'vendor', 'assets'];
 /** Test files live beside the code they test; they are not part of the game. */
 const skip = entry => entry.endsWith('.test.js') || entry.split(/[\\/]/).some(part => part.toLowerCase() === 'reference-private');
 

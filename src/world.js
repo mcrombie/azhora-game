@@ -185,7 +185,7 @@ import { SOUTHWEST_LANDMARKS } from './content/regions/southwest/southwest-world
 import { createSelemisScenery } from './content/regions/selemis/selemis-scenery.js';
 import { SELEMIS_LANDMARKS } from './content/regions/selemis/selemis-world.js';
 import { createTelemoniaScenerySteps } from './content/regions/telemonia/telemonia-scenery.js';
-import { createTelemoniaGroundSteps } from './content/regions/telemonia/telemonia-ground.js';
+import { createTelemoniaGroundSteps,createTelemoniaGroundPlanSteps } from './content/regions/telemonia/telemonia-ground.js';
 import { createTelemoniaTownScenerySteps } from './content/regions/telemonia/telemonia-town-scenery.js';
 import { TELEMONIA_TOWN_LANDMARKS } from './content/regions/telemonia/telemonia-ways.js';
 import { createEastPyrosScenerySteps } from './content/regions/east-pyros/east-pyros-scenery.js';
@@ -264,7 +264,7 @@ export async function createWorldAsync(scene,{startup,cache,...options}={}) {
   if(cacheWrite){const saved=await cacheWrite;if(startup)startup.record.cacheSaved=saved;}
   return step.value;
 }
-function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, onTerrain=null, loadingMode="full", initialRegion=1, enabledRegions=null, backdropBounds=null } = {}) {
+function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, onTerrain=null, loadingMode="full", initialRegion=1, enabledRegions=null, backdropBounds=null,regionalFineGround=false } = {}) {
   yield 'Preparing the world';
   const enabled=enabledRegions?new Set(enabledRegions.map(value=>typeof value==='number'?value:REGION_IDS[value]).filter(Boolean)):null;
   const enabledId=id=>!enabled||enabled.has(id);
@@ -286,12 +286,12 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     onComplete:event=>{postBuild(event);for(const id of event.regions)if(loading.isReady(id)){for(const root of visibilityByRegion.get(id)??[])root.visible=true;for(const listener of readyListeners)listener({regions:[id],revision:event.revision});}},
     onError:(error,id)=>console.error('Region loading failed:',id,error)}):null;
   const previousJobs=new Map();
-  function* regionBuild(id,owned,build,defaults={},commit=()=>{}) {
+  function* regionBuild(id,owned,build,defaults={},commit=()=>{},independent=false) {
     owned=owned.filter(enabledId);
     if(!owned.length)return deferredScenery(defaults).value;
     if(!fast){const built=yield* build(world);commit(built);return built;}
     const handle=deferredScenery(defaults), stage=new THREE.Group();stage.name=`Loading ${id}`;stage.visible=false;world.add(stage);
-    const dependencies=[...new Set(owned.flatMap(r=>[...(r===initialRegion?[]:[`terrain-${r}`]),...(previousJobs.get(r)??[])]))];
+    const dependencies=[...new Set(owned.flatMap(r=>[...(r===initialRegion?[]:[`terrain-${r}`]),...(independent?[]:previousJobs.get(r)??[])]))];
     loading.register({id,regions:owned,dependencies,steps:function*(){
       const built=yield* stageBuildSteps(build(stage),world,stage);handle.install(built);commit(handle.value);
       if(batchLate)yield* batchLate(stage);
@@ -1761,7 +1761,13 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   yield 'The pass forts';
   const lotharnForts=yield* regionBuild('lotharnForts',[20, 27, 11],stage=>createLotharnFortsScenerySteps({ root:stage, scene:world, groundHeight, colliders, treeRegistry }),{metrics:{}});
   // Shared fine ground must be present before neighboring scenery in Fast mode.
-  const telemoniaGround=yield* regionBuild('telemoniaGround',[22,25,26,55,57,59],stage=>createTelemoniaGroundSteps({root:stage,material,groundHeight,renderedGroundHeight:treeGroundAt}),{});
+  let telemoniaGround;
+  if(fast&&regionalFineGround){
+    const plan=yield* createTelemoniaGroundPlanSteps({material,groundHeight,renderedGroundHeight:treeGroundAt});
+    telemoniaGround=plan.surface;
+    for(const tile of plan.tiles)yield* regionBuild('telemoniaTile-'+tile.id,tile.regions,stage=>tile.buildSteps(stage),{},()=>{},true);
+    for(const id of [22,25,26,55,57,59])yield* regionBuild('telemoniaGround-'+id,[id],()=>immediate(()=>telemoniaGround),{});
+  }else telemoniaGround=yield* regionBuild('telemoniaGround',[22,25,26,55,57,59],stage=>createTelemoniaGroundSteps({root:stage,material,groundHeight,renderedGroundHeight:treeGroundAt}),{});
   const westFineGroundAt=(x,z)=>Math.max(sharedWestGroundAt(x,z),telemoniaGround.fineGroundHeight?.(x,z)??-Infinity);
   // Gala (src/content/regions/gala/gala-scenery.js): its water, its dry wash, and what grows on the steppe, the maquis and
   // the coast. Its own seeded stream, after the west's, so nothing already built moves for it.

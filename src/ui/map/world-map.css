@@ -77,3 +77,15 @@
 .atlas-place.capital small,.atlas-place.city small{display:block;font:9px 'Segoe UI',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6a512e;line-height:12px}
 
 #world-map:not([data-campaign-view=regions]) #atlas-viewport{background:#0b1620}
+
+#atlas-battlefields{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}#atlas-battlefields .atlas-battlefield{position:absolute;pointer-events:auto;transform:translate(-50%,calc(-100% - 64px));white-space:nowrap;background:#382c20ed;color:#ffe8b0;border:1px solid #d2a768;border-radius:4px;font:12px system-ui;padding:6px 9px;cursor:pointer}
+
+.atlas-battlefield::before{content:"";position:absolute;left:50%;bottom:-60px;height:60px;width:1px;background:#d2a768;pointer-events:none}.atlas-battlefield::after{content:"";position:absolute;left:calc(50% - 3px);bottom:-67px;width:6px;height:6px;border:1px solid #382c20;background:#ffe8b0;border-radius:50%;pointer-events:none}
+
+#atlas-armies{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+#atlas-armies svg{position:absolute;inset:0;pointer-events:none}
+#atlas-armies .atlas-army{position:absolute;transform:translate(-50%,-50%);width:27px;height:27px;padding:0;background:var(--army-color);color:#122e29;border:2px solid #fff1c9;border-radius:50%;font:bold 17px system-ui;pointer-events:auto;cursor:pointer;box-shadow:0 1px 4px #0008}
+#atlas-armies .atlas-army[aria-pressed=true],#atlas-armies .atlas-army:focus-visible{outline:3px solid #273d34;outline-offset:2px}
+#atlas-army-detail{position:absolute;z-index:4;bottom:12px;left:12px;width:270px;max-width:calc(100% - 24px);box-sizing:border-box;padding:14px;background:#f7f4ebf5;color:#293d34;border:1px solid #7b8068;border-radius:4px;box-shadow:0 3px 12px #0004;font:12px/1.5 system-ui;cursor:default}
+#atlas-army-detail[hidden]{display:none}#atlas-army-detail h3{font:20px Georgia;margin:5px 0 12px}#atlas-army-detail p{font:12px/1.6 system-ui;color:#293d34;margin:7px 0}#atlas-army-detail small{color:#65745e}#atlas-army-detail button{float:right;font:11px system-ui;padding:3px 7px;margin:0 0 8px 8px;color:#293d34;background:transparent;border:1px solid #899581;border-radius:3px}
+#atlas-army-detail #atlas-track-army{float:none;display:block;margin:12px 0 0;padding:7px 10px;background:#244c3e;color:#fff1cd}

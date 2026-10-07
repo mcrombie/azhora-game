@@ -7,6 +7,7 @@ export function createRegionLoading({ initialRegions = [], regionAt = () => null
   const jobs = new Map(), byRegion = new Map(), initial = new Set(initialRegions), requested = new Set(), waiters = new Map();
   let active = null, running = false, frame = null, revision = 0, position = null, region = null, heading = null;
   let longestSliceMs = 0, preloadAll = !nearbyOnly, priorities = new Map(), dirty = true, lastFrame = null, frameGap = 0;
+  const prefetched = new Set();let travelBudgetMs = 8;
   let wanted = new Set(initialRegions), lastPosition = null, plannedHeading = null;
   let totalTickMs = 0, longestTickMs = 0, ticks = 0;
   const identity = value => value && typeof value === 'object' ? value.id : value;
@@ -47,6 +48,7 @@ export function createRegionLoading({ initialRegions = [], regionAt = () => null
       }
       const priority = job.regions.some(id => requested.has(id)) ? -1e12
         : job.regions.includes(region) ? -1e11
+        : job.regions.some(id => prefetched.has(id)) ? -1e10
         : job.regions.some(id => wanted.has(id)) ? -1e8 + (Number.isFinite(distance) ? distance : job.order)
         : preloadAll ? (Number.isFinite(distance) ? distance : job.order) : Infinity;
       if (priority !== Infinity) promote(job, priority);
@@ -80,7 +82,7 @@ export function createRegionLoading({ initialRegions = [], regionAt = () => null
     if (!running) return;
     const started = now();
     frameGap = lastFrame == null ? 0 : started - lastFrame; lastFrame = started;
-    const allowance = nearbyOnly && requested.size ? Math.max(8,budgetMs) : nearbyOnly && frameGap > 30 ? Math.min(.75, budgetMs) : budgetMs;
+    const allowance = nearbyOnly && requested.size ? Math.max(travelBudgetMs,budgetMs) : nearbyOnly && frameGap > 30 ? Math.min(.75, budgetMs) : budgetMs;
     // Iterators yield without holding global state; an explicit destination can
     // therefore interrupt a background build at its next safe yield.
     if (choose() !== active) active = null;
@@ -168,7 +170,7 @@ export function createRegionLoading({ initialRegions = [], regionAt = () => null
   function state() {
     plan();
     return { running, policy: preloadAll ? 'all' : 'nearby', wanted: [...wanted], idle: ![...jobs.values()].some(eligible),
-      ticks, totalTickMs, longestTickMs, currentBudgetMs: nearbyOnly && requested.size ? Math.max(8,budgetMs) : nearbyOnly && frameGap > 30 ? Math.min(.75,budgetMs) : budgetMs,
+      ticks, totalTickMs, longestTickMs, currentBudgetMs: nearbyOnly && requested.size ? Math.max(travelBudgetMs,budgetMs) : nearbyOnly && frameGap > 30 ? Math.min(.75,budgetMs) : budgetMs,
       revision, currentRegion: region, active: active?.id ?? null,
       completed: [...jobs.values()].filter(job => job.status === 'ready').length,
       total: jobs.size, pending: [...jobs.values()].filter(job => job.status === 'pending').length,
@@ -178,6 +180,8 @@ export function createRegionLoading({ initialRegions = [], regionAt = () => null
   }
   const api = { register, isReady, hasRegion: value => initial.has(identity(value)) || regionJobs(identity(value)).length > 0,
     ensureRegion, requireRegion: ensureRegion, update, setPosition: update, state,
+    prefetchRegion(value) { const id=identity(value);if(regionJobs(id).length){prefetched.add(id);dirty=true;schedule();}return api; },
+    setTravelBudget(ms) { if(!Number.isFinite(ms)||ms<1||ms>32)throw new Error('Travel budget must be between 1 and 32ms');travelBudgetMs=ms;return api; },
     preloadAll(value = true) { preloadAll = !!value; dirty = true; schedule(); return api; },
     start() { running = true; schedule(); return api; },
     stop() { running = false; if (frame !== null) cancelFrame(frame); frame = null; return api; },

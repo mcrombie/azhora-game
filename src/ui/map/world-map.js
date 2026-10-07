@@ -5,6 +5,7 @@
 import { hexAtlasCorners, TRANSFORM as HEX_WORLD_TRANSFORM } from '../../world/terrain/region-world.js';
 import { PLAYABLE_SURVEY } from '../../dev/tools/region-survey.js';
 import { createCampaignMapLayer } from './campaign-map-layer.js';
+import { createMapArmies } from './world-map-armies.js';
 import { atlasLocalDetail, atlasCityBoundaries, atlasPlaceMarks, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from './world-map-detail.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -15,7 +16,7 @@ export const DETAIL_ZOOM = 12;
 /** How much of the chart a first look shows around the traveler, in atlas pixels: the nearby road and a few surrounding hexes. */
 export const LOCAL_VIEW = 100;
 
-export function createWorldMap() {
+export function createWorldMap({includeQuests=true}={}) {
   const $ = id => document.getElementById(id);
   const viewport = $('atlas-viewport'), image = $('atlas-image'), traveler = $('atlas-traveler');
   const travelerArrow = traveler?.querySelector('b') ?? null;
@@ -29,7 +30,7 @@ export function createWorldMap() {
   const builtNames=new Set(PLAYABLE_SURVEY.regions.map(r=>r.name)), unbuiltCells=new Set();
   let localDetail = atlasLocalDetail(null);
   let authoredLabels = null;
-  const campaignLayer=createCampaignMapLayer({viewport,onResize:()=>{resize();render();},onFocus:focusRegion});
+  const campaignLayer=createCampaignMapLayer({viewport,includeQuests,onResize:()=>{resize();render();},onFocus:focusRegion});
   const cityLayer = document.createElementNS(SVG_NS, 'svg');
   cityLayer.id = 'atlas-cities'; cityLayer.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(cityLayer, traveler ?? null);
@@ -45,7 +46,32 @@ export function createWorldMap() {
   const placeLayer = document.createElement('div');
   placeLayer.id = 'atlas-places'; placeLayer.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(placeLayer, traveler ?? null);
-  let places = [], renderedPlaces = [];
+  let places = [], renderedPlaces = [], battleMarks=[];
+  const battleLayer=document.createElement('div');battleLayer.id='atlas-battlefields';battleLayer.setAttribute('aria-label','Discovered battles');viewport.insertBefore(battleLayer,traveler??null);
+  let onTrack=null,tracked=null;
+  const armyLayer=createMapArmies(viewport,traveler,target=>onTrack?.(target));
+  function drawBattles(){
+    battleLayer.replaceChildren();const scale=fitScale*zoom;
+    for(const mark of battleMarks){
+      if(!atlasMarkKnown(mark,visited,chart.reveal))continue;
+      const x=offsetX+mark.x*scale,y=offsetY+mark.y*scale;
+      if(x<0||y<0||x>width||y>height)continue;
+      const button=document.createElement('button');button.className='atlas-battlefield';button.dataset.battleId=mark.id;
+      button.textContent=`${tracked?.kind==='battle'&&tracked.id===mark.id?'Stop tracking':'Track battle'}: ${mark.name} / until day ${mark.endsOn}`;button.style.left=x+'px';button.style.top=y+'px';
+      button.onclick=()=>{focusBattle(mark.id);onTrack?.({kind:'battle',id:mark.id});};battleLayer.append(button);
+    }
+  }
+  function focusBattle(id){
+    const mark=battleMarks.find(m=>m.id===id);if(!mark||!atlasMarkKnown(mark,visited,chart.reveal)||!metadata)return false;
+    zoom=Math.max(zoom,localZoom());offsetX=width/2-mark.x*fitScale*zoom;offsetY=height/2-mark.y*fitScale*zoom;render();return true;
+  }
+  function focusArmy(id){
+    const mark=armyLayer.find(id);if(!mark||!metadata)return false;
+    zoom=Math.max(1,Math.min(MAX_ZOOM,Math.min(width,height)/360/fitScale));
+    offsetX=width/2-mark.x*fitScale*zoom;offsetY=height/2-mark.y*fitScale*zoom;
+    armyLayer.select(id);render();return true;
+  }
+
   // Areas are named as soon as the chart is more than glanced at; the smaller places
   // inside them wait until the traveler has zoomed in far enough to read them.
   const placeShown = place => atlasMarkKnown(place, visited, chart.reveal)
@@ -65,7 +91,7 @@ export function createWorldMap() {
       mark.append(dot, label);
       place.mark = mark; place.label = label; placeLayer.append(mark);
     }
-    positionPlaces();
+    positionPlaces();drawBattles();
   }
   // Place important labels first, reserve space for the player, and keep all
   // text in screen pixels. Repeated town names yield to their area label.
@@ -205,8 +231,9 @@ export function createWorldMap() {
     if(countryLabels)countryLabels.style.opacity=String(Math.max(0,Math.min(1,(24-zoom)/12)));
     cityLayer.style.opacity = String(Math.max(0, Math.min(1, (zoom - 2.5) / 2)));
     detail.style.opacity = String(Math.max(0, Math.min(1, (zoom - DETAIL_ZOOM) / 6)));
-    positionPlaces();
+    positionPlaces();drawBattles();
     // The traveler's marker sits in atlas pixels and follows every pan and zoom without scaling itself.
+    armyLayer.render({scale,x:offsetX,y:offsetY,width,height,known:m=>atlasMarkKnown(m,visited,chart.reveal)});
     if (traveler) {
       const shown = !!travelerPoint && Number.isFinite(travelerPoint.x) && Number.isFinite(travelerPoint.y);
       traveler.hidden = !shown;
@@ -243,6 +270,13 @@ export function createWorldMap() {
     offsetX = x - mx * fitScale * zoom; offsetY = y - my * fitScale * zoom;
     render();
   }
+  function focusRegions(names){
+    const chosen=metadata?.regions.filter(r=>names.includes(r.name));if(!chosen?.length)return;
+    const x=Math.min(...chosen.map(r=>r.x)),y=Math.min(...chosen.map(r=>r.y));
+    const w=Math.max(...chosen.map(r=>r.x+r.width))-x,h=Math.max(...chosen.map(r=>r.y+r.height))-y;
+    zoom=Math.max(1,Math.min(MAX_ZOOM,Math.min(width/(w+160),height/(h+160))/fitScale));
+    offsetX=width/2-(x+w/2)*fitScale*zoom;offsetY=height/2-(y+h/2)*fitScale*zoom;render();
+  }
   function focusRegion(name='Drent') {
     if (!metadata) return;
     const f = metadata.regions.find(region=>region.name===name)||metadata.focus;
@@ -263,6 +297,7 @@ export function createWorldMap() {
     zoomAt(zoom * Math.exp(-event.deltaY * .0015), event.clientX - rect.left, event.clientY - rect.top);
   }, {passive: false});
   viewport.addEventListener('pointerdown', event => {
+    if(event.target.closest('button, #atlas-army-detail'))return;
     if (event.button !== 0 || !metadata) return;
     event.preventDefault(); viewport.focus({preventScroll: true});
     dragging = {id: event.pointerId, x: event.clientX, y: event.clientY};
@@ -353,17 +388,18 @@ export function createWorldMap() {
   }
   $('atlas-traveler-button').onclick = () => focusTraveler();
   /** Opening the chart: always on the traveler; the first time, close enough to read the country round about. */
-  function open() {
-    campaignLayer.setView('regions');
+  function open({view='regions',regions=null}={}) {
+    campaignLayer.setView(view);
     ready.then(() => requestAnimationFrame(() => {
       resize();
       if (!metadata || !travelerPoint || !width || !height) return;
       if (!opened) { zoom = localZoom(); opened = true; }
-      centreOnTraveler();
+      if(regions)focusRegions(regions);else centreOnTraveler();
     }));
   }
-  return {ready, focus:focusRegion, focusTraveler, setTraveler, setChart, setLocalMap, open, setChapter:campaignLayer.setChapter, setView:campaignLayer.setView,
-    state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source, campaign:campaignLayer.state(), traveler: travelerPoint ? { ...travelerPoint } : null,
+  return {ready, setTrackingHandler:fn=>{onTrack=fn;},setTrackedTarget:value=>{tracked=value;armyLayer.setTracked(value);drawBattles();}, focus:focusRegion, focusTraveler, focusBattle, focusArmy, setArmyMarkers:armyLayer.set, setBattleMarkers:marks=>{battleMarks=marks.map(m=>({...m}));drawBattles();},setTraveler, setChart, setLocalMap, open, setChapter:campaignLayer.setChapter, setSimulation:campaignLayer.setSimulation, setView:campaignLayer.setView,
+    state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source,battleMarkers:battleMarks.filter(m=>atlasMarkKnown(m,visited,chart.reveal)).map(m=>m.id),campaign:campaignLayer.state(), traveler: travelerPoint ? { ...travelerPoint } : null,
+      armies:armyLayer.state(),
       detail: { roads: localDetail.paths.length, buildings: localDetail.buildings.length, marks: localDetail.markers.length, visible: zoom > DETAIL_ZOOM },
       chart: { charted: chart.cells.length, glimpsed: chart.glimpsed.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
         silhouettes: chart.silhouettes.length, silhouetteCells: overlay.querySelectorAll('[data-role="silhouettes"] polygon').length,

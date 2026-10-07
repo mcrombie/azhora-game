@@ -5,7 +5,10 @@ const root = path.resolve(__dirname, '..');
 // There is no local node_modules; Electron comes from the World Builder repo beside this
 // one. A git worktree is not beside it - it lives several directories down - so look for
 // the sibling up the tree rather than only one step up.
-const candidates = [path.join(root, 'node_modules/electron/dist/electron.exe')];
+const candidates = [];
+// A fresh contributor clone installs its own platform's Electron binary.
+try { const installed = require('electron'); if (typeof installed === 'string') candidates.push(installed); } catch { /* Existing sibling fallback below. */ }
+candidates.push(path.join(root, 'node_modules/electron/dist/electron.exe'));
 for (let dir = root, up = 0; up < 8; up++) {
   candidates.push(path.resolve(dir, '../world-builder/map/node_modules/electron/dist/electron.exe'));
   const parent = path.dirname(dir);
@@ -34,7 +37,13 @@ function cleanTestProfile() {
 }
 // The console wrapper may be hidden, but the GUI process must receive normal
 // startup visibility. Hiding Electron suppresses its first native game window.
-const entry = process.argv.includes('--startup-profile') ? path.join(root,'scripts/profile-startup.cjs') : root;
+const args=process.argv.slice(2);
+const entry = args.includes('--web-checks') ? path.join(root,'scripts/web-smoke.cjs')
+  : args.includes('--lizeem') ? path.join(root,'scripts/lizeem-desktop.cjs')
+  : args.includes('--exploration') ? path.join(root,'scripts/exploration-desktop.cjs')
+  : args.includes('--startup-profile') ? path.join(root,'scripts/profile-startup.cjs')
+  // Existing adventure checks and explicit legacy/prototype launchers retain their host.
+  : args.length ? path.join(root,'main.cjs') : root;
 const child = spawn(electron, [entry, ...process.argv.slice(2)], { cwd: root, env, windowsHide: smoke, stdio: 'inherit' });
 child.on('error', error => { cleanTestProfile();console.error(error.message); process.exit(1); });
 child.on('exit', code => { cleanTestProfile();process.exit(code ?? 1); });

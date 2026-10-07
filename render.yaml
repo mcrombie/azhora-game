@@ -1,7 +1,7 @@
 # Azhora as a static site on Render.
 #
-# The game is a plain web page - no bundler, no server, no build - so the "build" is a copy of
-# the four things a browser asks for into public/ (scripts/build-web.mjs). Saves fall back from
+# The game is a static page: the build copies its menu, explicit legacy entries and public
+# resources into public/ (scripts/build-web.mjs). Saves fall back from
 # the desktop app's bridge to the browser's own localStorage, which means a save lives in the
 # browser it was made in and goes when that site's data is cleared.
 services:
@@ -27,6 +27,9 @@ services:
       - path: /src/*
         name: Cache-Control
         value: no-cache
-      - path: /index.html
+      - path: /
+        name: Cache-Control
+        value: no-cache
+      - path: /*.html
         name: Cache-Control
         value: no-cache

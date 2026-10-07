@@ -567,7 +567,7 @@ test('what you told him comes back off the road', () => {
 
 test('the journal says where each man is, and names the dead as dead', () => {
   const main = readFileSync(fileURLToPath(new URL('../src/main.js', import.meta.url)), 'utf8');
-  const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
+  const html = readFileSync(fileURLToPath(new URL('../adventure.html', import.meta.url)), 'utf8');
   assert.match(html, /id="journal-company"/, 'the company has a page');
   assert.match(html, /id="company-list"/, 'with a line a man');
   assert.match(main, /function refreshCompanyPage\(\)\{/, 'which is filled from the module');

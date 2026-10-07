@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+<title>Azhora - The East-West War</title><link rel="stylesheet" href="./src/app/lizeem/lizeem.css"><link rel="stylesheet" href="./src/app/lizeem/encounter.css"></head>
+<body>
+<header class="masthead"><div><span class="eyebrow">AZHORA / FIVE-REGION SCENARIO</span><h1>The East-West War</h1></div><p>Minora is neutral.<br>Teresod begins here, unaffiliated.</p></header>
+<main>
+<section class="map-card" aria-label="Campaign map">
+<div class="map-toolbar"><div role="group" aria-label="Map view"><button data-view="geopolitical" aria-pressed="true">Geopolitical</button><button data-view="regions" aria-pressed="false">Regions</button></div><button id="fit-map">Fit five regions</button></div>
+<div id="scenario-map" aria-label="The five Lizeem regions. Drag to pan, scroll to zoom."><p id="map-loading" role="status">Opening the existing atlas...</p></div>
+<div id="faction-key" class="faction-key"></div>
+<footer class="clock"><div><span class="eyebrow">CAMPAIGN TIME</span><strong id="day">Day 0</strong></div><button id="play" disabled>Run</button><button id="advance" disabled>+1 day</button><label>Speed <select id="speed"><option value="2000">1x</option><option value="500">4x</option><option value="100">20x</option></select></label><span id="war-status" role="status">Paused</span></footer>
+</section>
+<aside>
+<details id="hero-panel" open><summary>Teresod <span class="eyebrow">HERO TEST</span></summary><p id="hero-position"></p><label for="hero-destination">Travel to a neighboring region</label><select id="hero-destination"></select><button id="hero-travel">Begin journey</button><label class="hero-watch"><input id="hero-watch" type="checkbox"> Offer battles in my region</label><p id="hero-waiting"></p><p id="hero-last-result" hidden></p><button id="hero-encounter" hidden>Inspect battle</button></details>
+<section class="region-card"><span class="eyebrow">SELECT A REGION</span><label class="sr-only" for="selected-region">Region</label><select id="selected-region"></select><div id="region-detail"></div></section>
+<details id="army-inspector"><summary>Armies <span id="army-count"></span></summary><label class="sr-only" for="selected-army">Select an army</label><select id="selected-army"><option value="">Select an army</option></select><div id="army-detail"><p>Click an army on the map to inspect its orders and history.</p></div></details>
+<details><summary>Developer intervention</summary><p>Add reinforcements to the selected region's current owner for comparison testing.</p><button id="reinforce" disabled>Add 80 strength</button><p id="intervention-note" role="status">Select a league region. Minora stays neutral.</p></details>
+<details><summary>Compare with no intervention</summary><p id="comparison-note"></p><button id="finish-baseline" hidden>Finish baseline comparison</button><table><thead><tr><th>Region</th><th>Untouched</th><th>This run</th></tr></thead><tbody id="comparison"></tbody></table></details>
+<details><summary>Recent events <span id="event-count"></span></summary><ol id="events" reversed></ol></details>
+<details><summary>Reset and replay</summary><label for="seed">Scenario seed</label><input id="seed" type="number" min="0" max="4294967295" step="1" value="1731"><button id="reset">Reset both runs</button><p>The same seed and interventions reproduce the same history. Reset clears this experiment.</p><button id="export-run">Export run</button><label class="import-label">Import run <input id="import-run" type="file" accept="application/json,.json"></label><p id="experiment-note" role="status">This test does not use your adventure or exploration saves.</p></details>
+</aside>
+</main>
+<footer class="page-note">Campaign and hero test · Five regions, two warring leagues, one neutral city-state · Drag to pan · Scroll to zoom · Space to run / pause</footer>
+<dialog id="encounter-dialog" aria-labelledby="encounter-title"><span class="eyebrow">LOCAL ENCOUNTER / CAMPAIGN PAUSED</span><h1 id="encounter-title"></h1><p id="encounter-brief"></p><div id="encounter-choice"><button id="fight-attacker"></button><button id="fight-defender"></button></div><div id="encounter-stage" hidden><div id="encounter-health" role="status"></div><canvas id="encounter-canvas" tabindex="0" aria-label="Teresod combat: WASD or arrows to move, X or click to strike, Space to dodge"></canvas><p>WASD / arrows: move · X / left click: strike nearest guard · Space + direction: dodge · Narrow orange thrust: sidestep. Wide pink sweep: retreat. Raised guards block frontal strikes; counter after a miss.</p></div><p id="encounter-result" role="status"></p><button id="encounter-return">Return to map</button></dialog>
+<script type="module" src="./src/app/lizeem/entry.js"></script>
+</body></html>

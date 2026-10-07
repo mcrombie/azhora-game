@@ -276,9 +276,9 @@ test('the world lets the host move the arrival boat and put it back', () => {
 
 test('the host is wired to the sequence: the caption layer, the Skip button, and every way out of it', () => {
   // The page and the stylesheet the sequence writes into (docs/opening-sequence-build.md step 2).
-  const page = file('index.html'), css = file('src/ui/styles/adventure.css'), main = file('src/main.js');
+  const page = file('adventure.html'), css = file('src/ui/styles/adventure.css'), main = file('src/main.js');
   for (const id of ['cutscene', 'cutscene-eyebrow', 'cutscene-text', 'skip-cutscene']) {
-    assert.ok(page.includes(`id="${id}"`), `index.html has #${id}`);
+    assert.ok(page.includes(`id="${id}"`), `adventure.html has #${id}`);
   }
   assert.match(page, /<div id="cutscene" class="hidden"/, 'the layer starts hidden');
   assert.match(css, /#cutscene \{[^}]*pointer-events:none/, 'the layer does not eat clicks');

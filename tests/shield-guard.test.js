@@ -253,7 +253,7 @@ test('the arm follows the rules and not the key, and the footer follows the shie
   for (const outside of [{ stage: 3 }, { lesson: false }, { chart: 'issued' }, { phase: 'peaceful' }, { distance: 12 }]) {
     assert.equal(drillShield(outside), false, `the practice loan ends outside the drill: ${JSON.stringify(outside)}`);
   }
-  const html = readFileSync(fileURLToPath(new URL('../index.html', import.meta.url)), 'utf8');
+  const html = readFileSync(fileURLToPath(new URL('../adventure.html', import.meta.url)), 'utf8');
   assert.match(html, /<span class="shield-control"><kbd>V<\/kbd> Guard<\/span>/);
   const css = readFileSync(fileURLToPath(new URL('../src/ui/styles/adventure.css', import.meta.url)), 'utf8');
   assert.match(css, /\.shield-control \{display:none;\}body\.shielded \.shield-control \{display:inline;\}/,
