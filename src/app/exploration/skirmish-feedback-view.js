@@ -1,9 +1,7 @@
 import * as THREE from 'three';
-import {encounterFeedback} from '../../gameplay/combat/encounter-feedback.js';
 
 // Disposable, local combat feedback. None of these labels changes combat state.
 export function createSkirmishFeedback(scene,world,count){
-  const message=document.getElementById('world-skirmish-feedback');
   let focusedId=null;
   const labels=Array.from({length:count},()=>{
     const canvas=document.createElement('canvas');canvas.width=256;canvas.height=96;
@@ -34,10 +32,7 @@ export function createSkirmishFeedback(scene,world,count){
         c.font='22px sans-serif';c.fillStyle=g.phase==='windup'?'#ffb07e':'#e0dccd';
         c.fillText(g.block?'Blocked!':g.open?'Open: counter now!':g.phase==='stagger'?'Staggered':['windup','strike'].includes(g.phase)?(g.attack==='sweep'?'Sweep: retreat!':'Thrust: sidestep!'):g.phase==='march'?'Heading to rally':'Guard raised',128,79);label.texture.needsUpdate=true;
       });
-      const feedback=encounterFeedback(state);
-      message.hidden=!!state.outcome||!feedback;
-      if(feedback)message.textContent=feedback.text;
     },
-    dispose(){message.hidden=true;for(const label of labels){scene.remove(label.sprite);label.texture.dispose();label.material.dispose();}},
+    dispose(){for(const label of labels){scene.remove(label.sprite);label.texture.dispose();label.material.dispose();}},
   };
 }

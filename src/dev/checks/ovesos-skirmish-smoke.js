@@ -19,6 +19,12 @@ export async function prepareOvesos(h){
   assert(h.state().mode==='skirmish'&&h.war.state().encounter.encounter?.site==='ovesos-world','Ovesos uses the existing world, hero and shared field encounter');
   assert(h.war.state().encounter.encounter.presentation.speed===1&&h.war.state().encounter.encounter.presentation.introRemaining===0,'Manual combat retains normal speed without an autoplay countdown');
   assert(document.querySelector('#world-skirmish .eyebrow').textContent.startsWith('OVESOS'),'Encounter HUD identifies the correct site');
+  document.getElementById('world-skirmish-help').click();
+  const paused=h.war.state();for(let i=0;i<60;i++)h.step(1/60);
+  assert(h.war.state().encounter.encounter.time===paused.encounter.encounter.time&&h.war.state().campaign.day===paused.campaign.day,'Ovesos Help pauses the encounter and campaign deadline');
+  assert(document.getElementById('world-skirmish-context').textContent.includes('day 8')&&document.getElementById('world-skirmish-context').textContent.includes('does not transfer territory'),'Help explains reinforcement losses and the later territorial result');
+  document.dispatchEvent(new KeyboardEvent('keydown',{code:'Escape',bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{code:'Escape',bubbles:true}));
+  assert(h.state().mode==='skirmish'&&!h.war.state().encounter.encounter.presentation.helpOpen,'Closing Ovesos Help keeps the intervention active');
   assert(h.state().fieldActors.length===3&&h.state().fieldActors.every(a=>a.clear&&Math.abs(a.position[1]-a.ground)<.01),'All Ovesos opponents spawn on clear real terrain');
   assert(!document.getElementById('encounter-dialog').open,'The arena dialog is closed during Ovesos combat');
   return {checks:[...checks]};

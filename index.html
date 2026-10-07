@@ -26,11 +26,25 @@
 <section id="loading-screen" class="veil" hidden><div class="start-card"><span class="eyebrow">AZHORA</span><h1>Opening the world.</h1><p id="loading-message" role="status">Preparing Minora...</p><div class="loading-line"></div><small>The country is prepared as you explore.</small></div></section>
 <button id="world-war-join" hidden></button>
 <section id="world-skirmish" hidden aria-label="Field skirmish">
-<span class="eyebrow">INTERCEPT REINFORCEMENTS</span><p id="world-skirmish-objective"></p><p id="world-skirmish-health" role="status"></p>
-<p id="world-skirmish-warning" role="status" hidden></p>
-<p id="world-skirmish-feedback" role="status" hidden></p>
+<span class="eyebrow">INTERCEPT REINFORCEMENTS</span><div id="world-skirmish-vitals"><span id="world-skirmish-health"></span><meter id="world-skirmish-health-meter" min="0" max="100" value="100" aria-label="Health"></meter></div>
+<p id="world-skirmish-objective" role="status" aria-live="polite"></p>
 <div id="world-skirmish-result" role="status" hidden><h2 id="world-skirmish-result-title"></h2><p id="world-skirmish-result-detail"></p><p>Encounter ended. The scene is paused for review.</p><button id="world-skirmish-continue">Continue to exploration (Enter)</button></div>
-<p id="world-skirmish-controls">WASD move and face · Right-drag look<br>Gold ring: your strike target. Face an enemy before pressing X.<br><strong>Space = dodge. WASD chooses the direction.</strong><br>Space alone backsteps. Release Space before dodging again.<br>Narrow orange thrust: sidestep. Wide pink sweep: retreat until the blade passes.<br>Campaign paused · Stay within the practice or battle area</p><div id="world-skirmish-actions"><button id="world-skirmish-strike">Strike (X / click)</button><button id="world-skirmish-dodge">Dodge (Space)</button></div><button id="world-skirmish-withdraw">Withdraw (Esc)</button><button id="world-skirmish-retry" hidden>Retry practice (R)</button>
+<div id="world-skirmish-actions"><button id="world-skirmish-strike">Strike (X / click)</button><button id="world-skirmish-dodge">Dodge ready (Space)</button></div>
+<button id="world-skirmish-help" aria-expanded="false" aria-controls="world-skirmish-controls">Help / pause (H)</button>
+<div id="world-skirmish-controls" hidden>
+<p><strong>Paused while you read.</strong></p>
+<dl>
+<dt>Move &amp; face</dt><dd>WASD / arrows. Right-drag to look; scroll to zoom.</dd>
+<dt>Strike</dt><dd>X / left click. Face the soldier with the gold ring.</dd>
+<dt>Dodge</dt><dd>Hold a direction and tap Space. Space alone backsteps. Release before dodging again.</dd>
+<dt>Thrust</dt><dd>Narrow orange warning: sidestep across the attack.</dd>
+<dt>Sweep</dt><dd>Wide pink warning: retreat beyond the blade.</dd>
+<dt>Counter</dt><dd>After a dodge, face the soldier and strike while their guard is open.</dd>
+</dl>
+<p id="world-skirmish-context"></p>
+<div id="world-skirmish-settings"></div>
+</div>
+<button id="world-skirmish-withdraw">Withdraw (Esc)</button><button id="world-skirmish-retry" hidden>Retry (R)</button>
 </section>
 <aside id="world-war-report" aria-label="War report" hidden>
 <div role="status" aria-live="polite"><span class="eyebrow">WAR REPORT</span><h2 id="world-war-report-title"></h2><p id="world-war-report-detail"></p><p id="world-war-report-clock"></p></div>

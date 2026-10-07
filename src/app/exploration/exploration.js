@@ -190,9 +190,9 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(event.code==='KeyP'&&autoplay&&!event.target?.closest?.('input,select,textarea,[contenteditable="true"]')){
       event.preventDefault();if(!event.repeat){if(autoplay.state().active||journey?.state().active)stopAutoplay();else openDeveloper();}return;
     }
-    if(['KeyW','KeyA','KeyS','KeyD','KeyX','Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape','KeyM','KeyF','KeyG','F5','F8'].includes(event.code))stopAutoplay();
+    if(['KeyH','KeyW','KeyA','KeyS','KeyD','KeyX','Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape','KeyM','KeyF','KeyG','F5','F8'].includes(event.code))stopAutoplay();
     if(mode==='encounter')return;
-    if(mode==='skirmish'){event.preventDefault();if(!event.repeat&&practice?.state().active&&event.code==='KeyR')practice.retry();else if(!event.repeat&&(event.code==='Escape'||event.code==='Enter'&&skirmish?.snapshot().outcome)){if(practice?.state().active)practice.finish();else war.withdraw();}else keys.add(event.code);return;}
+    if(mode==='skirmish'){if(skirmish?.keydown(event))return;if(event.code==='Tab'||['Enter','Space'].includes(event.code)&&event.target?.closest?.('button'))return;event.preventDefault();if(!event.repeat&&practice?.state().active&&event.code==='KeyR')practice.retry();else if(!event.repeat&&(event.code==='Escape'||event.code==='Enter'&&skirmish?.snapshot().outcome)){if(practice?.state().active)practice.finish();else war.withdraw();}else keys.add(event.code);return;}
     if(event.code==='F8'){event.preventDefault();if(!event.repeat){if(mode==='developer')setMode('playing');else openDeveloper();}return;}
     if(event.code==='F5'){event.preventDefault();if(!event.repeat)save();return;}
     if(event.code==='Escape'){event.preventDefault();if(!event.repeat){if(mode==='playing')pause();else if(mode!=='loading')setMode('playing');}return;}
@@ -301,7 +301,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
         place(MENORA_CAMP);setMode('playing');
         const view=startWorldFight({practice:exercise,pending:{region:'minora-practice'},centre:MENORA_CAMP,site:{name:'Minora camp',regionId:16,approachHeading:0},enemyColor:'#b77162',reinforcements:{name:'Training',strength:0},onEnd(){},onContinue:finish,onWithdraw:finish});
         $('world-skirmish-retry').hidden=false;$('world-skirmish-retry').onclick=retry;
-        if(combatMode){$('world-skirmish-controls').innerHTML=$('world-skirmish-controls').innerHTML.replace('Campaign paused','Combat practice');$('world-skirmish-continue').textContent='Choose exercise (Enter)';$('world-skirmish-withdraw').textContent='Choose exercise (Esc)';}
+        if(combatMode){$('world-skirmish-continue').textContent='Choose exercise (Enter)';$('world-skirmish-withdraw').textContent='Choose exercise (Esc)';}
         document.querySelector('#world-skirmish .eyebrow').textContent=`MINORA CAMP / ${exercise==='lesson'?'DODGE LESSON':exercise==='advanced'?'THRUST AND SWEEP LESSON':'INTERCEPTION PRACTICE'} / ATTEMPT ${attempt}`;
         return view;
       },

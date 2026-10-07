@@ -8,6 +8,7 @@ import {createSkirmishGround,SKIRMISH_RADIUS} from './skirmish-ground.js';
 import {getMovementInput} from '../../gameplay/movement/locomotion.js';
 import {interceptionFeedback} from './interception-feedback.js';
 import {createSkirmishFeedback} from './skirmish-feedback-view.js';
+import {createSkirmishHud} from './skirmish-hud.js';
 import {createEncounterEffects} from '../lizeem/encounter-effects.js';
 
 // Owns only the temporary opponents and their warnings. The exploration host
@@ -18,7 +19,7 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
   const setup=lesson?{guards:ground.spawn(heroStart,site.approachHeading??yaw()).slice(0,1),route:null}:ground.interception(heroStart,site.approachHeading??yaw());
   const model=createLizeemEncounter({heroStart,guardStarts:setup.guards,move:ground.move,canHit:ground.canHit,reinforcementRoute:setup.route,attackPattern:practice==='lesson'?['thrust']:['thrust','sweep']});
   const guards=model.snapshot().guards.map(g=>{const guard=createCharacter({role:'legion-soldier',tunic:new THREE.Color(enemyColor).getHex(),armed:true});if(g.role==='runner')guard.setShield(false);guard.group.userData.worldSkirmish=true;guard.group.userData.encounterRole=g.role;scene.add(guard.group);return guard;});
-  const combatFeedback=createSkirmishFeedback(scene,world,guards.length),targetMarker=createEncounterTarget(scene),effects=createEncounterEffects(scene,document.getElementById('world-skirmish-actions'));
+  const combatFeedback=createSkirmishFeedback(scene,world,guards.length),targetMarker=createEncounterTarget(scene),effects=createEncounterEffects(scene,document.getElementById('world-skirmish-settings'));
   const ringGeometry=new THREE.RingGeometry(1.7,2.4,28),warnings=createEncounterWarnings(scene,guards.length);
   const rally=setup.route?.at(-1)??heroStart,rallyMaterial=new THREE.MeshBasicMaterial({color:0x58c6f2,transparent:true,opacity:.8,side:THREE.DoubleSide,depthWrite:false});
   const rallyMarker=new THREE.Mesh(ringGeometry,rallyMaterial);rallyMarker.rotation.x=-Math.PI/2;rallyMarker.position.set(rally.x,world.heightAt(rally.x,rally.z)+.1,rally.z);scene.add(rallyMarker);
@@ -28,14 +29,11 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
   const context=labelCanvas.getContext('2d');context.fillStyle='#163744';context.fillRect(0,0,384,64);context.textAlign='center';context.fillStyle='#bcecff';context.font='bold 36px sans-serif';context.fillText('ENEMY RALLY POINT',192,44);
   const labelTexture=new THREE.CanvasTexture(labelCanvas),labelMaterial=new THREE.SpriteMaterial({map:labelTexture,depthTest:true,depthWrite:false,sizeAttenuation:false});
   const label=new THREE.Sprite(labelMaterial);label.position.set(rally.x,beacon.position.y+2.5,rally.z);label.scale.set(.20,.034,1);label.userData.rallyLabel=true;scene.add(label);
-  const panel=document.getElementById('world-skirmish'),hud=document.getElementById('world-skirmish-health');
+  const panel=document.getElementById('world-skirmish');
   panel.querySelector('.eyebrow').textContent=`${site.name.toUpperCase()} / ${allyName?'HELPING '+allyName.toUpperCase():'INTERCEPT REINFORCEMENTS'}`;
-  const resultPanel=document.getElementById('world-skirmish-result'),warning=document.getElementById('world-skirmish-warning'),withdraw=document.getElementById('world-skirmish-withdraw');
+  const resultPanel=document.getElementById('world-skirmish-result'),withdraw=document.getElementById('world-skirmish-withdraw');
   panel.hidden=false;resultPanel.hidden=true;withdraw.hidden=false;withdraw.onclick=onWithdraw;
-  for(const id of ['world-skirmish-objective','world-skirmish-controls','world-skirmish-health','world-skirmish-actions'])document.getElementById(id).hidden=false;
   document.getElementById('world-skirmish-continue').onclick=onContinue;
-  const objective=document.getElementById('world-skirmish-objective');
-  objective.textContent=practice?'Stop the runner before the rally point while two escorts engage you. Thrust: sidestep. Sweep: retreat. Practice has no campaign effect.':`One runner heads for the blue rally point while two ${reinforcements.name} escorts engage you. Each soldier stopped removes ${Math.floor(reinforcements.strength/3)} reinforcement strength. Prioritize the runner or fight the escorts; escaped soldiers remain available to the regional battle.`;
   document.getElementById('world-skirmish-continue').textContent=practice?'Leave practice (Enter)':'Continue to exploration (Enter)';
   withdraw.textContent=practice?'Leave practice (Esc)':'Withdraw (Esc)';
   actor.setArmed(true);actor.setWeapon('oak-staff');
@@ -44,7 +42,7 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
   document.getElementById('world-skirmish-strike').onclick=()=>{clickAttack=true;};
   dodgeButton.onclick=()=>{clickDodge=true;};
   const fallenAt=new Map();
-  const pace=document.createElement('p');pace.id='world-skirmish-pace';panel.insertBefore(pace,hud);
+  const hud=createSkirmishHud({practice,reinforcements,pending,site,onPauseChange(){keys.clear();accumulator=0;clickAttack=clickDodge=false;}});
   function draw(s,paused){
     const elapsed=visualTime-lastDrawTime,speed=elapsed>0?Math.min(4,Math.hypot(s.hero.x-position.x,s.hero.z-position.z)/elapsed):0;lastDrawTime=visualTime;
     position.set(s.hero.x,world.heightAt(s.hero.x,s.hero.z),s.hero.z);actor.group.position.copy(position);actor.group.rotation.y=s.hero.heading;
@@ -57,23 +55,14 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
     targetMarker.draw(s,(x,z)=>world.heightAt(x,z));
     effects.draw(s,(x,z)=>world.heightAt(x,z),visualTime);
     combatFeedback.draw(s);
-    pace.hidden=!!s.outcome||!watch();
-    pace.textContent=introRemaining>0?`Prepare: helping ${allyName??'your side'}. Soldiers advance in ${Math.ceil(introRemaining)}s. Campaign paused.`:'Watching combat at normal speed. P takes control.';
     rallyMarker.visible=beacon.visible=label.visible=!!setup.route&&!s.outcome;
-    dodgeButton.disabled=!!s.hero.dodgeCooldown||!!s.outcome;
-    dodgeButton.textContent=s.hero.dodgeCooldown?`Dodge: ${s.hero.dodgeCooldown.toFixed(1)}s`:'Dodge (Space)';
-    hud.textContent=`Health ${s.hero.hp}/100 · ${practice?'Defeated':'Stopped'} ${s.guards.filter(g=>!g.hp).length}/${guards.length}${!setup.route?'':' · Escaped '+s.guards.filter(g=>g.escaped).length+'/3'} · ${s.hero.dodgeCooldown?'Dodge recovering':'Dodge ready'}${s.time>60?' · '+Math.ceil(90-s.time)+'s remaining':''}${paused?' · Paused while window is inactive':''}`;
-    if(lesson)objective.textContent=dodgeLesson(s,advanced).text;
-    const runners=s.guards.filter(g=>g.hp>0&&g.phase==='march'),runner=s.guards.find(g=>g.role==='runner');
-    warning.hidden=!!s.outcome||!runners.length&&!runner?.escaped;
-    if(runner?.escaped)warning.textContent='The runner got through. Keep fighting: each escort you stop still counts.';
-    else if(runner?.hp>0)warning.textContent=`Runner heading to rally: ${Math.ceil(Math.hypot(runner.x-rally.x,runner.z-rally.z))}m remaining. The escorts are buying time.`;
-    else if(runners.length){const nearest=Math.min(...runners.map(g=>Math.hypot(g.x-rally.x,g.z-rally.z)));warning.textContent=`${runners.length} soldier${runners.length===1?' is':'s are'} heading toward the enemy rally point! Nearest: ${Math.ceil(nearest)}m. Intercept them before they get through.`;}
+    hud.draw(s,{inactive:paused,introRemaining,watching:watch()});
   }
   draw(model.snapshot(),false);
-  return {snapshot:()=>({...model.snapshot(),site:pending.region+'-world',interception:true,rally:{...rally},radius:SKIRMISH_RADIUS,presentation:{introRemaining,speed:1,sound:effects.state()}}),attack:()=>{clickAttack=true;},
+  return {snapshot:()=>({...model.snapshot(),site:pending.region+'-world',interception:true,rally:{...rally},radius:SKIRMISH_RADIUS,presentation:{introRemaining,speed:1,helpOpen:hud.paused(),sound:effects.state()}}),keydown:event=>hud.keydown(event),attack:()=>{if(!hud.paused())clickAttack=true;},
     tick(dt,active){
       if(disposed)return;
+      if(hud.paused()){keys.clear();accumulator=0;clickAttack=clickDodge=false;draw(model.snapshot(),!active);return;}
       if(active)visualTime+=Math.min(.1,dt);
       if(ended){draw(model.snapshot(),!active);return;}
       if(!watch())introRemaining=0;
@@ -88,12 +77,11 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
           const feedback=practice?null:interceptionFeedback(s,{strength:reinforcements.strength,endsOn:pending.endsOn,regionName:site.name});
           document.getElementById('world-skirmish-result-title').textContent=practice?(lesson?(dodgeLesson(s,advanced).complete?(advanced?'Thrust and sweep lesson complete':'Dodge lesson complete'):'Try the dodge lesson again'):(s.outcome==='success'?'Practice complete':'Practice ended')):feedback.title;
           document.getElementById('world-skirmish-result-detail').textContent=practice?`${s.guards.filter(g=>!g.hp).length} of ${guards.length} soldiers defeated. ${s.hero.hp===0?'Teresod was defeated. ':''}${s.skill.dodgeCounters} dodge counters.${setup.route?' '+s.guards.filter(g=>g.escaped).length+' escaped.':''} Health remaining: ${s.hero.hp}/100. ${lesson?dodgeLesson(s,advanced).text+' ':''}No campaign troops or territory changed. Press R to try again.`:feedback.detail;
-          for(const id of ['world-skirmish-objective','world-skirmish-controls','world-skirmish-health','world-skirmish-actions'])document.getElementById(id).hidden=true;
           resultPanel.hidden=false;withdraw.hidden=true;return;
         }
       }
       draw(model.snapshot(),!active);
     },
-    dispose(){if(disposed)return;disposed=true;pace.remove();combatFeedback.dispose();targetMarker.dispose();effects.dispose();panel.hidden=true;resultPanel.hidden=true;document.getElementById('world-skirmish-retry').hidden=true;keys.clear();actor.setArmed(false);for(const guard of guards)scene.remove(guard.group);warnings.dispose();scene.remove(rallyMarker,beacon,label);labelTexture.dispose();labelMaterial.dispose();beaconGeometry.dispose();rallyMaterial.dispose();ringGeometry.dispose();}
+    dispose(){if(disposed)return;disposed=true;hud.dispose();combatFeedback.dispose();targetMarker.dispose();effects.dispose();panel.hidden=true;resultPanel.hidden=true;document.getElementById('world-skirmish-retry').hidden=true;keys.clear();actor.setArmed(false);for(const guard of guards)scene.remove(guard.group);warnings.dispose();scene.remove(rallyMarker,beacon,label);labelTexture.dispose();labelMaterial.dispose();beaconGeometry.dispose();rallyMaterial.dispose();ringGeometry.dispose();}
   };
 }

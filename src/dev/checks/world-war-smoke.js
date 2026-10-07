@@ -242,7 +242,7 @@ export async function checkInterceptionFeedback(h){
     for(let i=0;i<3600;i++){const s=h.war.state().encounter.encounter;if(s.outcome||s.guards.filter(g=>!g.hp).length>=count)break;driveWorldEncounter(h,s);h.step(1/60);}
     clearCombatKeys(h);
     assert(h.war.state().encounter.encounter.guards.filter(g=>!g.hp).length===count,`Real combat stops exactly ${count} soldiers`);
-    assert(/Hit soldier|Countered soldier/.test(document.getElementById('world-skirmish-feedback').textContent),'A landed strike produces readable hit feedback');
+    assert(h.state().combatImpacts.some(p=>p.visible&&['hit','counter'].includes(p.kind)),'A landed strike has visible local hit feedback while the instruction can prioritize a threat');
   };
   await begin();stopSoldiers(1);h.war.withdraw();
   assert(h.war.state().campaign.engagements.find(b=>b.region==='caricas').heroResult.objective.blocked===4,'Retreat keeps four strength removed after one stopped soldier');
@@ -263,7 +263,7 @@ export async function checkInterceptionFeedback(h){
   h.resume();h.war.restore(null);h.war.advance(10);assert(h.war.join().ok,'Focused runner test joins the real Caricas site');await h.war.help('west');
   h.hold('KeyA',true);
   for(let i=0;i<50;i++)h.step(.04);
-  assert(!document.getElementById('world-skirmish-warning').hidden,'Marching soldiers trigger a visible rally warning');
+  assert(document.getElementById('world-skirmish-objective').dataset.kind==='rally','Marching soldiers trigger a visible rally warning');
   for(let i=0;i<1000&&!h.war.state().encounter.encounter?.outcome;i++)h.step(.04);
   h.hold('KeyA',false);await frames();
   assert(h.war.state().encounter.encounter?.objective.reason==='runner-arrived','Runner reaching the rally point ends the local objective');

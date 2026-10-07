@@ -7,12 +7,32 @@
 
 #world-war-report{position:fixed;left:32px;bottom:85px;width:min(350px,calc(100vw - 64px));max-height:55vh;overflow:auto;z-index:2;background:#183b30f5;border:1px solid #c3af7c;border-radius:5px;padding:18px;box-shadow:0 5px 20px #14291f55}#world-war-report h2{font:24px/1.15 Georgia;margin:10px 0}#world-war-report p{font:13px/1.55 system-ui;margin:10px 0;color:#e5e7d2}#world-war-report #world-war-report-clock{font-size:12px;color:#f0d294}.war-report-actions{display:flex;gap:8px;margin-top:14px}.war-report-actions button{padding:8px 12px;font-size:12px}@media(max-width:760px){#world-war-report{left:16px;bottom:145px;max-height:45vh}}
 
-#world-skirmish{position:fixed;top:24px;left:24px;z-index:4;padding:16px 20px;background:#183b30ed;border:1px solid #c3af7c;border-radius:5px;width:min(410px,calc(100vw - 48px));box-sizing:border-box}#world-skirmish p{font:13px/1.5 system-ui;margin:8px 0}#world-skirmish-health{font-weight:bold!important;color:#f1d496}
+#world-skirmish{position:fixed;top:24px;left:24px;z-index:4;padding:16px 18px;background:#183b30ed;border:1px solid #a8b09c88;border-radius:5px;width:min(370px,calc(100vw - 48px));max-height:calc(100vh - 48px);overflow:auto;box-sizing:border-box}
+#world-skirmish .eyebrow{font-size:10px;letter-spacing:.12em;line-height:1.5;display:block}
+#world-skirmish p{font:13px/1.5 system-ui;margin:12px 0}
+#world-skirmish-vitals{display:flex;align-items:center;gap:12px;margin-top:14px;font:13px system-ui}
+#world-skirmish-health{white-space:nowrap;color:#eae8d5}
+#world-skirmish-health[data-hurt="true"]{color:#ffb1a0}
+#world-skirmish-health-meter{flex:1;width:70px;height:10px;accent-color:#aac387}
+#world-skirmish-health-meter::-webkit-meter-bar{background:#132e26;border:0;border-radius:3px}
+#world-skirmish-health-meter::-webkit-meter-optimum-value{background:#aac387}
+#world-skirmish #world-skirmish-objective{min-height:3em;color:#f6e1ad;font-size:14px}
+#world-skirmish-objective[data-kind="feedback"]{color:#ffd2ae!important}
+#world-skirmish-actions{display:flex;gap:8px;margin:12px 0 6px}
+#world-skirmish button{font-size:12px;padding:8px 10px;margin-top:6px}
+#world-skirmish-actions button{flex:1;margin:0}
+#world-skirmish-help,#world-skirmish-retry,#world-skirmish-withdraw{background:transparent}
+#world-skirmish-controls{border-top:1px solid #a8b09c55;margin-top:12px}
+#world-skirmish-controls dl{font:12px/1.5 system-ui;margin:14px 0}
+#world-skirmish-controls dt{font-weight:600;color:#f1d496;margin-top:10px}
+#world-skirmish-controls dd{margin:2px 0}
+#world-skirmish #world-skirmish-context{font-size:12px;color:#c6d0c0}
+@media(max-width:760px){#world-skirmish{top:12px;left:12px;width:min(350px,calc(100vw - 24px));max-height:calc(100vh - 24px)}}
 
 #world-site-status{margin:4px 0 0;font:13px/1.5 system-ui;color:#f1e8cb;background:#183b30d9;padding:5px 9px;border-radius:3px;max-width:330px}
 #exploration-hud:not([hidden]):has(#world-site-status:not([hidden]))~#exploration-status{top:175px}
 #world-autoplay{position:fixed;bottom:72px;right:24px;z-index:13;max-width:calc(100vw - 48px);font:12px/1.5 system-ui;padding:8px 12px}
-#world-skirmish-warning{color:#ffe39b;border-left:3px solid #f0b855;padding-left:10px}#world-skirmish-result h2{font-size:25px;margin:10px 0;color:#ffe39b}#world-skirmish-result{border-top:1px solid #c3af7c;margin-top:12px}
+#world-skirmish-result h2{font-size:25px;margin:10px 0;color:#ffe39b}#world-skirmish-result{border-top:1px solid #c3af7c;margin-top:12px}
 
 #world-war-track{position:fixed;top:155px;right:32px;z-index:2;display:flex;align-items:center;gap:12px;width:360px;max-width:calc(100vw - 64px);padding:12px 14px;background:#183b30ed;border:1px solid #a8b09c88;border-radius:4px;font:12px/1.5 system-ui}
 #world-war-track strong{font-weight:600}#world-war-track p{font:12px/1.5 system-ui;color:#d2d8bd;margin:4px 0 0}#world-war-track button{padding:5px 8px;font-size:11px;margin-left:auto}#world-war-track .war-track-arrow{font:30px system-ui;color:#ffe39b;flex-shrink:0;display:block}

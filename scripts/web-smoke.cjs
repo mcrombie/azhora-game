@@ -48,9 +48,12 @@ app.whenReady().then(async()=>{
     await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatImpacts(window.__EXPLORATION__,${JSON.stringify(stage)}))`);
     fs.writeFileSync(path.join(artifacts,'web-combat-'+stage+'.png'),(await win.webContents.capturePage()).toPNG());
   }
-  await run(`document.querySelector('.combat-sound').click();document.getElementById('world-skirmish-withdraw').click();document.querySelector('[data-combat-exercise="lesson"]').click()`);
+  await run(`document.getElementById('world-skirmish-help').click();document.querySelector('.combat-sound').click();document.getElementById('world-skirmish-withdraw').click();document.querySelector('[data-combat-exercise="lesson"]').click()`);
   await wait('window.__EXPLORATION__.practice.state().encounter');
   check(await run(`!window.__EXPLORATION__.practice.state().encounter.presentation.sound.enabled`),'Sound can be muted across retries');
+  await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatHelp(window.__EXPLORATION__))`);
+  fs.writeFileSync(path.join(artifacts,'web-combat-help.png'),(await win.webContents.capturePage()).toPNG());
+  await run(`document.getElementById('world-skirmish-help').click()`);
   const combat=await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatExercises(window.__EXPLORATION__))`);
   checks.push(...combat.checks);
   check(await run(`JSON.stringify({...localStorage})`)===beforeCombat,'All combat exercises leave browser saves untouched');

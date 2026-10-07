@@ -66,9 +66,32 @@ export async function checkCombatImpacts(h,stage){
   }else if(stage==='dodge'){
     document.getElementById('world-skirmish-retry').click();h.hold('Space',true);h.step(1/60);h.hold('Space',false);
     for(let i=0;i<20;i++)h.step(1/60);h.hold('Space',true);h.step(1/60);h.hold('Space',false);
-    assert(fight().hero.lastDodge.kind==='cooldown'&&document.getElementById('world-skirmish-feedback').textContent.includes('recovering'),'An unavailable dodge explains its recovery');
+    assert(fight().hero.lastDodge.kind==='cooldown'&&document.getElementById('world-skirmish-objective').textContent.includes('recovering'),'An unavailable dodge explains its recovery');
     assert(h.state().combatImpacts.some(p=>p.visible&&p.kind==='dodge'),'Failed dodge explanation appears beside Teresod');
     assert(/\d\.\ds/.test(document.getElementById('world-skirmish-dodge').textContent),'Dodge button displays remaining recovery time');
   }
   window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks]};
+}
+
+
+export async function checkCombatHelp(h){
+  window.dispatchEvent(new Event('focus'));
+  const $=id=>document.getElementById('world-skirmish-'+id),fight=()=>h.practice.state().encounter;
+  const press=code=>{const e=new KeyboardEvent('keydown',{code,bubbles:true,cancelable:true});document.dispatchEvent(e);document.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true}));return e;};
+  assert($('controls').hidden&&!$('objective').hidden,'Fight starts with one instruction and reference controls hidden');
+  $('help').click();const before=fight();
+  h.hold('KeyW',true);h.hold('KeyX',true);h.hold('Space',true);
+  document.getElementById('exploration-canvas').click();for(let i=0;i<90;i++)h.step(1/60);
+  const after=fight();
+  assert(after.presentation.helpOpen&&!$('controls').hidden&&$('objective').hidden&&!$('withdraw').textContent.includes('Esc'),'Help replaces coaching with paused reference controls');
+  assert(after.time===before.time&&JSON.stringify(after.hero)===JSON.stringify(before.hero)&&JSON.stringify(after.guards)===JSON.stringify(before.guards),'Reading Help freezes soldiers, health, cooldowns and the encounter clock');
+  assert(!press('Tab').defaultPrevented,'Help supports native keyboard navigation');
+  window.dispatchEvent(new Event('blur'));window.dispatchEvent(new Event('focus'));h.step(1/60);
+  assert(fight().time===before.time,'Window focus does not resume combat behind Help');
+  press('Escape');
+  assert(!fight().presentation.helpOpen&&h.practice.state().active&&h.state().mode==='skirmish','Esc closes Help without withdrawing from the encounter');
+  h.step(1/60);const resumed=fight();
+  assert(resumed.time>before.time&&resumed.hero.x===before.hero.x&&resumed.hero.z===before.hero.z&&!resumed.hero.swing&&!resumed.hero.dodge,'Resuming clears queued movement, strike and dodge input');
+  press('KeyH');assert(fight().presentation.helpOpen,'H opens paused Help from the keyboard');
+  await frames();return {checks:[...checks]};
 }

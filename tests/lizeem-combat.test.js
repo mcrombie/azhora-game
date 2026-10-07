@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createLizeemEncounter} from '../src/gameplay/combat/lizeem-encounter.js';
 import {encounterAutoplayInput} from '../src/gameplay/autoplay/encounter-input.js';
-import {dodgeLesson} from '../src/gameplay/combat/encounter-lesson.js';
+import {dodgeLesson,encounterInstruction} from '../src/gameplay/combat/encounter-lesson.js';
 import {moveEncounterBody,ENCOUNTER_BODY_GAP,escortScreen} from '../src/gameplay/combat/encounter-space.js';
 import {selectEncounterTarget} from '../src/gameplay/combat/encounter-target.js';
 import {encounterFeedback} from '../src/gameplay/combat/encounter-feedback.js';
@@ -174,4 +174,35 @@ test('a sweep catching the end of a sidestep reports the actual cause of damage'
   while(!(s.guards[0].phase==='windup'&&s.guards[0].timer<.18))s=m.tick(1/60);
   s=m.tick(1/60,{x:1,dodge:true});while(!s.hero.lastDefense)s=m.tick(1/60);
   assert.equal(s.hero.hp,75);assert.equal(s.hero.lastDefense.reason,'sweep-caught');assert.match(encounterFeedback(s).text,/after the dodge/);
+});
+
+
+test('coaching distinguishes reaching, facing and striking an actual dodge opening',()=>{
+  const m=create();let s=m.snapshot();
+  while(!s.guards[0].dodged)s=m.tick(1/60,encounterAutoplayInput(s));
+  while(s.guards[0].phase==='strike')s=m.tick(1/60);
+  assert(s.guards[0].open&&s.guards[0].dodged);
+  assert.equal(dodgeLesson({...s,hero:{...s.hero,x:6,z:6}}).kind,'approach');
+  const g=s.guards[0],close={...s,hero:{...s.hero,x:g.x,z:g.z+1.8,targetId:null}};
+  assert.equal(dodgeLesson(close).kind,'face');
+  assert.equal(dodgeLesson({...close,hero:{...close.hero,targetId:g.id}}).kind,'counter');
+  assert(!dodgeLesson(s).complete,'An opening alone does not complete the exercise');
+});
+
+test('one instruction explains a failed dodge briefly then returns to the current attack',()=>{
+  const m=create();m.tick(1/60,{dodge:true});step(m,20);const s=m.tick(1/60,{dodge:true});
+  const before=JSON.stringify(s),feedback=encounterInstruction(s,'lesson');
+  assert.equal(feedback.kind,'feedback');assert.match(feedback.text,/recovering/);
+  assert.equal(JSON.stringify(s),before,'Reading guidance cannot change combat');
+  const threat={...s,time:s.time+1,guards:[{...s.guards[0],phase:'windup',attack:'thrust'}]};
+  assert.equal(encounterInstruction(threat,'lesson').kind,'threat');
+  assert.match(encounterInstruction(threat,'lesson').text,/Thrust:/);
+  assert.match(encounterInstruction({...threat,guards:[{...threat.guards[0],attack:'sweep'}]},'advanced').text,/Sweep:/);
+});
+
+test('interception instruction keeps the surviving escorts relevant after a runner escapes',()=>{
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:2,z:-20,role:'escort'},{x:0,z:-20,role:'runner'}],reinforcementRoute:[{x:0,z:-30}]});
+  const s=m.snapshot();assert.match(encounterInstruction(s,'squad').text,/Stop the runner/);
+  s.guards[1].escaped=true;assert.match(encounterInstruction(s,'squad').text,/Runner escaped.*escorts/);
+  s.guards[1].escaped=false;s.guards[1].hp=0;assert.match(encounterInstruction(s,'squad').text,/Runner stopped.*escorts/);
 });

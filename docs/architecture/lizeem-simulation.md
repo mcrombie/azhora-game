@@ -347,3 +347,16 @@ The exploration adapter now retains startup stage timings. Native combat checks 
 Measured startup was 7.8 seconds in the isolated desktop run (2.2 seconds of camp construction) and 9.3 seconds in the built-site browser check. Earlier successful full-builder combat runs were approximately 80-100 seconds; the comparison run during this change instead timed out at five minutes inside West Lotharn construction. These are individual local measurements, not a controlled hardware benchmark or a guarantee for remote browsers. The structural reduction to two local jobs and absence of global-world/map requests are checked directly.
 
 Verification: 79 focused world/combat tests, 12 exploration tests, 37 native combat-startup checks, 65 built-site browser checks, and all 31 Ovesos ride/battle/geopolitical-result checks passed. Source layout, module linking and exploration dependency boundaries passed. The new camp view and browser feedback captures were visually inspected. The README includes a short first-playtest guide; further control/camera changes should follow actual player feedback.
+
+
+## Compact combat guidance and paused Help
+
+The field encounter and all three Minora exercises now share `src/app/exploration/skirmish-hud.js`. The active panel contains health, dodge readiness, strike/dodge buttons and one instruction. H or Help opens the full control reference and sound toggle. Combat time, soldiers, cooldowns and the preparation countdown freeze while Help is open. H or Esc resumes without withdrawing; movement and queued actions are cleared. Tab and native button activation remain available. Window inactivity preserves the instruction for reading and labels the panel as paused.
+
+`src/gameplay/combat/encounter-lesson.js` projects the next action from actual combat state: recognize the committed attack, dodge, return to reach, face the soldier, then counter the gold-ring target. Fresh failure explanations briefly take priority; the next attack or counter opportunity then replaces them. The thrust-only first exercise and thrust/sweep second exercise retain their existing completion requirements. Enemy timing, hit detection, damage and campaign accounting are unchanged.
+
+The full Ovesos reinforcement explanation is in Help, including the battle deadline and the distinction between an interception and territorial conquest. A runner's escape still leaves the surviving escorts relevant. Results retain the detailed earned contribution. Guidance reads the model; it cannot grant a hit, complete a lesson or change troop counts.
+
+The next useful design input is an uncoached human playtest of all three exercises, followed by an Ovesos intervention. The automated checks drive ordinary combat inputs but cannot establish whether a new player understands the fight or enjoys it.
+
+Verification: 82 focused world/combat tests, 12 exploration tests, 45 native camp checks, 73 built-site browser checks, 30 Ovesos field-intervention checks and the Caricas interception/result regression passed. Source layout, module linking and the exploration dependency boundary passed. The initial broader browser run timed out during Hearthfall startup after passing combat; a standalone rerun passed Hearthfall startup, save and Continue. Desktop and browser HUD/Help/impact screenshots were reviewed.
