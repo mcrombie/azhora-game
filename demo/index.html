@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore three living communities in Azhora: a deterministic settlement simulation, persistent characters, and an AI-illustrated book of local history built on AWS.">
+  <title>The Feradom Annals · Hearthfall × Azhora</title>
+  <link rel="stylesheet" href="book.css">
+  <link rel="stylesheet" href="demo.css">
+  <script type="module" src="demo.js"></script>
+</head>
+<body>
+  <header class="masthead"><a href="#" class="wordmark">Hearthfall <span>×</span> Azhora</a><nav aria-label="Main"><a href="#communities">The communities</a><a href="#craft">Under the cover</a><a href="https://github.com/lakotacamp/azhora-game/tree/codex/hearthfall-azhora-integration">Source ↗</a></nav></header>
+  <main>
+    <section class="hero">
+      <div class="hero-copy"><p class="eyebrow">A living-world experiment · Feradom, year 980</p><h1>Great worlds.<br><em>Small histories.</em></h1><p class="lede">A fishing village. A farming hamlet. A woodland community. Thirty days of work, weather, and help from a passing traveler—remembered by the people who lived them.</p><button id="open-volume" class="primary" disabled>Opening the archive…</button><p class="caption">An illustrated, interactive chronicle from the Hearthfall × Azhora integration pilot.</p></div>
+      <figure class="hero-art"><img id="cover-image" alt="A newly generated woodcut from the community's history"><figcaption id="cover-caption">From the Feradom Annals</figcaption></figure>
+    </section>
+    <section class="numbers" aria-label="Demonstration scope"><div><strong>3</strong><span>living communities</span></div><div><strong>36</strong><span>persistent residents</span></div><div><strong>30</strong><span>simulated days</span></div><div><strong id="image-count">—</strong><span>original woodcuts</span></div></section>
+    <section id="communities" class="communities"><p class="eyebrow">Choose a place. Open its history.</p><h2>Every household leaves a trace.</h2><p class="section-intro">Meet the residents, compare each day’s stores, and follow the events behind a new custom. The same people and records continue into the playable Azhora pilot.</p><div id="community-cards" class="community-grid"></div></section>
+    <section class="story-note"><span class="flourish">❦</span><div><h2>A traveler’s help becomes a local custom.</h2><p>This reproducible demonstration starts with a finite satchel of barley and repair timber. A scripted traveler fulfills actual requests and carries messages. The simulation records every transfer, changes residents’ trust and relationships, and lets repeated assistance establish the Common Reserve.</p><p>Open a household on the book’s map to read those memories. Select a custom’s founding occasions to trace its origin.</p></div></section>
+    <section id="craft" class="craft"><p class="eyebrow">Under the cover</p><h2>The simulation makes history.<br>The models give it a voice.</h2><div class="pipeline" aria-label="Chronicle generation pipeline"><div><b>01</b><h3>Simulate</h3><p>A seeded JavaScript engine advances communities on Azhora’s calendar. Resources, actions, and consequences stay in code.</p></div><div><b>02</b><h3>Remember</h3><p>Immutable daily records preserve events, residents, relationships, and the day’s resource figures.</p></div><div><b>03</b><h3>Illustrate</h3><p>Claude Haiku writes from those facts. Stable Image Core creates a fresh woodcut. AWS queues, stores, and budgets the work.</p></div></div><div class="engineering"><p><strong>Built on AWS</strong><br>API Gateway · Lambda · SQS · DynamoDB · private S3 · Bedrock · Cognito</p><p><strong>Bounded and recoverable</strong><br>$25 monthly model reservations. Durable pending pages. Duplicate protection. No automatic retry of uncertain billed calls.</p></div></section>
+    <section class="demo-notes"><h2>About this demonstration</h2><p>This is a saved, interactive history: browsing it makes no AI requests. The separate game integration supports daily simulation, resident dialogue, deliveries, repairs, messages, map discovery, and continuing histories per save. Public visitors can inspect the illustrated book without a collaborator login.</p><p>The pilot is proposed for Crombie’s review. Azhora and its source world lore are by mcrombie. The generated communities are a Hearthfall integration experiment; their stories are not presented as approved world canon. Prose and illustrations are AI-generated from recorded simulation facts.</p><a class="text-link" href="https://github.com/lakotacamp/azhora-game/blob/codex/hearthfall-azhora-integration/docs/living-settlements.md">Run the playable pilot & read the implementation notes ↗</a></section>
+  </main>
+  <footer class="colophon">The Feradom Annals <span>✦</span> Hearthfall × Azhora <span>✦</span> <a href="demo-pack.json" download>Download the playable settlement pack</a></footer>
+  <div id="book-root"></div>
+  <p id="load-error" role="alert" hidden></p>
+</body>
+</html>

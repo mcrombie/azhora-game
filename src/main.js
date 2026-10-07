@@ -52,6 +52,7 @@ import { createConsumables } from './consumables.js';
 import { createCampcraft } from './campcraft.js';
 import { createFireMaking, LEE_ANNE, FIRE_LESSON_FIRE, fireMakingStands, fireMakingConversation } from './fire-making.js';
 import { createWorldMap } from './world-map.js';
+import { createSettlementHost } from './settlements/host.js';
 import { MENORA } from './menora-city.js';
 import { NYLON, NYLON_BUILDINGS } from './nylon-city.js';
 import { AEVIS, AEVIS_BUILDINGS, AEVIS_GATES } from './aevis-city.js';
@@ -2099,6 +2100,7 @@ async function init() {
   const birdPointer=createBirdPointer();scene.add(birdPointer);
   const forestStory=createForestStory({inventory,weapons});
   const regionalLife=createRegionalLife({inventory});
+  let settlementHost=null;
   vastos.bind({inventory,openDialogue,closeDialogue,toast,track:trackPlace,
     canAct:()=>['playing','dialogue'].includes(mode)&&combat.state.phase!=='active',
     onChange:()=>{refreshJournal();inventory.refresh();saveRoad(false);}});
@@ -4031,6 +4033,7 @@ async function init() {
     if(saved&&!saved.livingStory&&saved.luscia?.satchelTaken&&!saved.luscia?.returned&&!inventory.has('courier-satchel'))inventory.add('courier-satchel',1);
     if(saved&&!saved.livingStory&&saved.moros?.mustered){living.arrivePlayerMuster(living.player().allegiance);if(saved.border?.marched)living.departMuster(living.player().allegiance);}
     playSeconds=living.clock();livingHost?.restore();if(!saved)republic?.restore();resetLivingRoutes();
+    if(saved)settlementHost?.restore(saved.settlements,playSeconds);else settlementHost?.reset(playSeconds);
   }
   function restoreLivingFeet(){
     for(const a of living.actors()){const npc=npcById.get(a.id);if(!npc||!a.position)continue;
@@ -4173,6 +4176,9 @@ async function init() {
   let trackedPlaceId=null;
   const trailMap=createTrailMap({mount:$('trail-map'),getModel:localMapModel,onTrack:trackPlace,onClear:clearTrailPin});
   const developer=createDeveloperMode({renderer,normalScene:scene,world,player,onExit:()=>{mode='playing';stopInput();settleCamera();canvas.focus();}});
+  settlementHost=createSettlementHost({scene,world,player,inventory,getTime:()=>living.clock(),getMode:()=>mode,
+    setMode:value=>{mode=value;stopInput();},chart:()=>mapFog.snapshot(),openDialogue,closeDialogue,
+    onSave:()=>saveRoad(false),onTrack:trackPlace,notify:toast,onTour:p=>{testTravel('feradom');player.group.position.set(p.x,world.heightAt(p.x,p.z),p.z);settleCamera();}});
   function openDeveloper(){
     if(peninsulaHost?.active){toast('Finish the training peninsula before using free flight. The developer mounts can fly within its boundary.','TUTORIAL');return false;}
     if(mode!=='testing')return false;
@@ -4661,6 +4667,7 @@ async function init() {
     for(const site of REGIONAL_LIFE_SITES)if(knownIds.has(site.id)&&!world.landmarks.some(place=>place.id===site.id))knownLocations.push({...site,description:site.note||site.prompt});
     for(const place of vastos.knownLocations(discoveries.has('vastos-herders-camp'))){knownIds.add(place.id);knownLocations.push(place);}
     for(const id of drent.quest.view().knownIds){const p=drent.point(id)??world.npcPositions[id];if(!p)continue;knownIds.add(id);knownLocations.push({id,name:p.name??npcById.get(id)?.name??id,x:p.x,z:p.z});}
+    for(const place of settlementHost?.knownLocations()??[]){knownIds.add(place.id);knownLocations.push(place);}
     return {knownIds,knownLocations};
   }
   function localMapModel(regionId,globalDetail=false){
@@ -4952,7 +4959,7 @@ async function init() {
       acorns:gathered.acorns.filter(s=>s.collected).map(s=>s.id),sticks:gathered.sticks.filter(s=>s.collected).map(s=>s.id),
       fruits:gathered.fruits.filter(s=>s.collected).map(s=>s.id),discoveries:[...discoveries],camp:campcraft.checkpoint()};
     cagneyHost.remember();
-    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
+    return {version:1,ambronLayoutVersion:AMBRON_LAYOUT_VERSION,peninsulaTutorial:peninsulaHost?.snapshot(),sevron:sevronHost?.snapshot(),...batmanHost?.snapshot(),kaylaRace:raceHost?.snapshot(),cubHoney:cubHost?.snapshot(),bearFamily:bearFamily?.snapshot(),kayla:kaylaHost?.snapshot(),homes:homeResidents.snapshot(),brandyHome:brandyHome.snapshot(),ibenwoodDefense:ibenwoodDefense?.snapshot(),baldro:baldroHost?.snapshot(),frontierRaids:frontierRaids?.snapshot(),jesseCarriage:jesseHost?.snapshot(),cagney:cagneyQuest.snapshot(),worldScale:METRES_PER_HEX,mode:gameMode.snapshot(),player:playerId,questStage,journey:journey.snapshot(),inventory:inventory.items().map(id=>({id,quantity:inventory.count(id)})),weapons:weapons.snapshot(),journeyGathered:[...journeyGathered],meadowCleared,position:savedFootPosition(),heardDoom,health:combat.state.player.hp,lysaComplete:acornQuest.status==='complete',woodland,forestStory:forestStory.snapshot(),forestHideout:forestHideout.snapshot(),regionalLife:regionalLife.snapshot(),settlements:settlementHost?.snapshot(),campaign:campaign.snapshot(),luscia:luscia.snapshot(),burying:burying.snapshot(),mapTutorial:mapTutorial.snapshot(),chartLesson:chartLesson.snapshot(),trackedQuestId:questTracker.selectedId,playSeconds,livingStory:living?.snapshot(),lusciaCivilWar:republic?.snapshot?.(),mercenaryWeapons:Object.fromEntries(mercenaryWeapons),moros:moros.snapshot(),border:border.snapshot(),aftermath:aftermath.snapshot(),riding:riding.snapshot(),skills:skills.snapshot(),birding:birding.snapshot(),lakota:lakota.snapshot(),swimming:swimming.snapshot(),companions:companions.snapshot(),teachers:teachers.snapshot(),gear:gear.snapshot(),fishing:fishing.snapshot(),mycology:mycology.snapshot(),mushrooms:mushrooms.state().sites.filter(site=>site.gathered).map(site=>site.id),botany:botany.snapshot(),pipe:pipe.snapshot(),jimson:jimson.snapshot(),katy:katy.snapshot(),troy:troy.snapshot(),vineyard:vineyard.snapshot(),hunt:hunt.snapshot(),light:light.snapshot(),bosco:bosco.snapshot(),heist:heist.snapshot(),refugees:refugees.snapshot(),fallen:fallen.snapshot(),geology:geology.snapshot(),archaeology:archaeology.snapshot(),wine:wine.snapshot(),cooking:cooking.snapshot(),wineAttic:wineAttic.snapshot(),puck:puck.snapshot(),chameleon:chameleon.snapshot(),troupe:troupe.snapshot(),brandy:brandy.snapshot(),salt:salt.snapshot(),woodcutting:wood.snapshot(),construction:building.snapshot(),oldTree:oldTree.snapshot(),stones:stones.state().sites.filter(site=>site.gathered).map(site=>site.id),plants:flora.state().sites.filter(site=>site.gathered).map(site=>site.id),chart:mapFog.snapshot(),cartography:cartography.snapshot(),ferry:ferry.snapshot(),renaLetters:renaLetters.snapshot(),ogreToll:ogreToll.snapshot(),linguist:linguist.snapshot(),longRoad:longRoad.snapshot(),companionOffTheClock,farming:farming.snapshot(),sunflowerLesson:sunflowerLesson.snapshot(),barrettGeography:barrettGeography.snapshot(),sylviaIvy:sylviaIvy.snapshot(),roadLessons:roadLessons.snapshot(),fireMaking:fireMaking.snapshot(),husbandry:husbandry.snapshot(),glunWood:glunWood.snapshot(),fishingLessons:fishingLessons.snapshot(),ambush:ambush.snapshot(),spider:spiderQuest.snapshot(),murder:murder.snapshot(),cat:catQuest.snapshot(),drentCivilWar:drent.snapshot(),crime:crime?.snapshot(),telemon:telemonia?.snapshot(),corpses:corpseHost?.snapshot(),magic:magic?.snapshot(),vastos:vastos.snapshot()};
   }
   function saveRoad(notify=true){
     if(restoringRoad||regionLoadDepth||strategicReturn)return false;
@@ -5547,6 +5554,7 @@ async function init() {
     if(crime?.converse(npc))return;
     if(mode!=='playing'||!npc||combat.state.phase==='active')return;
     if(telemonia?.converse(npc))return;
+    if(settlementHost?.converse(npc))return;
     if(npc.id===CUB.id){cubHost.conversation({openDialogue,closeDialogue});return;}
     if(circusConversation(npc,{openDialogue,closeDialogue,kaylaNear:()=>!!bearFamily?.roaming}))return;
     if(npc.id===LIZ.id&&cubHost.state().alerted){toast('Liz is furious. Leave the apiary and give her time to calm down.','LIZ');return;}
@@ -6435,6 +6443,7 @@ async function init() {
     if(cubHost?.nearby&&combat.state.phase!=='active'){cubHost.interact();return;}
     if(rivalLight?.nearby&&combat.state.phase!=='active'){rivalLight.interact();return;}
     if(droppedSatchelNear&&combat.state.phase!=='active'){takeDroppedSatchel();return;}
+    if(!currentNPC&&combat.state.phase!=='active'&&settlementHost?.interact())return;
     if(currentNPC){conversation(currentNPC);return;}
     if(!currentNPC&&peninsulaHost?.nearby()&&combat.state.phase!=='active'){peninsulaHost.interact();return;}
     if(!currentNPC&&jesseHost.nearby()&&combat.state.phase!=='active'){jesseHost.interact(jesseHost.nearby());return;}
@@ -7907,6 +7916,7 @@ async function init() {
       if(mode==='fishing')world.setFishingOrigin(player.fishingTip());
       // The roster counts arrivals from the landing, not from the title screen or the sail in.
       if(['playing','fishing'].includes(mode)&&!reviewFrozen){living.tick(dt);playSeconds=living.clock();}
+      settlementHost?.frame(playSeconds,mode==='playing'&&!reviewFrozen&&combat.state.phase!=='active');
       updateLivingRoutes(dt);
       livingHost?.frame();
       peninsulaHost.frame(reviewFrozen?0:dt);
@@ -8527,6 +8537,15 @@ async function init() {
           press:code=>document.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true})),release:code=>document.dispatchEvent(new KeyboardEvent('keyup',{code,bubbles:true})),
           play:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();reviewFrozen=false;reviewTarget=null;mode='playing';skillAnnouncements.clear();mapTutorial.restore(2);renderMapTutorial();},
           frames:async(n=1)=>{for(let i=0;i<n;i++)await new Promise(requestAnimationFrame);}},expected);
+      },
+      async runSettlementChecks(){
+        const {runSettlementChecks}=await import('./settlements/smoke.js');
+        return runSettlementChecks({host:settlementHost,world,player,inventory,living:{clock:()=>living.clock(),advance:seconds=>living.advance(seconds)},chart:mapFog,read:state,
+          prepare:()=>{window.__AZHORA__.review('walk');prepareTesting();stopAutopilot();reviewFrozen=true;reviewTarget=null;mode='playing';combat.revive();combat.finishPractice();},
+          mode:()=>mode,setMode:value=>{mode=value;},snapshot:roadSnapshot,
+          validate:value=>createRoadCheckpoint({storage:{setItem(){}}}).save(value),
+          restoreRoad:async value=>{const result=sessionCheckpoint.save(value);if(!result.ok)return false;recoveryInfo={testing:true,encounterId:null};const ok=continueRoad(true);reviewFrozen=true;return ok;},
+          frame:()=>settlementHost.frame(living.clock(),false),frameErrors:()=>frameErrors.view()});
       },
       async runFastLoadingChecks(){
         const {runFastLoadingChecks}=await import('./fast-loading-checks.js');

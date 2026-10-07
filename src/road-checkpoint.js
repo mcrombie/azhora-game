@@ -42,6 +42,7 @@ import { validateWoodlandProgress, copyWoodlandProgress } from './woodland-progr
 import { createForestStory, validateForestStorySnapshot } from './forest-story.js';
 import { createForestHideoutQuest, validateForestHideoutSnapshot } from './forest-hideout.js';
 import { createRegionalLife, validateRegionalLifeSnapshot } from './regional-life.js';
+import { validateSettlementSnapshot } from './settlements/engine.js';
 import { createCampaign } from './campaign.js';
 import { validateMapTutorial } from './map-tutorial.js';
 import { validateChartLesson } from './chart-lesson.js';
@@ -332,6 +333,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
         return failed('The saved Drent evidence or supplies do not match your satchel.');
     }
     if (!validateForestHideoutSnapshot(data.forestHideout)) return failed('The saved woodland encounter is invalid.');
+    if (!validateSettlementSnapshot(data.settlements)) return failed('The saved settlement history is invalid.');
     if (!validateRegionalLifeSnapshot(data.regionalLife)) return failed('The saved lives along the road are invalid.');
     // Hostile camp scouts can attack before the traveler finishes the main tutorial.
     if (data.woodland && data.questStage >= 3 && (data.woodland.practiceHits < 2 || data.woodland.practiceDodges < 1
@@ -402,6 +404,7 @@ export function createRoadCheckpoint({ storage, key = ROAD_CHECKPOINT_KEY } = {}
     if (Object.hasOwn(data, 'woodland')) result.woodland = copyWoodlandProgress(data.woodland);
     if (Object.hasOwn(data, 'forestStory')) { const story = createForestStory(); story.restore(data.forestStory); result.forestStory = story.snapshot(); }
     if (Object.hasOwn(data, 'forestHideout')) { const hideout = createForestHideoutQuest(); hideout.restore(data.forestHideout); result.forestHideout = hideout.snapshot(); }
+    if (Object.hasOwn(data, 'settlements')) result.settlements = structuredClone(data.settlements);
     if (Object.hasOwn(data, 'regionalLife')) { const life = createRegionalLife(); life.restore(data.regionalLife); result.regionalLife = life.snapshot(); }
     if (Object.hasOwn(data, 'campaign')) result.campaign = campaign.snapshot();
     if (Object.hasOwn(data, 'mapTutorial')) result.mapTutorial = data.mapTutorial;

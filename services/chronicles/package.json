@@ -1,0 +1,20 @@
+{
+  "name": "azhora-chronicles",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild handler.mjs --bundle --platform=node --target=node22 --format=cjs --outfile=../../tests/artifacts/chronicles/handler.cjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "3.1147.0",
+    "@aws-sdk/client-dynamodb": "3.1147.0",
+    "@aws-sdk/client-s3": "3.1147.0",
+    "@aws-sdk/client-sqs": "3.1147.0",
+    "@aws-sdk/lib-dynamodb": "3.1147.0",
+    "@aws-sdk/s3-request-presigner": "3.1147.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

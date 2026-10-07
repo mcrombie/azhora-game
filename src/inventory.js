@@ -603,6 +603,26 @@ export function createInventoryState() {
     return true;
   }
   return {
+    /** Commit debits and credits together after validating the complete resulting inventory. */
+    transact(entries) {
+      if (!Array.isArray(entries) || !entries.length) return false;
+      const deltas = new Map();
+      for (const e of entries) {
+        if (!e || !Object.hasOwn(INVENTORY_ITEMS,e.id) || !Number.isSafeInteger(e.delta) || e.delta === 0) return false;
+        const delta = (deltas.get(e.id) ?? 0) + e.delta;
+        if (!Number.isSafeInteger(delta)) return false;
+        deltas.set(e.id,delta);
+      }
+      const next = new Map(owned);
+      for (const [id,delta] of deltas) {
+        const count = (next.get(id) ?? 0) + delta;
+        if (!Number.isSafeInteger(count) || count < 0 || (!INVENTORY_ITEMS[id].stackable && count > 1)) return false;
+        if (count) next.set(id,count); else next.delete(id);
+      }
+      owned.clear(); for (const [id,count] of next) owned.set(id,count);
+      if (selected && !owned.has(selected)) selected = null;
+      return true;
+    },
     // A loot transfer commits all quantities together. Validation happens before
     // any item changes, so a failed transfer cannot strand half a body's loot.
     addMany(entries) {
@@ -1166,6 +1186,11 @@ export function createInventory({
 
   renderItems();
   return {
+    transact(entries) {
+      const changed = state.transact(entries);
+      if (changed) { hideTooltip(); renderItems(); }
+      return changed;
+    },
     addMany(entries) {
       const added = state.addMany(entries);
       if (added) { hideTooltip(); renderItems(); }

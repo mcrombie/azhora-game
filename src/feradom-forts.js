@@ -58,11 +58,11 @@ const PASS_WORDS = freeze({
   'birch-pass': 'On the Amod border, west of the corner where Pueth’s border turns: a narrow gorge, a tower on its rim, and a small castle with a tower-house for its keep.',
   'amod-pass': 'Over against Amod: the gorge through the barrier hills, the tower above it, and a castle filling the basin behind.',
   'stone-pass': 'Under the East Lotharn, where the mountains’ foot comes down to the barrier hills: a castle in a basin cut from the foothills, and the grey slopes of the range above it.',
-  'fir-pass': 'The westernmost pass, deep in the firs between the East Lotharn and the sea: a small castle and a tower above the narrows, the last of the duchy’s border.',
+  'fir-pass': 'The westernmost pass, deep in the firs between the East Lotharn and the sea: a small castle and a tower above the narrows, the last of the country’s border.',
 });
 export const FERADOM_LANDMARKS = freeze([
   freeze({ id: 'barrier-hills', name: 'The barrier hills', ...beltPoint(470, 95), radius: 125,
-    description: 'A band of steep forested hills along the duchy’s whole inland edge: not high, but faced toward the border with a band of bare rock nobody climbs, and crossed only by six passes. Oak and fir, old on the tops and cut in stands lower down; beacons on the summits between the passes, each in sight of the next.' }),
+    description: 'A band of steep forested hills along the country’s whole inland edge: not high, but faced toward the border with a band of bare rock nobody climbs, and crossed only by six passes. Oak and fir, old on the tops and cut in stands lower down; beacons on the summits between the passes, each in sight of the next.' }),
   ...PASSES.map(pass => freeze({ id: pass.id, name: pass.name, x: pass.yard.x, z: pass.yard.z, radius: 45, description: PASS_WORDS[pass.id] })),
 ]);
 

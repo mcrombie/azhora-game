@@ -14,6 +14,8 @@ Suval now has [terrain climbing](docs/climbing-suval.md): Space grips a reachabl
 
 ## Play
 
+The optional [Hearthfall living-settlements pilot](docs/living-settlements.md) adds three Feradom communities, persistent households, survival-driven local history and an interactive antique chronicle. Run `npm run start:settlements`, then use the F8 community tour. The shared authoring tool produces reviewable thirty-day history packs; fresh AI accounts and woodcuts require the separate authenticated press described in the guide.
+
 Double-click the **Azhora desktop icon**, **Play Azhora.cmd** in this folder, or run `npm start`. Close an existing game window and reopen it after an update.
 
 The desktop game opens in native fullscreen, covering the Windows title bar and taskbar. **F11** or **Alt+Enter** switches between fullscreen and a window. Escape pauses without leaving fullscreen.

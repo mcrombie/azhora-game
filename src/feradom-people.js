@@ -35,7 +35,7 @@ export const FERADOM_GARRISON = freeze([
       'The Road Pass is shut, on the pass-lord’s word and the council’s. Nothing comes up from Pueth, and nothing goes down.',
       'Ambron has a barrier at its end of the road and we have a gate at ours. Theirs is a rope between two posts. Ours is not.',
       'Six passes, six castles, and a tower above every narrows. A small force stops a large one here. That is the whole of the art, and every man on these walls knows it by heart.',
-      'The duchy has refused the Empire before, and some of the lords who did it lived to tell of it. We stand here so that it stays a thing a lord can do.',
+      'Feradom has refused outside rule before, and some of the lords who did it lived to tell of it. We stand here so that it stays a thing a lord can do.',
     ], passPoint(road, 0, 100)),
   person('feradom-road-gate-a', 'Feradom spearman', 'Of the Road Pass garrison', 'feradom-soldier',
     passPoint(road, -3.2, 43), toward(passPoint(road, 0, 43), passPoint(road, 0, 30)), [
@@ -44,7 +44,7 @@ export const FERADOM_GARRISON = freeze([
     ], passPoint(road, 0, 100)),
   person('feradom-road-gate-b', 'Feradom spearman', 'Of the Road Pass garrison', 'feradom-soldier',
     passPoint(road, 6.8, 43.5), toward(passPoint(road, 0, 43), passPoint(road, 0, 30)), [
-      'In Pueth they call us the pass-lords’ men. We are the duchy’s.',
+      'In Pueth they call us the pass-lords’ men. The local lords coordinate our watch through their council.',
       'Winter shuts the high passes for us. It is the autumn that keeps us awake.',
     ], passPoint(road, 0, 100)),
   // The other five: a spearman at the open back gate, on the coast side, where anybody inside the duchy comes up.
@@ -55,7 +55,7 @@ export const FERADOM_GARRISON = freeze([
       at, toward(at, passPoint(pass, 0, 100)), [
         `This is ${pass.name}. The castle keeps it, and the tower above the narrows keeps the castle’s eyes open.`,
         'The front gate stays shut while the council says so. You can go no further south than the wall.',
-        'Fir on the tops and oak lower down, and every tree of it the duchy’s. The shipwrights of Elagos would pay anything for it, and some years they do.',
+        'Fir on the tops and oak lower down, with the upper old growth kept and the lower stands managed by the local holdings. The shipwrights of Elagos would pay anything for it, and some years they do.',
       ], passPoint(pass, 0, 110));
   }),
 ]);

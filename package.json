@@ -96,7 +96,11 @@
     "test:sevron:desktop": "node scripts/launch.cjs --smoke-test --sevron-check",
     "test:strategy": "node --test --test-isolation=none tests/strategic-prototype.test.js tests/strategic-battle.test.js",
     "test:strategy:desktop": "node scripts/launch.cjs --smoke-test --strategic-checks",
-    "test:varn": "node scripts/run-tests.cjs tests/varn-world.test.js tests/lotharn-forts.test.js tests/town-life.test.js tests/climbing.test.js"
+    "test:varn": "node scripts/run-tests.cjs tests/varn-world.test.js tests/lotharn-forts.test.js tests/town-life.test.js tests/climbing.test.js",
+    "settlements:generate": "node scripts/generate-settlements.mjs",
+    "test:settlements": "node scripts/run-tests.cjs tests/settlements.test.js tests/settlement-archive.test.cjs tests/settlement-service.test.js tests/settlement-editions.test.js tests/settlement-client.test.js tests/settlement-infrastructure.test.js",
+    "test:settlement-game": "node scripts/launch.cjs --smoke-test --fast-load --settlement-checks",
+    "start:settlements": "node scripts/launch.cjs --fast-load --settlements"
   },
   "devDependencies": {
     "electron": "32.3.3"

@@ -468,5 +468,11 @@
   "tests/caricas-settlement-build.test.js",
   "tests/celder-ground-loading-review.test.js",
   "tests/varn-build-slices.test.js",
-  "tests/selemis-wrack-review.test.js"
+  "tests/selemis-wrack-review.test.js",
+  "tests/settlements.test.js",
+  "tests/settlement-archive.test.cjs",
+  "tests/settlement-service.test.js",
+  "tests/settlement-editions.test.js",
+  "tests/settlement-client.test.js",
+  "tests/settlement-infrastructure.test.js"
 ]

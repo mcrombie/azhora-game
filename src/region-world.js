@@ -1282,7 +1282,7 @@ const REGION_TEXT = {
   // The barrier hills and their passes, and the Duchy's garrison in them (src/feradom-world.js,
   // src/feradom-forts.js, src/feradom-people.js). The coast behind them is not built yet.
   Feradom: { subtitle: 'Behind the barrier hills', spawn: point(-421.129, -608.917),
-    description: 'The domain country: lords in their valleys, harbours in the coves of a cold coast, and along its inland edge the barrier hills, a band of steep forested ridges that are not high but are hard to cross, with a fortress of the Duchy on every pass. Oak and fir on the hills, the best ship timber in the north-east; fields and pasture behind them.',
+    description: 'The domain country: lords in their valleys, harbours in the coves of a cold coast, and along its inland edge the barrier hills, a band of steep forested ridges that are not high but are hard to cross, with a fortress held by the local pass-lord on every pass. Oak and fir on the hills, the best ship timber in the north-east; fields and pasture behind them.',
     palette: { ground: '#5c7248', accent: '#c9b58a', fog: '#b6c1c0', sky: 0xa3bdca, haze: 0xb5c2c4, hazeDensity: .0042 },
     npcIds: ['feradom-road-captain', 'feradom-road-gate-a', 'feradom-road-gate-b', 'feradom-ordel-gap-gate', 'feradom-birch-pass-gate', 'feradom-amod-pass-gate', 'feradom-stone-pass-gate', 'feradom-fir-pass-gate'],
     landmarks: ['barrier-hills', 'ordel-gap', 'road-pass', 'birch-pass', 'amod-pass', 'stone-pass', 'fir-pass'] },

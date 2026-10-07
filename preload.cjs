@@ -20,3 +20,6 @@ contextBridge.exposeInMainWorld('azhoraTerrainCache',Object.freeze({
   async read(){const result=await ipcRenderer.invoke('azhora:terrain-cache','read');terrainVersion=result?.version??null;return result?.entry??null;},
   write(value){return ipcRenderer.invoke('azhora:terrain-cache','write',{version:terrainVersion,entry:value});},
 }));
+
+// Append-only facts and generated accounts; renderer IDs never become paths.
+contextBridge.exposeInMainWorld('azhoraChronicles',Object.freeze({request:(operation,args)=>ipcRenderer.invoke('azhora:chronicles',operation,args)}));

@@ -1,0 +1,37 @@
+<!doctype html><meta charset="utf-8"><title>Settlement browser archive acceptance</title>
+<h1>Browser archive acceptance</h1><button id="run">Run archive and reload checks</button><pre id="result">Ready.</pre>
+<script type="module">
+import {createChronicleArchive,flushChronicles} from '../src/settlements/archive.js';
+import {createSettlementWorld} from '../src/settlements/engine.js';
+const database='azhora-settlement-acceptance-only',archive=createChronicleArchive({bridge:null,indexedDB:{open:(_,version)=>indexedDB.open(database,version)}});
+const result=document.querySelector('#result'),key='settlement-acceptance-reload';
+document.querySelector('#run').onclick=async()=>{
+ try {
+  const core=createSettlementWorld({worldId:'browser-acceptance'});
+  // Only this isolated test database is replaced. Seed the shipped v1 schema to test migration.
+  await new Promise((resolve,reject)=>{const r=indexedDB.deleteDatabase(database);r.onsuccess=resolve;r.onerror=()=>reject(r.error);});
+  const old=await new Promise((resolve,reject)=>{const r=indexedDB.open(database,1);r.onupgradeneeded=()=>r.result.createObjectStore('pages',{keyPath:'id'});r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
+  await new Promise((resolve,reject)=>{const tx=old.transaction('pages','readwrite');for(const entry of core.entries())tx.objectStore('pages').put({id:entry.id,entry,generation:{status:'pending'}});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});old.close();core.acknowledge(core.entries().map(e=>e.id));
+  sessionStorage.setItem(key,JSON.stringify(core.snapshot()));
+  location.reload();
+ } catch(e){result.textContent='FAIL: '+e.stack;}
+};
+if(sessionStorage.getItem(key)){
+ try{
+  const core=createSettlementWorld({saved:JSON.parse(sessionStorage.getItem(key))});
+  const rows=await archive.list(core.worldId);
+  if(rows.length!==3)throw Error('Reload lost a community record.');
+  const page=await archive.get(rows[0].id);
+  if(page.entry.residents.length!==12)throw Error('Reload lost residents.');
+  await archive.put(page.entry);
+  if((await archive.list(core.worldId)).length!==3)throw Error('Duplicate facts created another page.');
+  let rejected=false;try{await archive.update(page.id,{status:'ready',prose:'incomplete'});}catch{rejected=true;}
+  if(!rejected)throw Error('An incomplete generated page became ready.');
+  await archive.update(page.id,{status:'queued',jobId:'browser-test'});
+  if((await archive.list(core.worldId)).find(r=>r.id===page.id).status!=='queued')throw Error('The catalog did not commit with the page.');
+  if((await archive.list('different-world')).length)throw Error('A world query leaked another history.');
+  result.textContent='PASS: 6 IndexedDB checks, including v1 migration and a real page reload. Three immutable pages, residents, and the generation catalog survived.';
+  sessionStorage.removeItem(key);
+ }catch(e){result.textContent='FAIL: '+e.stack;}
+}
+</script>
