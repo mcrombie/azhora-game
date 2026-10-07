@@ -38,11 +38,11 @@ Keep the economy unbalanced if necessary for the first review, but report the ob
 
 ## Replacement branch and PR
 
-The published handoff base is `mcrombie/azhora-game:hearthfall-sandbox-base`. It includes the current exploration and Lizeem foundation in addition to this sandbox.
+The shared exploration, Lizeem and Hearthfall foundation now lives on `mcrombie/azhora-game:main`. The earlier `hearthfall-sandbox-base` is retained as a reference and is an ancestor of main.
 
-Create a fresh branch from that base in the contributor's fork. Bring over useful changes selectively, adapting imports to the current directory layout. Keep PR #1 open as a draft/reference until the replacement exists. The new PR initially targets `hearthfall-sandbox-base` in `mcrombie/azhora-game`, so its diff contains the settlement port rather than the foundation. Retarget to `main` after the foundation lands there.
+Create a fresh branch from `upstream/main` in the contributor's fork. Bring over useful changes selectively, adapting imports to the current directory layout. Keep PR #1 open as a draft/reference until the replacement exists. The replacement draft PR should target `main` in `mcrombie/azhora-game`; it should contain only the new settlement port. A feature branch already based on `hearthfall-sandbox-base` can merge `upstream/main` and retarget its PR.
 
-While the base remains separate, periodically merge updates from `upstream/hearthfall-sandbox-base` into the new feature branch. Once it lands on main, use `upstream/main`. Do not merge the old integration branch wholesale or rewrite its history.
+Periodically commit local work, fetch upstream, and merge `upstream/main` into the new feature branch. Do not merge the old integration branch wholesale or rewrite its history.
 
 ## Acceptance checks
 
