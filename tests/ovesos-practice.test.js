@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createOvesosPractice} from '../src/dev/tools/ovesos-practice.js';
+import {COMBAT_EXERCISES,COMBAT_TEST_STORE} from '../src/app/exploration/combat-testing.js';
+import {MODES,launchMode,allowsRegion} from '../src/app/exploration/modes.js';
+
+test('standalone combat offers the existing exercises with no save capability or other regions',()=>{
+  assert.deepEqual(COMBAT_EXERCISES.map(e=>e.id),['lesson','advanced','squad']);
+  assert.equal(launchMode('?mode=combat').id,'combat');assert(allowsRegion(MODES.combat,16));assert(!allowsRegion(MODES.combat,25));
+  assert(!COMBAT_TEST_STORE.save({anything:true}).ok);assert.deepEqual(COMBAT_TEST_STORE.read(),{ok:true,data:null});
+});
 test('practice retries reuse preparation, dispose the previous fight, and restore the original session once',async()=>{
   let prepares=0,opens=0,disposals=0,restores=0;const saved={hero:'original'};
   const p=createOvesosPractice({capture:()=>saved,prepare:async()=>{prepares++;return {wallMs:2};},open:()=>{opens++;return {snapshot:()=>({hp:100}),dispose:()=>disposals++};},restore:s=>{assert.equal(s,saved);restores++;},onError:assert.fail});

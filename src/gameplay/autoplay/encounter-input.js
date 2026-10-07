@@ -1,6 +1,8 @@
 // Read-only demonstration policy. Uses the same movement, dodge and strike inputs
 // as the player; it cannot change health, timing, collision or campaign outcomes.
 import {encounterAttack} from '../combat/encounter-attacks.js';
+import {encounterSteering} from '../combat/encounter-space.js';
+import {encounterFacing,selectEncounterTarget} from '../combat/encounter-target.js';
 export function encounterAutoplayInput(state){
   if(!state||state.outcome)return {};
   const h=state.hero,distance=g=>Math.hypot(g.x-h.x,g.z-h.z);
@@ -15,8 +17,12 @@ export function encounterAutoplayInput(state){
   // Do not step back into a sweep while its blade is still travelling.
   if(threat?.attack==='sweep'){const d=distance(threat)||1;return {x:(h.x-threat.x)/d,z:(h.z-threat.z)/d};}
   const target=live.find(g=>g.role==='runner'&&distance(g)<12)??live.find(g=>g.open)??live[0],d=distance(target);
-  if(target.role==='runner')return {x:d>1.5?(target.x-h.x)/d:0,z:d>1.5?(target.z-h.z)/d:0,attack:d<2.5};
-  if(target.open)return {x:d>2.1?(target.x-h.x)/d:0,z:d>2.1?(target.z-h.z)/d:0,attack:d<2.6};
+  if(target.role==='runner'||target.open){
+    const selected=selectEncounterTarget(h,live),approach=d>(target.role==='runner'?1.5:2.1)||!encounterFacing(h,target,Math.PI/6)||selected?.id!==target.id;
+    const direction=approach?encounterSteering(h,target,live):{x:0,z:0};
+    const aimed={...h,heading:approach&&!h.swing?Math.atan2(direction.x,direction.z):h.heading};
+    return {...direction,attack:d<2.5&&selectEncounterTarget(aimed,live)?.id===target.id};
+  }
   // Let an approaching soldier commit before evading. Approach distant runners.
-  return d>2.2?{x:(target.x-h.x)/d,z:(target.z-h.z)/d}:{};
+  return d>2.2?encounterSteering(h,target,live):{};
 }

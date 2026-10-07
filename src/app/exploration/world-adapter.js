@@ -7,7 +7,7 @@ import {westWaterSurface} from '../../content/regions/western-regions/west-groun
 
 export async function loadExplorationWorld(scene, position, onProgress, {enabledRegions=null}={}) {
   const allowed=id=>!enabledRegions||enabledRegions.includes(id);
-  const assertRegion=id=>{if(!allowed(id))throw new Error('This sandbox is limited to Feradom. Return to the main menu to explore the world.');};
+  const assertRegion=id=>{if(!allowed(id))throw new Error('This workspace only loads its selected region. Return to the main menu to explore the world.');};
   assertRegion(regionAt(position.x,position.z).id);
   const built=await createWorldAsync(scene,{loadingMode:'fast',regionalFineGround:true,initialRegion:regionAt(position.x,position.z).id,
     enabledRegions,startup:createStartup({onProgress})});

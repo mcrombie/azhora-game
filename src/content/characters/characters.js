@@ -1223,6 +1223,15 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestY = .16; chestX = .05; headY = -.06;
       }
     }
+    // Encounter-only impact accents preserve the attack's timing and heading.
+    if (pose.blockImpact && action !== 'dead') {
+      const impact = Math.sin(Math.min(1, pose.blockImpact) * Math.PI / 2);
+      arm[0] += impact * .18; elbow[0] -= impact * .2; chestX -= impact * .1;
+      if (buckler) buckler.rotation.y += impact * .24;
+    }
+    if (pose.hitImpact && action !== 'hurt' && action !== 'dead') {
+      chestX -= pose.hitImpact * .2; headX -= pose.hitImpact * .12;
+    }
     for (let i = 0; i < 2; i++) {
       const side = i ? 1 : -1;
       rotate(legs[i], hip[i], 0, side * stance);

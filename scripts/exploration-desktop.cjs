@@ -2,7 +2,7 @@ const {app,BrowserWindow,ipcMain}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {createCheckpointStore}=require('./checkpoint-store.cjs');
 const {isPublicFile}=require('./public-file.cjs');
-const root=path.resolve(__dirname,'..'),test=process.argv.includes('--smoke-test'),warTest=process.argv.includes('--world-war'),hearthfallTest=process.argv.includes('--hearthfall');
+const root=path.resolve(__dirname,'..'),test=process.argv.includes('--smoke-test'),warTest=process.argv.includes('--world-war'),hearthfallTest=process.argv.includes('--hearthfall'),combatTest=process.argv.includes('--combat-testing');
 // Region construction yields through animation frames. Keep isolated smoke
 // checks progressing when Windows covers their window, as in the main host.
 if(test)for(const flag of ['disable-renderer-backgrounding','disable-background-timer-throttling','disable-backgrounding-occluded-windows'])app.commandLine.appendSwitch(flag);
@@ -19,7 +19,7 @@ app.whenReady().then(async()=>{
   const hearthfallStore=createCheckpointStore({directory:path.join(root,'saves','hearthfall'),memoryOnly:test});
   ipcMain.on('azhora:exploration-save',(event,operation,key,value)=>{
     const mode=new URL(event.sender.getURL()).searchParams.get('mode');
-    const activeKey=mode==='hearthfall'?'azhora-hearthfall-v1':mode==='war'?'azhora-lizeem-world-v3':'azhora-exploration-v1';
+    const activeKey=mode==='combat'?null:mode==='hearthfall'?'azhora-hearthfall-v1':mode==='war'?'azhora-lizeem-world-v3':'azhora-exploration-v1';
     event.returnValue=event.sender===win?.webContents&&['azhora-hearthfall-v1','azhora-exploration-v1','azhora-lizeem-world-v1','azhora-lizeem-world-v2','azhora-lizeem-world-v3'].includes(key)&&['get','set'].includes(operation)&&(operation==='get'||key===activeKey)
       ?(key==='azhora-hearthfall-v1'?hearthfallStore:key==='azhora-lizeem-world-v3'?interceptionStore:key==='azhora-lizeem-world-v2'?battleStore:key==='azhora-lizeem-world-v1'?warStore:store).handle(operation,'azhora-road-checkpoint-v1',value):{ok:false,reason:'This mode cannot write that save slot.'};
   });
@@ -45,11 +45,19 @@ app.whenReady().then(async()=>{
   const errors=[];
   win.webContents.on('console-message',(_e,level,message)=>{if(level>=3){errors.push(message);if(test)console.log('EXPLORATION_ERROR '+message);}if(test&&message.startsWith('EXPLORATION_'))console.log(message);});
   win.webContents.on('before-input-event',(_event,input)=>{if(input.type==='keyDown'&&(input.key==='F11'||input.alt&&input.key==='Enter'))win.setFullScreen(!win.isFullScreen());});
-  await win.loadURL(`http://127.0.0.1:${server.address().port}/?${test?'test=1&':''}${hearthfallTest?'mode=hearthfall&menu=1':warTest?'war=1':''}`);
+  await win.loadURL(`http://127.0.0.1:${server.address().port}/?${test?'test=1&':''}${combatTest?'mode=combat'+(test?'&menu=1':''):hearthfallTest?'mode=hearthfall&menu=1':warTest?'war=1':''}`);
   if(test){
     const dir=path.join(root,'tests','artifacts');fs.mkdirSync(dir,{recursive:true});
     try{
       const waitReady=()=>win.webContents.executeJavaScript(`new Promise((resolve,reject)=>{const end=Date.now()+300000;const poll=()=>window.__EXPLORATION__?resolve():window.__EXPLORATION_ERROR__?reject(new Error(window.__EXPLORATION_ERROR__)):Date.now()>end?reject(new Error('Exploration did not initialize')):setTimeout(poll,100);poll();})`);
+      if(combatTest){
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatMenu())`);
+        fs.writeFileSync(path.join(dir,'combat-testing-menu.png'),(await win.webContents.capturePage()).toPNG());
+        await win.webContents.executeJavaScript(`document.querySelector('[data-combat-exercise="lesson"]').click()`);
+        await waitReady();
+        const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatExercises(window.__EXPLORATION__))`);
+        fs.writeFileSync(path.join(dir,'combat-testing-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(hearthfallTest){
         fs.writeFileSync(path.join(dir,'hearthfall-main-menu.png'),(await win.webContents.capturePage()).toPNG());
         await win.webContents.executeJavaScript(`document.getElementById('new-hearthfall').click()`);

@@ -34,7 +34,7 @@ test('one escaped runner does not end combat or become an attack target again',(
 test('one or two stopped soldiers are retained when the remaining runners escape',()=>{
   for(const count of [1,2]){
     const starts=count===1?[{x:1.5,z:0},{x:50,z:0},{x:55,z:0}]:[{x:1.5,z:0},{x:-1.5,z:0},{x:50,z:0}];
-    const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:starts,reinforcementRoute:[{x:0,z:0},{x:20,z:0}]});let s=model.snapshot();
+    const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:starts,reinforcementRoute:[{x:0,z:0},{x:20,z:0}],move:(a,x,z)=>({x:a.x+x,z:a.z+z})});let s=model.snapshot();
     for(let i=0;i<1800&&s.guards.filter(g=>!g.hp).length<count;i++)s=model.tick(1/60,encounterAutoplayInput(s));
     assert.equal(s.guards.filter(g=>!g.hp).length,count);
     for(let i=0;i<4000&&!s.outcome;i++)s=model.tick(1/60,{z:1});
@@ -44,7 +44,7 @@ test('one or two stopped soldiers are retained when the remaining runners escape
 
 test('combat feedback distinguishes hits, blocked strikes, range misses and dodged damage',()=>{
   for(const [distance,clear,kind] of [[2,true,'guarded'],[2,false,'blocked'],[6,true,'out-of-range']]){
-    const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:distance,z:0}],canHit:()=>clear});
+    const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-distance}],canHit:()=>clear});
     model.tick(.05,{attack:true});let s;for(let i=0;i<4;i++)s=model.tick(.05);assert.equal(s.hero.lastStrike.kind,kind);assert.equal(s.guards[0].hp,kind==='hit'?25:50);assert.equal(s.guards[0].hurt>0,kind==='hit');
   }
   for(const dodge of [false,true]){
@@ -105,9 +105,9 @@ test('holding the approach and breaking the vanguard stops the detachment',()=>{
 test('runner keeps advancing close to the hero while escorts commit to combat',()=>{
   const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:-1,z:-1},{x:1,z:-1},{x:0,z:-2}],reinforcementRoute:[{x:0,z:0},{x:0,z:12}],move:(a,x,z)=>({x:a.x+x,z:a.z+z})});
   let s=model.snapshot();for(let i=0;i<90;i++)s=model.tick(1/60);
-  const runner=s.guards.find(g=>g.role==='runner');assert(runner.z>1);assert.equal(runner.attacks,0);assert.equal(runner.phase,'march');
+  const runner=s.guards.find(g=>g.role==='runner');assert(Math.hypot(runner.x,runner.z+2)>1,'The runner goes around the escorts instead of passing through them');assert.equal(runner.attacks,0);assert.equal(runner.phase,'march');
   assert(s.guards.some(g=>g.role==='escort'&&g.attacks>0));
-  for(let i=0;i<500&&!s.guards.find(g=>g.role==='runner').escaped;i++)s=model.tick(1/60,{z:-1});
+  for(let i=0;i<500&&!s.guards.find(g=>g.role==='runner').escaped;i++)s=model.tick(1/60,{z:1});
   assert(s.guards.find(g=>g.role==='runner').escaped);assert(s.guards.find(g=>g.role==='runner').hp>0);
 });
 

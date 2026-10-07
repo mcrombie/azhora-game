@@ -6,7 +6,7 @@ import {explorationStore,validateExploration,START} from '../src/app/exploration
 import {launchMode,MODES,allowsRegion} from '../src/app/exploration/modes.js';
 import {explorationMovement} from '../src/app/exploration/movement.js';
 const hero=()=>({version:1,character:'teresod',position:{x:-350,y:2,z:-720},heading:0,camera:{yaw:0,pitch:.3,distance:8},elapsed:12,cells:[]});
-test('launch modes are explicit; old war links still resolve; only Hearthfall restricts regions',()=>{
+test('launch modes are explicit; old war links still resolve; sandbox modes restrict their own regions',()=>{
   assert.equal(launchMode('').id,'explore');assert.equal(launchMode('?war=1').id,'war');
   assert.equal(launchMode('?mode=hearthfall&war=1').id,'hearthfall');assert.equal(launchMode('?mode=unknown').id,'explore');
   assert(allowsRegion(MODES.hearthfall,21));assert(!allowsRegion(MODES.hearthfall,1));assert(!allowsRegion(MODES.hearthfall,0));

@@ -28,6 +28,8 @@ export async function startPractice(h){
   assert(h.practice.state().attempt===2&&fight(h).hero.hp===100,'Retry button resets health and opponents');
   for(let i=0;i<300&&!fight(h).guards.some(g=>g.phase==='windup');i++)h.step(.04);
   assert(fight(h).guards.some(g=>g.phase==='windup'),'Soldiers visibly prepare a committed attack');
+  const target=fight(h).guards.find(g=>g.id===fight(h).hero.targetId),marker=h.state().combatMarkers.find(m=>m.target);
+  assert(target&&marker?.visible&&marker.targetId===target.id&&Math.hypot(marker.position[0]-target.x,marker.position[2]-target.z)<.01,'Gold target ring follows the actual forward strike target');
   await frames();return before;
 }
 export async function finishPractice(h,before){
@@ -55,12 +57,20 @@ export async function retryAndExit(h,before){
   const deadline=performance.now()+30000;while(!fight(h)&&performance.now()<deadline)await frames();
   assert(fight(h)?.guards.length===3&&h.practice.state().exercise==='squad','Three-soldier practice remains available as a separate exercise');
   assert(fight(h).guards.filter(g=>g.role==='runner').length===1&&fight(h).guards.filter(g=>g.role==='escort').length===2&&fight(h).objective?.type==='intercept','Advanced group practice has one runner, two escorts and a rally objective');
-  for(let i=0;i<3500&&!fight(h).outcome;i++){driveWorldEncounter(h,fight(h));h.step(1/60);}clearCombatKeys(h);
+  let separated=true,targetMatches=true;
+  for(let i=0;i<3500&&!fight(h).outcome;i++){
+    driveWorldEncounter(h,fight(h));h.step(1/60);
+    const s=fight(h),live=[s.hero,...s.guards.filter(g=>g.hp>0&&!g.escaped)],marker=h.state().combatMarkers.find(m=>m.target);
+    for(let a=0;a<live.length;a++)for(let b=0;b<a;b++)separated&&=Math.hypot(live[a].x-live[b].x,live[a].z-live[b].z)>=1.1-1e-6;
+    if(marker?.visible)targetMatches&&=marker.targetId===s.hero.targetId;
+  }clearCombatKeys(h);
+  assert(separated&&targetMatches,'Native squad combat preserves body spacing and the marked strike target');
   assert(fight(h).outcome==='success'&&fight(h).skill.counters>=3,'Dodge-counter play also works against the three-soldier group');
   document.getElementById('world-skirmish-retry').click();assert(fight(h).guards.length===3,'Retry preserves the selected three-soldier exercise');
   document.getElementById('world-skirmish-withdraw').click();await frames();
   assert(!h.practice.state().active&&h.state().mode==='playing','Leaving practice returns to exploration');
   assert(h.state().fieldActors.length===0&&h.state().rallyLabels.length===0,'Retries and exit leave no encounter actors or markers');
+  assert(h.state().combatMarkers.length===0,'Leaving practice disposes the target and facing markers');
   assert(JSON.stringify(h.war.state().campaign)===JSON.stringify(before.campaign),'Practice and retries preserve the entire campaign state');
   assert(JSON.stringify(h.store.read().data)===JSON.stringify(before.saved),'Practice never overwrites the saved game');
   assert(JSON.stringify(h.snapshot().cells)===JSON.stringify(before.hero.cells),'Practice does not reveal new map cells');

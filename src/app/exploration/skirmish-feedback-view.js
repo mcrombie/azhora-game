@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {encounterFeedback} from '../../gameplay/combat/encounter-feedback.js';
 
 // Disposable, local combat feedback. None of these labels changes combat state.
 export function createSkirmishFeedback(scene,world,count){
@@ -12,13 +13,13 @@ export function createSkirmishFeedback(scene,world,count){
   });
   return {
     draw(state){
-      // Keep one readable threat label when soldiers crowd together; the rest
+      // Keep one readable target/threat label when soldiers crowd together; the rest
       // retain compact health bars instead of three overlapping text panels.
       const distance=g=>Math.hypot(g.x-state.hero.x,g.z-state.hero.z);
       const nearby=state.guards.filter(g=>g.hp>0&&!g.escaped).sort((a,b)=>distance(a)-distance(b)||a.id-b.id);
       const current=nearby.find(g=>g.id===focusedId);
-      const threat=nearby.find(g=>['windup','strike'].includes(g.phase));
-      if(threat)focusedId=threat.id;
+      const target=nearby.find(g=>g.id===state.hero.targetId),threat=nearby.find(g=>['windup','strike'].includes(g.phase));
+      if(target||threat)focusedId=(target??threat).id;
       else if(!current||distance(current)>distance(nearby[0])+.65)focusedId=nearby[0]?.id??null;
       state.guards.forEach((g,i)=>{
         const runner=g.role==='runner',detailed=g.id===focusedId||runner,label=labels[i],key=`${g.hp}/${g.phase}/${g.attack}/${g.hurt>0}/${g.open}/${g.block>0}/${detailed}`;
@@ -33,11 +34,9 @@ export function createSkirmishFeedback(scene,world,count){
         c.font='22px sans-serif';c.fillStyle=g.phase==='windup'?'#ffb07e':'#e0dccd';
         c.fillText(g.block?'Blocked!':g.open?'Open: counter now!':g.phase==='stagger'?'Staggered':['windup','strike'].includes(g.phase)?(g.attack==='sweep'?'Sweep: retreat!':'Thrust: sidestep!'):g.phase==='march'?'Heading to rally':'Guard raised',128,79);label.texture.needsUpdate=true;
       });
-      const {lastStrike:strike,lastDefense:defense}=state.hero;
-      const recent=defense&&(!strike||defense.at>=strike.at)?{...defense,defense:true}:strike;
-      message.hidden=!!state.outcome||!recent||state.time-recent.at>1.1;
-      if(!message.hidden)message.textContent=recent.defense?(recent.kind==='dodged'?'Dodged! Close in and counter with X.':recent.kind==='missed'?'Enemy strike missed — counterattack!':'You were hit: -25 health'):
-        recent.kind==='counter'?`Countered soldier ${recent.target+1}: -25 health`:recent.kind==='guarded'?'Guard blocked your strike. Dodge their attack to create an opening.':recent.kind==='hit'?`Hit soldier ${recent.target+1}: -25 health`:recent.kind==='blocked'?'Strike blocked by terrain or an obstacle':recent.kind==='off-angle'?'Miss: enemy moved outside your swing':'Miss: no enemy in reach. Move closer.';
+      const feedback=encounterFeedback(state);
+      message.hidden=!!state.outcome||!feedback;
+      if(feedback)message.textContent=feedback.text;
     },
     dispose(){message.hidden=true;for(const label of labels){scene.remove(label.sprite);label.texture.dispose();label.material.dispose();}},
   };

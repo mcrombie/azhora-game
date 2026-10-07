@@ -23,7 +23,7 @@ app.whenReady().then(async()=>{
   const origin=`http://127.0.0.1:${server.address().port}`;
   const win=new BrowserWindow({width:1440,height:960,show:false,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
   win.once('ready-to-show',()=>win.showInactive());
-  win.webContents.on('console-message',(_event,level,message)=>{if(level>=3)errors.push(message);});
+  win.webContents.on('console-message',(_event,level,message)=>{if(level>=3)errors.push(message);if(message.startsWith('EXPLORATION_CHECK')||message.startsWith('EXPLORATION_READY'))console.log(message);});
   win.webContents.on('render-process-gone',(_event,details)=>{console.error(details);app.exit(1);});
   win.webContents.session.webRequest.onBeforeRequest((details,callback)=>{requests.push(details.url);callback({});});
   const run=code=>win.webContents.executeJavaScript(code);
@@ -32,11 +32,31 @@ app.whenReady().then(async()=>{
   fs.mkdirSync(artifacts,{recursive:true});
   await win.loadURL(origin+'/?test=1&menu=1');
   const initial=await menu();
-  check(initial.visible&&initial.starts.length===3&&initial.starts.every(b=>b.ready&&b.visible),'Public root opens three working mode buttons');
+  check(initial.visible&&initial.starts.length===4&&initial.starts.every(b=>b.ready&&b.visible),'Public root opens four working mode buttons');
   check(initial.continues.every(b=>!b.enabled)&&!initial.bridge&&!initial.legacy,'Fresh browser has no saves or legacy/Electron host');
   fs.writeFileSync(path.join(artifacts,'web-main-menu.png'),(await win.webContents.capturePage()).toPNG());
   await win.loadURL(origin+'/exploration.html?test=1&menu=1#menu');await menu();
   check(new URL(win.webContents.getURL()).pathname==='/index.html'&&new URL(win.webContents.getURL()).searchParams.get('menu')==='1'&&new URL(win.webContents.getURL()).hash==='#menu','Old exploration URL reaches the canonical menu with query and fragment intact');
+  await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatMenu())`);
+  fs.writeFileSync(path.join(artifacts,'web-combat-menu.png'),(await win.webContents.capturePage()).toPNG());
+  const beforeCombat=await run(`JSON.stringify({...localStorage})`);
+  await run(`document.querySelector('[data-combat-exercise="lesson"]').click()`);await wait('window.__EXPLORATION__?.practice?.state().encounter');
+  await win.webContents.executeJavaScript(`document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyX',bubbles:true}));document.dispatchEvent(new KeyboardEvent('keyup',{code:'KeyX',bubbles:true}));`,true);
+  await wait(`window.__EXPLORATION__.practice.state().encounter.presentation.sound.state==='running'`);
+  for(const stage of ['block','hurt','counter','dodge']){
+    await new Promise(resolve=>setTimeout(resolve,100));
+    await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatImpacts(window.__EXPLORATION__,${JSON.stringify(stage)}))`);
+    fs.writeFileSync(path.join(artifacts,'web-combat-'+stage+'.png'),(await win.webContents.capturePage()).toPNG());
+  }
+  await run(`document.querySelector('.combat-sound').click();document.getElementById('world-skirmish-withdraw').click();document.querySelector('[data-combat-exercise="lesson"]').click()`);
+  await wait('window.__EXPLORATION__.practice.state().encounter');
+  check(await run(`!window.__EXPLORATION__.practice.state().encounter.presentation.sound.enabled`),'Sound can be muted across retries');
+  const combat=await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatExercises(window.__EXPLORATION__))`);
+  checks.push(...combat.checks);
+  check(await run(`JSON.stringify({...localStorage})`)===beforeCombat,'All combat exercises leave browser saves untouched');
+  const combatReturn=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
+  await run(`document.getElementById('combat-testing-back').click()`);await combatReturn;await menu();
+  check((await menu()).visible,'Combat exercise menu can return to the main menu after playing');
   await run(`document.getElementById('new-hearthfall').click()`);await wait('window.__EXPLORATION__');
   const saved=await run(`(()=>{const h=window.__EXPLORATION__,s=h.state();if(s.launch!=='hearthfall'||s.region!==21||s.enabledRegions.join()!=='21'||h.war)throw Error('Wrong sandbox mode');if(!h.save().ok)throw Error('Browser save failed');return h.store.read().data;})()`);
   check(saved.format==='azhora-hearthfall-v1','Built browser game starts Feradom and saves to its own localStorage slot');

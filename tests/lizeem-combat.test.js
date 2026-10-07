@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {createLizeemEncounter} from '../src/gameplay/combat/lizeem-encounter.js';
 import {encounterAutoplayInput} from '../src/gameplay/autoplay/encounter-input.js';
 import {dodgeLesson} from '../src/gameplay/combat/encounter-lesson.js';
+import {moveEncounterBody,ENCOUNTER_BODY_GAP,escortScreen} from '../src/gameplay/combat/encounter-space.js';
+import {selectEncounterTarget} from '../src/gameplay/combat/encounter-target.js';
+import {encounterFeedback} from '../src/gameplay/combat/encounter-feedback.js';
 const create=()=>createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-1.9}],attackPattern:['thrust']});
 const step=(model,count,input={})=>{let s;for(let i=0;i<count;i++)s=model.tick(1/60,input);return s;};
 const run=(model,input)=>{let s=model.snapshot();for(let i=0;i<5500&&!s.outcome;i++)s=model.tick(1/60,input(s));return s;};
@@ -35,14 +38,75 @@ test('committed enemy attacks can be sidestepped and leave a recovery opening',(
 });
 
 test('a flank hit deals damage without cancelling a committed enemy swing',()=>{
-  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-.5}]});m.tick(1/60);
-  step(m,22,{x:1,z:-1});m.tick(1/60,{attack:true});const s=step(m,10);
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-1.1}]});m.tick(1/60);
+  let flank=m.tick(1/60,{x:1,z:-1,dodge:true});while(flank.hero.dodge)flank=m.tick(1/60);
+  m.tick(1/60,{x:flank.guards[0].x-flank.hero.x,z:flank.guards[0].z-flank.hero.z,attack:true});const s=step(m,10);
   assert.equal(s.guards[0].hp,25);assert.equal(s.guards[0].phase,'windup');assert.equal(s.hero.lastStrike.kind,'hit');
+});
+
+test('strikes require forward facing and keep the shown target and heading throughout the swing',()=>{
+  const behind=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:1.9}]});
+  assert.equal(behind.snapshot().hero.targetId,null);behind.tick(1/60,{attack:true});let s=step(behind,10);
+  assert.equal(s.hero.heading,Math.PI);assert.equal(s.guards[0].hp,50);assert.equal(s.hero.lastStrike.kind,'off-angle');
+  step(behind,25);s=behind.tick(1/60,{z:1});assert.equal(s.hero.targetId,0);
+  behind.tick(1/60,{attack:true});s=step(behind,10);assert.equal(s.hero.lastStrike.target,0);
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:-.6,z:-2},{x:.6,z:-2}]});
+  assert.equal(m.snapshot().hero.targetId,0);m.tick(1/60,{attack:true});s=step(m,10,{x:1});
+  assert.equal(s.hero.targetId,0);assert.equal(s.hero.heading,Math.PI);assert.equal(s.hero.lastStrike.target,0);
+  assert(s.guards[0].block>0);assert.equal(s.guards[1].block,0,'Moving across a second soldier does not switch a committed strike');
+});
+
+test('an escaping target cannot redirect a committed strike onto another soldier',()=>{
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-1.5,role:'runner'},{x:1.3,z:-1.5,role:'escort'}],reinforcementRoute:[{x:0,z:-1.5}]});
+  assert.equal(m.snapshot().hero.targetId,0);m.tick(1/60,{attack:true});const s=step(m,10);
+  assert(s.guards[0].escaped);assert.equal(s.hero.lastStrike.kind,'target-gone');assert.equal(s.hero.lastStrike.target,0);assert.equal(s.guards[1].hp,50);assert.equal(s.guards[1].block,0);
+});
+
+test('target preview respects terrain and living soldiers screening a runner',()=>{
+  const hero={x:0,z:0,heading:Math.PI},escort={id:0,x:0,z:-1.2,hp:50},runner={id:1,x:0,z:-2.6,hp:50,role:'runner'};
+  assert.equal(selectEncounterTarget(hero,[runner,escort]).id,0);
+  assert.equal(selectEncounterTarget(hero,[runner,escort],()=>false),null);
+  assert.equal(selectEncounterTarget(hero,[runner,{...escort,hp:0}]).id,1);
+  assert.equal(selectEncounterTarget(hero,[runner,{...escort,escaped:true}]).id,1);
+});
+
+test('bodies stop a fast crossing, permit sliding and escape, and respect terrain',()=>{
+  const hero={x:0,z:0,hp:100},guard={x:0,z:-1.5,hp:50},move=(a,x,z)=>({x:a.x+x,z:a.z+z});
+  const blocked=moveEncounterBody(hero,0,-4,[hero,guard],move);assert(blocked.z>=guard.z+ENCOUNTER_BODY_GAP-1e-7);
+  const slide=moveEncounterBody(hero,2,-2,[hero,guard],move);assert(slide.x>1);assert(Math.hypot(slide.x-guard.x,slide.z-guard.z)>=ENCOUNTER_BODY_GAP);
+  const overlap={...hero,z:-1};assert(moveEncounterBody(overlap,0,.5,[overlap,guard],move).z>overlap.z);
+  const againstWall=moveEncounterBody(hero,2,-2,[hero,guard],(a,x,z)=>({x:Math.min(.1,a.x+x),z:a.z+z}));
+  assert(againstWall.x<=.1);assert(Math.hypot(againstWall.x-guard.x,againstWall.z-guard.z)>=ENCOUNTER_BODY_GAP-1e-7);
+  assert.equal(moveEncounterBody(hero,0,-4,[hero,{...guard,hp:0}],move).z,-4);
+});
+
+test('squad movement maintains personal space during ordinary movement, strikes and dodges',()=>{
+  for(const dt of [1/60,.1]){
+    const m=createLizeemEncounter();let s=m.snapshot();
+    for(let i=0;i<1500&&!s.outcome;i++){
+      s=m.tick(dt,encounterAutoplayInput(s));const live=[s.hero,...s.guards.filter(g=>g.hp>0&&!g.escaped)];
+      for(let a=0;a<live.length;a++)for(let b=0;b<a;b++)assert(Math.hypot(live[a].x-live[b].x,live[a].z-live[b].z)>=ENCOUNTER_BODY_GAP-1e-6);
+    }
+    assert.equal(s.outcome,'success');
+  }
+});
+
+test('escorts take separate screening positions and move between the hero and runner',()=>{
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:-3,z:-4},{x:3,z:-4},{x:0,z:-6}],reinforcementRoute:[{x:0,z:0},{x:0,z:12}]});
+  const initial=m.snapshot(),a=escortScreen(initial.guards[0],initial.hero,initial.guards),b=escortScreen(initial.guards[1],initial.hero,initial.guards);
+  assert(a.z<0&&a.z>-6);assert(Math.abs(a.x-b.x)>=1.5);
+  const s=step(m,60),runner=s.guards[2];assert(s.guards.slice(0,2).every(g=>g.z>runner.z&&Math.abs(g.x)<2));
 });
 
 test('hit detection checks reach at contact rather than granting damage at button press',()=>{
   const far=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-3.1}],move:(a,x,z)=>({x:a.x+x,z:a.z+z})});
   far.tick(1/60,{attack:true});const miss=step(far,12,{z:1});assert(miss.hero.z>0);assert.equal(miss.guards[0].hp,50);assert.equal(miss.hero.lastStrike.kind,'out-of-range');
+});
+
+test('an empty swing cannot acquire a target which only moves into reach after it begins',()=>{
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-2.9}]});
+  assert.equal(m.snapshot().hero.targetId,null);m.tick(1/60,{attack:true});const s=step(m,10);
+  assert.equal(s.guards[0].hp,50);assert.equal(s.hero.lastStrike.target,null);assert.equal(s.hero.lastStrike.kind,'no-target');
 });
 
 test('standing attack spam loses while dodge-counter play wins against one or three soldiers',()=>{
@@ -87,4 +151,27 @@ test('advanced lesson requires actual dodge counters against both attacks',()=>{
 test('sweep remains dangerous after dodge invulnerability expires and never hits through terrain',()=>{
   const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-1}],attackPattern:['sweep'],canHit:()=>false});
   const s=run(m,()=>({attack:true}));assert.equal(s.hero.hp,100);assert.equal(s.guards[0].hp,50);assert.equal(s.skill.dodges,0);
+});
+
+test('unavailable and held dodges explain recovery and the required release without granting another dodge',()=>{
+  const m=create();m.tick(1/60,{dodge:true});step(m,20);let s=m.tick(1/60,{dodge:true});
+  assert.equal(s.hero.dodge,0);assert.equal(s.hero.lastDodge.kind,'cooldown');assert.match(encounterFeedback(s).text,/recovering/);
+  while(s.hero.dodgeCooldown)s=m.tick(1/60,{dodge:true});
+  assert.equal(s.hero.lastDodge.kind,'release');assert.match(encounterFeedback(s).text,/Release Space/);assert.equal(s.hero.dodge,0);
+  m.tick(1/60);s=m.tick(1/60,{dodge:true});assert(s.hero.dodge>0);assert.equal(s.hero.lastDodge.kind,'started');
+});
+
+test('dodge obstruction reports distinguish a soldier from terrain and clear on the next dodge',()=>{
+  for(const terrain of [false,true]){
+    const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:terrain?-8:-1.2}],move:terrain?(a,x,z)=>({x:a.x+x,z:Math.max(-.15,a.z+z)}):null});
+    let s=m.tick(.1,{z:-1,dodge:true});assert.equal(s.hero.lastDodge.kind,terrain?'terrain-blocked':'body-blocked');assert.match(encounterFeedback(s).text,terrain?/scenery/:/soldier/);
+    step(m,60);s=m.tick(.1,{z:1,dodge:true});assert.equal(s.hero.dodgeObstruction,null);assert.equal(s.hero.lastDodge.kind,'started');
+  }
+});
+
+test('a sweep catching the end of a sidestep reports the actual cause of damage',()=>{
+  const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-1.9}],attackPattern:['sweep']});let s=m.snapshot();
+  while(!(s.guards[0].phase==='windup'&&s.guards[0].timer<.18))s=m.tick(1/60);
+  s=m.tick(1/60,{x:1,dodge:true});while(!s.hero.lastDefense)s=m.tick(1/60);
+  assert.equal(s.hero.hp,75);assert.equal(s.hero.lastDefense.reason,'sweep-caught');assert.match(encounterFeedback(s).text,/after the dodge/);
 });

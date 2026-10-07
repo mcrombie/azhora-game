@@ -18,8 +18,8 @@ import {createLizeemWorldAutoplay} from '../../gameplay/autoplay/lizeem-world-au
 import {createOvesosPractice} from '../../dev/tools/ovesos-practice.js';
 import {MENORA_CAMP} from '../../content/regions/minora-frontier/menora-city.js';
 
-export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun}){
-  const hearthfallMode=launch.id==='hearthfall',startPoint=launch.start??START;
+export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun,combatExercise=null,onCombatMenu=()=>{}}){
+  const hearthfallMode=launch.id==='hearthfall',combatMode=launch.id==='combat',startPoint=launch.start??START;
   const $=id=>document.getElementById(id),canvas=$('exploration-canvas');
   const abort=new AbortController();
   const listen=(target,type,handler)=>target.addEventListener(type,handler,{signal:abort.signal});
@@ -61,13 +61,14 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     $('exploration-hud').hidden=next!=='playing';$('exploration-help').hidden=next!=='playing';
     if(next==='playing'){world.loading.start();canvas.focus();}else world.stop();
   }
-  function openMap(options={}){if(hearthfallMode)options={...options,regions:['Feradom']};if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;$('exploration-status').hidden=true;clearTimeout(statusTimer);setMode('map');updateChart();$('world-demo-caption').hidden=!options?.regions;map.open(options?.regions?options:{});$('close-map').focus();}
-  function pause(){if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;setMode('pause');$('save-note').textContent=hearthfallMode?(dirty?'You have unsaved Hearthfall progress. Save before leaving.':'Hearthfall uses its own local save slot.'):war?(dirty?'You have unsaved world-test progress. Save the hero and war before leaving.':'Your world-test save is separate from ordinary exploration.'):dirty?'You have unsaved exploration. Save before leaving to keep it.':'Your last saved exploration is kept separately from the adventure.';$('resume-exploration').focus();}
+  function openMap(options={}){if(combatMode)return;if(hearthfallMode)options={...options,regions:['Feradom']};if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;$('exploration-status').hidden=true;clearTimeout(statusTimer);setMode('map');updateChart();$('world-demo-caption').hidden=!options?.regions;map.open(options?.regions?options:{});$('close-map').focus();}
+  function pause(){if(combatMode)return;if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;setMode('pause');$('save-note').textContent=hearthfallMode?(dirty?'You have unsaved Hearthfall progress. Save before leaving.':'Hearthfall uses its own local save slot.'):war?(dirty?'You have unsaved world-test progress. Save the hero and war before leaving.':'Your world-test save is separate from ordinary exploration.'):dirty?'You have unsaved exploration. Save before leaving to keep it.':'Your last saved exploration is kept separately from the adventure.';$('resume-exploration').focus();}
   function refreshTravelHelp(){
     $('exploration-help').textContent=waterBlocked?'Horse stops at water. Back away and use a bridge, or G to dismount.':mounts.airborne()?`${mounts.kind==='dragon'?'Developer dragon':'Developer bat'} \u00b7 WASD fly \u00b7 Space up \u00b7 Ctrl down \u00b7 Shift boost \u00b7 Tab turbo \u00b7 G land \u00b7 F8 tools`
       :mounts.kind==='horse'?'Developer horse \u00b7 WASD ride \u00b7 Shift canter \u00b7 G dismount \u00b7 Right-drag look \u00b7 M map \u00b7 F8 tools':footHelp;
   }
   function openDeveloper(){
+    if(combatMode)return;
     if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;setMode('developer');$('exploration-status').hidden=true;
     $('developer-current').textContent=mounts.kind==='foot'?'On foot':`Riding developer ${mounts.kind}${mounts.state().landing?' \u00b7 landing':''}`;
     for(const button of document.querySelectorAll('[data-exploration-mount]'))button.setAttribute('aria-pressed',String(button.dataset.explorationMount===mounts.kind));
@@ -96,6 +97,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   function snapshot(){return {version:1,character:'teresod',position:{x:position.x,y:position.y,z:position.z},heading:actor.group.rotation.y,
     camera:{yaw,pitch,distance},elapsed,cells:[...cells]};}
   function save(){
+    if(combatMode)return store.save();
     if(mode==='loading'||mode==='encounter'||mode==='skirmish'||mounts.airborne()||!movement.state().grounded){notice('Wait until you are on the ground before saving.');return {ok:false};}
     const result=store.save(hearthfall?hearthfall.save(snapshot()):war?war.save(snapshot()):snapshot());if(result.ok)dirty=false;
     const message=result.ok?(hearthfall?'Hearthfall saved.':war?'World test saved.':'Exploration saved.'):result.reason;$('save-note').textContent=message;notice(message);return result;
@@ -155,6 +157,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     camera.position.copy(focus).add(followOffset);camera.position.y=Math.max(camera.position.y,world.heightAt(camera.position.x,camera.position.z)+.6);camera.lookAt(focus);
   }
   function step(dt){
+    if(mode==='combat-menu')return;
     autoplay?.tick(dt,windowActive);journey?.tick(dt,windowActive);
     if(mode==='loading')return; // The loading veil keeps the last frame; give terrain construction the frame budget.
     if(mode==='skirmish'){if(windowActive)elapsed+=dt;skirmish?.tick(dt,windowActive);if(!practice?.state().active){discover();dirty=true;}}
@@ -175,12 +178,13 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     updateCamera(false,dt);renderer.render(scene,camera);
   }
   function frame(now){if(disposed)return;const dt=Math.min(.04,(now-last)/1000);last=now;frames++;
-    try{step(dt);}catch(error){stopAutoplay();frameErrors.push(String(error.stack||error));console.error(error);if(practice?.state().active)practice.finish();else if(mode==='skirmish')war.withdraw();setMode('pause');notice('Exploration paused after a rendering error.');}
+    try{step(dt);}catch(error){stopAutoplay();frameErrors.push(String(error.stack||error));console.error(error);if(practice?.state().active)practice.finish();else if(mode==='skirmish')war.withdraw();if(!combatMode)setMode('pause');notice('Exploration paused after a rendering error.');}
     frameId=requestAnimationFrame(frame);
   }
   function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
   listen(window,'resize',resize);listen(window,'blur',()=>{keys.clear();drag=false;windowActive=false;});listen(window,'focus',()=>{windowActive=true;});
   listen(document,'keydown',event=>{
+    if(combatMode&&mode==='combat-menu')return;
     if(event.code==='KeyP'&&autoplay&&!event.target?.closest?.('input,select,textarea,[contenteditable="true"]')){
       event.preventDefault();if(!event.repeat){if(autoplay.state().active||journey?.state().active)stopAutoplay();else openDeveloper();}return;
     }
@@ -276,6 +280,8 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
         }finally{$('loading-screen').hidden=true;if(mode==='loading')setMode('playing');}
       },
     });
+  }
+  if(warMode||combatMode){
     practice=createOvesosPractice({
       capture(){stopAutoplay();return {hero:snapshot(),dirty};},
       async prepare(){
@@ -291,17 +297,21 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
         place(MENORA_CAMP);setMode('playing');
         const view=startWorldFight({practice:exercise,pending:{region:'minora-practice'},centre:MENORA_CAMP,site:{name:'Minora camp',regionId:16,approachHeading:0},enemyColor:'#b77162',reinforcements:{name:'Training',strength:0},onEnd(){},onContinue:finish,onWithdraw:finish});
         $('world-skirmish-retry').hidden=false;$('world-skirmish-retry').onclick=retry;
+        if(combatMode){$('world-skirmish-controls').innerHTML=$('world-skirmish-controls').innerHTML.replace('Campaign paused','Combat practice');$('world-skirmish-continue').textContent='Choose exercise (Enter)';$('world-skirmish-withdraw').textContent='Choose exercise (Esc)';}
         document.querySelector('#world-skirmish .eyebrow').textContent=`MINORA CAMP / ${exercise==='lesson'?'DODGE LESSON':exercise==='advanced'?'THRUST AND SWEEP LESSON':'INTERCEPTION PRACTICE'} / ATTEMPT ${attempt}`;
         return view;
       },
       restore(saved){
         const s=saved.hero;elapsed=s.elapsed;place(s.position,s.heading);yaw=s.camera.yaw;pitch=s.camera.pitch;distance=s.camera.distance;
-        cells.clear();for(const cell of s.cells)cells.add(cell);dirty=saved.dirty;setMode('playing');updateLocation();updateChart();updateCamera(true);notice('Practice ended. Returned on foot; campaign and saved game unchanged.');
+        cells.clear();for(const cell of s.cells)cells.add(cell);dirty=saved.dirty;setMode(combatMode?'combat-menu':'playing');updateLocation();updateChart();updateCamera(true);
+        if(combatMode)onCombatMenu();else notice('Practice ended. Returned on foot; campaign and saved game unchanged.');
       },onError:error=>notice('Practice could not start: '+error.message),
     });
     $('practice-minora').onclick=()=>practice.start();
     $('practice-minora-advanced').onclick=()=>practice.start('advanced');
     $('practice-minora-squad').onclick=()=>practice.start('squad');
+  }
+  if(warMode){
     $('developer-autoplay').hidden=false;
     $('autoplay-ovesos').onclick=()=>{stopAutoplay();journey.start();};
     $('autoplay-caricas').onclick=()=>{stopAutoplay();autoplay.start();};
@@ -315,7 +325,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   const readyMs=Math.round(performance.now()-begun);console.log('EXPLORATION_READY '+readyMs+'ms');
   setMode('playing');frameId=requestAnimationFrame(frame);
   if(new URLSearchParams(location.search).has('test'))window.__EXPLORATION__={
-    state:()=>({launch:launch.id,character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map.state(),dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
+    state:()=>({launch:launch.id,character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map.state(),dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
     war,hearthfall,autoplay,journey,practice,
     groundProbe(x,z){return {x,z,height:world.heightAt(x,z),water:world.waterAt(x,z),region:world.regionAt(x,z).id,ready:world.readyAt(x,z),clear:canStand(x,z,world,.62),colliders:world.nearColliders(x,z,1).map(c=>({...c}))};},
     testWorld:world,
@@ -324,4 +334,6 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     async visit(point){setMode('loading');await world.prepare(point.x,point.z);place(point);setMode('playing');updateCamera(true);},
     reveal:setReveal,
   };
+  if(combatMode)await practice.start(combatExercise??'lesson');
+  return {practice};
 }

@@ -10,7 +10,7 @@ The [five-region Lizeem test](lizeem-simulation.md) is the first independent cam
 
 ## Exploration development
 
-The separate [exploration starting point](exploration.md) is the current place to test movement, camera, map discovery and basic saving without the old quest or skill controllers. Run `npm run start:exploration` or double-click `Explore Azhora.cmd`. The original game remains available with `npm run start:adventure`. `npm start` opens the shared three-mode menu. The [Hearthfall sandbox](hearthfall-sandbox.md) loads Feradom only and reserves an isolated local integration seam for the replacement settlement PR. The linked audit records the world builder dependencies that still need separation.
+The separate [exploration starting point](exploration.md) is the current place to test movement, camera, map discovery and basic saving without the old quest or skill controllers. Run `npm run start:exploration` or double-click `Explore Azhora.cmd`. The original game remains available with `npm run start:adventure`. `npm start` opens the shared four-option menu. The [Hearthfall sandbox](hearthfall-sandbox.md) loads Feradom only and reserves an isolated local integration seam for the replacement settlement PR. The linked audit records the world builder dependencies that still need separation.
 
 ## Where things live
 
@@ -42,7 +42,7 @@ Three source entry points deliberately retain their original locations:
 
 `npm start` runs the shared exploration menu through `scripts/launch.cjs --exploration` and `scripts/exploration-desktop.cjs`. For the original adventure, `npm run start:adventure` starts Electron with the root `main.cjs`. That file opens a window and serves `adventure.html` locally. The page loads `src/boot.js`, then `src/main.js`; the latter connects gameplay, content, world construction, UI and persistence.
 
-The package default and public `index.html` open the same three-mode menu. `exploration.html` redirects old bookmarks there, preserving query parameters. Render publishes these through `npm run build:web`; deploying remains manual. The root **`main.cjs` is the original adventure desktop host**; **`src/main.js` is its running game**, not the shared menu controller.
+The package default and public `index.html` open the same four-option menu. `exploration.html` redirects old bookmarks there, preserving query parameters. Render publishes these through `npm run build:web`; deploying remains manual. The root **`main.cjs` is the original adventure desktop host**; **`src/main.js` is its running game**, not the shared menu controller.
 
 The existing fallback launcher finds Electron in the neighboring World Builder project when there is no local installation. Source reorganization does not change that relationship.
 
