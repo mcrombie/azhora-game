@@ -1,16 +1,25 @@
 import * as THREE from 'three';
 import { groundTint } from '../../../world/terrain/world-terrain.js';
-import { hexOwnerAt } from '../../../world/terrain/region-world.js';
+import { hexOwnerAt,REGION_CELLS,REGION_IDS,METRES_PER_HEX } from '../../../world/terrain/region-world.js';
 import { TELEMONIA, TELEMONIA_BOX, TELEMONIA_PATCH_REACH, borderDepth } from './telemonia-world.js';
 
 /** The existing Telemonia terrain, built independently of walls and settlements.
  * Neighbouring countries also draw on its nine-metre collar. Keep one lattice,
  * one colour stream and one set of meshes regardless of which country loads first. */
 export function* createTelemoniaGroundSteps(kit) {
+  const group=kit.group??new THREE.Group();
+  if(!kit.group){group.name='Telemonia fine ground';kit.root.add(group);}
+  const plan=yield* createTelemoniaGroundPlanSteps(kit);
+  for(const tile of plan.tiles)yield* tile.buildSteps(group);
+  return {...plan.surface,group};
+}
+
+// Plan one immutable lattice, then construct its mesh tiles independently. Each
+// tile keeps its original colour-stream offset, so load order changes no pixels.
+export function* createTelemoniaGroundPlanSteps(kit) {
   let buildWork = 0;
-  const { root, material, groundHeight } = kit;
-  const group = kit.group ?? new THREE.Group();
-  if (!kit.group) { group.name = 'Telemonia fine ground'; root.add(group); }
+  const { material, groundHeight } = kit;
+  const tiles=[];
   const metrics = { batches: 0, groundVertices: 0 };
   const gy = (x, z) => groundHeight(x, z);
   const ours = (x, z) => hexOwnerAt(x, z) === TELEMONIA;
@@ -61,9 +70,8 @@ export function* createTelemoniaGroundSteps(kit) {
     const rock = [new THREE.Color('#8b8376'), new THREE.Color('#847c70'), new THREE.Color('#94897a'), new THREE.Color('#7e776c')];
     const scree = new THREE.Color('#9b917c'), shade = new THREE.Color(), pale = new THREE.Color('#bfb59d');
     const groundMaterial = material('#ffffff', { vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
-    let jitter = 60211;
-    const wobble = () => { jitter = (Math.imul(jitter, 1664525) + 1013904223) >>> 0; return .955 + jitter / 4294967296 * .09; };
-    const paint = (x, z, y, grade) => {
+    let streamSeed = 60211;
+    const paint = (x, z, y, grade,noise) => {
       groundTint(shade, x, z, THREE);
       // Scree where it is steep, and bare rock in courses where it is too steep for anybody: the
       // courses are the cliff bands' own beds, a couple of metres deep, so a face reads as layered stone.
@@ -71,7 +79,7 @@ export function* createTelemoniaGroundSteps(kit) {
       shade.lerp(rock[((Math.floor(y / 2.2) % 4) + 4) % 4], Math.min(1, Math.max(0, (grade - .85) / .5)));
       // The crests: "bare along the crests" - pale stone on the highest ground of the rim.
       shade.lerp(pale, smooth(54, 66, y) * .35);
-      shade.multiplyScalar(wobble());
+      shade.multiplyScalar(noise);
     };
     for (let tj = 0; tj < rows - 1; tj += TILE) for (let ti = 0; ti < cols - 1; ti += TILE) {
       yield;
@@ -82,28 +90,45 @@ export function* createTelemoniaGroundSteps(kit) {
         indices.push(a, a + ci + 1, a + 1, a + 1, a + ci + 1, a + ci + 2);
       }
       if (!indices.length) continue;
-      const positions = new Float32Array((ci + 1) * (cj + 1) * 3), colours = new Float32Array((ci + 1) * (cj + 1) * 3);
+      const usedVertices=new Uint8Array((ci+1)*(cj+1)),seed=streamSeed;
       for (let j = 0; j <= cj; j++) for (let i = 0; i <= ci; i++) {
         if ((++buildWork & 63) === 0) yield;
-        const gi = ti + i, gj = tj + j, x = B.minX + gi * STEP, z = B.minZ + gj * STEP, k = j * (ci + 1) + i;
+        const gi = ti + i, gj = tj + j,k = j * (ci + 1) + i;
         const used = [[0, 0], [-1, 0], [0, -1], [-1, -1]].some(([a, b]) => {
           const ii = gi + a, jj = gj + b;
           return ii >= 0 && jj >= 0 && ii < cols - 1 && jj < rows - 1 && drawn[jj * (cols - 1) + ii];
         });
-        if (!used) { positions.set([x, 0, z], k * 3); continue; }
-        const y = heightOf(gi, gj);
-        positions.set([x, y, z], k * 3);
-        paint(x, z, y, slopeOf(gi, gj));
-        colours.set([shade.r, shade.g, shade.b], k * 3);
-        metrics.groundVertices++;
+        if(used){usedVertices[k]=1;streamSeed=(Math.imul(streamSeed,1664525)+1013904223)>>>0;}
       }
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
-      geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
-      const ground = new THREE.Mesh(geometry, groundMaterial);
-      ground.name = 'Telemonia ground'; ground.receiveShadow = true; group.add(ground);
-      metrics.batches++;
+      const bounds={minX:B.minX+ti*STEP,maxX:B.minX+(ti+ci)*STEP,minZ:B.minZ+tj*STEP,maxZ:B.minZ+(tj+cj)*STEP};
+      // Hex bounding boxes are conservative: include every country that could
+      // stand on a triangle, including tiny slivers along a hex corner.
+      const radius=METRES_PER_HEX/Math.sqrt(3)+STEP*2;
+      const regions=Object.entries(REGION_IDS).filter(([,id])=>[22,25,26,55,57,59].includes(id)).filter(([name])=>REGION_CELLS[name].some(c=>c.x+radius>=bounds.minX&&c.x-radius<=bounds.maxX&&c.z+radius>=bounds.minZ&&c.z-radius<=bounds.maxZ)).map(([,id])=>id);
+      tiles.push({id:`${ti}-${tj}`,regions,bounds,*buildSteps(root){
+        const positions = new Float32Array((ci + 1) * (cj + 1) * 3), colours = new Float32Array((ci + 1) * (cj + 1) * 3);
+        let jitter=seed,work=0;
+        for(let j=0;j<=cj;j++)for(let i=0;i<=ci;i++){
+          if((++work&63)===0)yield;
+          const gi=ti+i,gj=tj+j,x=B.minX+gi*STEP,z=B.minZ+gj*STEP,k=j*(ci+1)+i;
+          if(!usedVertices[k]){positions.set([x,0,z],k*3);continue;}
+          const y = heightOf(gi, gj);
+          positions.set([x, y, z], k * 3);
+          jitter=(Math.imul(jitter,1664525)+1013904223)>>>0;
+          paint(x, z, y, slopeOf(gi, gj),.955+jitter/4294967296*.09);
+          colours.set([shade.r, shade.g, shade.b], k * 3);
+          metrics.groundVertices++;
+        }
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colours, 3));
+        geometry.setIndex(indices); geometry.computeVertexNormals(); geometry.computeBoundingSphere();
+        const ground = new THREE.Mesh(geometry, groundMaterial);
+        ground.name = 'Telemonia ground'; ground.receiveShadow = true;root.add(ground);
+        ground.userData.telemoniaTile=`${ti}-${tj}`;
+        metrics.batches++;
+        return {ground};
+      }});
     }
   }
 
@@ -125,5 +150,5 @@ export function* createTelemoniaGroundSteps(kit) {
     return u + v <= 1 ? a + (c - a) * u + (b - a) * v
       : d + (b - d) * (1 - u) + (c - d) * (1 - v);
   };
-  return { group, metrics, STEP, B, cols, rows, owned, heightOf, slopeOf, slopeAt, treeGroundAt, fineGroundHeight };
+  return {tiles,surface:{metrics, STEP, B, cols, rows, owned, heightOf, slopeOf, slopeAt, treeGroundAt, fineGroundHeight}};
 }

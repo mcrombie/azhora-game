@@ -7,6 +7,16 @@
   "type": "module",
   "main": "main.cjs",
   "scripts": {
+    "start:lizeem-world": "node scripts/launch.cjs --exploration --world-war",
+    "test:lizeem-world:desktop": "node scripts/launch.cjs --exploration --world-war --smoke-test",
+    "test:lizeem-world": "node --test --test-isolation=none tests/world-war.test.js tests/world-skirmish.test.js tests/lizeem-combat.test.js tests/ovesos-practice.test.js tests/site-presence.test.js tests/lizeem-world-autoplay.test.js tests/ovesos-journey-autoplay.test.js",
+    "start:lizeem": "node scripts/launch.cjs --lizeem",
+    "test:lizeem": "node --test --test-isolation=none tests/lizeem-simulation.test.js",
+    "test:lizeem:desktop": "node scripts/launch.cjs --lizeem --smoke-test",
+    "start:exploration": "node scripts/launch.cjs --exploration",
+    "test:exploration": "node --test --test-isolation=none tests/exploration.test.js",
+    "test:exploration:desktop": "node scripts/launch.cjs --exploration --smoke-test",
+    "audit:exploration": "node --experimental-vm-modules scripts/audit-exploration.mjs",
     "check:layout": "node scripts/check-source-layout.mjs",
     "check:modules": "node --experimental-vm-modules scripts/check-module-graph.mjs",
     "prototype:climate": "node scripts/launch.cjs --climate-annex",
@@ -19,7 +29,7 @@
     "review:canerd": "node scripts/launch.cjs --smoke-test --fast-load --review-views=canerd,canerd-ascent,canerd-court,canerd-high-tower --review-clean --review-size=1440x900",
     "test:south-oremindi": "node --test --test-isolation=none tests/south-oremindi-metadata.test.js tests/south-oremindi-world.test.js tests/south-oremindi-wildlife.test.js tests/south-oremindi-integration.test.js tests/south-oremindi-ground.test.js",
     "test:south-oremindi:desktop": "node scripts/launch.cjs --smoke-test --south-oremindi-checks",
-    "start": "node scripts/launch.cjs",
+    "start": "node scripts/launch.cjs --exploration",
     "test:peninsula": "node --test --test-isolation=none tests/peninsula-tutorial.test.js tests/peninsula-tutorial-scenery.test.js tests/peninsula-checkpoint.test.js tests/locomotion-skills.test.js tests/peninsula-autopilot.test.js tests/peninsula-company.test.js tests/peninsula-tutorial-host.test.js",
     "profile:startup": "node scripts/launch.cjs --smoke-test --startup-profile --profile-warm",
     "test:startup": "node --test --test-isolation=none tests/terrain-sampling.test.js tests/mountain-terrain-sampling.test.js tests/terrain-cache.test.cjs tests/startup.test.js tests/road-distance-index.test.js tests/lazy-character.test.js tests/wildlife-loading.test.js tests/loading-choice.test.js tests/region-loading.test.js tests/build-each.test.js tests/regional-build-steps.test.js tests/static-scenery-batches.test.js tests/streamed-terrain.test.js tests/region-scatter-streaming.test.js tests/scenery-builder-steps.test.js tests/streamed-world-data.test.js tests/ferry-boat.test.js",
@@ -108,9 +118,22 @@
     "test:sevron:desktop": "node scripts/launch.cjs --smoke-test --sevron-check",
     "test:strategy": "node --test --test-isolation=none tests/strategic-prototype.test.js tests/strategic-battle.test.js",
     "test:strategy:desktop": "node scripts/launch.cjs --smoke-test --strategic-checks",
-    "test:varn": "node scripts/run-tests.cjs tests/varn-world.test.js tests/lotharn-forts.test.js tests/town-life.test.js tests/climbing.test.js"
+    "test:varn": "node scripts/run-tests.cjs tests/varn-world.test.js tests/lotharn-forts.test.js tests/town-life.test.js tests/climbing.test.js",
+    "start:adventure": "node scripts/launch.cjs",
+    "start:hearthfall": "node scripts/launch.cjs --exploration --hearthfall",
+    "test:hearthfall": "node --test --test-isolation=none tests/hearthfall-sandbox.test.js",
+    "test:hearthfall:desktop": "node scripts/launch.cjs --exploration --hearthfall --smoke-test"
   },
-  "files": ["index.html", "main.cjs", "preload.cjs", "src/", "vendor/", "assets/", "scripts/", "!reference-private/**"],
+  "files": [
+    "index.html",
+    "main.cjs",
+    "preload.cjs",
+    "src/",
+    "vendor/",
+    "assets/",
+    "scripts/",
+    "!reference-private/**"
+  ],
   "devDependencies": {
     "electron": "32.3.3"
   }

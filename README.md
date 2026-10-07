@@ -1,5 +1,7 @@
 ﻿# Azhora: An Adventure Game
 
+**Current development menu:** `npm start` (or **Play Azhora.cmd**) offers Explore the World, the Lizeemi War Scenario, and a Feradom-only Hearthfall integration workspace. Each has its own save. See the [Hearthfall handoff](docs/architecture/hearthfall-sandbox.md). The settlement port is pending; no cloud service is enabled. Use `npm run start:adventure` for the original adventure described below.
+
 **Finding your way around the code:** start with the [codebase guide](docs/architecture/README.md), follow [Chapter 1 through the source](docs/architecture/chapter-one-walkthrough.md), or search the [file index](docs/architecture/source-index.md). The October 6 cleanup groups existing features into folders while retaining gameplay behavior. See the [change and verification record](docs/architecture/reorganization.md).
 
 **5 October update:** [33 northern and island environments](docs/outer-regions-environments.md) are integrated, including Gorgiwood, South Gorgi Mountains and both Ithzel regions. Unbuilt countries are gray on the map. Southern jungle development is on hold; further loading optimization is paused.
@@ -25,6 +27,8 @@ Canerd now stands directly on the flat plain in North Celder. Follow the direct 
 Use **F8 → Go anywhere → Canerd** to visit, or approach across North Celder. The castle and fairground appear on the traveler's chart as you explore. `npm run test:canerd` checks terrain, scenery and actual traveler movement; `npm run review:canerd` runs the native build and captures four views. See [the Canerd build record](docs/canerd.md).
 
 ## Play
+
+For the new simulation prototype, run `npm run start:lizeem-world` or double-click **Test Lizeem World.cmd**. Begin at Minora, use **M** to run the five-region war, and approach a discovered battlefield before its deadline to join with **F**. See the [world-test walkthrough](docs/architecture/lizeem-simulation.md#explore-inside-the-five-region-war). `npm run start:lizeem` opens the faster map-only experiment; `npm run start:exploration` opens ordinary exploration.
 
 Double-click the **Azhora desktop icon**, **Play Azhora.cmd** in this folder, or run `npm start`. Close an existing game window and reopen it after an update.
 

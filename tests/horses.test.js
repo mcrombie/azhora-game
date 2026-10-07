@@ -5,6 +5,15 @@ import { sourceModule } from './module-loader.js';
 
 const { createHorse } = await sourceModule('../src/content/characters/characters.js');
 
+test('a mounted rider can share the horse continuous gait phase across speed changes',()=>{
+  const horse=createHorse({saddled:true});let previous=horse.animate(1000,13).phase;
+  for(let i=1;i<=60;i++){
+    const current=horse.animate(1000+i/60,i%2?13:0).phase;
+    assert(Number.isFinite(current));assert(current>=previous&&current-previous<.3);
+    previous=current;
+  }
+});
+
 test('a horse stands at the height of a rider’s shoulder, hooves at the ground, saddled or bare', () => {
   for (const [variant, saddled] of [[0, false], [1, true], [2, true]]) {
     const horse = createHorse({ variant, saddled });

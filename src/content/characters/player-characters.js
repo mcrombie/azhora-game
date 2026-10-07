@@ -40,10 +40,8 @@ export const BOOT_KIT = Object.freeze(['simple-sword']);
  * hired company's looks are written in (src/gameplay/company/mercenaries.js); `hood` and `longCloak` are the two
  * colours the kit had no part for (src/content/characters/characters.js). The staff is the oak staff he equips.
  */
-export const ROLLO_LOOK = Object.freeze({
-  tunic: 0x9a9890, hair: 0xa8a59d, skin: 0xcfa985, build: 'tall-lean', headgear: 'raised-hood', hood: 0x3b2a1d,
-  hairStyle: 'long-loose', facialHair: 'long', garment: 'robe', jerkin: false, longCloak: 0x5e4331, marks: Object.freeze([]),
-});
+import { ROLLO_LOOK } from './rollo-look.js';
+export { ROLLO_LOOK } from './rollo-look.js';
 
 const playable = (id, name, title, roster, blurb, weapon, inventory, skills, extra = {}) =>
   Object.freeze({ id, name, title, roster, blurb, weapon, inventory, skills: Object.freeze(skills),

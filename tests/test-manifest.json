@@ -1,4 +1,12 @@
 [
+  "tests/lizeem-simulation.test.js",
+  "tests/world-war.test.js",
+  "tests/lizeem-world-autoplay.test.js",
+  "tests/ovesos-journey-autoplay.test.js",
+  "tests/world-skirmish.test.js",
+  "tests/site-presence.test.js",
+  "tests/exploration.test.js",
+  "tests/hearthfall-sandbox.test.js",
   "tests/climate-annex.test.js",
   "tests/private-reference.test.cjs",
   "tests/chapter-one.test.js",
@@ -522,5 +530,8 @@
   "tests/mithala-city-scenery.test.js",
   "tests/mithala-city-buildings.test.js",
   "tests/mithala-city-world.test.js",
-  "tests/campaign-map.test.js"
+  "tests/campaign-map.test.js",
+  "tests/lizeem-combat.test.js",
+  "tests/ovesos-practice.test.js",
+  "tests/telemonia-streaming.test.js"
 ]

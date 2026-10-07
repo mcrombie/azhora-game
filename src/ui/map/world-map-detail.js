@@ -1,5 +1,5 @@
 import { TRANSFORM, hexAt } from '../../world/terrain/region-world.js';
-import { MARKER_STYLE } from '../../gameplay/quests/quest-markers.js';
+import { MARKER_STYLE } from '../../world/actors/marker-style.js';
 import { AMBRON_CENTRE, AMBRON_OUTLINE } from '../../content/regions/ambron/ambron-city-layout.js';
 import { MENORA_OUTLINE } from '../../content/regions/minora-frontier/menora-city.js';
 import { NYLON_OUTLINE } from '../../content/regions/nylon/nylon-city.js';

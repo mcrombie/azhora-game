@@ -27,7 +27,7 @@ for(const dir of ['src','tests','scripts','prototypes'])for(const file of files(
   if(dir==='src'||dir==='prototypes')for(const match of source.matchAll(/\bimport\s*\(\s*['"](\.[^'"\n]+)['"]/g))check(file,match[1]);
   for(const match of source.matchAll(/new URL\(\s*['"](\.[^'"\n]+)['"]\s*,\s*import\.meta\.url/g))if(!match[1].includes('/artifacts/'))check(file,match[1]);
 }
-for(const file of [path.join(root,'index.html'),...files(path.join(root,'prototypes'))].filter(p=>p.endsWith('.html'))){
+for(const file of [path.join(root,'index.html'),path.join(root,'exploration.html'),path.join(root,'lizeem.html'),...files(path.join(root,'prototypes'))].filter(p=>p.endsWith('.html'))){
   for(const match of fs.readFileSync(file,'utf8').matchAll(/(?:src|href)=["'](\.[^"']+)["']/g))check(file,match[1]);
 }
 if(errors.length){console.error(errors.join('\n'));process.exitCode=1;}

@@ -4,6 +4,14 @@ Azhora is a JavaScript game running in a browser inside Electron. This guide exp
 
 Start with the folder table, then follow [the conquest of Solis](chapter-one-walkthrough.md). Use the [source index](source-index.md) to find a familiar filename. The [move manifest](source-moves.json) records every old and new source path.
 
+## Independent simulation development
+
+The [five-region Lizeem test](lizeem-simulation.md) is the first independent campaign loop. Run `npm run start:lizeem` or double-click **Test Lizeem War.cmd**. It uses the existing atlas, starts without 3D scenery, and compares an untouched civil war with interventions. A small 3D hero encounter can now affect a local battle; it loads only when joined. Start with [scenario data](../../src/content/scenarios/lizeem.js), then [the engine](../../src/simulation/campaign.js). It does not replace the existing adventure. `npm run start:lizeem-world` connects the scenario to physical exploration, the M map and a separate combined save. See the [world-test walkthrough](lizeem-simulation.md#explore-inside-the-five-region-war).
+
+## Exploration development
+
+The separate [exploration starting point](exploration.md) is the current place to test movement, camera, map discovery and basic saving without the old quest or skill controllers. Run `npm run start:exploration` or double-click `Explore Azhora.cmd`. The original game remains available with `npm run start:adventure`. `npm start` opens the shared three-mode menu. The [Hearthfall sandbox](hearthfall-sandbox.md) loads Feradom only and reserves an isolated local integration seam for the replacement settlement PR. The linked audit records the world builder dependencies that still need separation.
+
 ## Where things live
 
 | Location | Responsibility | Starting point |
@@ -18,7 +26,7 @@ Start with the folder table, then follow [the conquest of Solis](chapter-one-wal
 | `src/ui/` | Maps, journal, dialogue controls, skill panels and interface styles | [ordinary M map](../../src/ui/map/world-map.js) |
 | `src/dev/` | Developer controls and native runtime verification | [Chapter 1 checks](../../src/dev/checks/chapter-one-smoke.js) |
 | `src/experiments/` | Integrated but explicitly experimental scenes and systems | [frontier experiment](../../src/experiments/frontier-command/strategic-prototype.js) |
-| `src/simulation/` | Reserved future world core; currently documentation only | [scope](../../src/simulation/README.md) |
+| `src/simulation/` | Independent campaign core; first tested with the five-region Lizeem war | [scope](../../src/simulation/README.md) |
 | `tests/` | Node tests, fixtures and native test helpers | [test manifest](../../tests/test-manifest.json) |
 | `prototypes/` | Standalone prototypes | [campaign UI](../../prototypes/campaign/ui.js) |
 | `assets/`, `vendor/` | Maps, fonts and data; vendored dependencies | [faction roster](../../assets/campaign-factions.json) |
@@ -32,7 +40,7 @@ Three source entry points deliberately retain their original locations:
 
 ## How the game starts
 
-`npm start` runs `scripts/launch.cjs`. The launcher starts Electron, which runs the root `main.cjs`. That file opens a window and serves `index.html` locally. The page loads `src/boot.js`, then `src/main.js`; the latter connects gameplay, content, world construction, UI and persistence.
+`npm start` runs the shared exploration menu through `scripts/launch.cjs --exploration` and `scripts/exploration-desktop.cjs`. For the original adventure, `npm run start:adventure` starts Electron with the root `main.cjs`. That file opens a window and serves `index.html` locally. The page loads `src/boot.js`, then `src/main.js`; the latter connects gameplay, content, world construction, UI and persistence.
 
 The root **`main.cjs` is the desktop host**. **`src/main.js` is the running game**. Their similar names describe different responsibilities.
 
@@ -68,9 +76,9 @@ The integrated [Farmlands of the Lizeem](../region-reviews/lizeem-farmlands-hand
 
 Existing dependencies still cross folders, and the large entry points still coordinate many features. No circular-dependency cleanup, state redesign, TypeScript conversion or save-schema change was included.
 
-The future simulation should own campaign time, armies, territorial control and faction relationships. The authored campaign remains in `content/chapters/civil-war/`; the independent frontier experiment remains in `experiments/frontier-command/`. Neither has been promoted into the new world engine.
+The independent simulation now owns time, armies and territory for the isolated Lizeem test. The hero connection supports either map-only regional journeys or physical exploration position. The world test's Caricas and Ovesos skirmishes share one controller using the existing landscape, hero and camera. Caricas's existing banners and a small guard detail also reflect simulated ownership and stationed strength. Other encounters retain the small isolated arena. Broader diplomacy, actual armies in world scenery and encounter refinement remain future work. The authored campaign remains in `content/chapters/civil-war/`; the independent frontier experiment remains in `experiments/frontier-command/`. Neither has been promoted into the new world engine.
 
-Until that engine is introduced, existing Chapter 1 and aftermath records still determine the visible political outcome. See [the Solis walkthrough](chapter-one-walkthrough.md) for the current connections.
+In the original adventure and exploration map, existing Chapter 1 and aftermath records still determine the visible political outcome. The Lizeem test has its own live map adapter and does not modify those records. See [the Solis walkthrough](chapter-one-walkthrough.md) for the current connections.
 
 ## Running and checking
 
