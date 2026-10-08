@@ -307,19 +307,43 @@ export function createWorldMap({includeQuests=true,regionScope=null}={}) {
     const rect = viewport.getBoundingClientRect();
     zoomAt(zoom * Math.exp(-event.deltaY * .0015), event.clientX - rect.left, event.clientY - rect.top);
   }, {passive: false});
+  // One finger (or the mouse) drags the chart; a second finger on a touch screen pinches it, keeping the
+  // atlas point between the fingers under them as they spread and move (8 October 2026, for a phone).
+  const fingers = new Map(); let pinch = null;
+  function startPinch() {
+    const [a, b] = [...fingers.values()], rect = viewport.getBoundingClientRect(), scale = fitScale * zoom;
+    const x = (a.x + b.x) / 2 - rect.left, y = (a.y + b.y) / 2 - rect.top;
+    pinch = {spread: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), zoom, mx: (x - offsetX) / scale, my: (y - offsetY) / scale};
+  }
   viewport.addEventListener('pointerdown', event => {
-    if(event.target.closest('button, #atlas-army-detail'))return;
-    if (event.button !== 0 || !metadata) return;
+    if (!metadata || event.target.closest('#atlas-army-detail')) return;
+    // A finger on an army or battle marker still taps it, but it also counts towards a pinch.
+    if (event.pointerType === 'touch' && fingers.size < 2) fingers.set(event.pointerId, {x: event.clientX, y: event.clientY});
+    if (fingers.size === 2 && fingers.has(event.pointerId)) { event.preventDefault(); dragging = null; startPinch(); viewport.classList.add('dragging'); return; }
+    if (event.target.closest('button') || event.button !== 0) return;
     event.preventDefault(); viewport.focus({preventScroll: true});
-    dragging = {id: event.pointerId, x: event.clientX, y: event.clientY};
+    if (!pinch) dragging = {id: event.pointerId, x: event.clientX, y: event.clientY};
     viewport.setPointerCapture(event.pointerId); viewport.classList.add('dragging');
   });
   viewport.addEventListener('pointermove', event => {
+    const finger = fingers.get(event.pointerId);
+    if (finger) { finger.x = event.clientX; finger.y = event.clientY; }
+    if (pinch && finger) {
+      const [a, b] = [...fingers.values()], rect = viewport.getBoundingClientRect();
+      opened = true; zoom = Math.max(1, Math.min(MAX_ZOOM, pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinch.spread));
+      const scale = fitScale * zoom;
+      offsetX = (a.x + b.x) / 2 - rect.left - pinch.mx * scale; offsetY = (a.y + b.y) / 2 - rect.top - pinch.my * scale; render(); return;
+    }
     if (!dragging || dragging.id !== event.pointerId) return;
     offsetX += event.clientX - dragging.x; offsetY += event.clientY - dragging.y;
     dragging.x = event.clientX; dragging.y = event.clientY; render();
   });
-  function release() { dragging = null; viewport.classList.remove('dragging'); }
+  function release(event) {
+    fingers.delete(event?.pointerId); pinch = null;
+    // The finger left on the chart after a pinch carries on dragging it from where it is.
+    const [left] = [...fingers]; dragging = left ? {id: left[0], x: left[1].x, y: left[1].y} : null;
+    if (!dragging) viewport.classList.remove('dragging');
+  }
   viewport.addEventListener('lostpointercapture', release);
   viewport.addEventListener('pointerup', release);
   viewport.addEventListener('pointercancel', release);
