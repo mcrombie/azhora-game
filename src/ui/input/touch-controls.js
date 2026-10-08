@@ -61,10 +61,14 @@ export function wantsTouch({ search = '', coarse = false, touchPoints = 0 } = {}
  * Builds the layer into `root` (normally document.body). `press(code)` and `release(code)` are keys
  * down and up, delivered where the keyboard's go; `onTakeControl()` is a hand on the controls;
  * `onTesting()` and `onAutoplay()` are the two things a key cannot reach on a phone.
+ *
+ * Another host brings its own buttons (8 October 2026, the exploration host's war scenario on a
+ * phone): `actions` and `top` replace the adventure's, and an entry with `when` shows only while
+ * `setContext` names one of its contexts, so one layer serves walking about and a field skirmish.
  */
-export function createTouchControls({ document, root, press = () => {}, release = () => {}, onTakeControl = () => {},
-  onTesting = () => {}, onAutoplay = () => {} }) {
-  const state = { move: { forward: 0, side: 0 }, stickRun: false, runToggle: false, visible: true, playing: true };
+export function createTouchControls({ document, root, actions = TOUCH_ACTIONS, top: topEntries = TOUCH_TOP, press = () => {},
+  release = () => {}, onTakeControl = () => {}, onTesting = () => {}, onAutoplay = () => {} }) {
+  const state = { move: { forward: 0, side: 0 }, stickRun: false, runToggle: false, visible: true, playing: true, context: null };
   const make = (tag, className, parent, text = '') => {
     const element = document.createElement(tag);
     element.className = className;
@@ -74,12 +78,16 @@ export function createTouchControls({ document, root, press = () => {}, release 
   };
   const layer = make('div', 'touch-controls', root);
   layer.id = 'touch-controls';
+  // A thumb lifted from the stick or a button ends there (8 October 2026). Otherwise the browser's click for
+  // that tap lands on whatever the button has just opened beneath it, such as a card's or a conversation's
+  // own button. The top row acts on that click, so it keeps it.
+  layer.addEventListener('touchend', event => { if (event.cancelable && !event.target?.closest?.('.touch-top')) event.preventDefault(); }, { passive: false });
   // The page knows, so the keyboard's legend can step out and the HUD make room (src/ui/input/touch-controls.css).
   root.classList?.add('touch');
   const top = make('div', 'touch-top', layer);
   const stick = make('div', 'touch-stick', layer), knob = make('div', 'touch-knob', stick);
-  const actions = make('div', 'touch-actions', layer);
-  const buttons = new Map();
+  const actionRow = make('div', 'touch-actions', layer);
+  const buttons = new Map(), contexts = new Map();
 
   // The stick. It keeps the finger that started it, wherever that finger goes.
   let finger = null;
@@ -107,10 +115,10 @@ export function createTouchControls({ document, root, press = () => {}, release 
   for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) stick.addEventListener(type, letGo);
 
   // The right thumb's buttons: a key down and up, or held for as long as the finger is on it.
-  for (const action of TOUCH_ACTIONS) {
-    const button = make('button', `touch-button touch-${action.id}`, actions, action.label);
+  for (const action of actions) {
+    const button = make('button', `touch-button touch-${action.id}`, actionRow, action.label);
     button.type = 'button'; button.dataset.touch = action.id;
-    buttons.set(action.id, button);
+    buttons.set(action.id, button); if (action.when) contexts.set(action.id, action.when);
     button.addEventListener('pointerdown', event => {
       event.preventDefault();
       onTakeControl();
@@ -122,10 +130,10 @@ export function createTouchControls({ document, root, press = () => {}, release 
     const up = () => { button.classList.remove('down'); if (action.hold) release(action.key); };
     for (const type of ['pointerup', 'pointercancel', 'pointerleave']) button.addEventListener(type, up);
   }
-  for (const entry of TOUCH_TOP) {
+  for (const entry of topEntries) {
     const button = make('button', `touch-top-button touch-${entry.id}`, top, entry.label);
     button.type = 'button'; button.dataset.touch = entry.id;
-    buttons.set(entry.id, button);
+    buttons.set(entry.id, button); if (entry.when) contexts.set(entry.id, entry.when);
     button.addEventListener('click', event => {
       event.preventDefault();
       if (entry.id === 'testing') onTesting();
@@ -157,5 +165,11 @@ export function createTouchControls({ document, root, press = () => {}, release 
       if (!next) { state.move = { forward: 0, side: 0 }; state.stickRun = false; finger = null; moveKnob(0, 0); }
       sync();
     },
+    /** Which of the host's contexts is current: the buttons with `when` that do not name it step out. */
+    setContext(name) {
+      state.context = name; layer.dataset.context = name ?? '';
+      for (const [id, when] of contexts) buttons.get(id).hidden = !when.includes(name);
+    },
+    get context() { return state.context; },
   };
 }

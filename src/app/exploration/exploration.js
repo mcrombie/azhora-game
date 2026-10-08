@@ -29,6 +29,7 @@ import {createOvesosJourneyAutoplay} from '../../gameplay/autoplay/ovesos-journe
 import {createLizeemWorldAutoplay} from '../../gameplay/autoplay/lizeem-world-autoplay.js';
 import {createOvesosPractice} from '../../dev/tools/ovesos-practice.js';
 import {MENORA_CAMP} from '../../content/regions/minora-frontier/menora-city.js';
+import {createExplorationTouch} from './exploration-touch.js';
 
 export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun,combatExercise=null,onCombatMenu=()=>{}}){
   const hearthfallMode=launch.id==='hearthfall',combatMode=launch.id==='combat',startPoint=combatMode?MENORA_CAMP:launch.start??START;
@@ -65,6 +66,9 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   const movement=explorationMovement(position,world),map=combatMode?null:(await import('../../ui/map/world-map.js')).createWorldMap({includeQuests:false,regionScope:launch.mapRegions??null});
   const mounts=createExplorationMounts({scene,actor,position,world,movement});
   const footHelp=$('exploration-help').textContent;
+  // Touch controls for a phone (8 October 2026; src/app/exploration/exploration-touch.js): a stick and buttons that
+  // press the keys read below, a finger on the view to look; `touch.sync` once a frame, `touch.steer` for travel.
+  const touch=createExplorationTouch({document,keys,search:location.search,coarse:!!globalThis.matchMedia?.('(pointer: coarse)').matches,onTakeControl:()=>stopAutoplay()});
   const combatAim=new THREE.Vector3();
   const focus=new THREE.Vector3(),desired=new THREE.Vector3(),cameraOffset=new THREE.Vector3(0,1.55,0);
 
@@ -241,12 +245,13 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     camera.position.copy(focus).add(followOffset);camera.position.y=Math.max(camera.position.y,world.heightAt(camera.position.x,camera.position.z)+.6);camera.lookAt(focus.clone().add(combatAim));
   }
   function step(dt){
+    touch.sync(mode);
     if(mode==='combat-menu')return;
     autoplay?.tick(dt,windowActive);journey?.tick(dt,windowActive);
     if(mode==='loading')return; // The loading veil keeps the last frame; give terrain construction the frame budget.
     if(mode==='skirmish'){if(windowActive)elapsed+=dt;skirmish?.tick(dt,windowActive);if(!practice?.state().active){discover();dirty=true;}}
     if(mode==='playing'||mode==='limbo'){
-      elapsed+=dt;const previousPosition={x:position.x,z:position.z},previousMount=mounts.kind,moved=actor.form==='ghost'&&!world.state?.().inLimbo?ghostStep(position,world,keys,yaw,dt,actor.group.rotation.y):mounts.step(keys,yaw,dt);
+      elapsed+=dt;const previousPosition={x:position.x,z:position.z},previousMount=mounts.kind,moved=actor.form==='ghost'&&!world.state?.().inLimbo?ghostStep(position,world,...touch.steer(keys,yaw),dt,actor.group.rotation.y):mounts.step(...touch.steer(keys,yaw),dt);
       const edge=!towerState?.inside&&war?.constrainTravel(previousPosition);
       if(edge){position.x=edge.x;position.z=edge.z;position.y=Math.max(position.y,world.heightAt(edge.x,edge.z));}
       mounts.draw(elapsed,moved);
@@ -305,10 +310,11 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   listen(document,'keyup',event=>keys.delete(event.code));listen(canvas,'contextmenu',event=>event.preventDefault());
   listen(document,'pointerdown',event=>{if(event.target.closest('button,input,select')&&!event.target.closest('[data-autoplay-control]'))stopAutoplay();});
   listen(document,'click',event=>{if(event.target.closest('button,input,select')&&!event.target.closest('[data-autoplay-control]'))stopAutoplay();});
-  listen(canvas,'pointerdown',event=>{canvas.focus();if(event.button===2&&['playing','skirmish','limbo'].includes(mode)){skirmish?.manualCamera();drag=true;canvas.setPointerCapture(event.pointerId);}});
+  // The right mouse button, or on a touch screen a finger on the view, turns the camera; two fingers pinch it (8 October 2026).
+  listen(canvas,'pointerdown',event=>{canvas.focus();if(touch.look.start(event)&&['playing','skirmish','limbo'].includes(mode)){skirmish?.manualCamera();drag=true;canvas.setPointerCapture(event.pointerId);}});
   listen(canvas,'click',event=>{if(event.button===0&&mode==='skirmish')skirmish?.attack();});
-  listen(canvas,'pointerup',()=>drag=false);listen(canvas,'pointercancel',()=>drag=false);
-  listen(canvas,'pointermove',event=>{if(drag&&['playing','skirmish','limbo'].includes(mode)){skirmish?.manualCamera();yaw-=event.movementX*.006;pitch=Math.max(.05,Math.min(1.15,pitch+event.movementY*.004));}});
+  listen(canvas,'pointerup',event=>drag=touch.look.end(event));listen(canvas,'pointercancel',event=>drag=touch.look.end(event));
+  listen(canvas,'pointermove',event=>{const turn=drag&&['playing','skirmish','limbo'].includes(mode)&&touch.look.move(event);if(turn){skirmish?.manualCamera();yaw-=turn.dx*.006;pitch=Math.max(.05,Math.min(1.15,pitch+turn.dy*.004));distance=Math.max(3,Math.min(22,distance*turn.zoom));}});
   listen(canvas,'wheel',event=>{if(['playing','skirmish','limbo'].includes(mode))distance=Math.max(3,Math.min(22,distance+event.deltaY*.008));});
   function startWorldFight(options){
     if(actor.form==='ghost'||world.state?.().inLimbo)throw Error('This form cannot fight.');
@@ -459,7 +465,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   setMode(afterlife?.inLimbo?'limbo':'playing');frameId=requestAnimationFrame(frame);
   if(relocatedSave)notice('This scenario now covers five regions. You have returned to Minora; your campaign progress is kept.');
   if(new URLSearchParams(location.search).has('test'))window.__EXPLORATION__={
-    state:()=>({launch:launch.id,character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatCues:scene.children.filter(o=>o.userData.combatWarningEdge||o.userData.counterOpening||o.userData.combatHealth||o.userData.hitRecovery).map(o=>({kind:o.userData.combatWarningEdge?'edge':o.userData.counterOpening?'opening':o.userData.combatHealth?'label':'protection',visible:o.visible,cue:o.userData.cue??null,remaining:o.userData.remaining??null,detailed:o.userData.combatHealth&&o.scale.y>.2})),combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,form:actor.form??'living',position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
+    state:()=>({launch:launch.id,touch:touch.state(),character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatCues:scene.children.filter(o=>o.userData.combatWarningEdge||o.userData.counterOpening||o.userData.combatHealth||o.userData.hitRecovery).map(o=>({kind:o.userData.combatWarningEdge?'edge':o.userData.counterOpening?'opening':o.userData.combatHealth?'label':'protection',visible:o.visible,cue:o.userData.cue??null,remaining:o.userData.remaining??null,detailed:o.userData.combatHealth&&o.scale.y>.2})),combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,form:actor.form??'living',position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
     war,hearthfall,autoplay,journey,practice,stable,minimap,afterlife,council,sorcery,residentHost,
     tower:warMode?{state:()=>({...towerState.snapshot(war.state().clock.running),...world.state()}),interact:()=>tower.interact(),chronicleState:()=>tower.chronicleState()}:null,
     groundProbe(x,z){return {x,z,height:world.heightAt(x,z),water:world.waterAt(x,z),region:world.regionAt(x,z).id,ready:world.readyAt(x,z),clear:canStand(x,z,world,.62),colliders:world.nearColliders(x,z,1).map(c=>({...c}))};},

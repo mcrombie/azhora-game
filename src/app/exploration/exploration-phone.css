@@ -1,0 +1,24 @@
+/* The exploration host on a touch screen and on a phone (8 October 2026: the Lizeemi War Scenario on a phone).
+   Loaded after every other sheet (index.html), so a phone rule wins a tie with the desktop one it replaces.
+   Touch layer: src/app/exploration/exploration-touch.js over src/ui/input/touch-controls.css.
+   A phone is <= 480 px wide, or a landscape phone <= 960 x 480 (exploration-touch.js PHONE_QUERY). */
+
+#exploration-canvas{touch-action:none;-webkit-tap-highlight-color:transparent}
+#exploration-touch-help{position:fixed;z-index:3;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom));width:max-content;max-width:min(560px,92vw);margin:0;padding:6px 12px;border-radius:4px;background:#193d32c9;color:#e1e6d4;font:12px/1.45 system-ui;text-align:center;pointer-events:none;opacity:0;transition:opacity .8s}
+#exploration-touch-help[data-fresh]{opacity:1}
+body:not(.touch) #exploration-touch-help{display:none}
+
+/* Any touch screen: the keyboard's legend steps out for the touch line, the touch top row (Map, Save, Pause) replaces
+   the HUD's Map and Pause, and the HUD's title and war day stack on the left, clear of that row. */
+body.touch #exploration-help{display:none!important}
+body.touch #open-map,body.touch #open-pause{display:none}
+body.touch #exploration-hud{flex-direction:column;align-items:flex-start;right:auto;max-width:calc(100vw - 250px)}
+body.touch #exploration-hud nav{margin-top:4px}
+body.touch .exploration-touch .touch-top{left:auto;right:max(8px,env(safe-area-inset-right));top:max(8px,env(safe-area-inset-top));transform:none;justify-content:flex-end;gap:6px}
+body.touch .exploration-touch .touch-top-button{flex:none;min-width:56px;min-height:42px;max-width:none;padding:0 12px;font-size:13px}
+body.touch .exploration-touch .touch-withdraw{background:rgba(122,38,32,.72)}
+body.touch .exploration-touch .touch-strike{background:rgba(122,38,32,.66)}
+body.touch .exploration-touch .touch-use{background:rgba(38,86,70,.66)}
+body.touch .exploration-touch .touch-dodge{background:rgba(48,72,118,.66)}
+/* The skirmish's own Strike and Dodge are the thumb's buttons now. */
+body.touch #world-skirmish-actions{display:none}
