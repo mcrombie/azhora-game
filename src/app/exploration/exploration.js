@@ -29,7 +29,8 @@ import {createOvesosJourneyAutoplay} from '../../gameplay/autoplay/ovesos-journe
 import {createLizeemWorldAutoplay} from '../../gameplay/autoplay/lizeem-world-autoplay.js';
 import {createOvesosPractice} from '../../dev/tools/ovesos-practice.js';
 import {MENORA_CAMP} from '../../content/regions/minora-frontier/menora-city.js';
-import {createExplorationTouch} from './exploration-touch.js';
+import {createExplorationTouch,phoneLayout} from './exploration-touch.js';
+import {explorationQuality,createFrameLog} from './exploration-quality.js';
 
 export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun,combatExercise=null,onCombatMenu=()=>{}}){
   const hearthfallMode=launch.id==='hearthfall',combatMode=launch.id==='combat',startPoint=combatMode?MENORA_CAMP:launch.start??START;
@@ -37,9 +38,11 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   const abort=new AbortController();
   const listen=(target,type,handler)=>target.addEventListener(type,handler,{signal:abort.signal});
   const scene=new THREE.Scene();scene.background=new THREE.Color(0xb6c8b0);scene.fog=new THREE.Fog(0xb6c8b0,180,560);
-  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+  // A phone draws less (8 October 2026; src/app/exploration/exploration-quality.js): ?quality=full|phone overrides.
+  const quality=explorationQuality({search:location.search,phone:phoneLayout(),coarse:!!globalThis.matchMedia?.('(pointer: coarse)').matches}),frameLog=quality.frameLog?createFrameLog():null;
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:quality.antialias});renderer.setPixelRatio(Math.min(devicePixelRatio,quality.pixelRatio));
   renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
-  const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.12,1800);
+  const camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.12,quality.far);
   scene.add(new THREE.HemisphereLight(0xf0f2d8,0x53644b,1.65));
   const sun=new THREE.DirectionalLight(0xffe6ba,2.1);sun.position.set(-100,180,70);scene.add(sun);
   const loading=message=>{$('loading-message').textContent=message;console.log('EXPLORATION_LOADING '+message);};
@@ -272,7 +275,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     shadow.position.set(position.x,world.heightAt(position.x,position.z)+.025,position.z);shadow.visible=actor.form!=='ghost'&&!mounts.airborne()&&!movement.state().swimming;
     updateCamera(false,dt);war?.drawGuidance(camera);renderer.render(scene,camera);
   }
-  function frame(now){if(disposed)return;const dt=Math.min(.04,(now-last)/1000);last=now;frames++;
+  function frame(now){if(disposed)return;frameLog?.tick(now-last);const dt=Math.min(.04,(now-last)/1000);last=now;frames++;
     try{step(dt);}catch(error){stopAutoplay();frameErrors.push(String(error.stack||error));console.error(error);if(practice?.state().active)practice.finish();else if(mode==='skirmish')war.withdraw();if(!combatMode)setMode('pause');notice('Exploration paused after a rendering error.');}
     frameId=requestAnimationFrame(frame);
   }
@@ -465,7 +468,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   setMode(afterlife?.inLimbo?'limbo':'playing');frameId=requestAnimationFrame(frame);
   if(relocatedSave)notice('This scenario now covers five regions. You have returned to Minora; your campaign progress is kept.');
   if(new URLSearchParams(location.search).has('test'))window.__EXPLORATION__={
-    state:()=>({launch:launch.id,touch:touch.state(),character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatCues:scene.children.filter(o=>o.userData.combatWarningEdge||o.userData.counterOpening||o.userData.combatHealth||o.userData.hitRecovery).map(o=>({kind:o.userData.combatWarningEdge?'edge':o.userData.counterOpening?'opening':o.userData.combatHealth?'label':'protection',visible:o.visible,cue:o.userData.cue??null,remaining:o.userData.remaining??null,detailed:o.userData.combatHealth&&o.scale.y>.2})),combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,form:actor.form??'living',position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
+    state:()=>({launch:launch.id,quality:quality.id,touch:touch.state(),character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatCues:scene.children.filter(o=>o.userData.combatWarningEdge||o.userData.counterOpening||o.userData.combatHealth||o.userData.hitRecovery).map(o=>({kind:o.userData.combatWarningEdge?'edge':o.userData.counterOpening?'opening':o.userData.combatHealth?'label':'protection',visible:o.visible,cue:o.userData.cue??null,remaining:o.userData.remaining??null,detailed:o.userData.combatHealth&&o.scale.y>.2})),combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,form:actor.form??'living',position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
     war,hearthfall,autoplay,journey,practice,stable,minimap,afterlife,council,sorcery,residentHost,
     tower:warMode?{state:()=>({...towerState.snapshot(war.state().clock.running),...world.state()}),interact:()=>tower.interact(),chronicleState:()=>tower.chronicleState()}:null,
     groundProbe(x,z){return {x,z,height:world.heightAt(x,z),water:world.waterAt(x,z),region:world.regionAt(x,z).id,ready:world.readyAt(x,z),clear:canStand(x,z,world,.62),colliders:world.nearColliders(x,z,1).map(c=>({...c}))};},
