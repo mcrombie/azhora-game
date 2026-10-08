@@ -15,7 +15,7 @@ export function createOvesosJourneyAutoplay({war,mode,prepare,position,ride,clea
     Promise.resolve().then(()=>active&&ticket===request?prepare(()=>active&&ticket===request):false).then(ok=>{
       if(!active||ticket!==request)return;
       if(!ok){stop('Ovesos ride could not start.');return;}
-      war.advance(1);war.setSpeed(1);war.track({kind:'army',id:1});showMap('opening');phase('opening-map','Campaign map: East is marching toward West-held Ovesos');
+      war.advance(1);war.setSpeed(1);const incoming=war.state().campaign.armies.find(a=>a.owner==='east'&&a.from==='caricas'&&a.to==='ovesos'&&a.status==='marching');if(incoming)war.track({kind:'army',id:incoming.id});showMap('opening');phase('opening-map','Campaign map: East is marching toward West-held Ovesos');
     }).catch(error=>{if(active&&ticket===request)stop('Ovesos ride stopped: '+error.message);});
   }
   function tick(dt,enabled){
@@ -43,16 +43,26 @@ export function createOvesosJourneyAutoplay({war,mode,prepare,position,ride,clea
     }
     if(stage==='join'){
       if(war.join(battleId).ok){phase('fight','Ovesos ride: defending West Lizeem');war.help('west');}
-      else if(seconds>6)stop('Could not join Ovesos. Reach the flag on foot.');return;
+      else if(seconds>6)stop('Could not join Ovesos. Enter the marked battlefield on dry ground.');return;
     }
     if(stage==='fight'){
       const encounter=war.state().encounter.encounter;
-      if(encounter?.outcome){clearInput();phase('review','Ovesos ride: result review / map in 4s / P to keep this screen');return;}
+      if(encounter?.outcome){clearInput();phase('review','Ovesos ride: result review / next stage in 4s / P to keep this screen');return;}
       if(mode()==='skirmish')attack();else if(seconds>6)stop('Ovesos encounter did not open.');return;
     }
+    if(stage==='rally-brief'){if(seconds<4)return;war.help('west');phase('rally-fight','Ovesos: break the rally guards, then hold the gold ring');return;}
+    if(stage==='rally-fight'){
+      if(war.state().encounter.encounter?.outcome){clearInput();phase('rally-review','Ovesos: rally result / P to take control');return;}
+      if(mode()==='skirmish')attack();else if(seconds>6)stop('The rally assault did not open.');return;
+    }
+    if(stage==='rally-review'){if(seconds<4)return;war.continue();showMap('result');phase('resolve','Ovesos: regional outcome');return;}
     if(stage==='review'){
-      if(Math.ceil(4-seconds)!==Math.ceil(4-seconds+dt)&&seconds<4)status(`Ovesos ride: result review / map in ${Math.ceil(4-seconds)}s / P to keep this screen`,true);
-      if(seconds<4)return;war.withdraw();showMap('interception');phase('resolve','Ovesos ride: applying the regional outcome at 20x');return;
+      if(Math.ceil(4-seconds)!==Math.ceil(4-seconds+dt)&&seconds<4)status(`Ovesos ride: result review / next stage in ${Math.ceil(4-seconds)}s / P to keep this screen`,true);
+      if(seconds<4)return;
+      if(war.state().campaign.pending?.stage==='intercept'){
+        war.continue();
+        if(war.state().campaign.pending?.stage==='rally'){phase('rally-brief','Ovesos: regrouping for the decisive rally assault');return;}
+      }else war.withdraw();showMap('interception');phase('resolve','Ovesos ride: applying the regional outcome at 20x');return;
     }
     if(stage==='resolve'){
       if(battle()){if(seconds>=1.5){seconds-=1.5;war.advance();}return;}

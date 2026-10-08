@@ -1,3 +1,4 @@
+import {availableBattleStage} from '../../simulation/battle-stages.js';
 // A bounded demonstration driver. It issues ordinary host actions and combat
 // inputs; campaign ownership, casualties and encounter results remain model-owned.
 export function createLizeemWorldAutoplay({war,mode,prepare,showMap,resume,attack,clearInput,status}){
@@ -18,7 +19,7 @@ export function createLizeemWorldAutoplay({war,mode,prepare,showMap,resume,attac
     war.setSpeed(20);
     if(mode()==='skirmish'){phase('fight','Autoplay: fighting the Caricas interception');return;}
     if(mode()==='encounter'){phase('brief','Autoplay: joining West Lizeem');return;}
-    if(current?.heroResult){resume();phase('result','Autoplay: your interception result is recorded; the regional battle is still underway');return;}
+    if(current?.heroResult&&!availableBattleStage(current)){resume();phase('result','Autoplay: your interception result is recorded; the regional battle is still underway');return;}
     showMap();phase('advance','Autoplay: advancing the war at 20x to the Caricas battle');
   }
   function tick(dt,enabled){
@@ -26,10 +27,11 @@ export function createLizeemWorldAutoplay({war,mode,prepare,showMap,resume,attac
     if(['pause','developer','loading'].includes(mode())){stop();return;}
     seconds+=dt;
     if(stage==='advance'){
-      if(war.state().campaign.day<10){
+      const firstDay=war.state().campaign.scenario==='lizeem-world-v6'?3:10;
+      if(war.state().campaign.day<firstDay){
         if(seconds<war.state().clock.secondsPerDay/20)return;
         seconds-=war.state().clock.secondsPerDay/20;war.advance();
-        if(war.state().campaign.day<10)return;
+        if(war.state().campaign.day<firstDay)return;
       }
       const s=war.state().campaign;
       const b=s.engagements.find(b=>b.region==='caricas'&&b.status==='active');
@@ -54,7 +56,13 @@ export function createLizeemWorldAutoplay({war,mode,prepare,showMap,resume,attac
       if(battle()?.heroResult)phase('result','Autoplay: interception recorded; regional control is decided at the battle deadline');
       else if(seconds>5)stop('Autoplay stopped: the encounter did not start.');
     }else if(stage==='review'){
-      war.withdraw();phase('result','Autoplay: interception recorded; regional control is decided at the battle deadline');
+      if(war.state().campaign.pending?.stage==='intercept'){
+        war.continue();
+        if(war.state().campaign.pending?.stage==='rally'){phase('rally-brief','Autoplay: regroup for the final assault');return;}
+      }else war.continue();
+      phase('result','Autoplay: phase recorded; reviewing the campaign result');
+    }else if(stage==='rally-brief'){
+      if(seconds<3)return;war.help('west');phase('fight','Autoplay: break the rally guards, then hold the gold ring');
     }else if(stage==='result'){
       phase('resolve','Autoplay: advancing at 20x to the regional battle result');
     }else if(stage==='resolve'){

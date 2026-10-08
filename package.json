@@ -7,10 +7,11 @@
   "type": "module",
   "main": "scripts/exploration-desktop.cjs",
   "scripts": {
+    "test:tower:desktop": "node scripts/launch.cjs --exploration --world-war --smoke-test --tower-checks",
     "start:combat": "node scripts/launch.cjs --exploration --combat-testing",
     "start:lizeem-world": "node scripts/launch.cjs --exploration --world-war",
     "test:lizeem-world:desktop": "node scripts/launch.cjs --exploration --world-war --smoke-test",
-    "test:lizeem-world": "node --test --test-isolation=none tests/world-war.test.js tests/world-skirmish.test.js tests/lizeem-combat.test.js tests/ovesos-practice.test.js tests/combat-camp-world.test.js tests/site-presence.test.js tests/lizeem-world-autoplay.test.js tests/ovesos-journey-autoplay.test.js",
+    "test:lizeem-world": "node --test --test-isolation=none tests/ovesos-rally.test.js tests/world-war.test.js tests/world-skirmish.test.js tests/lizeem-combat.test.js tests/ovesos-practice.test.js tests/combat-camp-world.test.js tests/site-presence.test.js tests/lizeem-world-autoplay.test.js tests/ovesos-journey-autoplay.test.js",
     "start:lizeem": "node scripts/launch.cjs --lizeem",
     "test:lizeem": "node --test --test-isolation=none tests/lizeem-simulation.test.js",
     "test:lizeem:desktop": "node scripts/launch.cjs --lizeem --smoke-test",

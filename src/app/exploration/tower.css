@@ -1,0 +1,45 @@
+#tower-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
+#tower-objective{position:fixed;left:32px;top:130px;max-width:310px;padding:12px 16px;background:#183b30e8;border-left:3px solid #d5bb7b;font:14px/1.5 system-ui;color:#f4e3b9;pointer-events:none}
+#tower-briefing{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:28px;background:linear-gradient(transparent 20%,#091d2577);box-sizing:border-box}
+.tower-dialog-card{width:min(750px,94vw);max-height:75vh;overflow:auto;background:#142e36f5;border:1px solid #b6a678;border-radius:5px;padding:24px 32px;box-sizing:border-box}
+.tower-dialog-card h2{font:30px Georgia;color:#f1d69a;margin:12px 0 6px}.tower-dialog-card h3{font:18px Georgia;margin:8px 0}.tower-dialog-card p{font:16px/1.65 system-ui;max-width:66ch}.tower-dialog-card small{color:#c9c8b2;font:12px system-ui}
+.tower-dialog-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}#tower-next{background:#ead298;color:#25382d;border-color:#ead298}#tower-close{background:transparent}
+@media(max-width:650px){#tower-objective{left:18px;top:150px}#tower-briefing{padding:12px}.tower-dialog-card{padding:18px}.tower-dialog-card p{font-size:14px}}
+
+#stable-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
+#stable-lesson{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:28px;background:linear-gradient(transparent 20%,#091d2577)}
+#stable-next{background:#ead298;color:#25382d;border-color:#ead298}
+#stable-close{background:transparent}
+#exploration-minimap{position:fixed;top:90px;right:32px;z-index:2;width:184px;padding:0 0 8px;border:0;background:#183b30de;border-radius:92px 92px 5px 5px;text-align:center}
+#exploration-minimap canvas{display:block;width:184px;height:184px;border:1px solid #c7b67e;border-radius:50%;background:#d9caa0}
+#exploration-minimap .minimap-north{position:absolute;left:calc(50% - 9px);top:0;width:18px;background:#183b30;color:#efd799;font:12px Georgia;z-index:1}
+.minimap-caption{display:block;padding:6px 4px 2px;font:12px/1.3 system-ui;color:#eee5c6}
+#exploration-minimap small{font-size:10px;color:#cfdbc6}
+.minimap-legend{display:block;font:10px/1.5 system-ui;padding:3px 3px 5px}
+.has-local-map #world-war-track{top:400px}
+@media(max-width:760px){#exploration-minimap{top:115px;right:18px;width:140px}#exploration-minimap canvas{width:140px;height:140px}.has-local-map #world-war-track{top:380px;width:280px;right:18px}#stable-lesson{padding:12px}}
+
+#war-world-pointer{position:fixed;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;pointer-events:none;color:#b8fff0;font:13px/1.4 system-ui;text-shadow:0 1px 4px #071f29,0 1px 2px #071f29;max-width:230px}
+#war-world-pointer span:first-child{font-size:24px;display:inline-block;flex:none}#war-world-pointer span:last-child{background:#102d33d9;border:1px solid #8fc5b399;border-radius:4px;padding:4px 7px}
+#world-war-track button{white-space:normal}#world-war-track p{margin:7px 0}#world-war-track div>button{margin-top:5px;width:100%;color:#b8fff0;border-color:#8fc5b3}
+@media(max-width:760px){#war-world-pointer{font-size:11px;max-width:155px}.has-local-map #world-war-track{top:auto;bottom:160px;width:240px}}
+
+#council-interact,#resident-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
+#council-dialog,#resident-dialog{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:28px;background:linear-gradient(transparent 20%,#091d2577);box-sizing:border-box}
+#council-close{background:#ead298;color:#25382d}
+
+#war-loading-lore{margin-top:24px;border-top:1px solid #a99766;padding-top:22px;max-width:52ch}#war-loading-lore h2{font:25px Georgia;color:#ecd499;margin:10px 0}#war-loading-lore p{font:16px/1.6 system-ui;color:#e8e5d1}#war-loading-lore button{font-size:12px;padding:6px 10px}
+#loading-screen:has(#war-loading-lore) .start-card{width:min(620px,90vw);max-height:90vh;overflow:auto}
+#teresod-sorcery{position:fixed;right:32px;bottom:96px;z-index:6;width:225px;padding:12px;background:#183739ed;border:1px solid #c8b57a;border-radius:4px;font:13px/1.5 system-ui}
+#teresod-sorcery button{width:100%;background:#864526;border-color:#e5af60;color:#fff1c8}#teresod-sorcery button:disabled{opacity:.65}#teresod-sorcery label{display:block;margin-top:8px}#teresod-sorcery span{float:right}#teresod-sorcery meter{display:block;width:100%;height:14px}#teresod-sorcery small{font-size:10px;color:#bcd9dc}
+@media(min-width:761px) and (max-height:800px){
+  #exploration-minimap{top:84px;width:140px}#exploration-minimap canvas{width:140px;height:140px}
+  .minimap-legend-detail{display:none}
+  .has-local-map #world-war-track{top:326px}
+  #teresod-sorcery{bottom:72px;padding:10px}#teresod-sorcery button{padding:8px 12px}
+}
+@media(min-width:761px) and (max-height:650px){
+  #exploration-minimap{top:78px;width:110px}#exploration-minimap canvas{width:110px;height:110px}
+  .has-local-map #world-war-track{top:286px}.has-local-map #world-war-track p{display:none}
+  #teresod-sorcery{bottom:62px}#teresod-sorcery small{display:none}
+}

@@ -1,5 +1,6 @@
 // Transitional boundary: the authored world still imports legacy scenery/data.
 // Nothing here constructs the adventure, quests, skills, combat or road checkpoint.
+import {localRivers} from './local-rivers.js';
 import {createStartup} from '../startup/startup.js';
 import {regionAt} from '../../world/terrain/region-world.js';
 import {westWaterSurface} from '../../content/regions/western-regions/west-ground.js';
@@ -21,9 +22,10 @@ export async function loadExplorationWorld(scene, position, onProgress, {enabled
   return {
     bounds:built.bounds,heightAt:built.heightAt,waterAt:(x,z)=>Math.max(built.waterAt(x,z),westWaterSurface(x,z)??-Infinity),supportAt:built.supportAt,
     // Legacy deep-water walls can trap a descending rider inside their inflated
-    // shore footprint. Exploration uses water height to prevent horse entry and
-    // allow swimming; tree, bridge-rail and building collision remains intact.
+    // shore footprint. Water height determines wading and swimming for horses
+    // and people; tree, bridge-rail and building collision remains intact.
     nearColliders:(x,z,r)=>built.nearColliders(x,z,r).filter(c=>c.kind!=='west-deep-water'),regionAt:built.regionAt,loading,
+    minimapData(position,radius){return {paths:built.paths,mapWaters:[...built.mapWaters,...localRivers(position,radius)],mapLands:built.mapLands,mapBridges:built.mapBridges};},
     get caricasStandards(){return built.caricasSettlement.standards;},
     // An experiment may add its own local scenery without importing the old host.
     colliders:built.colliders,landmarks:built.landmarks,paths:built.paths,reindexColliders:()=>built.reindexColliders(),

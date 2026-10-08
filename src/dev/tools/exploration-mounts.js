@@ -4,12 +4,14 @@ import {createHorse} from '../../content/characters/characters.js';
 import {createBatman} from '../../content/quests/batman/batman-model.js';
 import {createDeveloperDragon} from './developer-dragon-model.js';
 import {createDeveloperBat,DEVELOPER_BAT} from './developer-bat.js';
-import {RIDE,DEVELOPER_HORSE_SPEED} from '../../gameplay/movement/riding.js';
+import {RIDE,DEVELOPER_HORSE_SPEED,horseMovementTuning,dismountSpot} from '../../gameplay/movement/riding.js';
 import {canStand,getMovementInput} from '../../gameplay/movement/locomotion.js';
 
 export function createExplorationMounts({scene,actor,position,world,movement}){
   const presentation=createMountedPresentation();let lastDraw;
-  const models={};let kind='foot',heading=Math.PI,bank=0;
+  const models={};let kind='foot',heading=Math.PI,bank=0,horseSpeed=DEVELOPER_HORSE_SPEED;
+  const ground=(x,z)=>world.supportAt?.(x,z,{maxY:position.y,stepUp:.45})?.height??world.heightAt(x,z);
+  const footing={...world,heightAt:ground};
   const flight=createDeveloperBat({heightAt:(x,z)=>Math.max(world.heightAt(x,z),world.waterAt(x,z)),bounds:world.bounds,
     canLand:(x,z)=>world.readyAt(x,z)&&canStand(x,z,world,.62)});
   const airborne=()=>kind==='bat'||kind==='dragon';
@@ -18,22 +20,26 @@ export function createExplorationMounts({scene,actor,position,world,movement}){
     return models[name];
   }
   function reset(){presentation.reset();lastDraw=undefined;flight.cancel();kind='foot';bank=0;for(const m of Object.values(models))m.group.visible=false;movement.reset(heading);}
-  function select(name){
+  function select(name,{speedMultiplier=DEVELOPER_HORSE_SPEED}={}){
     if(!['foot','horse','bat','dragon'].includes(name))return {ok:false,reason:'Unknown mount.'};
     if(name==='foot')return land();
-    if(name==='horse'&&(airborne()||!movement.state().grounded||!canStand(position.x,position.z,world,RIDE.radius)))
+    if(name==='horse'&&(airborne()||!movement.state().grounded||!canStand(position.x,position.z,footing,RIDE.radius,position.y)))
       return {ok:false,reason:'Land on open, dry ground before mounting the horse.'};
     if(name!=='horse'&&!airborne()){flight.start(position,actor.group.rotation.y);Object.assign(position,flight.view().position);}
+    horseSpeed=speedMultiplier===1?1:DEVELOPER_HORSE_SPEED;
     model(name);for(const [id,m] of Object.entries(models))m.group.visible=id===name;
     presentation.reset();lastDraw=undefined;kind=name;heading=actor.group.rotation.y;bank=0;return {ok:true};
   }
-  function land(){
+  function land({canDismountAt=()=>true}={}){
     if(airborne())return flight.requestLanding();
     if(kind==='foot')return {ok:true};
+    const at=dismountSpot(position,heading,(x,z)=>canDismountAt(x,z)&&world.readyAt(x,z)&&(!world.canExploreAt||world.canExploreAt(x,z))&&canStand(x,z,footing,.34,position.y));
+    if(!at)return {ok:false,reason:'Ride to a clear bank before dismounting.'};
+    position.set(at.x,ground(at.x,at.z),at.z);
     reset();return {ok:true};
   }
   function step(keys,yaw,dt){
-    if(!airborne())return movement.step(keys,yaw,dt,kind==='horse'?{walk:RIDE.walk*DEVELOPER_HORSE_SPEED,run:RIDE.canter*DEVELOPER_HORSE_SPEED,radius:RIDE.radius,swimming:false,wadingDepth:.95}:undefined);
+    if(!airborne())return movement.step(keys,yaw,dt,kind==='horse'?horseMovementTuning(horseSpeed):undefined);
     const input=getMovementInput(keys),dx=-Math.sin(yaw)*input.forward+Math.cos(yaw)*input.side,dz=-Math.cos(yaw)*input.forward-Math.sin(yaw)*input.side;
     const boost=keys.has('ShiftLeft')||keys.has('ShiftRight'),turbo=keys.has('Tab');
     const pace=turbo?DEVELOPER_BAT.turbo:boost?DEVELOPER_BAT.boost:DEVELOPER_BAT.speed;
@@ -61,12 +67,13 @@ export function createExplorationMounts({scene,actor,position,world,movement}){
     if(kind==='foot'){actor.animate(time,moved.speed,moved.grounded,{swimming:moved.swimming});return;}
     const m=model(kind);m.group.position.copy(position);m.group.rotation.y=heading;
     if(kind==='horse'){
-      const pace=smooth.speed/DEVELOPER_HORSE_SPEED,gait=m.animate(time,pace,true);
-      m.group.position.y=smooth.y;actor.group.position.y=smooth.y+RIDE.seat.up;
-      actor.animate(time,0,true,{armed:false,riding:{pace,beat:Math.sin(gait.phase)}});
+      const pace=smooth.speed/horseSpeed,gait=m.animate(time,pace,true,{swimming:moved.swimming});
+      const floatBob=moved.swimming?Math.sin(time*2.7)*.035:0;
+      m.group.position.y=smooth.y+floatBob;actor.group.position.y=smooth.y+floatBob+RIDE.seat.up;
+      actor.animate(time,0,true,{armed:false,riding:{pace:moved.swimming?0:pace,beat:Math.sin(gait.phase)}});
       actor.group.position.x+=Math.sin(heading)*RIDE.seat.forward;actor.group.position.z+=Math.cos(heading)*RIDE.seat.forward;
     }else{actor.animate(time,0,true,{armed:false,riding:{pace:0}});m.update(time,{flying:true,speed:moved.speed,bank});m.group.updateMatrixWorld(true);m.passengerAnchor.getWorldPosition(actor.group.position);}
   }
   return {select,land,reset,step,draw,airborne,get kind(){return kind;},
-    state:()=>({kind,landing:flight.view().landing,visible:Object.entries(models).filter(([,m])=>m.group.visible).map(([id])=>id)})};
+    state:()=>({kind,horseSpeed,swimming:kind==='horse'&&!!movement.state().swimming,landing:flight.view().landing,visible:Object.entries(models).filter(([,m])=>m.group.visible).map(([id])=>id)})};
 }

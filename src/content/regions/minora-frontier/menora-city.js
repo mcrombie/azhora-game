@@ -1,6 +1,7 @@
 /** Minora occupies the dry Isareos bank of the atlas's Isa–Lizeem confluence.
  * Nothing in this layout straightens, relocates, or fills the rivers. */
 import { ISAREOS_RIVER, LIZEEM, ISAREOS_BECKS, courseDistance, coursePosition, courseHalfAt } from '../western-regions/west-regions.js';
+import { courseBetween } from '../western-regions/west-ground.js';
 
 const freeze = Object.freeze;
 const pt = (x, z) => freeze({ x, z });
@@ -113,10 +114,22 @@ function boundaryDistance(x,z) {
 }
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 function boxDistance(x,z,c){return Math.hypot(Math.max(0,Math.abs(x-c.x)-c.width/2),Math.max(0,Math.abs(z-c.z)-c.depth/2));}
+/** The ground under and beside each deck (7 October 2026). The levelling below stops short of the water, so the beck's high
+ * west bank stood 2.2 m over the Guild Footbridge's deck and buried it in grass. Under a deck the ground is held 40 cm below
+ * it, easing up to it over the last 3 m of each end so the shores still meet it without a lip; beside a deck it is lowered
+ * by less and less of that excess out to 3 m, where it is the bank again, so the cut has no step anyone could walk into.
+ * It only ever lowers ground, and within 6 m of water never below the water beside it (`courseBetween`, the level the
+ * beck's ribbon is drawn at between its samples). */
+function underDecks(x,z,y,water){for(const b of MENORA_BRIDGES){
+  const along=b.axis==='x'?x:z,across=Math.abs(b.axis==='x'?z-b.z:x-b.x),inset=Math.min(along-b.start,b.end-along);
+  if(inset<=0||across>=b.width/2+3)continue;
+  let cap=b.deck-.4*smooth(inset/3);
+  if(water<6)cap=Math.max(cap,courseBetween(localRivers.reduce((m,r)=>courseDistance(r,x,z)<courseDistance(m,x,z)?r:m),x,z).surface+.05);
+  y-=Math.max(0,y-cap)*(1-smooth((across-b.width/2)/3));}return y;}
 export function menoraGround(x,z,base) {
   if(x<-2530||x>-2128||z<-25||z>309)return base;
   const water=menoraRiverClearance(x,z);
-  if(water<6)return base;
+  if(water<6)return underDecks(x,z,base,water);
   let weight=inMenora(x,z)?1:1-smooth(boundaryDistance(x,z)/22);
   weight=Math.max(weight,1-smooth(boxDistance(x,z,MENORA_CAMP)/18));
   // Small dry abutments meet the level bridge deck; a river bed never becomes a ramp.
@@ -125,7 +138,7 @@ export function menoraGround(x,z,base) {
     weight=Math.max(weight,1-smooth(boxDistance(x,z,c)/17));
   }
   weight*=smooth((water-6)/12);
-  return base+(MENORA.elevation-base)*weight;
+  return underDecks(x,z,base+(MENORA.elevation-base)*weight,water);
 }
 export function menoraReserved(x,z,margin=0) {
   if(x<-2530-margin||x>-2128+margin||z<-30-margin||z>311+margin)return false;

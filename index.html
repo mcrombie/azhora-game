@@ -3,43 +3,46 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
 <title>Azhora</title>
 <link rel="stylesheet" href="./src/ui/map/world-map.css"><link rel="stylesheet" href="./src/app/exploration/exploration.css">
-<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script><link rel="stylesheet" href="./src/app/lizeem/encounter.css"></head>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script><link rel="stylesheet" href="./src/app/lizeem/encounter.css"><link rel="stylesheet" href="./src/app/exploration/tower.css"><link rel="stylesheet" href="./src/app/exploration/afterlife.css"><link rel="stylesheet" href="./src/app/exploration/chronicle.css"></head>
 <body>
 <canvas id="exploration-canvas" tabindex="0" aria-label="Explore Azhora"></canvas>
 <section id="start-screen" class="veil"><div class="start-card launch-card">
 <span class="eyebrow">AZHORA</span><h1>Choose your journey.</h1><p>Explore, test combat, or develop a living world. Saved journeys stay separate.</p>
 <div class="launch-options">
 <article><h2>Explore the World</h2><p>Begin as Teresod in Minora with the full atlas revealed. Explore freely with the developer mounts.</p><div class="menu-actions"><button id="new-exploration" data-start-mode="explore">Explore the World</button><button id="continue-exploration" data-continue-mode="explore" disabled>Continue exploration</button></div><small data-save-note="explore">Free exploration &middot; No active war or settlement simulation</small></article>
-<article><h2>Combat Testing</h2><p>Choose a Minora camp exercise and jump straight into combat. Retry or switch exercises without starting a war.</p><div class="menu-actions"><button id="new-combat-testing" data-start-mode="combat">Choose combat exercise</button></div><small>Three exercises &middot; No campaign or saved progress</small></article>
+<article><h2>Combat Testing</h2><p>Choose a Minora camp exercise and jump straight into combat. Retry or switch exercises without starting a war.</p><div class="menu-actions"><button id="new-combat-testing" data-start-mode="combat">Choose combat exercise</button></div><small>Five exercises &middot; No campaign or saved progress</small></article>
 <article><h2>Lizeemi War Scenario</h2><p>Enter the current five-region conflict. Follow the armies and test how Teresod's interventions affect the campaign.</p><div class="menu-actions"><button id="new-world-war" data-start-mode="war">Lizeemi War Scenario</button><button data-continue-mode="war" disabled>Continue war scenario</button></div><small data-save-note="war">The existing East-West War &middot; Separate hero and campaign save</small></article>
 <article><h2>Hearthfall Integration</h2><p>A Feradom-only workspace for developing living settlements on the current game foundation.</p><div class="menu-actions"><button id="new-hearthfall" data-start-mode="hearthfall">Hearthfall Integration</button><button data-continue-mode="hearthfall" disabled>Continue Hearthfall</button></div><small data-save-note="hearthfall">Sandbox foundation ready &middot; Settlement port pending &middot; Local only</small></article>
-</div><p id="start-note" role="status">New runs replace saved progress only when you choose Save. Returning to the main menu does not save automatically.</p>
+</div><p id="start-note" role="status">New runs use this mode's save slot. Choose Continue to keep your saved journey. Save before returning to the main menu.</p>
 </div></section>
 <section id="combat-testing-menu" class="veil" aria-labelledby="combat-testing-heading" hidden><div class="start-card combat-testing-card">
 <span class="eyebrow">AZHORA / COMBAT TESTING</span><h1 id="combat-testing-heading">Choose an exercise.</h1>
 <p>Train as Teresod in the Minora camp. Each exercise starts fresh, with no campaign running and no changes to your saves.</p>
 <div id="combat-exercises" class="combat-exercises"></div>
 <p class="combat-testing-help">WASD move and face &middot; X strike &middot; Space dodge<br>R retries the exercise &middot; Esc returns here</p>
-<p class="combat-testing-help">For the Ovesos ride, army losses, and changing borders, use <strong>Lizeemi War Scenario</strong> from the main menu.</p>
+<p class="combat-testing-help">For the ride from Minora to Caricas, army losses, and changing borders, use <strong>Lizeemi War Scenario</strong> from the main menu.</p>
 <button id="combat-testing-back">Back to main menu</button>
 </div></section>
 <section id="loading-screen" class="veil" hidden><div class="start-card"><span class="eyebrow">AZHORA</span><h1>Opening the world.</h1><p id="loading-message" role="status">Preparing Minora...</p><div class="loading-line"></div><small>The country is prepared as you explore.</small></div></section>
 <button id="world-war-join" hidden></button>
 <section id="world-skirmish" hidden aria-label="Field skirmish">
 <span class="eyebrow">INTERCEPT REINFORCEMENTS</span><div id="world-skirmish-vitals"><span id="world-skirmish-health"></span><meter id="world-skirmish-health-meter" min="0" max="100" value="100" aria-label="Health"></meter></div>
+<div id="world-skirmish-phase" hidden><strong></strong><span></span></div>
 <p id="world-skirmish-objective" role="status" aria-live="polite"></p>
-<div id="world-skirmish-result" role="status" hidden><h2 id="world-skirmish-result-title"></h2><p id="world-skirmish-result-detail"></p><p>Encounter ended. The scene is paused for review.</p><button id="world-skirmish-continue">Continue to exploration (Enter)</button></div>
+<div id="world-skirmish-result" role="status" hidden><h2 id="world-skirmish-result-title"></h2><p id="world-skirmish-result-detail"></p><dl id="world-skirmish-facts" class="battle-facts" hidden></dl><p id="world-skirmish-next" hidden></p><p id="world-skirmish-review">Encounter ended. Review the result before continuing.</p><button id="world-skirmish-continue">Continue to exploration (Enter)</button><button id="world-skirmish-leave" hidden>Leave / keep the interception</button></div>
 <div id="world-skirmish-actions"><button id="world-skirmish-strike">Strike (X / click)</button><button id="world-skirmish-dodge">Dodge ready (Space)</button></div>
 <button id="world-skirmish-help" aria-expanded="false" aria-controls="world-skirmish-controls">Help / pause (H)</button>
 <div id="world-skirmish-controls" hidden>
 <p><strong>Paused while you read.</strong></p>
 <dl>
 <dt>Move &amp; face</dt><dd>WASD / arrows. Right-drag to look; scroll to zoom.</dd>
+<dt>Target focus</dt><dd>T locks / releases the opponent nearest your view; E cycles visible opponents. Strafe while facing your target. Cyan diamond = focus; gold ring = strike range. Right-drag temporarily overrides the follow camera.</dd>
 <dt>Strike</dt><dd>X / left click. Face the soldier with the gold ring.</dd>
 <dt>Dodge</dt><dd>Hold a direction and tap Space. Space alone backsteps. Release before dodging again.</dd>
 <dt>Thrust</dt><dd>Narrow orange warning: sidestep across the attack.</dd>
 <dt>Sweep</dt><dd>Wide pink warning: retreat beyond the blade.</dd>
-<dt>Counter</dt><dd>After a dodge, face the soldier and strike while their guard is open.</dd>
+<dt>Counter</dt><dd>After a dodge, the soldier lowers their weapon. The green ring and draining bar show the opening: close in and strike before it disappears.</dd>
+<dt>Taking a hit</dt><dd>Each soldier hit costs 20 health. A brief pale ring marks protection from another hit: you can still move or dodge to clear the danger.</dd>
 </dl>
 <p id="world-skirmish-context"></p>
 <div id="world-skirmish-settings"></div>
@@ -47,14 +50,14 @@
 <button id="world-skirmish-withdraw">Withdraw (Esc)</button><button id="world-skirmish-retry" hidden>Retry (R)</button>
 </section>
 <aside id="world-war-report" aria-label="War report" hidden>
-<div role="status" aria-live="polite"><span class="eyebrow">WAR REPORT</span><h2 id="world-war-report-title"></h2><p id="world-war-report-detail"></p><p id="world-war-report-clock"></p></div>
-<div class="war-report-actions"><button id="world-war-report-map">Open map (M)</button><button id="world-war-report-dismiss">Dismiss</button></div>
+<div role="status" aria-live="polite"><span class="eyebrow">WAR REPORT</span><h2 id="world-war-report-title"></h2><p id="world-war-report-detail"></p><dl id="world-war-report-facts" class="battle-facts" hidden></dl><p id="world-war-report-followup" hidden></p><p id="world-war-report-clock"></p></div>
+<div class="war-report-actions"><button id="world-war-report-track">Track this event</button><button id="world-war-report-minora" hidden>Track Minora / council</button><button id="world-war-report-map">Open map (M)</button><button id="world-war-report-dismiss">Dismiss</button></div>
 </aside>
 <header id="exploration-hud" hidden><div><span class="eyebrow">AZHORA / EXPLORATION</span><h2 id="location-name">Minora</h2><p id="world-site-status" role="status" hidden></p></div><nav><button id="world-war-hud" hidden>War: day 0</button><button id="open-map">Map <kbd>M</kbd></button><button id="open-developer">Developer <kbd>F8</kbd></button><button id="open-pause">Pause <kbd>Esc</kbd></button></nav></header>
 <div id="exploration-status" role="status" hidden></div>
 <button id="world-autoplay" data-autoplay-control hidden aria-pressed="false">Stop autoplay (P)</button>
 <footer id="exploration-help" hidden>WASD / arrows &middot; Shift run &middot; Space jump &middot; Right-drag look &middot; Scroll zoom &middot; M map &middot; F5 save</footer>
-<section id="exploration-pause" class="veil" role="dialog" aria-modal="true" aria-labelledby="pause-heading" hidden><div class="start-card"><span class="eyebrow">TAKE YOUR TIME</span><h1 id="pause-heading">A moment's rest.</h1><p>Explore at your own pace. Your position and discovered map are kept when you save.</p><div class="menu-actions"><button id="resume-exploration">Resume</button><button id="save-exploration">Save exploration <kbd>F5</kbd></button><button id="load-exploration">Load saved exploration</button><button id="return-start">Return to start</button></div><p id="save-note" role="status">Save before leaving if you want to keep this journey.</p></div></section>
+<section id="exploration-pause" class="veil" role="dialog" aria-modal="true" aria-labelledby="pause-heading" hidden><div class="start-card"><span class="eyebrow">TAKE YOUR TIME</span><h1 id="pause-heading">A moment's rest.</h1><p>Explore at your own pace. Your position and discovered map are kept when you save.</p><div class="menu-actions"><button id="resume-exploration">Resume</button><button id="save-exploration">Save exploration <kbd>F5</kbd></button><button id="load-exploration">Load saved exploration</button><button id="save-return-start">Save and exit to main menu</button><button id="return-start">Return to start</button></div><p id="save-note" role="status">Save before leaving if you want to keep this journey.</p></div></section>
 <section id="exploration-developer" class="veil" role="dialog" aria-modal="true" aria-labelledby="developer-heading" hidden><div class="start-card developer-card">
 <span class="eyebrow">EXPLORATION TOOLS</span><h1 id="developer-heading">Go anywhere.</h1>
 <p id="developer-current" role="status">On foot</p>
@@ -65,9 +68,12 @@
 <label class="developer-reveal"><input id="developer-reveal" type="checkbox"> Reveal all map</label>
 <p class="developer-hint">All map views. Turn off to return to your discoveries. Mounts and reveal are temporary; land before saving.</p>
 <div id="developer-autoplay" hidden>
+<label class="developer-reveal"><input id="developer-residents" type="checkbox" checked> Minora residents trial (six people)</label>
 <h2>Combat practice</h2>
 <button id="practice-minora">Minora camp: dodge and counter lesson (1 soldier)</button>
 <button id="practice-minora-advanced">Minora camp: thrust and sweep lesson (1 soldier)</button>
+<button id="practice-minora-allied">Minora camp: allied assault (you + 3 vs 4)</button>
+<button id="practice-minora-solo-assault">Minora camp: solo assault comparison (4 soldiers)</button>
 <button id="practice-minora-squad">Minora camp: interception practice (runner + 2 escorts)</button>
 <p class="developer-hint">Train in the empty muster camp outside Minora. Space dodges; hold A or D to dodge sideways. R retries; Esc returns you to your original location on foot. Campaign, discoveries and saved game are unchanged.</p>
 <h2>Computer test scenarios</h2>

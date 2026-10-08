@@ -1,14 +1,21 @@
 import {encounterInstruction} from '../../gameplay/combat/encounter-lesson.js';
+import {battleProgress} from './battle-progress.js';
+import {writeHud} from './hud-write.js';
 
 // One active instruction; reference controls are available without advancing combat.
 export function createSkirmishHud({practice,reinforcements,pending,site,onPauseChange}){
   const $=id=>document.getElementById('world-skirmish-'+id);
   const objective=$('objective'),help=$('controls'),toggle=$('help'),health=$('health'),dodge=$('dodge');
+  const phase=$('phase');phase.hidden=!!practice;
   let helpOpen=false,ended=false,withdrawLabel;
   const context=practice
     ?'Practice only. No campaign troops or territory change. R restarts this exercise.'
+    :pending.rally?`Break ${pending.rally.guards} guards, then hold the gold ring for 6 seconds. Victory forces their retreat and secures ${site.name} for your side. Losing or withdrawing keeps the interception but leaves the outcome to the armies on day ${pending.endsOn}.`
     :`Stop the runner and escorts before they reach the blue rally point. Each soldier stopped removes ${Math.floor(reinforcements.strength/3)} ${reinforcements.name} reinforcement strength. The larger battle at ${site.name} continues until day ${pending.endsOn}; this interception does not transfer territory.`;
-  $('context').textContent=context;
+  $('context').textContent=!practice&&pending.participation
+    ?pending.rally?`Break the remaining ${pending.rally.guards} guards, then hold the gold ring for 6 seconds. Finish to advance to day ${pending.endsOn} and the battle result. Withdraw to preserve casualties and return while it remains active.`
+    :`Intercept the remaining ${pending.participation.guards} soldiers. Earlier casualties and escapes are preserved. Completing this phase advances campaign time and opens the final assault. Esc withdraws; you may return to this battlefield while active.`
+    :context;
   for(const name of ['objective','health','vitals','actions','help'])$(name).hidden=false;
   help.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.textContent='Help / pause (H)';
   function setHelp(value){
@@ -36,24 +43,25 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
       return false;
     },
     draw(state,{inactive=false,introRemaining=0,watching=false}={}){
+      if(!practice){const progress=battleProgress(pending,state);for(const [tag,text] of [['strong',progress.label],['span',progress.detail]]){const node=phase.querySelector(tag);if(node.textContent!==text)node.textContent=text;}}
       ended=!!state.outcome;
       if(ended){
-        for(const name of ['objective','vitals','actions','help','controls'])$(name).hidden=true;
+        for(const name of ['objective','vitals','actions','help','controls'])writeHud($(name),'hidden',true);
         return;
       }
-      health.textContent=`Health ${state.hero.hp} / 100`;
-      health.dataset.hurt=String(state.hero.hp<=25);
-      $('health-meter').value=state.hero.hp;
-      $('strike').disabled=helpOpen;
-      dodge.disabled=helpOpen||!!state.hero.dodgeCooldown;
-      dodge.textContent=state.hero.dodgeCooldown?`Dodge: ${state.hero.dodgeCooldown.toFixed(1)}s`:'Dodge ready (Space)';
+      writeHud(health,'textContent',`Health ${state.hero.hp} / 100`);
+      writeHud(health.dataset,'hurt',String(state.hero.hp<=25));
+      writeHud($('health-meter'),'value',state.hero.hp);
+      writeHud($('strike'),'disabled',helpOpen);
+      writeHud(dodge,'disabled',helpOpen||!!state.hero.dodgeCooldown);
+      writeHud(dodge,'textContent',state.hero.dodgeCooldown?`Dodge: ${state.hero.dodgeCooldown.toFixed(1)}s`:'Dodge ready (Space)');
       let instruction=encounterInstruction(state,practice);
-      if(!helpOpen)toggle.textContent=inactive?'Paused / Help (H)':'Help / pause (H)';
-      if(introRemaining>0)instruction={kind:'prepare',text:`Get ready. The interception begins in ${Math.ceil(introRemaining)}s.`};
-      objective.dataset.kind=instruction.kind;
+      if(!helpOpen)writeHud(toggle,'textContent',inactive?'Paused / Help (H)':'Help / pause (H)');
+      if(introRemaining>0)instruction={kind:'prepare',text:`Get ready. The ${pending.rally?'rally assault':'interception'} begins in ${Math.ceil(introRemaining)}s.`};
+      writeHud(objective.dataset,'kind',instruction.kind);
       const text=(watching&&!inactive&&!introRemaining?'Watching / P takes control. ':'')+instruction.text;
       if(objective.textContent!==text)objective.textContent=text;
     },
-    dispose(){toggle.onclick=null;help.hidden=true;toggle.setAttribute('aria-expanded','false');}
+    dispose(){toggle.onclick=null;help.hidden=true;phase.hidden=true;toggle.setAttribute('aria-expanded','false');}
   };
 }

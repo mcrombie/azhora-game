@@ -4,6 +4,8 @@ export const COMBAT_EXERCISES=Object.freeze([
   Object.freeze({id:'lesson',name:'Dodge and counter',opponents:'1 soldier',description:'Learn to sidestep a thrust, face your opponent, and counter while their guard is down.'}),
   Object.freeze({id:'advanced',name:'Thrust and sweep',opponents:'1 soldier',description:'Read both attacks: sidestep the narrow thrust and retreat from the broad sweep.'}),
   Object.freeze({id:'squad',name:'Interception practice',opponents:'Runner + 2 escorts',description:'Stop the runner while the escorts try to screen them. Practice positioning, targeting, and choosing your fights.'}),
+  Object.freeze({id:'allied',name:'Allied assault',opponents:'You + 3 allies vs 4 enemies',description:'Fight beside a small allied squad. Break the enemy line, then hold the gold ring. The last isolated enemy can retreat.'}),
+  Object.freeze({id:'solo-assault',name:'Solo assault comparison',opponents:'You vs 4 enemies',description:'The same camp and four opponents, without allies. Compare the challenge before increasing battle size.'}),
 ]);
 
 // Combat practice deliberately has no persistence capability or save slot.

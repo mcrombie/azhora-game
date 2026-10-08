@@ -12,8 +12,8 @@ export function encounterClearStrike(hero,target,guards,canHit){
     return t>0&&t<1&&Math.hypot(g.x-hero.x-dx*t,g.z-hero.z-dz*t)<.5;
   });
 }
-export function selectEncounterTarget(hero,guards,canHit=()=>true){
+export function selectEncounterTarget(hero,guards,canHit=()=>true,focusId=null){
   const score=g=>Math.abs(Math.atan2(Math.sin(Math.atan2(g.x-hero.x,g.z-hero.z)-hero.heading),Math.cos(Math.atan2(g.x-hero.x,g.z-hero.z)-hero.heading)))+distance(hero,g)*.15;
-  return guards.filter(g=>g.hp>0&&!g.escaped&&distance(hero,g)<=ENCOUNTER_REACH&&encounterFacing(hero,g)&&encounterClearStrike(hero,g,guards,canHit))
+  return guards.filter(g=>(focusId===null||g.id===focusId)&&g.hp>0&&!g.escaped&&distance(hero,g)<=ENCOUNTER_REACH&&encounterFacing(hero,g)&&encounterClearStrike(hero,g,guards,canHit))
     .sort((a,b)=>{const difference=score(a)-score(b);return Math.abs(difference)>1e-8?difference:a.id-b.id;})[0]??null;
 }

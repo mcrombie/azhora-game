@@ -10,6 +10,19 @@ const UNIT_CYLINDER = new THREE.CylinderGeometry(1, 1, 1, 8);
 const UNIT_HAIR_LOCK = new THREE.IcosahedronGeometry(1, 0);
 const UP = new THREE.Vector3(0, 1, 0);
 const BATCH_MATERIALS = new Map();
+// Temporary encounters own their rig geometry but borrow these primitives and
+// the rigid-batch material cache. Release only resources owned by this figure.
+export function disposeCharacter(actor) {
+  const sharedGeometry = new Set([UNIT_BOX, UNIT_SPHERE, UNIT_CYLINDER, UNIT_HAIR_LOCK, SHADOW_DISC]);
+  const sharedMaterials = new Set(BATCH_MATERIALS.values()), geometry = new Set(), materials = new Set();
+  actor.group.traverse(mesh => {
+    if (mesh.geometry && !sharedGeometry.has(mesh.geometry)) geometry.add(mesh.geometry);
+    for (const mat of [].concat(mesh.material ?? [])) if (!sharedMaterials.has(mat)) materials.add(mat);
+  });
+  actor.group.removeFromParent();
+  for (const item of geometry) item.dispose();
+  for (const item of materials) item.dispose();
+}
 const ROAD_CLOTH = Object.freeze({
   'field-courier': 0x777957,
   'bridge-keeper': 0x9a7150,
@@ -734,6 +747,14 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestY=turn;headY=-turn*.45;chestX=.04;hip[0]=-.18;hip[1]=.18;stance=.12;
       }
       arm[0]=-.7;elbow[0]=-.8;knee[0]=.38;knee[1]=.32;
+    } else if (pose.attackStyle && action === 'recover') {
+      const recover=1-THREE.MathUtils.smoothstep(progress,.65,1);
+      // Missed commitment: lowered sword/shield and forward weight make the
+      // counter opening legible without reading the floating label.
+      chestX=.24*recover;chestY=pose.attackStyle==='sweep'?.3*recover:-.1*recover;
+      arm[1]=-.35;elbow[1]=-.15;armOut[1]=.22;
+      arm[0]=-.08;elbow[0]=-.12;hip[0]=-.18;hip[1]=.12;
+      knee[0]=.32;knee[1]=.25;stance=.07;headX=.1*recover;
     } else if (action === 'windup') {
       const pull = THREE.MathUtils.smoothstep(progress, 0, 0.85);
       arm[1] = THREE.MathUtils.lerp(-0.6, -2.15, pull);
@@ -3531,7 +3552,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   function animate(time, speed = 0, grounded = true, pose = {}) {
     if (typeof pose.fishing === 'boolean') setFishing(pose.fishing);
     const hasFocus = selectedWeapon === 'wand' || selectedWeapon === 'oak-staff';
-    animatePose(time, speed, grounded, { ...pose, fishing, spellCast: !fishing && hasFocus ? pose.spellCast : null });
+    animatePose(time, speed, grounded, { ...pose, fishing, spellCast: !fishing && (hasFocus || pose.handCast) ? pose.spellCast : null });
     // The ball never stops turning, and bobs to a beat only she can hear.
     if (discoBall) {
       discoBall.rotation.y = time * 1.7;
@@ -3569,11 +3590,15 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       ? focusTipWorld.set(0, .4, 0).applyMatrix4(model.matrixWorld)
       : focusTipWorld.set(.014 + Math.sin(.12) * .12, .83 + Math.cos(.12) * .12, 0).applyMatrix4(model.matrixWorld);
   }
+  function handTip() {
+    wrists[1].updateWorldMatrix(true, false);
+    return focusTipWorld.set(0, -.075, .055).applyMatrix4(wrists[1].matrixWorld);
+  }
   if (isPlayer || fights) setWeapon('simple-sword');
   if (isTelemon) setWeapon(armed ? (isTelemonMan ? 'telemon-spear' : 'long-dagger') : null);
   if (isMercenary && !isPlayer) setWeapon(KIT_HELD[look?.weapon] ?? null);
   if (fishingGrip) setFishing(isPondFisher);
-  return { group, animate, setArmed, setShield, setWeapon, setFishing, fishingTip, focusTip };
+  return { group, animate, setArmed, setShield, setWeapon, setFishing, fishingTip, focusTip, handTip };
 }
 
 /** A scrawny woodland raider: a sunken glare, ragged ears and a wary lope. */
@@ -4364,7 +4389,7 @@ export function createHorse({ variant = 0, saddled = false, coat: coatName = nul
 // A four-beat walk and a patient idle: a breath, the occasional dip of the head
 // to the grass, a tail swish and a shift of weight from one hind leg to the other.
 function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset = 0 }) {
-  let stridePhase = offset, lastTime, movementBlend = 0;
+  let stridePhase = offset, lastTime, movementBlend = 0, swimBlend = 0;
   const lerp = THREE.MathUtils.lerp;
   function animate(time, speed = 0, grounded = true, pose = {}) {
     const seconds = Number.isFinite(time) ? time : 0;
@@ -4372,9 +4397,10 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
     lastTime = seconds;
     const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
     const damping = 1 - Math.exp(-9 * dt);
+    swimBlend=lerp(swimBlend,pose.swimming?1:0,damping);
     movementBlend = lerp(movementBlend, grounded ? THREE.MathUtils.clamp(pace / 1.2, 0, 1) : 0, 1 - Math.exp(-8 * dt));
     // Above a fast trot the gait gathers into a canter: hind pair and fore pair nearly together, a longer reach, a rocking back.
-    const canter = THREE.MathUtils.clamp((pace - 8.5) / 3, 0, 1);
+    const canter = THREE.MathUtils.clamp((pace - 8.5) / 3, 0, 1)*(1-swimBlend);
     stridePhase += dt * (3.4 + Math.min(pace, 6) * 1.1 + canter * 2.6);
     const idle = 1 - movementBlend, breath = Math.sin(seconds * 1.3 + offset);
     const graze = pose.grazing === true ? 1 : pose.grazing === false ? 0 : Math.pow(Math.max(0, Math.sin(seconds * .17 + offset)), 12) * idle;
@@ -4397,11 +4423,16 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
       object.rotation.y = lerp(object.rotation.y, y, damping);
       object.rotation.z = lerp(object.rotation.z, z, damping);
     };
-    rotate(spine, spineX, 0, spineZ);
-    rotate(neck, neckX, 0, -spineZ);
-    rotate(head, headX, headY, 0);
+    // Keep the muzzle clear and paddle even at rest: swimming is not a submerged canter.
+    rotate(spine, lerp(spineX,-.035,swimBlend), 0, spineZ*(1-swimBlend));
+    rotate(neck, lerp(neckX,-.24,swimBlend), 0, -spineZ*(1-swimBlend));
+    rotate(head, lerp(headX,-.04,swimBlend), headY*(1-swimBlend), 0);
     rotate(tail, tailX, tailY, 0);
-    for (let i = 0; i < 4; i++) { rotate(legs[i], hip[i], 0, 0); rotate(knees[i], knee[i], 0, 0); }
+    for (let i = 0; i < 4; i++) {
+      const paddle=seconds*4.2+offset+(i%2?Math.PI:0)+(i>1?Math.PI/2:0);
+      rotate(legs[i],lerp(hip[i],-.12+Math.sin(paddle)*.34,swimBlend),0,0);
+      rotate(knees[i],lerp(knee[i],.28+Math.max(0,Math.cos(paddle))*.42,swimBlend),0,0);
+    }
     rotate(body, 0, Math.sin(stridePhase) * 0.012 * movementBlend, 0);
     body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend * (1 - canter) + Math.max(0, Math.sin(stridePhase + 0.4)) * 0.09 * canter, 1 - Math.exp(-20 * dt));
     return {phase:stridePhase};

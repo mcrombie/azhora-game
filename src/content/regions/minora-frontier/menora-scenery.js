@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
 import { MENORA, MENORA_OUTLINE, MENORA_GATES, MENORA_BUILDINGS, MENORA_PATHS,
   MENORA_BRIDGES, MENORA_GARDENS, MENORA_CAMP, LIZEEM_MARKET_STANDS, menoraRiverClearance, menoraDeckHeight } from './menora-city.js';
+import { createMenoraPolishSteps } from './menora-polish.js';
 
 const WHITE='#e2e2d2', IVORY='#eee9d4', SHADE='#b9c4bd', DARK='#385052', GOLD='#c6ad6b';
 const WOOD='#726052', PAVING='#c4c2ac', WATER='#548985', RED='#713e45';
@@ -59,20 +60,28 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
         b.block(WHITE,side*(bridge.width/2-.3),0,railInset/2,.6,small?.85:1.25,len-railInset);
         b.box(IVORY,side*(bridge.width/2-.3),small?.92:1.32,railInset/2,.85,.16,len-railInset+.3);
       }
-      const spans=Math.max(2,Math.floor(len/12)),step=len/spans;
+      const spans=Math.max(2,Math.floor(len/12)),step=len/spans,W=bridge.width/2,r=step/2-1.05,spring=-1.9-r;
       for(let i=0;i<=spans;i++) {
         const q=-len/2+i*step;
-        if(!small)b.block(SHADE,0,-9,q,bridge.width-1,8.5,2.1);
+        // Piers as wide as the spandrels they carry, with pointed cutwaters on both faces of those in the stream.
+        if(!small)b.block(SHADE,0,-11,q,bridge.width,10.5,2.1);
+        if(!small&&i>0&&i<spans)for(const side of [-1,1]){b.block(SHADE,side*W,-11,q,1.45,spring+11.3,1.45,Math.PI/4);b.cone(SHADE,side*W,spring+.3,q,1.03,1.3,0,4);}
         if(!small)for(const side of [-1,1]) {
           b.block(WHITE,side*(bridge.width/2-.3),0,q,.95,1.6,.95);
           b.cone(GOLD,side*(bridge.width/2-.3),1.6,q,.38,.55,0,4);
         }
       }
+      // Each span is a true stone arch (7 October 2026): a solid spandrel on both faces down to a semicircle that springs
+      // from the pier faces, an ivory ring round it, and a vaulted soffit under the whole deck.
       if(!small)for(let i=0;i<spans;i++) {
-        const q=-len/2+(i+.5)*step;
-        for(const side of [-1,1])for(let j=0;j<8;j++) {
-          const angle=(j+.5)*Math.PI/8,xx=side*(bridge.width/2-.5);
-          b.box(WHITE,xx,-5.5+Math.sin(angle)*4.6,q+Math.cos(angle)*(step/2-1),.8,1.1,1.8,0,angle-Math.PI/2);
+        const q=-len/2+(i+.5)*step,N=14,at=(k,rad)=>{const a=Math.PI*(1-k/N);return [spring+rad*Math.sin(a),q+rad*Math.cos(a)];};
+        for(let k=0;k<N;k++) {
+          const [y0,z0]=at(k,r),[y1,z1]=at(k+1,r),[u0,v0]=at(k,r+.55),[u1,v1]=at(k+1,r+.55);
+          b.quad(SHADE,[-W,y0,z0],[W,y0,z0],[W,y1,z1],[-W,y1,z1]);
+          for(const side of [-1,1]) {
+            const x=side*W,xr=side*(W+.05),face=[[x,y0,z0],[x,-1.2,z0],[x,-1.2,z1],[x,y1,z1]],ring=[[xr,y0,z0],[xr,u0,v0],[xr,u1,v1],[xr,y1,z1]];
+            b.quad(WHITE,...(side>0?face:face.reverse()));b.quad(IVORY,...(side>0?ring:ring.reverse()));
+          }
         }
       }
     });
@@ -120,6 +129,7 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
     push({x,z,r:r+.35,minY:y-.5,maxY:y+h+5,kind:'city-tower'});(yield* finish(b));metrics.towers++;
   }
   for(const p of MENORA_OUTLINE){ if (++buildWork % 8 === 0) yield; if(menoraRiverClearance(p.x,p.z)>7)(yield* turret(p.x,p.z)); }
+  const oldFlags=createSceneryBuilder('Minora legacy gate flags');
   for(const g of MENORA_GATES) { if (++buildWork % 8 === 0) yield;
     const a=MENORA_OUTLINE[g.edge],c=MENORA_OUTLINE[(g.edge+1)%MENORA_OUTLINE.length],len=Math.hypot(c.x-a.x,c.z-a.z),dx=(c.x-a.x)/len,dz=(c.z-a.z)/len;
     for(const side of [-1,1]){ if (++buildWork % 8 === 0) yield; (yield* turret(g.x+dx*side*11,g.z+dz*side*11,4.2,29,`${g.name} flank`)); }
@@ -128,10 +138,12 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
       b.box(WHITE,0,17,0,5.3,8,14.3);b.box(IVORY,0,21.2,0,5.7,.6,15);
       // Portcullises are visibly raised: no door collider across a city gate.
       for(let k=-6;k<=6;k+=1.2)b.box(DARK,0,12,k,.18,3.5,.16);
-      for(const side of [-1,1])flag(b,side*3,20,0,RED,1.1);
+
     });
     (yield* finish(b));
+    oldFlags.frame(g.x,y,g.z,yaw,()=>{for(const side of [-1,1])flag(oldFlags,side*3,20,0,RED,1.1);});
   }
+  (yield* finish(oldFlags));
 
   for(const home of MENORA_BUILDINGS) { if (++buildWork % 8 === 0) yield;
     const b=createSceneryBuilder(home.name),w=home.width,d=home.depth,h=home.height,y=heightAt(home.x,home.z);
@@ -157,7 +169,34 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
         });
         b.cylinder(GOLD,0,106,0,6.8,1.1);b.cone('#90a6a1',0,107,0,5,12);
         b.cone(GOLD,0,119,0,1,6);b.rock('#c8e6d3',0,127,0,1.2,1.2,1.2);
-        b.box(DARK,0,4.5,d/2+.2,4,9,.4);b.box(GOLD,0,4.5,d/2+.43,3.4,8.4,.09);
+        // The Guild's door (7 October 2026): a porch built out to the old door's plane within its 4 m by 9.5 m outline, the
+        // doorway recessed 0.7 m into it under a pointed arch of voussoirs (laid as the bridge arches are) with a gold hood and
+        // keystone, oak double doors with strap hinges, studs and iron rings, and the Guild's flame in a ring on the tympanum.
+        // A lancet each side sits on the tower's own face, which leans 3 degrees (its first stage has seven sides).
+        const F=d/2+.45,A=1.7,S=6,R=2*A,N=11,dt=Math.PI/3/N,OAK='#4c3b2f',IRON='#3a3f3f',arc=(s,t,rad)=>[s*(rad*Math.cos(t)-A),S+rad*Math.sin(t)];
+        b.block(WHITE,0,0,F-1.75,4,9.4,2.1);b.block(IVORY,0,9.35,F-1.37,4,.15,2.86);b.box(GOLD,0,9.1,F+.03,.36,.5,.24);
+        b.block(IVORY,0,.1,F-.275,3.7,.4,.85);b.block(IVORY,0,S,F-.475,3.4,.3,.45);b.block(OAK,0,.5,F-.33,.16,5.5,.06);
+        for(const s of [-1,1]) {
+          const flip=q=>s>0?q:q.reverse();
+          b.block(WHITE,s*(A+.15),0,F-.355,.3,9.4,.69);b.block(DARK,s*(A-.02),.5,F-.38,.04,5.5,.64);b.box(GOLD,s*1.94,5.87,F+.03,.12,.26,.14);
+          for(let i=0;i<12;i++)b.block(i%2?WHITE:IVORY,s*(A+.15),i*.5,F-.03+i%2*.015,.3,.5,.06+i%2*.03);
+          for(let k=0;k<N;k++) {
+            const t=(k+.5)*dt,rib=(r0,r1,tint,z,depth)=>b.box(tint,...arc(s,t,(r0+r1)/2),z,2*r1*Math.sin(dt/2),r1-r0,depth,0,0,s*(t-Math.PI/2));
+            rib(R,R+.21,k%2?WHITE:IVORY,F-.03+k%2*.015,.06+k%2*.03);rib(R+.21,R+.295,GOLD,F+.03,.12);
+            const [i0,i1,h0,h1,o0,o1]=[[k,R],[k+1,R],[k,R+.29],[k+1,R+.29],[k,R-.01],[k+1,R-.01]].map(([j,rad])=>arc(s,j*dt,rad));
+            b.quad(DARK,...flip([[...o0,F],[...o1,F],[...o1,F-.7],[...o0,F-.7]]));
+            b.quad(WHITE,...flip([[...h0,F],[h0[0],9.4,F],[h1[0],9.4,F],[...h1,F]]));
+            b.quad(SHADE,...flip([[i0[0],S,F-.33],[...i0,F-.33],[...i1,F-.33],[i1[0],S,F-.33]]));
+          }
+          for(let k=0;k<5;k++)b.block(k%2?OAK:WOOD,s*(.17+k*.34),.5,F-.41,.34,5.5,.12);
+          for(const yy of [1.1,3.25,5.4])b.sheet(GOLD,[s*.35,yy-.03,F-.335],[s*1.68,yy-.11,F-.335],[s*1.68,yy+.11,F-.335],[s*.35,yy+.03,F-.335]);
+          for(const yy of [2.2,4.3])for(let k=0;k<5;k++)b.box(GOLD,s*(.17+k*.34),yy,F-.33,.08,.08,.05);
+          b.cylinder(IRON,s*.4,1.55,F-.33,.06,.1);
+          for(let i=0;i<8;i++){const a=i*Math.PI/4,c=a+Math.PI/4;b.beam(IRON,[s*.4+.12*Math.cos(a),1.43+.12*Math.sin(a),F-.3],[s*.4+.12*Math.cos(c),1.43+.12*Math.sin(c),F-.3],.03,.03);}
+          b.cone(GOLD,s*.24,6.92,F-.33,.13,.66,0,4);pointedWindow(b,s*2.55,7,10.58+s*.14,.3,1.8);
+        }
+        for(let i=0;i<16;i++){const a=i*Math.PI/8,c=a+Math.PI/8;b.beam(GOLD,[.7*Math.cos(a),7.45+.7*Math.sin(a),F-.3],[.7*Math.cos(c),7.45+.7*Math.sin(c),F-.3],.06,.09);}
+        b.cone(GOLD,0,6.9,F-.33,.2,1.18,0,4);b.rock(GOLD,0,6.92,F-.33,.42,.16,.14);
         for(const side of [-1,1])b.block(IVORY,side*3,0,d/2+.3,.9,11,1.2);
       } else if(home.kind==='temple') {
         b.block(WHITE,0,0,0,w,18,d);
@@ -252,6 +291,7 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
     push({x,z,r:.9,minY:y,maxY:y+1.4,kind:'barrel'});
   }
   (yield* finish(camp));
+  (yield* createMenoraPolishSteps({root,heightAt,ground,push,metrics,colliders})); // the polish pass (7 October 2026)
   const mapFeatures=MENORA_BUILDINGS.map(b=>({id:b.id,name:b.name,x:b.x,z:b.z,width:b.width,depth:b.depth,kind:b.kind}));
   return {root,metrics,mapFeatures,bridges:MENORA_BRIDGES};
 }

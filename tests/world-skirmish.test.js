@@ -51,7 +51,7 @@ test('combat feedback distinguishes hits, blocked strikes, range misses and dodg
     const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:1,z:0}]});
     let s=model.snapshot();while(s.guards[0].phase!=='strike')s=model.tick(1/60);
     s=model.tick(1/60,{dodge});for(let i=0;i<10;i++)s=model.tick(1/60);
-    assert(dodge?['dodged','missed'].includes(s.hero.lastDefense.kind):s.hero.lastDefense.kind==='hit');assert.equal(s.hero.hp,dodge?100:75);
+    assert(dodge?['dodged','missed'].includes(s.hero.lastDefense.kind):s.hero.lastDefense.kind==='hit');assert.equal(s.hero.hp,dodge?100:80);
   }
 });
 test('field spawns have clear separated approaches and fail safely on unsuitable ground',()=>{

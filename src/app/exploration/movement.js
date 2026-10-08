@@ -6,9 +6,10 @@ export function explorationMovement(position,world){
   const support=(x,z)=>world.supportAt?.(x,z,{maxY:position.y,stepUp:.45})?.height??world.heightAt(x,z);
   const collision={...world,heightAt:support};
   return {
-    step(keys,yaw,dt,{walk=4.5,run=7,radius=.34,swimming:allowSwimming=true,wadingDepth=0}={}){
+    step(keys,yaw,dt,{walk=4.5,run=7,radius=.34,swimming:allowSwimming=true,wadingDepth=0,swim=3.4,swimDepth=.1,swimOffset=.65}={}){
       dt=Math.min(.04,Math.max(0,dt));
-      const input=getMovementInput(keys),speed=swimming?3.4:keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')?run:walk;
+      const afloat=allowSwimming&&support(position.x,position.z)<waterAt(position.x,position.z,world)-swimDepth;
+      const input=getMovementInput(keys),speed=afloat?swim:keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')?run:walk;
       const dx=(-Math.sin(yaw)*input.forward+Math.cos(yaw)*input.side)*speed*dt;
       const dz=(-Math.cos(yaw)*input.forward-Math.sin(yaw)*input.side)*speed*dt;
       const before={x:position.x,z:position.z};let waiting=null,blockedBoundary=false;
@@ -22,8 +23,8 @@ export function explorationMovement(position,world){
       const moved=Math.hypot(position.x-before.x,position.z-before.z);
       if(moved>.001)heading=Math.atan2(dx,dz);
       const ground=support(position.x,position.z),water=waterAt(position.x,position.z,world);
-      swimming=allowSwimming&&ground<water-.1;
-      const floor=swimming?water-.65:ground;
+      swimming=allowSwimming&&ground<water-swimDepth;
+      const floor=swimming?water-swimOffset:ground;
       if(grounded&&position.y-floor<.65)position.y=floor;
       else {grounded=false;vertical-=20*dt;position.y+=vertical*dt;if(position.y<=floor){position.y=floor;grounded=true;vertical=0;}}
       return {speed:moved/Math.max(dt,.001),grounded,swimming,heading,waiting,blockedBoundary,

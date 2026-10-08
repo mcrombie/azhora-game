@@ -5,7 +5,7 @@ import {COMBAT_EXERCISES,COMBAT_TEST_STORE} from '../src/app/exploration/combat-
 import {MODES,launchMode,allowsRegion} from '../src/app/exploration/modes.js';
 
 test('standalone combat offers the existing exercises with no save capability or other regions',()=>{
-  assert.deepEqual(COMBAT_EXERCISES.map(e=>e.id),['lesson','advanced','squad']);
+  assert.deepEqual(COMBAT_EXERCISES.map(e=>e.id),['lesson','advanced','squad','allied','solo-assault']);
   assert.equal(launchMode('?mode=combat').id,'combat');assert(allowsRegion(MODES.combat,16));assert(!allowsRegion(MODES.combat,25));
   assert(!COMBAT_TEST_STORE.save({anything:true}).ok);assert.deepEqual(COMBAT_TEST_STORE.read(),{ok:true,data:null});
 });

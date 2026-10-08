@@ -7,7 +7,7 @@ function fixture(prepare=async()=>true){
   let mode='developer',p={...OVESOS_JOURNEY[0]},day=0,encounter=null,tracking=null;
   const calls={ride:0,advance:0,join:0,clear:0,prepare:0,run:0,withdraw:0,speeds:[],messages:[],maps:[]};
   const engagements=[],war={
-    state:()=>({campaign:{day,engagements},encounter:{encounter},tracking}),
+    state:()=>({campaign:{day,engagements,armies:[{id:42,owner:'east',from:'caricas',to:'ovesos',status:'marching'}]},encounter:{encounter},tracking}),
     advance(n=1){day+=n;calls.advance++;if(day>=5&&!engagements.length)engagements.push({id:2,region:'ovesos',status:'active'});if(day>=8)engagements[0].status='resolved';},
     pause(){},run(){calls.run++;},setSpeed(n){calls.speeds.push(n);},track(target){tracking={target};},
     join(){calls.join++;mode='encounter';return {ok:true};},help(){mode='skirmish';encounter={outcome:null};},
@@ -22,6 +22,7 @@ function fixture(prepare=async()=>true){
 }
 test('named Ovesos run traverses every waypoint, waits at 20x and resolves at the deadline',async()=>{
   const f=fixture();f.driver.start();await settle();
+  assert.deepEqual(f.war.state().tracking.target,{kind:'army',id:42},'Tracks the actual East army even when v6 assigned another army id first');
   f.driver.tick(.04,false);assert.equal(f.calls.ride,0);
   f.setMode('loading');f.driver.tick(20,true);assert(f.driver.state().active);assert.equal(f.calls.ride,0);f.setMode('playing');
   for(let i=0;i<300&&f.driver.state().active;i++)f.driver.tick(.2,true);

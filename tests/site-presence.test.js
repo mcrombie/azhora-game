@@ -1,13 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorldWar,WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
+import {createWorldWar,WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
+import {createCampaign} from '../src/simulation/campaign.js';
 import {caricasPresence} from '../src/app/exploration/site-presence.js';
 import {sourceModule} from './module-loader.js';
 const THREE=await import('../vendor/three.module.js');
 const {createSitePresence}=await sourceModule('../src/app/exploration/site-presence-view.js');
 const {createCaricasSettlement}=await sourceModule('../src/content/regions/minora-frontier/caricas-settlement-scenery.js');
 
-function conquered(){const w=createWorldWar();w.advance(10);w.syncRegion('Caricas');const b=w.snapshot().engagements.find(b=>b.status==='active');w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id,'west','success');return w;}
+function legacyWar(){const c=createCampaign(LEGACY_WORLD_WAR_SCENARIO);c.watchBattles(true);const {scenario,seed,day,commands}=c.snapshot();return createWorldWar({simulation:{scenario,seed,day,commands}});}
+function conquered(){const w=legacyWar();w.advance(10);w.syncRegion('Caricas');const b=w.snapshot().engagements.find(b=>b.status==='active');w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id,'west','success');return w;}
 
 test('presence follows regional resolution, recovery and replay without changing the simulation',()=>{
   const w=conquered(),project=()=>caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO);
@@ -18,9 +20,20 @@ test('presence follows regional resolution, recovery and replay without changing
 });
 
 test('a held region keeps its faction and a depleted or empty garrison never invents guards',()=>{
-  const w=createWorldWar();w.advance(12);const s=w.snapshot(),p=caricasPresence(s,WORLD_WAR_SCENARIO);
+  const w=legacyWar();w.advance(12);const s=w.snapshot(),p=caricasPresence(s,WORLD_WAR_SCENARIO);
   assert.equal(p.owner,'east');assert.equal(p.strength,1);assert.equal(p.guards,1);
   s.regions.caricas.garrison=0;assert.equal(caricasPresence(s,WORLD_WAR_SCENARIO).guards,0);
+});
+
+test('current day-three Caricas presence changes only after the final assault resolves',()=>{
+  const w=createWorldWar();w.advance(3);w.syncRegion('Caricas');const b=w.snapshot().engagements.find(b=>b.region==='caricas');
+  assert.equal(caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO).owner,'east');
+  w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id,'west','success','vanguard-broken',3);
+  assert.equal(caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO).owner,'east','Interception alone cannot recolor the town');
+  w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id+':rally','west','success','rally-secured',3);
+  const p=caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO);
+  assert.equal(w.snapshot().day,6);assert.equal(p.owner,'west');assert.ok(p.guards>0&&p.guards<=2);assert.match(p.status,/recovering/);
+  assert.deepEqual(caricasPresence(createWorldWar(w.checkpoint()).snapshot(),WORLD_WAR_SCENARIO),p);
 });
 
 test('world presence recolors only banner cloth, uses clear guard posts, handles fog and restores authored colors',()=>{

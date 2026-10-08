@@ -37,6 +37,11 @@ app.whenReady().then(async()=>{
   fs.writeFileSync(path.join(artifacts,'web-main-menu.png'),(await win.webContents.capturePage()).toPNG());
   await win.loadURL(origin+'/exploration.html?test=1&menu=1#menu');await menu();
   check(new URL(win.webContents.getURL()).pathname==='/index.html'&&new URL(win.webContents.getURL()).searchParams.get('menu')==='1'&&new URL(win.webContents.getURL()).hash==='#menu','Old exploration URL reaches the canonical menu with query and fragment intact');
+  if(process.argv.includes('--war-only')){
+    await require('./war-web-checks.cjs')({win,run,wait,menu,check,artifacts});check(!errors.length,'No browser console errors');
+    check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
+    fs.writeFileSync(path.join(artifacts,'war-web-checks.json'),JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors},null,2));app.exit(0);return;
+  }
   await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatMenu())`);
   fs.writeFileSync(path.join(artifacts,'web-combat-menu.png'),(await win.webContents.capturePage()).toPNG());
   const beforeCombat=await run(`JSON.stringify({...localStorage})`);
@@ -74,6 +79,7 @@ app.whenReady().then(async()=>{
   await run(`document.querySelector('[data-continue-mode="hearthfall"]').click()`);await wait('window.__EXPLORATION__');
   const restored=await run(`window.__EXPLORATION__.store.read().data`);
   check(JSON.stringify(restored)===JSON.stringify(saved),'Continue restores browser save in a fresh renderer');
+  if(process.argv.includes('--war-release-checks'))await require('./war-web-checks.cjs')({win,run,wait,menu,check,artifacts});
   check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
   check(!errors.length,'No browser console errors');
   fs.writeFileSync(path.join(artifacts,'web-entry-checks.json'),JSON.stringify({checks,errors},null,2));

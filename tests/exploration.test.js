@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {explorationStore,validateExploration,EXPLORATION_KEY} from '../src/app/exploration/checkpoint.js';
 import {explorationMovement} from '../src/app/exploration/movement.js';
 import {createMountedPresentation} from '../src/dev/tools/mounted-presentation.js';
+import {RIDE,horseMovementTuning} from '../src/gameplay/movement/riding.js';
 
 test('mounted presentation filters terrain jitter and wraps turns without changing physical input',()=>{
   const visual=createMountedPresentation(),physical={y:10,heading:Math.PI-.01,speed:26};
@@ -66,15 +67,16 @@ test('region arrival searches around obstacles and rejects water and neighboring
   assert.equal(findRegionArrival(region,{...world,heightAt:()=>-3}),null);
   assert.equal(findRegionArrival(region,{...world,regionAt:()=>({id:-1})}),null);
 });
-test('developer horse pace preserves obstacle checks and cannot ride into water',()=>{
-  const settings={walk:13,run:26,radius:.62,swimming:false};
+test('developer horse retains land pace and swims through deeper water at a slower pace',()=>{
+  const settings=horseMovementTuning(2);
   const p={x:0,y:2,z:0},w=baseWorld(),m=explorationMovement(p,w);
   for(let i=0;i<25;i++)m.step(new Set(['KeyW','ShiftLeft']),0,.04,settings);assert(Math.abs(p.z+26)<1e-6);
   const wet={...baseWorld(),heightAt:(x,z)=>z<-.8?-2:2},q={x:0,y:2,z:0},horse=explorationMovement(q,wet);
-  for(let i=0;i<25;i++)horse.step(new Set(['KeyW','ShiftLeft']),0,.04,settings);assert(q.z>=-.8);
+  for(let i=0;i<25;i++)horse.step(new Set(['KeyW','ShiftLeft']),0,.04,settings);assert(q.z< -5);assert(horse.state().swimming);
+  assert(Math.abs(q.y-(wet.waterAt()-RIDE.floatOffset))<.01);
 });
 
-test('a stranded horse can retreat up a sloping bank but cannot ride deeper or along deep water',()=>{
+test('a non-swimming mover can retreat up a sloping bank without bypassing solid scenery',()=>{
   const w={...baseWorld(),heightAt:(x,z)=>z,waterAt:()=>1};
   const p={x:0,y:.5,z:.5},m=explorationMovement(p,w),settings={walk:13,run:26,radius:.62,swimming:false};
   for(let i=0;i<10;i++)m.step(new Set(['KeyW']),0,.04,settings);
@@ -89,9 +91,38 @@ test('a stranded horse can retreat up a sloping bank but cannot ride deeper or a
   assert(q.z<1,'Recovery still respects solid scenery');
 });
 
-test('horses can wade shallow fords while deep channels still block them',()=>{
+test('horses wade shallow fords, swim deep channels and return to normal bank footing',()=>{
   const w={...baseWorld(),heightAt:(x,z)=>z<-3?-2:.15,waterAt:()=>1};
-  const p={x:0,y:.15,z:0},m=explorationMovement(p,w);
-  for(let i=0;i<20;i++)m.step(new Set(['KeyW']),0,.04,{walk:13,radius:.62,swimming:false,wadingDepth:.95});
-  assert(p.z<-2.5&&p.z>=-3);assert(!m.state().swimming);
+  const p={x:0,y:.15,z:0},m=explorationMovement(p,w),tuning=horseMovementTuning();
+  for(let i=0;i<5;i++)m.step(new Set(['KeyW']),0,.04,tuning);
+  assert(!m.state().swimming);assert.equal(p.y,.15);
+  for(let i=0;i<30;i++)m.step(new Set(['KeyW']),0,.04,tuning);
+  assert(p.z< -3);assert(m.state().swimming);assert(Math.abs(p.y-(1-RIDE.floatOffset))<.01);
+  for(let i=0;i<50;i++)m.step(new Set(['KeyS']),0,.04,tuning);
+  assert(p.z>0);assert(!m.state().swimming);assert.equal(p.y,.15);
+});
+
+test('horse swimming follows elevated river surfaces, stays slower than land and cannot canter or jump in deep water',()=>{
+  for(const multiplier of [1,2]){
+    const w={...baseWorld(),heightAt:()=>24,waterAt:()=>30},p={x:0,y:30-RIDE.floatOffset,z:0},m=explorationMovement(p,w),tuning=horseMovementTuning(multiplier);
+    for(let i=0;i<25;i++)m.step(new Set(['KeyW','ShiftLeft']),0,.04,tuning);
+    assert.equal(m.state().swimming,true);assert.equal(m.jump(),false);
+    assert(Math.abs(p.z+RIDE.swim*multiplier)<1e-6);assert(Math.abs(p.y-(30-RIDE.floatOffset))<1e-6);
+    assert(RIDE.swim*multiplier<tuning.walk);
+  }
+});
+
+test('swimming horses respect hulls, scenario borders and unloaded regions',()=>{
+  const wet={...baseWorld(),heightAt:()=>-8,waterAt:()=>1};
+  for(const [world,expected] of [
+    [{...wet,colliders:[{x:0,z:-2,hx:2,hz:.2,minY:-20,maxY:20}]},'obstacle'],
+    [{...wet,canExploreAt:(x,z)=>z> -2},'boundary'],
+    [{...wet,readyAt:(x,z)=>z> -2},'loading'],
+  ]){
+    const p={x:0,y:1-RIDE.floatOffset,z:0},m=explorationMovement(p,world);let result;
+    for(let i=0;i<25;i++)result=m.step(new Set(['KeyW','ShiftLeft']),0,.04,horseMovementTuning(2));
+    assert(p.z> -2);assert(result.swimming);
+    if(expected==='boundary')assert(result.blockedBoundary);
+    if(expected==='loading')assert(result.waiting);
+  }
 });

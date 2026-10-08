@@ -314,8 +314,18 @@ test('getting wet in the middle of a fight resets nothing', async () => {
   // also suppresses ordinary stamina regeneration while a swimmer remains wet.
   // The actual boundary behavior is exercised in the beach-fight test below.
   assert.match(main, /const windBefore=combat\.state\.player\.stamina;/, 'the host remembers what the water had taken');
-  assert.match(main, /if\(\(inWater\|\|climbingFrame\)&&combat\.state\.player\.stamina>windBefore\)combat\.state\.player\.stamina=windBefore;/,
-    'and while the water has him his wind only ever goes down');
+  const clamp=main.match(/^\s*if\([^\n]*combat\.state\.player\.stamina>windBefore\)[^\n]*combat\.state\.player\.stamina=windBefore;$/m)?.[0];
+  assert.ok(clamp,'The host clamps regeneration during exertion');
+  const exertion=new Function('inWater','climbingFrame','runningThisFrame','stamina',`
+    const windBefore=40,combat={state:{player:{stamina}}};
+    ${clamp}
+    return combat.state.player.stamina;
+  `);
+  for(const flags of [[true,false,false],[false,true,false],[false,false,true]]){
+    assert.equal(exertion(...flags,45),40,'Swimming, climbing and running cannot regenerate spent stamina');
+    assert.equal(exertion(...flags,35),35,'Exertion never restores stamina already spent');
+  }
+  assert.equal(exertion(false,false,false,45),45,'Ordinary rest still regenerates stamina');
   // A save is never written from the water, so no crossing can be reloaded with a fresh bar of
   // wind - which is also why the save holding health and not wind does not matter.
   assert.match(main, /combat\.state\.player\.hp<=0\|\|inWater\)\{if\(notify\)toast\('Step ashore/,
@@ -328,7 +338,7 @@ test('the two ways out of the water both pay for the swim, and drowning ends a q
   // shallows, so a man who pressed G instead of taking one more step used to lose the metres, the
   // water crossed and the checkpoint with them.
   assert.match(main, /function payForTheSwim\(x,z\)\{/, 'the payout has a name of its own');
-  assert.match(main, /if\(inWater\)payForTheSwim\(p\.x,p\.z\);[\s\S]{0,40}\s*if\(canSwim\(p\.x,p\.z,playerWorld,RIDE\.radius\)/,
+  assert.match(main, /if\(riding\.mounted\)\{[\s\S]*?if\(inWater\)payForTheSwim\(p\.x,p\.z\);\s*inWater=false;drowning=false;return;/,
     'and the saddle pays before it takes over');
   assert.match(main, /if\(inWater\)payForTheSwim\(p\.x,p\.z\);[\s\S]{0,40}\s*inWater=false;drowning=false;return;/,
     'as does walking out onto ground');
@@ -345,6 +355,7 @@ test('the two ways out of the water both pay for the swim, and drowning ends a q
   // must be told it has ended. The hideout and the toll are ended in the defeat handler; the
   // aftermath is not, because the ordinary retry restarts its fight and leaves it running.
   const returnDrowned = new Function('combat', 'world', 'lastDry', 'player', 'events', `
+    const peninsulaHost=null,ELFLAND_ENCOUNTER='elven-boundary-test';
     let drownedDefeat=true,inWater=true,drowning=true,swimMetres=23,retriesTaken=0,
       mode='defeated',grounded=false,verticalSpeed=-2,yaw=1,climbRecovery=null;
     const stopAutopilot=()=>{},clearArrows=()=>{},stopInput=()=>{},show=()=>{},toast=()=>{},canvas={focus(){}},cancelClimbing=()=>{};
@@ -375,10 +386,18 @@ test('the checkpoint takes a save made in deep water, which is now the right ans
   assert.ok(typeof createRoadCheckpoint === 'function');
 });
 
-test('the game refuses the water to a rider, and a sword to a swimmer', () => {
+test('a swimming horse supports its rider without spending personal swimming stamina; swimmers still cannot fight', () => {
   const main = source('main.js');
   assert.match(main, /const wet=canSwim\(p\.x,p\.z,playerWorld,\.34\);/, 'the water is what canSwim says it is');
-  assert.match(main, /if\(riding\.mounted\)\{[\s\S]{0,400}He will not go in, and he is right/, 'a horse will not go in');
+  const mountedTick=new Function('wasSwimming',`
+    let inWater=wasSwimming,drowning=true,paid=0;
+    const terrainFall={active:false},player={group:{position:{x:0,z:0}}},riding={mounted:true};
+    const payForTheSwim=()=>paid++;
+    ${hostFunction('swimTick')}
+    swimTick(.04,{x:0,z:0});return {inWater,drowning,paid};
+  `);
+  assert.deepEqual(mountedTick(false),{inWater:false,drowning:false,paid:0},'Horse swimming does not charge personal swimming stamina or grant unearned experience');
+  assert.deepEqual(mountedTick(true),{inWater:false,drowning:false,paid:1},'Mounting pays for the swim already completed');
   assert.match(main, /if\(inWater\)\{toast\('Both your hands are busy/, 'and a swimmer cannot swing');
   const tryDodge=new Function('inWater','mounted','passenger','suspendedFlag',`
     const mode='playing',grounded=true,riding={mounted},living={recall:()=>({status:passenger?'passenger':'idle'})};

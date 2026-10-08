@@ -36,6 +36,7 @@
 
 #world-war-track{position:fixed;top:155px;right:32px;z-index:2;display:flex;align-items:center;gap:12px;width:360px;max-width:calc(100vw - 64px);padding:12px 14px;background:#183b30ed;border:1px solid #a8b09c88;border-radius:4px;font:12px/1.5 system-ui}
 #world-war-track strong{font-weight:600}#world-war-track p{font:12px/1.5 system-ui;color:#d2d8bd;margin:4px 0 0}#world-war-track button{padding:5px 8px;font-size:11px;margin-left:auto}#world-war-track .war-track-arrow{font:30px system-ui;color:#ffe39b;flex-shrink:0;display:block}
+#world-war-track .war-council-destinations{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}#world-war-track .war-council-destinations button{margin:0;width:auto;flex:1}
 
 #exploration-status.on-map{top:auto;bottom:58px;left:52px;max-width:min(680px,80vw)}
 #developer-autoplay{border-top:1px solid #a8b09c55;margin-top:20px;padding-top:8px}#developer-autoplay h2{font:24px Georgia}#developer-autoplay button{width:100%;text-align:left}
@@ -49,3 +50,24 @@
 #combat-testing-menu{overflow:auto}.combat-testing-card{width:min(1080px,96vw);padding:32px}.combat-testing-card>p{max-width:780px}
 .combat-exercises{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:26px 0}.combat-exercises article{display:flex;flex-direction:column;gap:12px;padding:24px;background:#18392fcc;border:1px solid #a8b09c66;border-radius:6px}.combat-exercises h2{font:26px/1.2 Georgia;color:#f0d69e;margin:0}.combat-exercises p{font:14px/1.65 system-ui;margin:0 0 12px}.combat-exercises button{margin-top:auto;background:#ead298;color:#25382d;font-weight:600}.combat-testing-help{font:13px/1.6 system-ui}
 @media(max-width:850px){.combat-exercises{grid-template-columns:1fr}.combat-testing-card{padding:24px}#combat-testing-menu{align-items:start}}
+
+#world-skirmish-phase{margin:12px 0;padding:10px 0;border-top:1px solid #c3af7c66;border-bottom:1px solid #c3af7c66;font:12px/1.5 system-ui;color:#d8dcc5}#world-skirmish-phase strong,#world-skirmish-phase span{display:block}#world-skirmish-phase strong{color:#f4d99b;margin-bottom:3px}
+.battle-facts{display:grid;grid-template-columns:minmax(95px,.8fr) minmax(0,1.3fr);gap:8px 12px;font:12px/1.45 system-ui;border-block:1px solid #c3af7c66;padding:12px 0}.battle-facts dt{color:#d3caa8}.battle-facts dd{margin:0;color:#fff1cb}#world-skirmish-next,#world-war-report-followup{color:#f1d496!important}.war-report-actions{flex-wrap:wrap}
+#encounter-phase-path{color:#f1d496;font:13px/1.5 system-ui;padding:10px 0;border-block:1px solid #c3af7c66}
+#world-war-report{display:flex;flex-direction:column;overflow:hidden}#world-war-report>[role="status"]{overflow:auto;min-height:0}#world-war-report .war-report-actions{flex-shrink:0;border-top:1px solid #c3af7c66;padding-top:10px}#world-war-report:has(#world-war-report-facts:not([hidden])){width:min(420px,calc(100vw - 64px));max-height:65vh}
+body:has(#world-skirmish:not([hidden])) #exploration-status{top:auto;bottom:22px;left:50%;transform:translateX(-50%);max-width:50vw}
+@media(max-width:760px){#world-war-report:has(#world-war-report-facts:not([hidden])){max-height:50vh;width:min(370px,calc(100vw - 32px))}}
+
+#combat-focus{margin:8px 0 12px;border-top:1px solid #b8d3bf44;padding-top:8px}
+#combat-focus>div{display:flex;gap:8px}
+#combat-focus button{margin:0}
+#combat-focus button[aria-pressed="true"]{border-color:#9ff0ef;color:#b6ffff}
+#combat-focus small{display:block;line-height:1.4;margin-top:6px;color:#d2e5dc}
+
+#assault-choice{display:block;padding:12px;border:1px solid #7eb6ae;background:#21423b;margin:12px 0;font-size:14px;line-height:1.5}#assault-choice[hidden]{display:none}#assault-choice input{margin-right:8px}#allied-assault-status{color:#b5ece8;font-size:13px;margin:5px 0}.combat-testing-card{max-height:92vh;overflow:auto}
+@media(min-width:761px) and (max-width:1100px){
+  #world-skirmish{top:16px;left:16px;width:300px;padding:12px;max-height:calc(100vh - 32px)}
+  #world-skirmish button{font-size:11px;padding:7px 8px}
+  #world-skirmish #combat-focus small{display:none}
+  #world-skirmish #world-skirmish-objective{font-size:13px}
+}

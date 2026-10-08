@@ -16,6 +16,7 @@ export const RIDING_VERSION = 1;
 export const RIDING_KEYS = Object.freeze({ mount: 'KeyG', whistle: 'KeyH' });
 export const RIDE = Object.freeze({
   walk: 6.5, canter: 13,          // m/s; the traveler walks at 4.2 and runs at 7.2
+  swim: 3.6, wadingDepth: .95, floatOffset: .85, // deep water: head and saddle stay above the surface
   turnRate: 2.7,                  // rad/s at a walk; a canter turns wider
   radius: 0.62,                   // the mount's footprint for collisions
   reach: 2.9,                     // how near the horse must be to mount
@@ -36,6 +37,13 @@ export const HORSE_NAME = 'Your bay gelding';
  */
 export const DEVELOPER_HORSE_SPEED = 2;
 export const DEVELOPER_HORSE_NAME = 'A horse that should not exist';
+
+/** Shared exploration tuning: developer horses retain their speed multiplier in water. */
+export function horseMovementTuning(multiplier=1) {
+  const scale=multiplier===DEVELOPER_HORSE_SPEED?DEVELOPER_HORSE_SPEED:1;
+  return {walk:RIDE.walk*scale,run:RIDE.canter*scale,radius:RIDE.radius,swimming:true,
+    swim:RIDE.swim*scale,swimDepth:RIDE.wadingDepth,swimOffset:RIDE.floatOffset};
+}
 
 const fail = reason => ({ ok: false, reason });
 const finitePoint = point => !!point && Number.isFinite(point.x) && Number.isFinite(point.z);
@@ -63,10 +71,10 @@ export function steer(heading, desired, dt, cantering = false) {
 /** How much of its gait a horse keeps while it is still turning onto the line it was asked for. */
 export const drive = (heading, desired) => Math.max(0.3, Math.cos(wrap(desired - heading)));
 
-/** Where a rider can step down: left of the horse first (the near side), then right, then behind. */
+/** Where a rider can step down: left of the horse first (the near side), then right, behind, and finally ahead. */
 export function dismountSpot(position, heading, canStand) {
   // Forward is (sin h, cos h) and the rider's left is (cos h, -sin h); `side` is metres to the left.
-  for (const [side, back] of [[1.15, 0], [-1.15, 0], [0, -1.7], [1.15, -1], [-1.15, -1]]) {
+  for (const [side, back] of [[1.15, 0], [-1.15, 0], [0, -1.7], [1.15, -1], [-1.15, -1], [1.15, 1], [-1.15, 1], [0, 1.7]]) {
     const x = position.x + Math.cos(heading) * side + Math.sin(heading) * back, z = position.z - Math.sin(heading) * side + Math.cos(heading) * back;
     if (canStand(x, z)) return { x, z };
   }
@@ -131,10 +139,10 @@ export function createRiding({ onEvent = () => {} } = {}) {
     return true;
   }
 
-  function whistle(playerPosition) {
+  function whistle(playerPosition,{allowNear=false}={}) {
     if (!state.owned) return fail('You have no horse to call.');
     if (mounted) return fail('You are on it.');
-    if (distanceTo(playerPosition) <= RIDE.near) return fail('Your horse is right here.');
+    if (!allowNear&&distanceTo(playerPosition) <= RIDE.near) return fail('Your horse is right here.');
     called = true; blocked = 0;
     return emit('whistled', { far: distanceTo(playerPosition) > RIDE.earshot });
   }
@@ -151,10 +159,11 @@ export function createRiding({ onEvent = () => {} } = {}) {
    * Move a called horse toward the traveler. `canStand(x, z)` tests the mount's
    * own footprint. Returns the pace for the animator.
    */
-  function update(dt, playerPosition, canStand = () => true) {
+  function update(dt, playerPosition, canStand = () => true, {speedAt=null,canHaltAt=null} = {}) {
     if (!state.owned || mounted || !called || !finitePoint(playerPosition) || !(dt > 0)) { if (!mounted) pace = 0; return pace; }
     const horse = state.horse, dx = playerPosition.x - horse.x, dz = playerPosition.z - horse.z, distance = Math.hypot(dx, dz);
-    if (distance <= RIDE.halt + 0.05) { called = false; pace = 0; return 0; }
+    const safeToHalt=canHaltAt?.(horse.x,horse.z)!==false;
+    if (safeToHalt&&distance <= RIDE.halt + 0.05) { called = false; pace = 0; return 0; }
     if (distance > RIDE.earshot || blocked > RIDE.patience) {
       // Too far to have heard, or no way through: it turns up behind the traveler, on the side it was coming from.
       const from = Math.atan2(-dx, -dz);
@@ -165,7 +174,8 @@ export function createRiding({ onEvent = () => {} } = {}) {
       }
       blocked = 0; pace = 0; return 0;
     }
-    const step = Math.min(distance - RIDE.halt, RIDE.trot * dt), heading = Math.atan2(dx, dz);
+    const requested=speedAt?.(horse.x,horse.z),travelPace=Number.isFinite(requested)?Math.max(0,Math.min(RIDE.trot,requested)):RIDE.trot;
+    const step = Math.min(Math.max(0,distance-(safeToHalt?RIDE.halt:.05)), travelPace * dt), heading = Math.atan2(dx, dz);
     let x = horse.x, z = horse.z;
     const nx = x + Math.sin(heading) * step, nz = z + Math.cos(heading) * step;
     if (canStand(nx, z)) x = nx;
@@ -179,7 +189,7 @@ export function createRiding({ onEvent = () => {} } = {}) {
 
   // The testing panel's mount: the same horse, twice as fast, and out of a saved game's reach.
   let developerMount = false;
-  const speed = cantering => (cantering ? RIDE.canter : RIDE.walk) * (developerMount ? DEVELOPER_HORSE_SPEED : 1);
+  const speed = (cantering,swimming=false) => (swimming ? RIDE.swim : cantering ? RIDE.canter : RIDE.walk) * (developerMount ? DEVELOPER_HORSE_SPEED : 1);
 
   /** What to save. A rider is saved on the ground with the horse under them. */
   const snapshot = () => ({ version: RIDING_VERSION, owned: state.owned, taught: state.taught, horse: state.horse ? { ...state.horse } : null });
@@ -201,6 +211,7 @@ export function createRiding({ onEvent = () => {} } = {}) {
 export const RIDING_LESSON = Object.freeze([
   'He is a bay gelding, nine years old, army-broke and sound. He has no name on the rolls. Most men give them one by the second day.',
   'Stand at his shoulder and press G to mount; G again to step down, on his near side if there is room. He walks faster than you run. Hold Shift and he canters, and then he turns wide, so look where you are going before you ask for it.',
+  'He can wade a ford and swim a deep river with you in the saddle, though swimming is slower. Find a clear bank before you step down.',
   'Leave him anywhere. He will stand and graze. Press H to whistle and he comes, if he can hear you and find a way; if he cannot, he has a habit of turning up behind you regardless.',
   'He will carry you to a fight but not through one. If steel comes out you are on your feet, and he will be somewhere behind you, thinking less of everyone.',
 ]);

@@ -133,7 +133,20 @@ test('saves keep the horse and its place; a rider is saved on the ground', () =>
 test('the keys are free ones and the lesson teaches every rule the player needs', () => {
   assert.deepEqual(RIDING_KEYS, { mount: 'KeyG', whistle: 'KeyH' });
   const lesson = RIDING_LESSON.join(' ');
-  for (const needed of [/press G/i, /Shift/, /press H/i, /fight|steel/i, /graze|stand/i]) assert.match(lesson, needed);
+  for (const needed of [/press G/i, /Shift/, /press H/i, /fight|steel/i, /graze|stand/i, /swim a deep river/i, /clear bank/i]) assert.match(lesson, needed);
+});
+
+test('called horses slow to a swim across water without changing their dry trot or saved ownership',()=>{
+  const riding=createRiding();riding.grant({x:0,z:0});riding.whistle({x:30,z:0});
+  const speedAt=x=>x>=4&&x<=16?RIDE.swim:RIDE.trot;let dry=0,wet=0;
+  for(let i=0;i<600&&riding.called;i++){
+    const x=riding.horse.x,pace=riding.update(1/60,{x:30,z:0},()=>true,{speedAt});
+    if(x>6&&x<14)wet=Math.max(wet,pace);else if(x<2)dry=Math.max(dry,pace);
+  }
+  assert(Math.abs(dry-RIDE.trot)<1e-6);assert(Math.abs(wet-RIDE.swim)<1e-6);
+  assert(riding.distanceTo({x:30,z:0})<=RIDE.halt+.1);assert(riding.owned);
+  assert.equal(riding.speed(false,true),RIDE.swim);assert.equal(riding.speed(true,true),RIDE.swim);
+  riding.setDeveloperMount(true);assert.equal(riding.speed(true,true),RIDE.swim*DEVELOPER_HORSE_SPEED);
 });
 
 test('the testing panel’s horse is faster, is flagged as a testing mount, and is never saved', () => {
@@ -156,4 +169,12 @@ test('the testing panel’s horse is faster, is flagged as a testing mount, and 
   assert.equal(loaded.speed(true), RIDE.canter);
   riding.setDeveloperMount(false);
   assert.equal(riding.speed(false), RIDE.walk, 'and the ordinary horse is unchanged by any of it');
+});
+
+
+test('a rider at a closed battlefield edge can step down ahead inside the accepted area',()=>{
+  const at={x:0,z:70},inside=(x,z)=>Math.hypot(x,z)<=69.7;
+  const down=dismountSpot(at,Math.PI,inside);
+  assert.ok(down&&inside(down.x,down.z));
+  assert.ok(Math.hypot(down.x-at.x,down.z-at.z)<=1.8);
 });

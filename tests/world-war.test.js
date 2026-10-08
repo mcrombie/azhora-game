@@ -1,15 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorldWar,WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO,worldWarProjection} from '../src/app/exploration/world-war.js';
+import {createWorldWar as createCurrentWorldWar,WORLD_WAR_SCENARIO as CURRENT_WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO as WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO,worldWarProjection} from '../src/app/exploration/world-war.js';
 import {createCampaign,replayCampaign} from '../src/simulation/campaign.js';
 import {LIZEEM_SCENARIO} from '../src/content/scenarios/lizeem.js';
 import {worldWarStore,WORLD_WAR_KEY,validateWorldWarSave} from '../src/app/exploration/war-checkpoint.js';
 import {regionAt,TRANSFORM,hexAt} from '../src/world/terrain/region-world.js';
 import {atlasMarkKnown} from '../src/ui/map/world-map-detail.js';
-import {worldWarReports} from '../src/app/exploration/war-reports.js';
+import {worldWarReports,selectWarReport} from '../src/app/exploration/war-reports.js';
 import {interceptReinforcements} from '../src/simulation/reinforcements.js';
 import {worldWarArmies} from '../src/app/exploration/war-armies.js';
 import {trackedWarTarget,trackingBearing} from '../src/app/exploration/war-tracking.js';
+// These tests retain the v5 one-shot campaign contract as a save/replay regression.
+function createWorldWar(saved=null){
+  if(saved)return createCurrentWorldWar(saved);
+  const campaign=createCampaign(WORLD_WAR_SCENARIO);campaign.watchBattles(true);
+  return createCurrentWorldWar({simulation:campaign.snapshot(),fraction:0,speed:1});
+}
 const exploration={version:1,character:'rollo',position:{x:-2414,y:2,z:63},heading:0,camera:{yaw:0,pitch:.3,distance:8},elapsed:12,cells:['0,0']};
 const save=session=>({version:1,format:WORLD_WAR_KEY,exploration,...session.checkpoint()});
 
@@ -35,7 +41,7 @@ test('legacy v3 Ovesos results replay with their original arena rules',()=>{
   assert(validateWorldWarSave(data));const restored=createWorldWar(data);assert.deepEqual(restored.snapshot(),old.snapshot());
   assert.equal(restored.checkpoint().simulation.scenario,'lizeem-world-v3');
   old.step(4);restored.advance(4);assert.deepEqual(restored.snapshot(),old.snapshot());
-  assert.equal(createWorldWar().snapshot().scenario,'lizeem-world-v4');
+  assert.equal(createWorldWar().snapshot().scenario,'lizeem-world-v5');
 });
 
 test('tracking follows a discovered army into its battlefield and stops guidance after resolution',()=>{
@@ -282,8 +288,10 @@ test('invalid and mismatched world saves are rejected without overwriting a prev
   const valid=save(createWorldWar());let value=JSON.stringify(valid);const store=worldWarStore({getItem:()=>value,setItem:(_k,v)=>{value=v;}});
   for(const bad of [{...valid,version:2},{...valid,fraction:30},{...valid,speed:5},{...valid,exploration:{...exploration,position:{x:NaN,y:0,z:0}}},{...valid,simulation:{...valid.simulation,scenario:LIZEEM_SCENARIO.id}},{...valid,simulation:{...valid.simulation,commands:[{type:'hero-location',day:0,region:'fake'}]}}]){assert(!validateWorldWarSave(bad));assert(!store.save(bad).ok);assert.equal(value,JSON.stringify(valid));}
   assert(!worldWarStore({getItem:()=>'{bad',setItem:()=>{}}).read().ok);assert(!worldWarStore({getItem:()=>null,setItem:()=>{throw Error('disk full');}}).save(valid).ok);
-  assert.equal(WORLD_WAR_SCENARIO.id,'lizeem-world-v4');
+  assert.equal(WORLD_WAR_SCENARIO.id,'lizeem-world-v5');
   assert(!validateWorldWarSave({...valid,format:'azhora-lizeem-world-v2'}));
+  for(const reportReadThrough of [-1,1.5,'10',NaN,Infinity])assert(!validateWorldWarSave({...valid,reportReadThrough}));
+  assert(validateWorldWarSave({...valid,reportReadThrough:0}));assert(validateWorldWarSave({...valid,reportReadThrough:123,navigation:{kind:'opening',id:'mayor'}}));
   assert(!validateWorldWarSave({...valid,simulation:{...valid.simulation,scenario:'lizeem-world-v2'}}));
   assert(!validateWorldWarSave({...valid,format:'azhora-lizeem-world-v1'}));
   assert(!validateWorldWarSave({...valid,simulation:{...valid.simulation,scenario:'lizeem-world-v1'}}));
@@ -341,4 +349,17 @@ test('engaged armies, deadlines, reinforcement and force accounting remain consi
     if(prior.winner)assert(!prior.engagements.some(b=>b.status==='active'));assert.deepEqual(replayCampaign(scenario,prior).snapshot(),prior);
   }
   assert(reinforced,'At least one reinforcing attacker exercised');assert(defenderLocked,'Stationed defenders held in battle');
+});
+
+
+test('The departure report foregrounds the nearer day-three army and never displaces a personal result',()=>{
+  const w=createCurrentWorldWar();w.begin();
+  const armies=worldWarArmies(w.snapshot(),CURRENT_WORLD_WAR_SCENARIO),reports=armies.map(a=>a.report).filter(Boolean);
+  const first=selectWarReport(reports,armies);
+  assert.match(first.title,/West Lizeem/);assert.match(first.detail,/Caricas.*day 3/);
+  assert.match(selectWarReport(reports.filter(r=>r.id!==first.id),armies).title,/East Lizeem/);
+  const consequence={id:100,hero:true,battleId:'previous',title:'Your contribution'};
+  assert.equal(selectWarReport([...reports,consequence],armies),consequence);
+  w.advance(2);const battles=worldWarReports(w.snapshot(),CURRENT_WORLD_WAR_SCENARIO,()=>true);
+  assert.match(selectWarReport([...reports,...battles],armies).title,/Battle underway in Caricas/);
 });

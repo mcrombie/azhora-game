@@ -4,7 +4,7 @@ import {escapeHTML as esc,factionHTML,chapterHTML} from './campaign-map-info.js'
 import {cellKey,discoveredCells} from './campaign-map-discovery.js';
 
 // Alternate, read-only layers on the ordinary M map. No commands or simulation.
-export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=true}){
+export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=true,regionScope=null}){
   const root=document.getElementById('world-map'),toolbar=root.querySelector('.atlas-toolbar');
   let simulation=null,authoredFactions=[];
   let view='regions',snapshot='opening',factions=[],metadata,svg,groups=new Map(),originals=[],regionCells=new Map(),countryLayer;
@@ -39,7 +39,7 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
   }
   function buildGroups(){
     groups=new Map();knownRegions=new Set();
-    for(const [region,allCells] of regionCells){const cells=discoveredCells(allCells,knownKeys,reveal);if(!cells.length)continue;knownRegions.add(region);const id=owner(region);if(!groups.has(id))groups.set(id,{id,regions:[],cells:[]});groups.get(id).regions.push(region);groups.get(id).cells.push(...cells);}
+    for(const [region,allCells] of regionCells){if(regionScope&&!regionScope.includes(region))continue;const cells=discoveredCells(allCells,knownKeys,reveal);if(!cells.length)continue;knownRegions.add(region);const id=owner(region);if(!groups.has(id))groups.set(id,{id,regions:[],cells:[]});groups.get(id).regions.push(region);groups.get(id).cells.push(...cells);}
     for(const group of groups.values()){Object.assign(group,unionCells(group.cells));group.anchor=labelAnchor(group.cells,group.loops);}
   }
   function renderLabels(){
@@ -100,6 +100,7 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
       svg.setAttribute('width',data.width);svg.setAttribute('height',data.height);svg.style.width=data.width+'px';svg.style.height=data.height+'px';
       svg.querySelector('#unbuilt-regions')?.remove();svg.querySelector('#ornaments')?.remove();
       const tints=svg.querySelector('#region-tints');originals=[...tints.querySelectorAll('[data-region]')];
+      if(regionScope){const allowed=originals.filter(p=>regionScope.includes(p.dataset.region));svg.style.clipPath=`path('${allowed.map(p=>p.getAttribute('d')).join('')}')`;originals=allowed;}
       tints.setAttribute('opacity','1');
       for(const p of originals){regionCells.set(p.dataset.region,parseCells(p.getAttribute('d')));p.dataset.campaignRegion=p.dataset.region;p.style.pointerEvents='all';}
       countryLayer=document.createElementNS('http://www.w3.org/2000/svg','g');svg.insertBefore(countryLayer,tints);svg.append(tints);

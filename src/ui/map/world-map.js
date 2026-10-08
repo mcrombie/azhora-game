@@ -5,6 +5,7 @@
 import { hexAtlasCorners, TRANSFORM as HEX_WORLD_TRANSFORM } from '../../world/terrain/region-world.js';
 import { PLAYABLE_SURVEY } from '../../dev/tools/region-survey.js';
 import { createCampaignMapLayer } from './campaign-map-layer.js';
+import {createAtlasScope,scopeMinimumZoom,clampScopeOffset} from './atlas-scope.js';
 import { createMapArmies } from './world-map-armies.js';
 import { atlasLocalDetail, atlasCityBoundaries, atlasPlaceMarks, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from './world-map-detail.js';
 
@@ -16,7 +17,7 @@ export const DETAIL_ZOOM = 12;
 /** How much of the chart a first look shows around the traveler, in atlas pixels: the nearby road and a few surrounding hexes. */
 export const LOCAL_VIEW = 100;
 
-export function createWorldMap({includeQuests=true}={}) {
+export function createWorldMap({includeQuests=true,regionScope=null}={}) {
   const $ = id => document.getElementById(id);
   const viewport = $('atlas-viewport'), image = $('atlas-image'), traveler = $('atlas-traveler');
   if(image?.dataset.src&&!image.getAttribute('src'))image.src=image.dataset.src;
@@ -25,13 +26,13 @@ export function createWorldMap({includeQuests=true}={}) {
   let travelerHeading = null;
   let metadata, zoom = 1, fitScale = 1, offsetX = 0, offsetY = 0, width = 0, height = 0, dragging = null, travelerPoint = null;
   // The chart opens on the traveler, close enough to read; once the traveler has chosen a zoom it keeps it.
-  let opened = false;
+  let opened = false,scenarioScope=null;
   let chart = { cells: [], glimpsed: [], reveal: false, status: [], silhouettes: [], labels: [] };
   let visited = new Set(), terrainCells = new Map(), terrainSource = null;
   const builtNames=new Set(PLAYABLE_SURVEY.regions.map(r=>r.name)), unbuiltCells=new Set();
   let localDetail = atlasLocalDetail(null);
   let authoredLabels = null;
-  const campaignLayer=createCampaignMapLayer({viewport,includeQuests,onResize:()=>{resize();render();},onFocus:focusRegion});
+  const campaignLayer=createCampaignMapLayer({viewport,includeQuests,regionScope,onResize:()=>{resize();render();},onFocus:focusRegion});
   const cityLayer = document.createElementNS(SVG_NS, 'svg');
   cityLayer.id = 'atlas-cities'; cityLayer.setAttribute('aria-hidden', 'true');
   viewport.insertBefore(cityLayer, traveler ?? null);
@@ -49,13 +50,20 @@ export function createWorldMap({includeQuests=true}={}) {
   viewport.insertBefore(placeLayer, traveler ?? null);
   let places = [], renderedPlaces = [], battleMarks=[];
   const battleLayer=document.createElement('div');battleLayer.id='atlas-battlefields';battleLayer.setAttribute('aria-label','Discovered battles');viewport.insertBefore(battleLayer,traveler??null);
+  const battleAreas=document.createElementNS(SVG_NS,'svg');battleAreas.id='atlas-battle-areas';
+  Object.assign(battleAreas.style,{position:'absolute',inset:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'1'});viewport.insertBefore(battleAreas,battleLayer);
   let onTrack=null,tracked=null;
   const armyLayer=createMapArmies(viewport,traveler,target=>onTrack?.(target));
   function drawBattles(){
-    battleLayer.replaceChildren();const scale=fitScale*zoom;
+    battleLayer.replaceChildren();battleAreas.replaceChildren();const scale=fitScale*zoom;
     for(const mark of battleMarks){
       if(!atlasMarkKnown(mark,visited,chart.reveal))continue;
       const x=offsetX+mark.x*scale,y=offsetY+mark.y*scale;
+      if(mark.boundary?.length){
+        const p=document.createElementNS(SVG_NS,'polygon');p.dataset.battleArea=mark.id;p.setAttribute('points',mark.boundary.map(q=>`${offsetX+q.x*scale},${offsetY+q.y*scale}`).join(' '));
+        p.setAttribute('fill','#f1b64a');p.setAttribute('fill-opacity','.22');p.setAttribute('stroke','#ffe29a');p.setAttribute('stroke-width','2.5');p.setAttribute('stroke-dasharray','8 4');
+        const title=document.createElementNS(SVG_NS,'title');title.textContent=`Active battlefield: ${mark.name}. Boundary matches the barrier in the world.`;p.append(title);battleAreas.append(p);
+      }
       if(x<0||y<0||x>width||y>height)continue;
       const button=document.createElement('button');button.className='atlas-battlefield';button.dataset.battleId=mark.id;
       button.textContent=`${tracked?.kind==='battle'&&tracked.id===mark.id?'Stop tracking':'Track battle'}: ${mark.name} / until day ${mark.endsOn}`;button.style.left=x+'px';button.style.top=y+'px';
@@ -75,7 +83,7 @@ export function createWorldMap({includeQuests=true}={}) {
 
   // Areas are named as soon as the chart is more than glanced at; the smaller places
   // inside them wait until the traveler has zoomed in far enough to read them.
-  const placeShown = place => atlasMarkKnown(place, visited, chart.reveal)
+  const placeShown = place => (!scenarioScope||scenarioScope.contains(place)) && atlasMarkKnown(place, visited, chart.reveal)
     && (['quest', 'tracked', 'capital', 'city', 'area'].includes(place.kind) || zoom >= (place.kind === 'local' ? DETAIL_ZOOM : 3.5));
   const placeNamed = place => ['quest', 'tracked'].includes(place.kind) ? zoom >= 3.5 : ['area', 'capital', 'city'].includes(place.kind) ? zoom >= 1.8 : zoom >= 5.5;
   function drawPlaces() {
@@ -164,7 +172,7 @@ export function createWorldMap({includeQuests=true}={}) {
     labels.removeAttribute('id'); labels.dataset.role = 'labels';
     labels.setAttribute('pointer-events', 'none');
     for (const original of authoredLabels.children) {
-      if (atlasRegionLabelKnown(original.getAttribute('data-region'), chart.labels, chart.reveal)) labels.append(original.cloneNode(true));
+      if ((!regionScope||regionScope.includes(original.getAttribute('data-region')))&&atlasRegionLabelKnown(original.getAttribute('data-region'), chart.labels, chart.reveal)) labels.append(original.cloneNode(true));
     }
     if (labels.childElementCount) overlay.append(labels);
   }
@@ -219,9 +227,11 @@ export function createWorldMap({includeQuests=true}={}) {
 
   function render() {
     if (!metadata || !width || !height) return;
+    zoom=Math.max(scopeMinimumZoom(scenarioScope,width,height,fitScale),zoom);
     const scale = fitScale * zoom, w = metadata.width * scale, h = metadata.height * scale;
     offsetX = w <= width ? (width - w) / 2 : Math.max(width - w, Math.min(0, offsetX));
     offsetY = h <= height ? (height - h) / 2 : Math.max(height - h, Math.min(0, offsetY));
+    if(scenarioScope){const clamped=clampScopeOffset(scenarioScope,{width,height,scale,x:offsetX,y:offsetY});offsetX=clamped.x;offsetY=clamped.y;}
     image.style.transform = `translate(${offsetX}px,${offsetY}px) scale(${scale})`;
     campaignLayer.transform(scale,offsetX,offsetY);
     overlay.style.transform = image.style.transform;
@@ -249,7 +259,7 @@ export function createWorldMap({includeQuests=true}={}) {
       }
     }
     $('atlas-zoom').textContent = `${Math.round(zoom * 100)}%`;
-    $('atlas-out').disabled = zoom <= 1;
+    $('atlas-out').disabled = zoom <= scopeMinimumZoom(scenarioScope,width,height,fitScale)+.00001;
     $('atlas-in').disabled = zoom >= MAX_ZOOM;
   }
   function resize() {
@@ -261,7 +271,7 @@ export function createWorldMap({includeQuests=true}={}) {
     offsetX = width / 2 - cx * fitScale * zoom; offsetY = height / 2 - cy * fitScale * zoom;
     render();
   }
-  function fit() { zoom = 1; resize(); render(); }
+  function fit() { if(scenarioScope){resize();focusRegions(regionScope);return;}zoom = 1; resize(); render(); }
   function zoomAt(next, x = width / 2, y = height / 2) {
     if (!metadata) return;
     opened = true;
@@ -279,7 +289,7 @@ export function createWorldMap({includeQuests=true}={}) {
     offsetX=width/2-(x+w/2)*fitScale*zoom;offsetY=height/2-(y+h/2)*fitScale*zoom;render();
   }
   function focusRegion(name='Drent') {
-    if (!metadata) return;
+    if (!metadata||regionScope&&!regionScope.includes(name)) return;
     const f = metadata.regions.find(region=>region.name===name)||metadata.focus;
     // Keep the coast and neighboring regions visible around Drent.
     zoom = Math.max(1, Math.min(MAX_ZOOM, Math.min(width / (f.width + 220), height / (f.height + 180)) / fitScale));
@@ -289,7 +299,7 @@ export function createWorldMap({includeQuests=true}={}) {
   }
 
   $('atlas-fit').onclick = fit;
-  $('atlas-izol').onclick = ()=>focusRegion();
+  $('atlas-izol').onclick = ()=>focusRegion(regionScope?.[0]??'Drent');
   $('atlas-in').onclick = () => zoomAt(zoom * 1.5);
   $('atlas-out').onclick = () => zoomAt(zoom / 1.5);
   viewport.addEventListener('wheel', event => {
@@ -334,6 +344,13 @@ export function createWorldMap({includeQuests=true}={}) {
     const terrainURL = URL.createObjectURL(new Blob([layers.terrain], { type: 'image/svg+xml' }));
     try { image.src = terrainURL; await image.decode(); } finally { URL.revokeObjectURL(terrainURL); }
     metadata = data;
+    if(regionScope){
+      const atlas=new DOMParser().parseFromString(source,'image/svg+xml');
+      scenarioScope=createAtlasScope(regionScope,new Map([...atlas.querySelectorAll('#region-tints [data-region]')].map(p=>[p.dataset.region,p.getAttribute('d')])));
+      for(const layer of [image,overlay,detail,cityLayer])layer.style.clipPath=`path('${scenarioScope.path}')`;
+      viewport.style.background='#102a2a';$('atlas-fit').textContent='Five regions';$('atlas-izol').textContent='Minora';
+      const revealLabel=$('reveal-all')?.closest('label');if(revealLabel)revealLabel.lastChild.textContent=' Reveal scenario';
+    }
     await campaignLayer.load(data,source);
     image.style.width = `${data.width}px`; image.style.height = `${data.height}px`;
     drawOverlay(); drawLocalDetail();
@@ -399,7 +416,7 @@ export function createWorldMap({includeQuests=true}={}) {
     }));
   }
   return {ready, setTrackingHandler:fn=>{onTrack=fn;},setTrackedTarget:value=>{tracked=value;armyLayer.setTracked(value);drawBattles();}, focus:focusRegion, focusTraveler, focusBattle, focusArmy, setArmyMarkers:armyLayer.set, setBattleMarkers:marks=>{battleMarks=marks.map(m=>({...m}));drawBattles();},setTraveler, setChart, setLocalMap, open, setChapter:campaignLayer.setChapter, setSimulation:campaignLayer.setSimulation, setView:campaignLayer.setView,
-    state: () => ({zoom, offsetX, offsetY, width, height, source: metadata?.source,battleMarkers:battleMarks.filter(m=>atlasMarkKnown(m,visited,chart.reveal)).map(m=>m.id),campaign:campaignLayer.state(), traveler: travelerPoint ? { ...travelerPoint } : null,
+    state: () => ({zoom, offsetX, offsetY, width, height,scope:scenarioScope?{names:scenarioScope.names,bounds:scenarioScope.bounds,clipped:true}:null, source: metadata?.source,battleMarkers:battleMarks.filter(m=>atlasMarkKnown(m,visited,chart.reveal)).map(m=>m.id),campaign:campaignLayer.state(), traveler: travelerPoint ? { ...travelerPoint } : null,
       armies:armyLayer.state(),
       detail: { roads: localDetail.paths.length, buildings: localDetail.buildings.length, marks: localDetail.markers.length, visible: zoom > DETAIL_ZOOM },
       chart: { charted: chart.cells.length, glimpsed: chart.glimpsed.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,

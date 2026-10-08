@@ -5,6 +5,18 @@ import { sourceModule } from './module-loader.js';
 
 const { createHorse } = await sourceModule('../src/content/characters/characters.js');
 
+test('swimming horses hold their muzzle clear, paddle at rest and return to the land stance',()=>{
+  const horse=createHorse({saddled:true}),neck=horse.group.getObjectByName('Neck');
+  const fore=horse.group.getObjectByName('Left Fore Hip'),knee=horse.group.getObjectByName('Left Fore Knee');
+  for(let i=0;i<60;i++)horse.animate(i/30,0,true,{swimming:false,grazing:false});
+  const landNeck=neck.rotation.x,samples=[];
+  for(let i=60;i<180;i++){horse.animate(i/30,0,true,{swimming:true});if(i>90)samples.push(fore.rotation.x);}
+  assert(neck.rotation.x<landNeck-.1,'Muzzle lifts clear instead of grazing underwater');
+  assert(knee.rotation.x>.2);assert(Math.max(...samples)-Math.min(...samples)>.4,'A floating horse continues paddling');
+  for(let i=180;i<240;i++)horse.animate(i/30,0,true,{swimming:false,grazing:false});
+  assert(Math.abs(neck.rotation.x-landNeck)<.05,'Swimming pose releases on shore');
+});
+
 test('a mounted rider can share the horse continuous gait phase across speed changes',()=>{
   const horse=createHorse({saddled:true});let previous=horse.animate(1000,13).phase;
   for(let i=1;i<=60;i++){

@@ -18,6 +18,7 @@ import {BALDRO_KINGDOMS,baldroOwns} from './content/regions/baldro/baldro-world.
 import { FRONTIER_NPCS, isFrontierNpc, frontierConversation } from './content/regions/minora-frontier/frontier-people.js';
 import { createFrontierFigure } from './content/regions/minora-frontier/frontier-figures.js';
 import { createWorldAsync } from './world.js';
+import {westWaterSurface} from './content/regions/western-regions/west-ground.js';
 import { SOUTH_OREMINDI_ARRIVAL, SOUTH_OREMINDI_PEAKS, SOUTH_OREMINDI_LAKES, southOremindiOwns } from './content/regions/south-oremindi/south-oremindi-world.js';
 import { createCat, createCharacter, createDog, createHorse, createOgre, makeQuestMarker, setShadowCasting, tunicForRole, skinForRole, BUCKLER_NAME } from './content/characters/characters.js';
 import { markerFor, markerGrade, magicTeacherIds } from './gameplay/quests/quest-markers.js';
@@ -3095,7 +3096,22 @@ async function init() {
     if(prefer===null)return open[0];
     const off=bearing=>Math.abs(Math.atan2(Math.sin(bearing-prefer),Math.cos(bearing-prefer)));
     return open.reduce((a,b)=>(off(b.yaw)<off(a.yaw)?b:a));}
-  const mountFooting=(x,z)=>canStand(x,z,world,RIDE.radius),footing=(x,z)=>canStand(x,z,world);
+  let mountFeetY=null,mountPoint=null;
+  const mountWaterAt=(x,z)=>Math.max(waterAt(x,z,world),westWaterSurface(x,z)??-Infinity);
+  const mountGround=(x,z)=>{
+    const known=mountPoint&&Math.hypot(x-mountPoint.x,z-mountPoint.z)<4?mountFeetY:null;
+    const nearPlayer=Math.hypot(x-player.group.position.x,z-player.group.position.z)<RIDE.reach;
+    const maxY=riding.mounted?player.group.position.y-RIDE.seat.up:known??(nearPlayer?player.group.position.y:world.heightAt(x,z));
+    return world.supportAt?.(x,z,{maxY,stepUp:.45,groundSlope:false})?.height??world.heightAt(x,z);
+  };
+  const horseTerrain={bounds:world.bounds,heightAt:mountGround,waterAt:mountWaterAt,
+    nearColliders:(x,z,r)=>world.nearColliders(x,z,r).filter(c=>c.kind!=='west-deep-water')};
+  const mountAfloat=(x,z,ground=mountGround(x,z))=>ground<mountWaterAt(x,z)-RIDE.wadingDepth;
+  const mountSurface=(x,z,ground=mountGround(x,z))=>mountAfloat(x,z,ground)?mountWaterAt(x,z)-RIDE.floatOffset:ground;
+  const mountBob=(x,z)=>mountAfloat(x,z)?Math.sin(elapsed*2.7)*.035:0;
+  const riderBankWorld={...horseTerrain,heightAt:(x,z)=>world.supportAt?.(x,z,{maxY:player.group.position.y,stepUp:.45,groundSlope:false})?.height??world.heightAt(x,z)};
+  const riderOnBank=()=>canStand(player.group.position.x,player.group.position.z,riderBankWorld,.34,player.group.position.y);
+  const mountFooting=(x,z)=>regionTraversalReady(x,z)&&!closedRegionEntered(player.group.position,{x,z})&&(canStand(x,z,horseTerrain,RIDE.radius)||canSwim(x,z,horseTerrain,RIDE.radius,mountSurface(x,z))),footing=(x,z)=>canStand(x,z,world);
   const moros=createMorosChapter({inventory,hasHorse:()=>riding.owned,onFoot:()=>!!living&&!living.horseFor('player')});
   const border=createBorderChapter();
   const aftermath=createAftermathChapter();
@@ -3269,6 +3285,11 @@ async function init() {
   // rendering or saved state, both are region-gated, and both go through `moveCharacter`'s own
   // `canTraverse` - so a country with neither is exactly as walkable as it was.
   const walkingSlope=(x,z,nextX,nextZ)=>regionTraversalReady(nextX,nextZ)&&canWalkSlope(x,z,nextX,nextZ,climbWorld)&&canPushThrough(x,z,nextX,nextZ,climbWorld);
+  const mountedWorld=Object.create(playerWorld);
+  mountedWorld.heightAt=mountGround;mountedWorld.waterAt=mountWaterAt;
+  mountedWorld.nearColliders=(x,z,r)=>playerWorld.nearColliders(x,z,r).filter(c=>c.kind!=='west-deep-water');
+  const mountedSlopeWorld={...climbWorld,heightAt:(x,z)=>mountSurface(x,z)};
+  const mountedTraversal=(x,z,nextX,nextZ)=>regionTraversalReady(nextX,nextZ)&&!closedRegionEntered({x,z},{x:nextX,z:nextZ})&&canWalkSlope(x,z,nextX,nextZ,mountedSlopeWorld)&&canPushThrough(x,z,nextX,nextZ,climbWorld);
   function canGrabRock(){return mode==='playing'&&!urubondHost?.active&&!sevronHost?.active&&!baldroHost?.active&&!lotharnCave.active&&!suspended()&&!riding.mounted&&!raceHost?.mounted&&!inWater
     &&living?.recall().status!=='passenger'&&combat.state.player.hp>0&&combat.state.player.action==='idle';}
   function tryClimbing(){
@@ -3367,11 +3388,14 @@ async function init() {
   }
   function placeOwnHorse(){const horse=riding.horse,mount=riding.developerMount?devHorse:ownHorse,other=riding.developerMount?ownHorse:devHorse;
     other.group.visible=false;if(!horse){mount.group.visible=false;return;}
-    mount.group.position.set(horse.x,world.heightAt(horse.x,horse.z),horse.z);mount.group.rotation.y=horse.yaw;}
+    const ground=mountGround(horse.x,horse.z);mountFeetY=mountSurface(horse.x,horse.z,ground);mountPoint={x:horse.x,z:horse.z};
+    mount.group.position.set(horse.x,mountFeetY+mountBob(horse.x,horse.z),horse.z);mount.group.rotation.y=horse.yaw;}
   // G: into the saddle or out of it. A fight, a fall or a scene puts the rider down whether there is room or not.
   function stepDown(forced=false){
-    const result=forced?riding.unseat(footing):riding.dismount(footing);if(!result.ok){toast(result.reason,'IN THE SADDLE');return false;}
-    player.group.position.set(result.position.x,world.heightAt(result.position.x,result.position.z),result.position.z);grounded=true;verticalSpeed=0;placeOwnHorse();
+    const stand=(x,z)=>regionTraversalReady(x,z)&&canStand(x,z,horseTerrain,.34,player.group.position.y-RIDE.seat.up);
+    const result=forced?riding.unseat(stand):riding.dismount(stand);if(!result.ok){toast(mountAfloat(player.group.position.x,player.group.position.z)?'Ride to a clear bank before dismounting.':result.reason,'IN THE SADDLE');return false;}
+    const floor=Math.max(mountGround(result.position.x,result.position.z),mountWaterAt(result.position.x,result.position.z)-SWIM.sink);
+    player.group.position.set(result.position.x,floor,result.position.z);grounded=true;verticalSpeed=0;placeOwnHorse();
     targetDistance=Math.max(4,targetDistance-RIDE.camera.back);return true;
   }
   function toggleMount(){
@@ -3385,14 +3409,16 @@ async function init() {
     if(raceHost?.mounted){race.abandon('You climbed down before the finish.');raceHost.sync();return;}
     if(mode!=='playing'||!riding.owned||living.recall().status==='passenger')return;
     if(riding.mounted){stepDown();return;}
+    const horse=riding.horse,mountFloor=horse?mountSurface(horse.x,horse.z):null;
     const result=riding.mount(player.group.position,{fighting:combat.state.phase==='active',busy:!grounded||combat.state.player.action!=='idle'});
     if(!result.ok){toast(result.reason,'YOUR HORSE');return;}
-    mountHeading=result.yaw;const sx=result.position.x+Math.sin(mountHeading)*RIDE.seat.forward,sz=result.position.z+Math.cos(mountHeading)*RIDE.seat.forward;player.group.position.set(sx,world.heightAt(sx,sz)+RIDE.seat.up,sz);player.group.rotation.y=mountHeading;
+    mountHeading=result.yaw;const sx=result.position.x+Math.sin(mountHeading)*RIDE.seat.forward,sz=result.position.z+Math.cos(mountHeading)*RIDE.seat.forward;player.group.position.set(sx,mountFloor+RIDE.seat.up,sz);player.group.rotation.y=mountHeading;
     targetDistance=Math.min(19,targetDistance+RIDE.camera.back);stopInput();audio?.effect('success');
   }
   function whistleHorse(){
     if(mode!=='playing'||!riding.owned||riding.mounted||living.recall().status==='passenger')return;
-    const result=riding.whistle(player.group.position);toast(result.ok?(result.far?'A long whistle. He will find you.':'You whistle, and somewhere a bridle jingles.'):result.reason,'YOUR HORSE');
+    const horse=riding.horse,allowNear=horse&&mountAfloat(horse.x,horse.z)&&riderOnBank();
+    const result=riding.whistle(player.group.position,{allowNear});toast(result.ok?(result.far?'A long whistle. He will find you.':'You whistle, and somewhere a bridle jingles.'):result.reason,'YOUR HORSE');
   }
   // Birding: Lakota's lesson, the feeder errand, and looking properly at a bird.
   function birdingAct(action){
@@ -5332,6 +5358,7 @@ async function init() {
     return writeRoadCheckpoint(checkpoint,notify);
   }
   function writeRoadCheckpoint(store,notify=false){
+    if(riding.mounted&&mountAfloat(player.group.position.x,player.group.position.z)){if(notify)toast('Ride onto a clear bank before saving.','CHECKPOINT');return false;}
     if(!hasRoadProgress()||combat.state.phase==='active'||combat.state.player.hp<=0||inWater){if(notify)toast('Step ashore and finish any active fight before saving.','CHECKPOINT');return false;}
     const result=store.save(roadSnapshot());
     if(store!==checkpoint)return result.ok;
@@ -5447,6 +5474,7 @@ async function init() {
       onPlayableGround?saved.position:freeStart?MINORA_START:questStage<QUEST_DONE?world.spawn:world.regions.find(region=>region.id===journey.view().region).spawn;
     const resumeHeight=tutorialResume.boundary.encounter?.at.y??(point===saved.position?restored.y:world.heightAt(point.x,point.z));
     player.group.position.set(point.x,resumeHeight,point.z);grounded=true;verticalSpeed=0;yaw=Math.PI/2;
+    mountFeetY=null;mountPoint=null;placeOwnHorse(); // Recover a nearby parked mount on the restored registered floor.
     leaveOpening();
     mode='playing';testingEnabled=restoringSession&&!!recoveryInfo?.testing;document.body.classList.add('playing');show('opening',false);show('testing-badge',testingEnabled);show('modal-backdrop',false);show('defeat',false);
     combatEvents.length=0;drownedDefeat=false;inWater=false;drowning=false;swimMetres=0;
@@ -6544,16 +6572,14 @@ async function init() {
   function swimTick(dt,before){
     if(terrainFall.active){inWater=false;return;}
     const p=player.group.position;
-    // A horse will not go in, and `moveCharacter` will not carry one over the waterline, so a
-    // rider simply cannot get wet. This says so out loud the first time he tries.
+    // The horse supports its rider in water; this is not the traveler's personal
+    // swimming exercise and does not award swimming experience or spend their wind.
     if(riding.mounted){
-      // Mounting is one of the ways out of the water: the horse waits on land and you can reach
-      // him from the shallows. Whatever the swim was worth is paid before the saddle takes over,
+      // Mounting is one of the ways out of the water. Whatever the personal swim
+      // was worth is paid before the saddle takes over,
       // or a man who pressed G instead of taking one more step lost the lot.
       if(inWater)payForTheSwim(p.x,p.z);
-      if(canSwim(p.x,p.z,playerWorld,RIDE.radius)&&!drowning){drowning=true;toast('He will not go in, and he is right. Get down first.','YOUR HORSE');}
-      else if(!canSwim(p.x,p.z,playerWorld,RIDE.radius))drowning=false;
-      inWater=false;return;
+      inWater=false;drowning=false;return;
     }
     const wet=canSwim(p.x,p.z,playerWorld,.34);
     if(!wet&&canStand(p.x,p.z,playerWorld,.34))lastDry={x:p.x,z:p.z};
@@ -8099,7 +8125,7 @@ async function init() {
         if(riding.mounted&&combat.state.phase==='active')stepDown(true);
         if(climbingFrame||airMounted()||jesseHost.mounted||terrainFall.active){/* Climbing, a carrier or gravity owns the traveler's feet. */}else if(raceHost.mounted){seatOnKayla();}else if(riding.mounted){
           const canter=!!(autopilot.active?autopilot.move.run:(keys.has('ShiftLeft')||keys.has('ShiftRight')||keys.has('Tab')||touch.run));
-          if(magnitude>0){const wx=-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side,wz=-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side,desired=Math.atan2(wx,wz);mountHeading=steer(mountHeading,desired,dt,canter);const pace=riding.speed(canter)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,playerWorld,RIDE.radius,{canTraverse:walkingSlope});}
+          if(magnitude>0){const wx=-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side,wz=-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side,desired=Math.atan2(wx,wz),swimming=mountAfloat(player.group.position.x,player.group.position.z);mountHeading=steer(mountHeading,desired,dt,canter&&!swimming);const pace=riding.speed(canter,swimming)*drive(mountHeading,desired);moveCharacter(player.group.position,Math.sin(mountHeading)*pace*dt,Math.cos(mountHeading)*pace*dt,mountedWorld,RIDE.radius,{swimming:true,canTraverse:mountedTraversal});}
           player.group.rotation.y=mountHeading;p.yaw=mountHeading;
         } else if(magnitude>0) {
           // A swimmer goes at his own pace, and running is not one of the things he can do.
@@ -8109,8 +8135,7 @@ async function init() {
           const dx=(-Math.sin(movementYaw)*forward+Math.cos(movementYaw)*side)*speed*dt,dz=(-Math.cos(movementYaw)*forward-Math.sin(movementYaw)*side)*speed*dt;
           // On foot the waterline is not a wall: `swimming:true` is what lets him walk in at all,
           // and it must not be `inWater`, which only turns true once he is already wet - a closed
-          // loop that kept the sea shut to anybody who had not been warped into it. A rider is in
-          // the branch above and never gets this, so a horse still refuses the water.
+          // loop that kept the sea shut to anybody who had not been warped into it.
           if(urubondHost.active)urubondHost.move(player.group.position,dx,dz);
           else if(sevronHost.active)sevronHost.move(player.group.position,dx,dz);
           else if(baldroHost.active)baldroHost.move(player.group.position,dx,dz);
@@ -8193,8 +8218,8 @@ async function init() {
             if(terrainFall.active)stepTerrainFall(dt,forward,side,movementYaw);
             else player.group.position.y=surface.height;
           } else if(!climbingFrame){
-            const floor=urubondHost.floorAt(player.group.position.x,player.group.position.z)??sevronHost.floorAt(player.group.position.x,player.group.position.z)??baldroHost.floorAt(player.group.position.x,player.group.position.z)??lotharnCave.floorAt(player.group.position.x,player.group.position.z)??playerWorld.heightAt(player.group.position.x,player.group.position.z);
-            player.group.position.y=floor+((riding.mounted||living.recall().status==='passenger')?RIDE.seat.up:0);
+            const floor=urubondHost.floorAt(player.group.position.x,player.group.position.z)??sevronHost.floorAt(player.group.position.x,player.group.position.z)??baldroHost.floorAt(player.group.position.x,player.group.position.z)??lotharnCave.floorAt(player.group.position.x,player.group.position.z)??(riding.mounted?mountGround(player.group.position.x,player.group.position.z):playerWorld.heightAt(player.group.position.x,player.group.position.z));
+            player.group.position.y=riding.mounted?mountSurface(player.group.position.x,player.group.position.z,floor)+RIDE.seat.up+mountBob(player.group.position.x,player.group.position.z):floor+(living.recall().status==='passenger'?RIDE.seat.up:0);
           }
           {const turned=borderWatch.step(before,player.group.position,elapsed);if(turned.refused){player.group.position.x=before.x;player.group.position.z=before.z;if(turned.toast)toast(turned.toast,turned.title??CLOSED_BORDER_TITLE);}}
           if(raceHost.mounted)seatOnKayla();
@@ -8323,10 +8348,11 @@ async function init() {
         draw:combat.drawn});
       magicView.update(reviewFrozen?0:dt);
       if(riding.owned){
-        if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting);
+        if(!riding.mounted&&mode==='playing')riding.update(dt,player.group.position,mountFooting,{speedAt:(x,z)=>mountAfloat(x,z)?riding.speed(false,true):RIDE.trot,
+          canHaltAt:(x,z)=>!mountAfloat(x,z)||!riderOnBank()});
         placeOwnHorse();const away=riding.distanceTo(player.group.position);(riding.developerMount?devHorse:ownHorse).group.visible=away<220;
         refreshCompanyHorses();
-        if(ownHorse.group.visible)ownHorse.animate(elapsed,riding.mounted?movement:riding.pace,true,riding.mounted||riding.called?{grazing:false}:{});
+        {const horse=riding.horse,mount=riding.developerMount?devHorse:ownHorse;if(mount.group.visible)mount.animate(elapsed,riding.mounted?movement:riding.pace,true,{...(riding.mounted||riding.called?{grazing:false}:{}),swimming:mountAfloat(horse.x,horse.z)});}
         show('ride-prompt',mode==='playing'&&living.recall().status!=='passenger'&&!riding.mounted&&combat.state.phase!=='active'&&away<=RIDE.reach);
       } else show('ride-prompt',false);
       drentBirds.update(['playing','dialogue'].includes(mode)&&!reviewFrozen?dt:0,player.group.position,{feederHung:birding.feeder==='hung'});

@@ -1,3 +1,4 @@
+import {installLoadingLore} from './loading-lore.js';
 import {explorationStore} from './checkpoint.js';
 import {worldWarStore} from './war-checkpoint.js';
 import {launchMode,MODES} from './modes.js';
@@ -29,6 +30,7 @@ async function start(id,data=null,combatExercise=null){
   document.querySelector('#loading-screen h1').textContent=id==='combat'?'Opening the combat camp.':'Opening the world.';
   document.querySelector('#loading-screen small').textContent=id==='combat'?'Prepare once, then retry or switch exercises immediately.':'The country is prepared as you explore.';
   $('loading-message').textContent=id==='hearthfall'?'Preparing Feradom...':id==='combat'?'Preparing Minora combat camp...':'Preparing Minora...';
+  installLoadingLore(id);
   try{
     const store=await storeFor(id),{startExploration}=await import('./exploration.js');
     const session=await startExploration({saved:id==='explore'?data:data?.exploration,warSaved:id==='war'?data:null,warMode:id==='war',

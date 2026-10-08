@@ -5,10 +5,16 @@ import {LIZEEM_FIELD_SITES} from '../../content/scenarios/lizeem-field-sites.js'
 
 export const LEGACY_WORLD_WAR_SCENARIO={...LIZEEM_SCENARIO,id:'lizeem-world-v3',heroTracking:'world',rules:{...LIZEEM_SCENARIO.rules,battleDays:3},
   regions:LIZEEM_SCENARIO.regions.map(r=>({...r,battlefield:LIZEEM_BATTLEFIELDS[r.id],...(r.id==='caricas'?{interceptionStrength:12}:{})}))};
-export const WORLD_WAR_SCENARIO={...LEGACY_WORLD_WAR_SCENARIO,id:'lizeem-world-v4',
+export const INTERCEPTION_WORLD_WAR_SCENARIO={...LEGACY_WORLD_WAR_SCENARIO,id:'lizeem-world-v4',
   regions:LEGACY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(LIZEEM_FIELD_SITES[r.id]?{interceptionStrength:LIZEEM_FIELD_SITES[r.id].interceptionStrength}:{})}))};
+export const RALLY_WORLD_WAR_SCENARIO={...INTERCEPTION_WORLD_WAR_SCENARIO,id:'lizeem-world-v5',
+  regions:INTERCEPTION_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(r.id==='ovesos'?{rallyAssault:true}:{})}))};
+export const BATTLEFIELD_ENTRY_RADIUS=70;
+export const WORLD_WAR_SCENARIO={...RALLY_WORLD_WAR_SCENARIO,id:'lizeem-world-v6',battlefieldEntryRadius:BATTLEFIELD_ENTRY_RADIUS,
+  openingOrders:[{faction:'west',from:'nethereum',to:'caricas',marchDays:2}],
+  regions:RALLY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(r.id==='caricas'?{rallyAssault:true}:{})}))};
 export function worldWarScenario(id){
-  const scenario=[WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO].find(s=>s.id===id);
+  const scenario=[WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO].find(s=>s.id===id);
   if(!scenario)throw Error('Unknown world-test scenario.');return scenario;
 }
 export const SECONDS_PER_DAY=30;
@@ -31,7 +37,8 @@ export function createWorldWar(saved=null){
   function setSpeed(value){if(![1,4,20].includes(value))throw Error('Invalid campaign speed.');speed=value;}
   const checkpoint=()=>{const {scenario,seed,day,commands}=campaign.snapshot();return {simulation:{scenario,seed,day,commands},fraction,speed};};
   const clock=()=>({running,speed,fraction,secondsPerDay:SECONDS_PER_DAY});
-  return {campaign,syncRegion,advance,tick,toggle,setSpeed,checkpoint,clock,pause:()=>{running=false;},snapshot:campaign.snapshot};
+  return {campaign,syncRegion,advance,tick,toggle,setSpeed,checkpoint,clock,
+    begin(){if(campaign.snapshot().day===0)advance(1);if(!running)toggle();},pause:()=>{running=false;},snapshot:campaign.snapshot};
 }
 
 // Projection is presentation data. Outside the five regions has no simulated

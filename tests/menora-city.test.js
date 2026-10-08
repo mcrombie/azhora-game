@@ -4,6 +4,10 @@ import { MENORA, MENORA_BUILDINGS, MENORA_GATES, MENORA_PATHS, MENORA_BRIDGES,
   MENORA_NPC_ANCHORS, MENORA_CAMP, MENORA_GARDENS, LIZEEM_MARKET_STANDS, inMenora, menoraGround, menoraRiverClearance,
   menoraReserved, menoraDeckHeight, menoraBridgeAt, menoraSegmentDistance } from '../src/content/regions/minora-frontier/menora-city.js';
 import { ISAREOS_RIVER, LIZEEM, ISAREOS_BECKS, courseDistance } from '../src/content/regions/western-regions/west-regions.js';
+import { courseBetween } from '../src/content/regions/western-regions/west-ground.js';
+import { groundBeforeFeradom } from '../src/world/terrain/world-terrain.js';
+import { feradomGround } from '../src/content/regions/feradom/feradom-world.js';
+import { caricasSettlementGround } from '../src/content/regions/minora-frontier/caricas-settlement.js';
 import { regionAt } from '../src/world/terrain/region-world.js';
 import { sourceModule } from './module-loader.js';
 import { describeRegion } from '../src/content/chapters/civil-war/campaign-world.js';
@@ -57,6 +61,25 @@ test('Bridge ends meet gently flattened dry shores without a vertical lip',()=>{
     const x=bridge.axis==='x'?along:bridge.x,z=bridge.axis==='z'?along:bridge.z;
     assert.ok(menoraRiverClearance(x,z)>17.8,`${bridge.id} ends before the dry bank`);
     for(const base of [14,24])assert.ok(Math.abs(menoraGround(x,z,base)-bridge.deck)<.04,`${bridge.id} has a step at its shore`);
+  }
+});
+
+test('Every bridge deck stands clear of the ground beneath it, and no bank by the water is cut below the water’s surface',()=>{
+  // The real ground under Minora's layer, as world-terrain.js hands it on (7 October 2026): the beck's west bank once stood
+  // 2.2 m over the Guild Footbridge's north parapet line. The water is the level its ribbon is drawn at between samples.
+  const frontier=(x,z)=>feradomGround(x,z,groundBeforeFeradom(x,z),groundBeforeFeradom),baseAt=(x,z)=>caricasSettlementGround(x,z,frontier(x,z),frontier);
+  const rivers=[ISAREOS_RIVER,LIZEEM,...ISAREOS_BECKS];
+  for(const b of MENORA_BRIDGES)for(let s=b.start+.5;s<=b.end-.5;s+=.5) {
+    const lines=[0,-(b.width/2-.3),b.width/2-.3],across=Array.from({length:2*b.width+13},(_,i)=>i/2-b.width/2-3);
+    for(const o of [...lines,...across]) {
+      const x=b.axis==='x'?s:b.x+o,z=b.axis==='x'?b.z+o:s,clear=menoraRiverClearance(x,z),line=lines.includes(o),bank=clear>0&&clear<6;
+      if(!line&&!bank)continue;
+      const base=baseAt(x,z),y=menoraGround(x,z,base);
+      if(line)assert.ok(y<=b.deck+.05,`${b.id} is buried ${(y-b.deck).toFixed(2)} m at ${x}, ${z}`);
+      if(!bank)continue;
+      const river=rivers.reduce((m,r)=>courseDistance(r,x,z)<courseDistance(m,x,z)?r:m),water=courseBetween(river,x,z).surface;
+      assert.ok(y>=Math.min(base,water)-1e-9,`${b.id} cuts the bank at ${x}, ${z} ${(water-y).toFixed(2)} m below ${river.id}`);
+    }
   }
 });
 

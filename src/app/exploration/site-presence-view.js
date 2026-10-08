@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import {createCharacter} from '../../content/characters/characters.js';
+import {createCharacter,disposeCharacter} from '../../content/characters/characters.js';
 import {CARICAS_GUARD_POSTS} from '../../content/regions/minora-frontier/caricas-settlement.js';
 import {LIZEEM_BATTLEFIELDS} from '../../content/scenarios/lizeem-battlefields.js';
 import {canStand} from '../../gameplay/movement/locomotion.js';
 
 export function createSitePresence(scene,world){
   const at=LIZEEM_BATTLEFIELDS.caricas;
-  let guards=[],owner=null,painted=null,color=null,visible=false,time=0;
-  function clear(){for(const guard of guards)scene.remove(guard.group);guards=[];}
+  let guards=[],owner=null,painted=null,color=null,visible=false,time=0,built=null;
+  function clear(){for(const guard of guards)disposeCharacter(guard);guards=[];built=null;}
   function update(presence,known,position,dt=0,enabled=true){
     const standards=world.caricasStandards;
     if(standards&&(painted!==standards||color!==presence.color)){
@@ -15,8 +15,12 @@ export function createSitePresence(scene,world){
     }
     visible=enabled&&known(at)&&world.readyAt(at.x,at.z)&&Math.hypot(position.x-at.x,position.z-at.z)<180;
     if(owner!==presence.owner||!presence.guards){clear();owner=presence.owner;}
-    if(visible&&guards.length!==presence.guards){
+    // A blocked/unloaded post may leave fewer representatives than requested.
+    // Retry when its terrain becomes ready, not by rebuilding rigs every frame.
+    const next=visible?`${presence.owner}/${presence.guards}/${CARICAS_GUARD_POSTS.map(p=>Number(world.readyAt(p.x,p.z))).join('')}`:null;
+    if(visible&&presence.guards&&built!==next){
       clear();
+      built=next;
       for(const post of CARICAS_GUARD_POSTS){
         if(guards.length>=presence.guards)break;
         if(!world.readyAt(post.x,post.z)||!canStand(post.x,post.z,world,.5,world.heightAt(post.x,post.z)))continue;
@@ -26,7 +30,7 @@ export function createSitePresence(scene,world){
       }
     }
     time+=dt;
-    for(const guard of guards){guard.group.visible=visible;guard.animate(time,0,true,{action:'idle',progress:0});}
+    for(const guard of guards){guard.group.visible=visible;if(visible)guard.animate(time,0,true,{action:'idle',progress:0});}
     return visible&&Math.hypot(position.x-at.x,position.z-at.z)<36&&Math.abs(position.y-world.heightAt(position.x,position.z))<12;
   }
   return {update,state:()=>({owner,color,banner:painted?.state()??null,visible,

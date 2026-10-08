@@ -1,4 +1,5 @@
 // One step is one campaign day. State and seeded randomness stay independent of UI time.
+import {availableBattleStage,rallyGuardCount,removeRallyGuards,continueInterception} from './battle-stages.js';
 import {createRoutes} from './routes.js';
 import {isAlive,isMoving,stationed,defendingStrength,inflictLosses} from './forces.js';
 import {reserveReinforcements,interceptReinforcements} from './reinforcements.js';
@@ -30,6 +31,11 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   for(const r of regions.values())if(r.interceptionStrength!==undefined&&(!battleDays||!Number.isInteger(r.interceptionStrength)||r.interceptionStrength<1))throw Error('Invalid interception strength.');
   if(battleDays)for(const r of regions.values())if(scenario.wars[0].includes(r.owner)&&
     (!Number.isFinite(r.battlefield?.x)||!Number.isFinite(r.battlefield?.z)))throw Error('Battlefield location missing: '+r.id);
+  for(const r of regions.values())if(r.rallyAssault!==undefined&&(r.rallyAssault!==true||!r.interceptionStrength))throw Error('Rally assault requires an interception.');
+  const entryRadius=scenario.battlefieldEntryRadius??null;
+  if(entryRadius!==null&&(!battleDays||!Number.isFinite(entryRadius)||entryRadius<=0))throw Error('Invalid battlefield entry radius.');
+  for(const order of scenario.openingOrders??[])if(!scenario.wars[0].includes(order.faction)||regions.get(order.from)?.owner!==order.faction||!regions.get(order.from)?.neighbors.includes(order.to)||(regions.get(order.to)?.owner===order.faction||!scenario.wars[0].includes(regions.get(order.to)?.owner))||!Number.isInteger(order.marchDays)||order.marchDays<1)throw Error('Invalid opening army order.');
+  if(new Set((scenario.openingOrders??[]).map(o=>o.faction)).size!==(scenario.openingOrders??[]).length)throw Error('Only one opening order per faction is allowed.');
   const travel=createRoutes(scenario);
   const state={version:3,scenario:scenario.id,seed,rng:seed,day:0,winner:null,nextArmy:1,nextEvent:1,
     hero:{...scenario.hero,journey:null,watching:false,readyOn:0},pending:null,arrivals:[],engagements:[],
@@ -53,8 +59,8 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     Object.assign(army,{region,status:recover?'recovering':'ready',arrives:null,readyOn:recover?state.day+rules.armyRecoveryDays:null});
     army.reason=recover?'Regrouping after battle. Cannot march until recovery ends.':'Holding friendly territory; available for another order.';
   }
-  function march(army,from,to,kind,reason){
-    const route=travel(from,to);Object.assign(army,{from,to,region:null,kind,status:kind==='retreat'?'retreating':'marching',departed:state.day,arrives:state.day+route.days,readyOn:null,route,reason});
+  function march(army,from,to,kind,reason,marchDays=null){
+    const route=travel(from,to);if(marchDays!==null)Object.assign(route,{days:marchDays,distanceDays:marchDays,terrainDays:0,crossingDays:0,authoredOpening:true,name:'Prepared opening approach to '+regions.get(to).name});Object.assign(army,{from,to,region:null,kind,status:kind==='retreat'?'retreating':'marching',departed:state.day,arrives:state.day+route.days,readyOn:null,route,reason});
     emit(kind==='retreat'?'retreat':'march',{army:copy(army),reason});
   }
   function retreat(army,from,preferred=null){
@@ -84,9 +90,9 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     // Caps cannot reverse the benefit when an overwhelming force already has
     // odds outside the 5-95% band. An empty defense is still captured normally.
     const chance=delta>0?Math.max(baseChance,Math.min(.95,baseChance+delta)):delta<0?Math.min(baseChance,Math.max(.05,baseChance+delta)):baseChance;
-    const roll=random(),captured=defenders===0||roll<chance;
-    const attackLoss=captured?Math.min(attackers-1,Math.ceil(defenders*(.25+random()*.25))):Math.ceil(attackers*(.4+random()*.2));
-    const defenseLoss=captured?Math.ceil(defenders*(.45+random()*.2)):Math.min(defenders-1,Math.ceil(attackers*(.3+random()*.3)));
+    const roll=random(),decisive=engagement?.rally?.outcome==='success',captured=decisive?engagement.rally.faction===army.owner:defenders===0||roll<chance;
+    const attackLoss=captured?Math.min(Math.max(0,attackers-1),Math.ceil(defenders*(.25+random()*.25))):Math.ceil(attackers*(.4+random()*.2));
+    const defenseLoss=captured?Math.ceil(defenders*(.45+random()*.2)):Math.min(Math.max(0,defenders-1),Math.ceil(attackers*(.3+random()*.3)));
     inflictLosses(attackingArmies,attackLoss);for(const a of attackingArmies)a.battles++;
     inflictLosses([garrison,...defendingArmies],defenseLoss);target.garrison=garrison.strength;
     for(const a of defendingArmies)a.battles++;
@@ -103,7 +109,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     target.lastBattle=state.day;
     const surrendered=state.events.slice(surrenderStart).filter(e=>e.type==='surrender').map(e=>({armyId:e.armyId,strength:e.strength,faction:e.faction}));
     return emit('battle',{region,from:attackOrigin,armyId:army.id,armyName:army.name,attackingIds:attackingArmies.map(a=>a.id),engagementId:engagement?.id??null,defendingIds,attacker:army.owner,defender,attackers,defenders,chance,roll,captured,
-      attackLoss,defenseLoss,retreats,surrendered,survivors:defendingStrength(state,region),defenseBonus:rules.defenseBonus,baseChance,unassistedChance,hero});
+      attackLoss,defenseLoss,retreats,surrendered,survivors:defendingStrength(state,region),defenseBonus:rules.defenseBonus,baseChance,unassistedChance,hero,...(decisive?{resolution:'rally-rout',rally:copy(engagement.rally)}:{})});
   }
   function arrive(army){
     const region=army.to,target=state.regions[region];
@@ -114,6 +120,8 @@ export function createCampaign(definition,seed=definition.defaultSeed){
       let engagement=activeBattle(region);const starting=!engagement;
       if(!engagement){
         engagement={id:`battle-${state.engagements.length+1}`,region,attacker:army.owner,defender:target.owner,attackingIds:[],started:state.day,endsOn:state.day+battleDays,status:'active',location:copy(regions.get(region).battlefield),heroResult:null};
+        if(regions.get(region).rallyAssault)engagement.rally={status:'locked'};
+        if(entryRadius!==null)Object.assign(engagement,{entryRadius,participation:{faction:null,intercept:{status:'available',totalGuards:3,stopped:0,escaped:0,blocked:0}}});
         state.engagements.push(engagement);
         for(const a of stationed(state,region,target.owner)){a.status='engaged';a.readyOn=null;a.reason='Defending the ongoing battle.';}
       }else emit('battle-reinforced',{battleId:engagement.id,armyId:army.id,strength:army.strength,region});
@@ -135,6 +143,8 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     return strength>=20?{owner:faction,from:region,armyId:army?.id??null,levy,strength}:null;
   }
   function plan(faction){
+    const opening=state.day===1?scenario.openingOrders?.find(o=>o.faction===faction):null;
+    if(opening){const ready=available(opening.from,faction);if(ready)return {...ready,to:opening.to,kind:'attack',marchDays:opening.marchDays,reason:'A prepared vanguard advances on '+regions.get(opening.to).name+'; the opening march reaches the frontier in '+opening.marchDays+' days.'};}
     const options=[];
     for(const r of scenario.regions){
       const ready=available(r.id,faction);if(!ready)continue;
@@ -183,7 +193,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
         for(const order of orders){
           state.regions[order.from].garrison-=order.levy;
           const army=order.armyId?state.armies.find(a=>a.id===order.armyId):raise(order.owner,order.from,0);
-          army.strength+=order.levy;march(army,order.from,order.to,order.kind,order.reason);
+          army.strength+=order.levy;march(army,order.from,order.to,order.kind,order.reason,order.marchDays??null);
         }
       }
   }
@@ -210,15 +220,27 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   }
   function joinBattle(id,position){
     const engagement=state.engagements.find(e=>e.id===id&&e.status==='active');
-    if(state.pending||!engagement||engagement.endsOn<=state.day||engagement.heroResult||state.hero.readyOn>state.day||state.hero.region!==engagement.region||
-      !Number.isFinite(position?.x)||!Number.isFinite(position?.z)||Math.hypot(position.x-engagement.location.x,position.z-engagement.location.z)>24)
+    const stage=engagement&&availableBattleStage(engagement);
+    if(state.pending||!stage||engagement.endsOn<=state.day||state.hero.readyOn>state.day||state.hero.region!==engagement.region||
+      !Number.isFinite(position?.x)||!Number.isFinite(position?.z)||Math.hypot(position.x-engagement.location.x,position.z-engagement.location.z)>(engagement.entryRadius??(stage==='rally'?45:24)))
       return {ok:false,reason:'Reach the active battlefield before it ends, while ready to help.'};
-    state.pending={id:engagement.id,battleId:engagement.id,day:state.day,region:engagement.region,armyId:engagement.attackingIds[0],attacker:engagement.attacker,defender:engagement.defender,
+    state.pending={id:stage==='rally'?engagement.id+':rally':engagement.id,battleId:engagement.id,...(engagement.rally||engagement.participation?{stage}:{}),...(engagement.participation?{entryRadius:engagement.entryRadius,participation:{faction:engagement.participation.faction,...engagement.participation.intercept,guards:Math.max(0,engagement.participation.intercept.totalGuards-engagement.participation.intercept.stopped-engagement.participation.intercept.escaped)}}:{}),...(stage==='rally'?{rally:{faction:engagement.rally.faction,guards:rallyGuardCount(engagement),blocked:engagement.heroResult.objective.blocked,...(engagement.participation?{stopped:engagement.rally.stopped??0,totalGuards:engagement.rally.totalGuards,...(engagement.rally.style?{style:engagement.rally.style}:{}),...(engagement.rally.allied?{allied:copy(engagement.rally.allied)}:{})}: {})}}:{}),day:state.day,region:engagement.region,armyId:engagement.attackingIds[0],attacker:engagement.attacker,defender:engagement.defender,
       attackers:engagement.attackingIds.reduce((n,id)=>n+state.armies.find(a=>a.id===id).strength,0),defenders:defendingStrength(state,engagement.region),endsOn:engagement.endsOn,...(engagement.reinforcements?{reinforcements:copy(engagement.reinforcements)}:{})};
     state.commands.push({type:'join-battle',day:state.day,id,position:{x:position.x,z:position.z}});emit('encounter',state.pending);return {ok:true};
   }
-  function resolveEncounter(id,faction,outcome,reason=null,stopped=null){
+  function chooseAssault(id,style){
+    const p=state.pending,b=p&&state.engagements.find(e=>e.id===p.battleId&&e.status==='active');
+    if(p?.id!==id||!p.participation||!p.rally||!b||!['solo','allied'].includes(style))return {ok:false,reason:'Choose a style for the current final assault.'};
+    if(b.rally.style)return b.rally.style===style?{ok:true}:{ok:false,reason:'Resume this assault in its original style.'};
+    if((b.rally.stopped??0)>0&&style!=='solo')return {ok:false,reason:'An existing solo assault must resume without replacement allies.'};
+    b.rally.style=p.rally.style=style;
+    if(style==='allied')b.rally.allied=p.rally.allied={totalAllies:3,lost:0,routed:0,damage:0};
+    state.commands.push({type:'assault-style',day:state.day,id,style});return {ok:true};
+  }
+  function resolveEncounter(id,faction,outcome,reason=null,stopped=null,progress=null){
     const pending=state.pending;
+    if(pending?.id===id&&pending.participation)return resolveParticipation(pending,faction,outcome,reason,stopped,progress);
+    if(pending?.id===id&&pending.stage==='rally')return resolveRally(pending,faction,outcome,reason,stopped);
     if(!pending||pending.id!==id||!['success','defeat','withdraw'].includes(outcome)||
       ((outcome!=='withdraw'||stopped>0)&&![pending.attacker,pending.defender].includes(faction))||
       (outcome==='withdraw'&&!(stopped>0)&&faction!==null))return {ok:false,reason:'Invalid or already resolved encounter.'};
@@ -232,8 +254,93 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     state.commands.push(command);state.pending=null;state.hero.readyOn=state.day+3;
     if(objective?.blocked)emit('reinforcements-intercepted',{battleId:pending.battleId,region:pending.region,faction:objective.targetFaction,strength:objective.blocked});
     emit('hero-result',{...command,region:pending.region,battleId:pending.battleId??null,...(objective?{objective}:{} )});
-    if(engagement){engagement.heroResult={faction,outcome,...(reason?{reason}:{}),...(objective?{objective}:{})};return {ok:true};}
+    if(engagement){engagement.heroResult={faction,outcome,...(reason?{reason}:{}),...(objective?{objective}:{})};
+      if(engagement.rally){engagement.rally={status:faction?'available':'declined',faction};if(faction)state.hero.readyOn=state.day;}
+      return {ok:true};}
     battle(state.armies.find(a=>a.id===pending.armyId),outcome==='withdraw'?null:{faction,outcome});finishDay();return {ok:true};
+  }
+  // v6 battlefield visits are resumable. Legacy scenario commands above retain
+  // their original one-shot meaning so existing saves replay unchanged.
+  function resolveParticipation(pending,faction,outcome,reason,stopped,progress){
+    const engagement=state.engagements.find(e=>e.id===pending.battleId&&e.status==='active');
+    if(!engagement)return {ok:false,reason:'This battle has already ended.'};
+    const escaped=progress?.escaped??0,rally=pending.stage==='rally',remaining=rally?pending.rally.guards:pending.participation.guards;
+    const count=stopped??(outcome==='success'?remaining:0);
+    const allied=rally&&pending.rally.style==='allied',lost=progress?.alliesLost??0,routed=progress?.routed??0,damage=progress?.allyDamage??0;
+    if(progress!==null&&(typeof progress!=='object'||Array.isArray(progress)||Object.keys(progress).some(k=>!(allied?['escaped','alliesLost','routed','allyDamage']:['escaped']).includes(k)))||
+      !Number.isInteger(lost)||lost<0||lost>(allied?pending.rally.allied.totalAllies-pending.rally.allied.lost:0)||!Number.isInteger(routed)||routed<0||routed>count||!Number.isFinite(damage)||damage<0||damage>remaining*50||
+      !Number.isInteger(escaped)||escaped<0||!Number.isInteger(count)||count<0||count+escaped>remaining||rally&&escaped)
+      return {ok:false,reason:'Invalid remaining-soldier count.'};
+    if(reason==='declined'){
+      if(outcome!=='withdraw'||faction!==null||count||escaped||lost||routed||damage)return {ok:false,reason:'Invalid battlefield refusal.'};
+      state.commands.push({type:'hero-result',day:state.day,id:pending.id,faction:null,outcome:'withdraw',reason:'declined',stopped:0});
+      state.pending=null;return {ok:true};
+    }
+    const reasons=rally?{success:['rally-secured'],defeat:['driven-back','time-expired'],withdraw:['withdrew']}:
+      {success:['vanguard-broken'],defeat:['runner-arrived','driven-back','time-expired'],withdraw:['withdrew']};
+    if(!reasons[outcome]||reason!==null&&!reasons[outcome].includes(reason)||
+      ![pending.attacker,pending.defender].includes(faction)||
+      engagement.participation.faction&&engagement.participation.faction!==faction||
+      outcome==='success'&&(count!==remaining||escaped))return {ok:false,reason:'Invalid or already resolved battlefield phase.'};
+    const enemy=faction===pending.attacker?pending.defender:pending.attacker;
+    if(!rally&&engagement.reinforcements&&!engagement.reinforcements[enemy]?.strength)return {ok:false,reason:'No enemy reinforcement squad is available.'};
+    const command={type:'hero-result',day:state.day,id:pending.id,faction,outcome,...(reason?{reason}:{}),stopped:count,...(progress!==null?{progress:{escaped,...(allied?{alliesLost:lost,routed,allyDamage:damage}:{})}}:{})};
+    state.commands.push(command);state.pending=null;state.hero.readyOn=state.day;
+    engagement.participation.faction=faction;
+    if(rally){
+      const result=removeRallyGuards(state,engagement,faction,count-routed);
+      let alliesRemoved=0;
+      if(allied){
+        alliesRemoved=removeRallyGuards(state,engagement,enemy,lost).removed;
+        engagement.rally.allied.lost+=lost;engagement.rally.allied.routed+=routed;engagement.rally.allied.damage+=damage;
+      }
+      Object.assign(engagement.rally,{stopped:(engagement.rally.stopped??0)+count,removed:(engagement.rally.removed??0)+result.removed,enemy});
+      const complete=outcome!=='withdraw';
+      if(complete)Object.assign(engagement.rally,{status:'finished',outcome,reason});
+      emit('rally-result',{...command,battleId:engagement.id,region:engagement.region,removed:result.removed,...(allied?{alliesRemoved}:{}),enemy,remaining:rallyGuardCount(engagement),phaseComplete:complete});
+      if(complete)advancePhase(engagement,true);
+      return {ok:true};
+    }
+    const phase=engagement.participation.intercept;
+    const objective=engagement.reinforcements?continueInterception(state,engagement,faction,count,escaped):null;
+    if(!objective){phase.stopped+=count;phase.escaped+=escaped;}
+    const complete=outcome!=='withdraw'||!!engagement.rally&&phase.stopped+phase.escaped===phase.totalGuards;
+    engagement.heroResult={faction,outcome,...(reason?{reason}:{}),...(objective?{objective}:{})};
+    if(objective?.removed)emit('reinforcements-intercepted',{battleId:engagement.id,region:engagement.region,faction:enemy,strength:objective.removed});
+    emit('hero-result',{...command,region:engagement.region,battleId:engagement.id,...(objective?{objective}:{}),phaseComplete:complete});
+    if(complete){
+      phase.status='finished';
+      if(engagement.rally){
+        const totalGuards=rallyGuardCount(engagement);
+        engagement.rally={status:'available',faction,totalGuards,stopped:0,removed:0};
+      }
+      if(outcome!=='withdraw')advancePhase(engagement,!engagement.rally);
+    }
+    return {ok:true};
+  }
+  function advancePhase(engagement,final){
+    const target=final?engagement.endsOn:Math.min(engagement.endsOn-1,engagement.started+Math.max(1,Math.floor(battleDays/2)));
+    if(target>state.day)step(target-state.day);
+  }
+  function resolveRally(pending,faction,outcome,reason,stopped){
+    const engagement=state.engagements.find(e=>e.id===pending.battleId&&e.status==='active');
+    const validReason={success:['rally-secured'],defeat:['driven-back','time-expired'],withdraw:['withdrew']};
+    if(!engagement||engagement.rally?.status!=='available'||!validReason[outcome]?.includes(reason)||
+      !Number.isInteger(stopped)||stopped<0||stopped>pending.rally.guards||
+      (outcome==='success'&&stopped!==pending.rally.guards)||
+      (outcome==='withdraw'&&!stopped?faction!==null:faction!==pending.rally.faction))return {ok:false,reason:'Invalid or already resolved rally assault.'};
+    const side=pending.rally.faction,{enemy,removed}=removeRallyGuards(state,engagement,side,stopped);
+    const command={type:'hero-result',day:state.day,id:pending.id,faction,outcome,reason,stopped};
+    state.commands.push(command);state.pending=null;state.hero.readyOn=state.day+3;
+    engagement.rally={status:'finished',faction:side,outcome,reason,stopped,removed,enemy};
+    emit('rally-result',{...command,battleId:engagement.id,region:engagement.region,removed,enemy});
+    if(outcome==='success'){
+      for(const squad of Object.values(engagement.reinforcements))if(['approaching','partially-intercepted'].includes(squad.status))squad.status='joined';
+      const result=battle(state.armies.find(a=>a.id===engagement.attackingIds[0]),engagement.heroResult,engagement);
+      Object.assign(engagement,{status:'resolved',resolvedOn:state.day,resultId:result.id,captured:result.captured});
+      victory();
+    }
+    return {ok:true};
   }
   function reinforce(region,amount=80){
     if(state.pending)return {ok:false,reason:'Resolve the local encounter first.'};
@@ -243,7 +350,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     target.garrison+=amount;const command={day:state.day,type:'reinforce',region,amount,faction:target.owner};state.commands.push(command);emit('intervention',command);return {ok:true};
   }
   function snapshot(){return copy(state);}
-  emit('opening',{factions:[...scenario.wars[0]]});return {step,reinforce,heroTravel,locateHero,joinBattle,watchBattles,resolveEncounter,snapshot};
+  emit('opening',{factions:[...scenario.wars[0]]});return {step,reinforce,heroTravel,locateHero,joinBattle,watchBattles,chooseAssault,resolveEncounter,snapshot};
 }
 
 // A saved experiment is a seed + ordered commands + final day. Replaying goes
@@ -253,13 +360,13 @@ export function replayCampaign(scenario,{seed,day,commands=[],scenario:scenarioI
   if(!Number.isInteger(day)||day<0||day>10000)throw new Error('Invalid replay day.');
   const campaign=createCampaign(scenario,seed);let previous=0;
   for(const command of commands){
-    if(!['reinforce','hero-travel','hero-watch','hero-result','hero-location','join-battle'].includes(command.type)||!Number.isInteger(command.day)||command.day<previous||command.day>day)throw new Error('Invalid replay command.');
-    if(command.day>previous)campaign.step(command.day-previous);
+    if(!['reinforce','hero-travel','hero-watch','hero-result','hero-location','join-battle','assault-style'].includes(command.type)||!Number.isInteger(command.day)||command.day<previous||command.day>day)throw new Error('Invalid replay command.');
+    if(command.day>campaign.snapshot().day)campaign.step(command.day-campaign.snapshot().day);
     if(campaign.snapshot().day!==command.day)throw new Error('Command occurs after the war ended.');
-    const result=command.type==='reinforce'?campaign.reinforce(command.region,command.amount):command.type==='hero-travel'?campaign.heroTravel(command.to):command.type==='hero-location'?campaign.locateHero(command.region):command.type==='hero-watch'?campaign.watchBattles(command.enabled):command.type==='join-battle'?campaign.joinBattle(command.id,command.position):campaign.resolveEncounter(command.id,command.faction,command.outcome,command.reason,command.stopped);
+    const result=command.type==='reinforce'?campaign.reinforce(command.region,command.amount):command.type==='hero-travel'?campaign.heroTravel(command.to):command.type==='hero-location'?campaign.locateHero(command.region):command.type==='hero-watch'?campaign.watchBattles(command.enabled):command.type==='join-battle'?campaign.joinBattle(command.id,command.position):command.type==='assault-style'?campaign.chooseAssault(command.id,command.style):campaign.resolveEncounter(command.id,command.faction,command.outcome,command.reason,command.stopped,command.progress);
     if(!result.ok)throw new Error(result.reason);previous=command.day;
   }
-  if(day>previous)campaign.step(day-previous);
+  if(day>campaign.snapshot().day)campaign.step(day-campaign.snapshot().day);
   if(campaign.snapshot().day!==day)throw new Error('Replay continues after the war ended.');
   return campaign;
 }

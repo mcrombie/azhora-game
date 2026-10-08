@@ -112,7 +112,7 @@ test('wildlife release hysteresis retains nearby instances but releases distant 
 });
 
 test('small wildlife in the new western regions follows displayed triangles without changing logical footing', () => {
-  for (const region of ['East Pyros', 'Nether Desert', 'Legemum']) for (const difference of [.24, -.19]) {
+  for (const region of ['East Pyros', 'Nether Desert', 'Legemum', 'Drent', 'Ovesos']) for (const difference of [.24, -.19]) {
     let ready = false, samples = 0;
     const scene = new THREE.Scene(), displayWorld = { ...world,
       renderedGroundHeight: () => { samples++; return 3 + difference; },
@@ -131,11 +131,11 @@ test('small wildlife in the new western regions follows displayed triangles with
   }
 });
 
-test('displayed footing does not move older wildlife or replace air and sea heights', () => {
+test('displayed footing does not move unlisted wildlife or replace air and sea heights', () => {
   const scene = new THREE.Scene();
   const displayWorld = { ...world, renderedGroundHeight: () => { throw new Error('This creature must retain its existing footing'); } };
   const life = createWestLife(scene, displayWorld, { zones: [
-    zone('old-deer', 0, 'red-deer', { region: 'Drent' }),
+    zone('unlisted-deer', 0, 'red-deer', { region: 'Unlisted fixture region' }),
     zone('air', 0, 'harrier', { region: 'Legemum', air: 20 }),
     zone('sea', 0, 'dolphin', { region: 'Legemum', sea: true }),
     zone('floating', 0, 'duck', { region: 'East Pyros', float: true }),

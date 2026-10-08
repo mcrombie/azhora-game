@@ -13,7 +13,7 @@ export function createOvesosPractice({capture,prepare,open,restore,onError}){
   }
   async function start(selected='lesson'){
     if(active)return;
-    exercise=['advanced','squad'].includes(selected)?selected:'lesson';saved=capture();active=true;loading=true;attempt=0;
+    exercise=['advanced','squad','allied','solo-assault'].includes(selected)?selected:'lesson';saved=capture();active=true;loading=true;attempt=0;
     try{profile=await prepare();loading=false;retry();}
     catch(error){loading=false;finish();onError(error);}
   }

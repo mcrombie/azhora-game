@@ -1,3 +1,4 @@
+import {FIREBALL_BASE} from './fireball-spec.js';
 /**
  * **Sorcery**: a second table of skills beside Arms, and a third bar beside health and wind.
  *
@@ -101,10 +102,10 @@ export const SORCERY = Object.freeze({
 export const SPELLS = Object.freeze({
   fireball: Object.freeze({
     id: 'fireball', school: 'fire', name: 'Fireball',
-    cost: Object.freeze({ low: 20, high: 12 }),
-    cast: Object.freeze({ low: 1.15, high: .7 }),
-    damage: Object.freeze({ low: 26, high: 78 }),
-    range: 18, speed: 17, radius: .34,
+    cost: Object.freeze({ low: FIREBALL_BASE.cost, high: 12 }),
+    cast: Object.freeze({ low: FIREBALL_BASE.cast, high: .7 }),
+    damage: Object.freeze({ low: FIREBALL_BASE.damage, high: 78 }),
+    range: FIREBALL_BASE.range, speed: FIREBALL_BASE.speed, radius: FIREBALL_BASE.radius,
   }),
   /**
    * **Mindread** (Troy's, in Cobble): a second thing to say in any conversation, which often

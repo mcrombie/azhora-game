@@ -1,0 +1,21 @@
+#afterlife-heading{position:fixed;top:30px;left:32px;max-width:380px;color:#e8e5cf;text-shadow:0 2px 6px #122633}
+#afterlife-heading h2{font:30px Georgia,serif;margin:8px 0}
+#afterlife-heading p{font-size:14px;line-height:1.5}
+.afterlife-active #exploration-status:not(.on-map){top:145px;bottom:auto;left:32px;max-width:350px}
+#reaper-talk{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:#233b48;color:#efe6c9;border:1px solid #cab98e;padding:14px 24px}
+#reaper-return{position:fixed;top:85px;left:32px;background:#273947;color:#e1e7e2;border:1px solid #91a9ab;padding:10px 16px}
+#reaper-dialog{z-index:45;background:#0f172077;display:grid;place-items:center;padding:24px}
+#reaper-dialog[hidden]{display:none}
+.reaper-card{width:min(740px,92vw);max-height:90vh;overflow:auto;background:#1b2a37f5;border:1px solid #b9aa85;padding:28px;color:#eee6cf;box-shadow:0 18px 60px #080d18aa}
+.reaper-card h2{font:32px Georgia,serif;margin:10px 0}
+.reaper-card p{line-height:1.6}
+#reaper-choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+#reaper-choices button,#reaper-close{color:#eee6cf;background:#31434b;border:1px solid #849c9d;padding:14px;text-align:left}
+#reaper-choices button:hover,#reaper-choices button:focus-visible{background:#4a5357;outline:2px solid #e1c586;outline-offset:2px}
+#reaper-choices strong,#reaper-choices small{display:block}
+#reaper-choices small{margin-top:7px;line-height:1.4;color:#c3d3d4}
+#reaper-error{color:#f2c38c}
+@media(max-width:600px){#reaper-choices{grid-template-columns:1fr}.reaper-card{padding:18px}}
+
+.crossing-limbo::after{content:"";position:fixed;inset:0;z-index:100;background:#0b1020;pointer-events:all;animation:limbo-crossing .95s both}
+@keyframes limbo-crossing{0%{opacity:0}45%,60%{opacity:1}100%{opacity:0}}

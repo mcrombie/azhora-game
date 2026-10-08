@@ -135,7 +135,7 @@ test('a thrust is sidestepped, while a sweep catches that dodge and must be clea
     s=m.tick(1/60,direction==='side'?{x:1,dodge:true}:{z:1,dodge:true});
     while(s.guards[0].phase!=='recover')s=m.tick(1/60);
     const caught=attack==='sweep'&&direction==='side';
-    assert.equal(s.hero.hp,caught?75:100);assert.equal(s.guards[0].open,!caught);
+    assert.equal(s.hero.hp,caught?80:100);assert.equal(s.guards[0].open,!caught);
     assert.equal(s.hero.lastDefense.kind,caught?'hit':'dodged');
     assert.equal(s.hero.lastDefense.attack,attack);
     const hp=s.hero.hp;step(m,25);assert.equal(m.snapshot().hero.hp,hp,'One strike cannot hit twice');
@@ -173,7 +173,7 @@ test('a sweep catching the end of a sidestep reports the actual cause of damage'
   const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:-1.9}],attackPattern:['sweep']});let s=m.snapshot();
   while(!(s.guards[0].phase==='windup'&&s.guards[0].timer<.18))s=m.tick(1/60);
   s=m.tick(1/60,{x:1,dodge:true});while(!s.hero.lastDefense)s=m.tick(1/60);
-  assert.equal(s.hero.hp,75);assert.equal(s.hero.lastDefense.reason,'sweep-caught');assert.match(encounterFeedback(s).text,/after the dodge/);
+  assert.equal(s.hero.hp,80);assert.equal(s.hero.lastDefense.reason,'sweep-caught');assert.match(encounterFeedback(s).text,/after the dodge/);
 });
 
 

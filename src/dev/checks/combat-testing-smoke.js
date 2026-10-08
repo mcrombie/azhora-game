@@ -7,7 +7,7 @@ export async function checkCombatMenu(){
   assert(!window.__EXPLORATION__,'Startup has not constructed the 3D host');
   document.getElementById('new-combat-testing').click();
   assert(!document.getElementById('combat-testing-menu').hidden&&document.getElementById('start-screen').hidden,'Combat Testing opens the exercise menu before loading');
-  assert(document.querySelectorAll('[data-combat-exercise]').length===3,'Menu lists all three current Minora exercises');
+  assert(document.querySelectorAll('[data-combat-exercise]').length===5,'Menu lists lessons, interception, allied assault and solo comparison');
   assert(!performance.getEntriesByType('resource').some(r=>r.name.includes('/src/world.js')),'Selecting Combat Testing does not load the world');
   document.getElementById('combat-testing-back').click();assert(!document.getElementById('start-screen').hidden,'Back returns to main menu without loading');
   document.getElementById('new-combat-testing').click();await frames();return {checks:[...checks]};

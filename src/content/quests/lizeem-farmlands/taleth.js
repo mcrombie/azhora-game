@@ -1,5 +1,5 @@
 /**
- * **Taleth, Master Sorcerer of the Guild**, outside the tower in Minora (the user, 5 October 2026:
+ * **Taleth, Wizard Guild Master**, outside the tower in Minora (the user, 5 October 2026:
  * "The master sorcerer is called Taleth." A master sorcerer inspired by Merlin stands outside the
  * tower, with several things to talk about and, for now, one quest).
  *
@@ -34,7 +34,7 @@ const START = Object.freeze({ x: -2414, z: 63 });
  * (src/content/characters/characters.js); `jerkin: false` leaves the company's laced leather off a Guild robe.
  */
 export const TALETH = Object.freeze({
-  id: 'taleth', name: 'Taleth', role: 'Master Sorcerer of the Guild',
+  id: 'taleth', name: 'Taleth', role: 'Wizard Guild Master',
   modelRole: 'mercenary', color: 0x1b2147, skin: 0xe2c4a8,
   x: -2409.5, z: 58, yaw: -0.73,
   essential: true, hat: false,
@@ -128,7 +128,7 @@ export function talethGreeting({ playerId = null, accepted = false, held = false
     ? ['Yes, it still sticks. The door. You were about to ask, and I have saved you the breath.',
       'Rollo. You took the long way back, as you always do. Sit, if the step will have you. I have a few things to tell you and one thing to ask.']
     : ['Yes, this is the Guild’s tower, and no, it is not open to visitors. You were about to ask.',
-      'I am Taleth, Master Sorcerer of the Guild. I have a few things I will tell anybody who stands still long enough, and one thing I ask of very few.'];
+      'I am Taleth, Wizard Guild Master. I have a few things I will tell anybody who stands still long enough, and one thing I ask of very few.'];
 }
 
 /**
