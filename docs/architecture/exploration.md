@@ -55,6 +55,9 @@ Choose **Lizeemi War Scenario** on the start screen, double-click **Test Lizeem 
 | [exploration desktop host](../../scripts/exploration-desktop.cjs) | Separate Electron window, restricted local serving and exploration save bridge |
 | [entry.js](../../src/app/exploration/entry.js) | Immediate start screen; imports the world application only after Begin or Continue |
 | [exploration.js](../../src/app/exploration/exploration.js) | Scene, character, camera, input, map and session coordination |
+| [exploration-touch.js](../../src/app/exploration/exploration-touch.js) | Touch controls for a phone: stick, buttons and look ([the host on a phone](exploration-mobile.md)) |
+| [exploration-quality.js](../../src/app/exploration/exploration-quality.js) | Phone rendering default (`?quality=full\|phone`) and the once-a-minute frame-time log |
+| [exploration-phone.css](../../src/app/exploration/exploration-phone.css) | Touch and phone layout of the HUD, cards and campaign map |
 | [world-adapter.js](../../src/app/exploration/world-adapter.js) | Narrow access to the existing world builder, collision and regional loading |
 | [movement.js](../../src/app/exploration/movement.js) | Fixed movement tuning without skill levels, stamina, damage or quest gates |
 | [developer-travel.js](../../src/app/exploration/developer-travel.js) | World roster and safe arrival search |
