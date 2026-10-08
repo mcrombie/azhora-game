@@ -22,3 +22,130 @@ body.touch .exploration-touch .touch-use{background:rgba(38,86,70,.66)}
 body.touch .exploration-touch .touch-dodge{background:rgba(48,72,118,.66)}
 /* The skirmish's own Strike and Dodge are the thumb's buttons now. */
 body.touch #world-skirmish-actions{display:none}
+
+@media (max-width:480px),(max-width:960px) and (max-height:480px){
+  body:not(.dev) #open-developer{display:none}
+  kbd{display:none}
+  .veil button,.war-report-actions button,#world-war-track button{min-height:42px}
+
+  /* The start menu: one column, the war first, tall buttons. */
+  #start-screen{align-items:start}
+  .launch-card{padding:18px 14px}.launch-card h1{font-size:28px;margin:10px 0}.launch-card>p{font-size:14px;line-height:1.5}
+  .launch-options{gap:12px;grid-template-columns:1fr}.launch-options article{padding:14px 14px 10px}.launch-options h2{font-size:21px;margin-bottom:8px}
+  .launch-options p{font-size:13px;line-height:1.5;margin-bottom:10px}.launch-options .menu-actions{grid-template-columns:1fr;gap:8px;margin:0 0 8px}
+  .launch-options .menu-actions button{min-height:48px}.launch-options small{min-height:0}
+  .launch-options article:has([data-start-mode="war"]){order:-1}
+  .start-card{width:min(530px,94vw);padding:20px 16px}.start-card h1{font-size:28px;margin:12px 0}.start-card p{font-size:14px;line-height:1.55}
+  .menu-actions button{min-height:46px}
+  #war-loading-lore h2{font-size:20px}#war-loading-lore p{font-size:14px;line-height:1.5}
+  .developer-card{width:96vw;max-height:94dvh;padding:18px 14px}.developer-card h1{font-size:26px}
+
+  /* The HUD: a small title and the war day on the left, the touch row on the right. */
+  #exploration-hud{inset:max(8px,env(safe-area-inset-top)) auto auto max(10px,env(safe-area-inset-left));max-width:calc(100vw - 236px)}
+  #exploration-hud .eyebrow{font-size:9px;letter-spacing:.1em;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #exploration-hud h2{font-size:18px;margin:2px 0 3px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #exploration-hud nav{gap:6px}#exploration-hud nav button{padding:6px 10px;font-size:12px;min-height:36px}
+  #world-site-status{font-size:11px;line-height:1.35;padding:3px 7px;max-width:100%}
+  #exploration-status{left:8px;right:8px;max-width:none;width:auto;top:38vh;padding:9px 12px;font-size:13px;text-align:center}
+  #exploration-hud:not([hidden]):has(#world-site-status:not([hidden]))~#exploration-status{top:38vh}
+
+  /* The minimap is smaller and leads the right-hand column; the spell sits under it. */
+  #exploration-minimap{top:calc(56px + env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));width:96px;padding:0 0 4px;border-radius:48px 48px 4px 4px}
+  #exploration-minimap canvas{width:96px;height:96px}
+  #exploration-minimap .minimap-legend,#exploration-minimap small{display:none}
+  #exploration-minimap .minimap-caption{font-size:10px;padding:3px 2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #teresod-sorcery{top:calc(180px + env(safe-area-inset-top));bottom:auto;right:max(8px,env(safe-area-inset-right));width:96px;padding:6px;font-size:11px}
+  #teresod-sorcery button{padding:6px 4px;font-size:12px;min-height:40px}
+  #teresod-sorcery label{margin-top:4px;font-size:0}#teresod-sorcery label span{display:none}#teresod-sorcery small{display:none}
+  #teresod-sorcery meter{height:8px}
+
+  /* What F would do: a wide button over the thumbs. */
+  #tower-interact,#stable-interact,#council-interact,#resident-interact,#world-war-join,#reaper-talk{bottom:calc(176px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);min-height:46px;padding:10px 16px;font-size:14px}
+  #tower-objective{left:10px;top:calc(100px + env(safe-area-inset-top));max-width:calc(100vw - 130px);padding:8px 10px;font-size:12px}
+
+  /* Cards: the width of the screen, buttons for a thumb. They open in their own mode, so the stick is away. */
+  #tower-briefing,#stable-lesson,#council-dialog,#resident-dialog{padding:8px}
+  .tower-dialog-card{width:100%;max-height:88dvh;padding:16px 14px}.tower-dialog-card h2{font-size:22px;margin:8px 0 4px}.tower-dialog-card h3{font-size:15px}
+  .tower-dialog-card p{font-size:14px;line-height:1.55}.tower-dialog-actions{gap:8px}.tower-dialog-actions button{flex:1 1 100%;min-height:46px}
+  #afterlife-heading{top:8px;left:10px;max-width:58vw}#afterlife-heading h2{font-size:20px}#afterlife-heading p{font-size:12px}
+  #reaper-return{top:110px;left:10px}
+  #encounter-dialog{width:calc(100vw - 16px);max-width:none;max-height:calc(100dvh - 16px);padding:14px}
+  #encounter-dialog h1{font-size:22px}#encounter-choice{flex-direction:column;gap:8px}#encounter-choice button,#encounter-return{min-height:48px;width:100%}
+  #encounter-canvas{height:min(46dvh,360px)}
+
+  /* The field skirmish: a compact card at the top, its result and help scrolling inside it. */
+  #world-skirmish{top:max(8px,env(safe-area-inset-top));left:8px;width:min(370px,calc(100vw - 16px));max-height:34dvh;padding:10px 12px}
+  #world-skirmish p{margin:6px 0}#world-skirmish #world-skirmish-objective{min-height:0;font-size:13px}
+  #world-skirmish button{min-height:40px;font-size:12px}
+  body:has(#world-skirmish:not([hidden])) #exploration-status{top:auto;bottom:calc(140px + env(safe-area-inset-bottom));left:8px;right:8px;transform:none;max-width:none}
+  body:has(#world-skirmish:not([hidden])) #world-war-track,body:has(#world-skirmish:not([hidden])) #world-war-report{display:none}
+
+  /* The chart fills the screen; its zoom and the campaign's day controls are big buttons at the bottom. */
+  #map-screen{inset:0;height:100dvh;border:0;padding:max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+  #map-screen>header{margin-bottom:6px}#map-screen>header .eyebrow{font-size:9px}#close-map{min-height:44px;padding:8px 16px}
+  #map-screen #world-map{order:2;flex:1;min-height:0}
+  #map-screen #world-war-controls{order:3;margin:8px 0 0;gap:6px;flex-wrap:wrap}
+  #world-war-controls strong{font-size:17px!important}
+  #map-screen #world-war-controls button{flex:1 1 0;min-height:48px;font-size:14px;padding:8px 10px}
+  #map-screen #world-war-controls select{min-height:48px;font-size:14px}
+  #world-war-status{flex-basis:100%;font-size:11px}
+  #world-war-battles{max-height:16dvh;overflow:auto}#world-war-battles button{min-height:40px}
+  #world-demo-caption{font-size:12px;max-height:4.6em;overflow:auto}#world-war-result{max-height:4.6em;overflow:auto}
+  #world-map .atlas-toolbar{order:2;margin:8px 0 0;gap:6px}
+  #world-map .atlas-view-switch{margin-bottom:6px}#world-map .atlas-view-switch button{min-height:38px;padding:6px 12px}
+  #world-map .atlas-map-body{flex-direction:column;gap:6px}
+  #world-map #atlas-viewport{min-height:120px}
+  #world-map .atlas-campaign-info{width:auto;max-height:20dvh;padding:8px 12px}
+  .atlas-campaign-info nav{margin-bottom:6px}.atlas-campaign-info .title{font-size:19px;margin:4px 0}
+  #world-map .atlas-toolbar label,#world-map .atlas-help,#world-map #atlas-zoom{display:none}
+  #world-map .atlas-toolbar button{min-height:46px;font-size:14px;flex:1 1 auto}
+  #world-map .atlas-toolbar .atlas-zoom-button{min-width:52px;flex:0 0 auto}
+  #atlas-army-detail{width:calc(100% - 16px);left:8px;bottom:8px;max-height:60%;overflow:auto}
+}
+
+/* A phone upright: the column runs title, tracking beside the minimap, spell; then, from the thumbs up,
+   the touch line, what F would do, and the war report. */
+@media (max-width:480px){
+  #world-war-track{top:calc(104px + env(safe-area-inset-top));left:8px;right:112px;width:auto;max-width:none;max-height:min(200px,24dvh);overflow:auto;padding:8px 10px;gap:8px}
+  .has-local-map #world-war-track{top:calc(104px + env(safe-area-inset-top));width:auto;right:112px;bottom:auto}
+  #world-war-track .war-track-arrow{font-size:22px}#world-war-track p{font-size:11px;margin:3px 0}#world-war-track button{min-height:36px}
+  #world-war-report,#world-war-report:has(#world-war-report-facts:not([hidden])){left:8px;right:8px;width:auto;top:auto;bottom:calc(228px + env(safe-area-inset-bottom));max-height:min(24dvh,calc(100dvh - 560px));padding:12px}
+  #world-war-report h2{font-size:19px;margin:6px 0}#world-war-report p{font-size:12px;margin:6px 0}
+  .war-report-actions{gap:6px;margin-top:8px}.war-report-actions button{flex:1 1 auto;min-height:40px}
+  #world-autoplay{top:calc(38vh + 70px);bottom:auto;left:8px;right:8px;max-width:none}
+  #world-skirmish{top:calc(58px + env(safe-area-inset-top))}
+  body:has(#world-skirmish:not([hidden])) #teresod-sorcery{top:calc(66px + 34dvh + env(safe-area-inset-top))}
+  body:has(#world-skirmish:not([hidden])) #world-autoplay{top:auto;bottom:calc(196px + env(safe-area-inset-bottom))}
+  #exploration-touch-help{bottom:calc(132px + env(safe-area-inset-bottom))}
+}
+
+/* A phone on its side: title and tracking down the left, the war report in the middle, the minimap and the spell
+   down the right, the thumbs' corners kept clear. */
+@media (max-width:960px) and (max-height:480px){
+  #exploration-hud{max-width:min(300px,36vw)}
+  #exploration-minimap{top:calc(54px + env(safe-area-inset-top));width:84px;border-radius:42px 42px 4px 4px}
+  #exploration-minimap canvas{width:84px;height:84px}
+  #teresod-sorcery{top:calc(164px + env(safe-area-inset-top))}
+  #world-war-track,.has-local-map #world-war-track{top:calc(96px + env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:auto;bottom:auto;width:min(300px,36vw);max-width:none;max-height:calc(100dvh - 96px - 150px);overflow:auto;padding:8px 10px;gap:8px}
+  #world-war-track p{display:none}#world-war-track button{min-height:34px}
+  #world-war-report,#world-war-report:has(#world-war-report-facts:not([hidden])){top:calc(56px + env(safe-area-inset-top));bottom:auto;left:calc(min(300px,36vw) + 18px);right:110px;width:auto;max-height:calc(100dvh - 56px - 196px);padding:10px 12px}
+  #world-war-report h2{font-size:18px;margin:4px 0}#world-war-report p{font-size:12px;margin:5px 0}
+  .war-report-actions{gap:6px;margin-top:6px}.war-report-actions button{flex:1 1 auto;min-height:38px;padding:6px 10px}
+  #tower-interact,#stable-interact,#council-interact,#resident-interact,#world-war-join,#reaper-talk{bottom:calc(14px + env(safe-area-inset-bottom));max-width:44vw}
+  #exploration-touch-help{bottom:calc(70px + env(safe-area-inset-bottom));max-width:44vw}
+  #exploration-status{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);max-width:44vw}
+  #world-autoplay{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));right:auto;left:50%;transform:translateX(-50%);max-width:44vw}
+  #tower-objective{top:calc(96px + env(safe-area-inset-top));max-width:min(300px,36vw)}
+  #world-skirmish{width:min(330px,40vw);max-height:calc(100dvh - 176px)}
+  body:has(#world-skirmish:not([hidden])) #exploration-status{bottom:calc(16px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);max-width:40vw}
+  body:has(#world-skirmish:not([hidden])) #teresod-sorcery{top:calc(56px + env(safe-area-inset-top));bottom:auto}
+  #map-screen #world-war-controls button,#map-screen #world-war-controls select,#world-map .atlas-toolbar button{min-height:42px}
+  #map-screen #world-war-controls{margin-top:4px}#world-map .atlas-toolbar{margin-top:4px}
+  #world-war-status,#world-demo-caption{display:none}
+  #world-map .atlas-map-body{flex-direction:row}#world-map .atlas-campaign-info{width:190px;max-height:none}
+  /* Height is what the chart lacks on its side: Back joins the view switch's row and the result keeps to two lines. */
+  #map-screen>header{position:absolute;top:max(6px,env(safe-area-inset-top));right:max(8px,env(safe-area-inset-right));margin:0;z-index:3}
+  #map-screen>header .eyebrow{display:none}#close-map{min-height:38px;padding:6px 14px}
+  #world-map .atlas-view-switch{margin:0 0 4px;padding-right:110px}#world-map .atlas-view-switch button{min-height:36px}
+  #world-war-result{max-height:2.9em;font-size:11px}
+}
