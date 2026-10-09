@@ -74,7 +74,7 @@ test('unused second opportunity expires; old v4 saves retain their one-stage bat
   assert.deepEqual(restored.snapshot(),old.snapshot());assert.equal(restored.snapshot().regions.ovesos.owner,'east');
 });
 
-test('rally combat requires defeating the guard and occupying the objective; normal autoplay can win all difficulties',()=>{
+test('rally combat finishes after breaking the guard; normal autoplay can win all difficulties',()=>{
   for(const count of [3,4,5]){
     const model=createLizeemEncounter({heroStart:{x:0,z:5},guardStarts:Array.from({length:count},(_,i)=>({x:Math.sin(i*2*Math.PI/count)*6,z:Math.cos(i*2*Math.PI/count)*6-4})),rallyPoint:{x:0,z:0}});
     let s=model.snapshot(),emptyGuardSeen=false;
@@ -83,7 +83,7 @@ test('rally combat requires defeating the guard and occupying the objective; nor
       if(s.guards.every(g=>!g.hp)&&!s.outcome)emptyGuardSeen=true;
     }
     assert(emptyGuardSeen);assert.equal(s.outcome,'success',JSON.stringify({count,hp:s.hero.hp,time:s.time}));
-    assert.equal(s.objective.reason,'rally-secured');assert.equal(s.objective.held,6);
+    assert.equal(s.objective.reason,'rally-secured');assert.equal(s.objective.secured,s.objective.required);
     assert(s.skill.counterTypes.thrust>0&&s.skill.counterTypes.sweep>0);
   }
 });

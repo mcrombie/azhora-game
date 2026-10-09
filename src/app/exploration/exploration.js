@@ -432,9 +432,9 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
           return {wallMs:Math.round(performance.now()-begun),jobs};
         }finally{$('loading-screen').hidden=true;}
       },
-      open({retry,finish,attempt,exercise}){
+      open({retry,finish,compare,attempt,exercise}){
         place(MENORA_CAMP);setMode('playing');
-        const view=startWorldFight({practice:exercise,pending:{region:'minora-practice'},centre:MENORA_CAMP,site:{name:'Minora camp',regionId:16,approachHeading:0},enemyColor:'#b77162',reinforcements:{name:'Training',strength:0},onEnd(){},onContinue:finish,onWithdraw:finish});
+        const view=startWorldFight({practice:exercise,pending:{region:'minora-practice'},centre:MENORA_CAMP,site:{name:'Minora camp',regionId:16,approachHeading:0},enemyColor:'#b77162',reinforcements:{name:'Training',strength:0},onEnd(){},onContinue:finish,onWithdraw:finish,onCompare:compare});
         $('world-skirmish-retry').hidden=false;$('world-skirmish-retry').onclick=retry;
         if(combatMode){$('world-skirmish-continue').textContent='Choose exercise (Enter)';$('world-skirmish-withdraw').textContent='Choose exercise (Esc)';}
         document.querySelector('#world-skirmish .eyebrow').textContent=`MINORA CAMP / ${exercise==='lesson'?'DODGE LESSON':exercise==='advanced'?'THRUST AND SWEEP LESSON':exercise==='allied'?'ALLIED ASSAULT':exercise==='solo-assault'?'SOLO ASSAULT':'INTERCEPTION PRACTICE'} / ATTEMPT ${attempt}`;

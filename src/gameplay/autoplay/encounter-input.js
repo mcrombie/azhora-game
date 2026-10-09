@@ -7,7 +7,6 @@ export function encounterAutoplayInput(state){
   if(!state||state.outcome)return {};
   const h=state.hero,distance=g=>Math.hypot(g.x-h.x,g.z-h.z);
   const live=state.guards.filter(g=>g.hp>0&&!g.escaped).sort((a,b)=>distance(a)-distance(b)||a.id-b.id);
-  if(!live.length&&state.objective?.type==='rally'){const point=state.objective.rally;return distance(point)>1?encounterSteering(h,point,[]):{};}
   if(!live.length||h.dodge>0)return {};
   const threat=live.find(g=>{if(state.squad&&g.targetId!==-1)return false;const a=encounterAttack(g);return !g.hitThisAttack&&distance(g)<a.reach+.3&&((g.phase==='windup'&&g.timer<.18)||(g.phase==='strike'&&!g.contactResolved));});
   if(threat&&h.dodgeCooldown===0){

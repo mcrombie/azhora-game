@@ -50,7 +50,7 @@ export function createOvesosJourneyAutoplay({war,mode,prepare,position,ride,clea
       if(encounter?.outcome){clearInput();phase('review','Ovesos ride: result review / next stage in 4s / P to keep this screen');return;}
       if(mode()==='skirmish')attack();else if(seconds>6)stop('Ovesos encounter did not open.');return;
     }
-    if(stage==='rally-brief'){if(seconds<4)return;war.help('west');phase('rally-fight','Ovesos: break the rally guards, then hold the gold ring');return;}
+    if(stage==='rally-brief'){if(seconds<4)return;war.help('west');phase('rally-fight','Ovesos: break the enemy line to win the final assault');return;}
     if(stage==='rally-fight'){
       if(war.state().encounter.encounter?.outcome){clearInput();phase('rally-review','Ovesos: rally result / P to take control');return;}
       if(mode()==='skirmish')attack();else if(seconds>6)stop('The rally assault did not open.');return;

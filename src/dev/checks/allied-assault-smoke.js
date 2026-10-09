@@ -70,12 +70,13 @@ export async function rout(a){
   const yaw=Math.atan2(s.hero.x-s.rally.x,s.hero.z-s.rally.z);a.look({yaw,pitch:.3,distance:12});
   a.hold('KeyS',true);for(let i=0;i<120;i++)a.step(1/60);clearCombatKeys(a);
   assert(!warFight(a).outcome&&Math.hypot(warFight(a).hero.x-s.rally.x,warFight(a).hero.z-s.rally.z)>3,'Player can leave the gold ring while the enemy retreats');
-  assert(!document.getElementById('world-skirmish-rally-guide').hidden&&document.getElementById('world-skirmish-rally-guide').textContent.includes('Gold standard'),'Gold direction and distance remain visible after combat');
+  assert(!document.getElementById('world-skirmish-rally-guide').hidden&&document.getElementById('world-skirmish-rally-guide').textContent.includes('Victory'),'Victory transition is visible without asking for another capture action');
+  assert(warFight(a).squad.regrouped,'Allies start securing the field before the result screen');
   assert(a.state().combatCues.some(c=>c.visible&&c.cue==='retreat'),'Routed soldier remains clearly labelled during evacuation');
   window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],state:warFight(a)};
 }
 export async function evacuated(a){
-  window.dispatchEvent(new Event('focus'));for(let i=0;i<2000&&!warFight(a).outcome;i++)a.step(1/60);
+  window.dispatchEvent(new Event('focus'));for(let i=0;i<2000;i++)a.step(1/60);
   const s=warFight(a),routed=s.guards.find(g=>g.routed);
   assert(routed.departed&&routed.phase==='escaped','Routed soldier finishes leaving the real field instead of freezing beside Teresod');
   assert(routed.retreatRetries===0&&routed.retreatElapsed<30,'Terrain route reaches its exit without needing the obstruction fallback');
@@ -87,12 +88,12 @@ export async function evacuated(a){
 export async function secure(a){
   window.dispatchEvent(new Event('focus'));
   for(let i=0;i<3000&&!warFight(a).outcome;i++){driveWorldEncounter(a,warFight(a));a.step(1/60);}clearCombatKeys(a);
-  assert(warFight(a).outcome==='success','After watching the retreat, ordinary movement and holding the gold ring still wins');
+  assert(warFight(a).outcome==='success','Watching the rout finishes the assault automatically without visiting the standard');
   assert(document.getElementById('world-skirmish-rally-guide').hidden,'Victory removes capture guidance');
   document.getElementById('world-skirmish-continue').click();const s=a.war.state().campaign;
   assert(s.day===6&&s.regions.caricas.owner==='west','Second-round victory records West Lizeem control immediately on day six');
   assert(a.save().ok&&validateWorldWarSave(a.store.read().data),'Fixed assault still produces a valid isolated campaign save');
-  assert(!a.state().frameErrors.length,'Retreat, capture and continuation produce no frame errors');
+  assert(!a.state().frameErrors.length,'Retreat, automatic victory and continuation produce no frame errors');
   window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],campaign:s};
 }
 export async function campaign(a){

@@ -28,3 +28,12 @@ test('lesson is the default and retries preserve the chosen three-soldier exerci
   await p.start('advanced');p.retry();assert.equal(p.state().exercise,'advanced');p.finish();
   assert.deepEqual(exercises,['lesson','squad','squad','advanced','advanced']);
 });
+test('solo/allied comparison reuses prepared ground and restores the original session only on exit',async()=>{
+  let prepares=0,restores=0,disposals=0,outcome=null;const exercises=[],original={hero:'untouched'};
+  const p=createOvesosPractice({capture:()=>original,prepare:async()=>{prepares++;},open:({exercise})=>{exercises.push(exercise);outcome=null;return {snapshot:()=>({outcome}),dispose:()=>disposals++};},restore:s=>{assert.equal(s,original);restores++;},onError:assert.fail});
+  await p.start('allied');assert.equal(p.compare(),false,'Cannot accidentally swap a live fight');
+  outcome='success';assert(p.compare());assert.equal(p.state().exercise,'solo-assault');assert.equal(p.state().attempt,1);
+  outcome='defeat';assert(p.compare());assert.equal(p.state().exercise,'allied');
+  assert.equal(prepares,1);assert.equal(restores,0);assert.equal(disposals,2);assert.deepEqual(exercises,['allied','solo-assault','allied']);
+  p.finish();assert.equal(restores,1);assert.equal(disposals,3);assert.equal(p.compare(),false);
+});

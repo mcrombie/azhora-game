@@ -24,9 +24,7 @@ export function dodgeLesson(state,advanced=false){
 // current attack/counter opportunity, then the lesson or interception objective.
 export function encounterInstruction(state,practice=false){
   if(state.objective?.type==='rally'&&state.guards.every(g=>!g.hp||g.routed)){
-    const d=Math.hypot(state.hero.x-state.objective.rally.x,state.hero.z-state.objective.rally.z);
-    const result=state.guards.some(g=>g.routed&&!g.departed)?'The last enemy is retreating.':state.squad?.routed?'The last enemy has fled.':'Enemy guards defeated.';
-    return {kind:'rally',text:d>2.5?`${result} Secure the gold ring, ${Math.ceil(d)} m away. Follow the gold arrow.`:`Stay in the gold ring: ${Math.ceil(state.objective.required-state.objective.held)}s to secure victory.`};
+    return {kind:'victory',text:state.squad?.routed?'Their line has broken. The last enemy is fleeing; the field is yours.':'The enemy guard is defeated. The field is yours.'};
   }
   const feedback=encounterFeedback(state),lesson=dodgeLesson(state,practice==='advanced');
   const recent=feedback&&state.time-feedback.at<.85;
@@ -35,7 +33,7 @@ export function encounterInstruction(state,practice=false){
   if(feedback&&(recent||feedback.type==='defense'&&feedback.kind==='hit'))return {kind:'feedback',text:feedback.text};
   if(practice==='lesson'||practice==='advanced')return lesson;
   const live=state.guards.filter(g=>g.hp>0&&!g.escaped),runner=state.guards.find(g=>g.role==='runner');
-  if(state.objective?.type==='rally')return {kind:'rally',text:live.length?state.squad?`Fight beside your allies; flank occupied guards. ${live.length} enemies remain.`:`Break the rally guard: ${live.length} remaining. Dodge, then counter.`:`Stand in the gold ring: hold ${Math.ceil(state.objective.required-state.objective.held)}s to force their retreat.`};
+  if(state.objective?.type==='rally')return {kind:'rally',text:state.squad?`Fight beside your allies; flank occupied guards. ${live.length} enemies remain.`:`Break the rally guard: ${live.length} remaining. Dodge, then counter.`};
   if(runner?.escaped)return {kind:'rally',text:'Runner escaped. Stop the escorts; each soldier still counts.'};
   if(runner?.hp>0){
     const rally=state.objective?.rally;

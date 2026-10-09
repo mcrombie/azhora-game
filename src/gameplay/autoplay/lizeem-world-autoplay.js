@@ -62,7 +62,7 @@ export function createLizeemWorldAutoplay({war,mode,prepare,showMap,resume,attac
       }else war.continue();
       phase('result','Autoplay: phase recorded; reviewing the campaign result');
     }else if(stage==='rally-brief'){
-      if(seconds<3)return;war.help('west');phase('fight','Autoplay: break the rally guards, then hold the gold ring');
+      if(seconds<3)return;war.help('west');phase('fight','Autoplay: break the enemy line to win the final assault');
     }else if(stage==='result'){
       phase('resolve','Autoplay: advancing at 20x to the regional battle result');
     }else if(stage==='resolve'){

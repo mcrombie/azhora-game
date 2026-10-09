@@ -29,7 +29,7 @@ test('phase presentation retains partial progress and shows the actual next oppo
   assert.deepEqual(c.snapshot(),before,'Reading feedback has no simulation effect');
   assert(c.resolveEncounter(p.id,'west','success','vanguard-broken',1,{escaped:0}).ok);assert(c.joinBattle(b.id,b.location).ok);p=c.snapshot().pending;
   assert.equal(p.rally.guards,4);assert.equal(battlePhase(p).number,2);
-  assert.match(battleProgress(p,{guards:[],objective:{held:2.75}}).detail,/2.8 \/ 6s/);
+  assert.match(battleProgress(p,{guards:[],objective:{secured:1}}).detail,/Enemy line broken/);
   const final=phaseDebrief(p,{guards:Array.from({length:4},()=>({hp:0})),outcome:'success'},{regionName:'Caricas',allyName:'West Lizeem'});
   assert.match(final.next,/no extra days/);assert.deepEqual(final.facts[2],['Time','Day 4 → day 6 on Continue']);
 });

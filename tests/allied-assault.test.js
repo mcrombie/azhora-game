@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createLizeemEncounter} from '../src/gameplay/combat/lizeem-encounter.js';
+import {createLizeemEncounter,ENCOUNTER_TIMING} from '../src/gameplay/combat/lizeem-encounter.js';
 import {encounterAutoplayInput} from '../src/gameplay/autoplay/encounter-input.js';
 import {createCampaign,replayCampaign} from '../src/simulation/campaign.js';
 import {WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
@@ -13,7 +13,7 @@ const arena=()=>createLizeemEncounter({heroStart:{x:0,z:3},guardStarts:[-4.05,-1
 function play(model,active){let s=model.snapshot(),closest=Infinity;for(let i=0;i<5401&&!s.outcome;i++){s=model.tick(1/60,active?encounterAutoplayInput(s):{});const bodies=[s.hero,...s.guards,...s.allies].filter(a=>a.hp&&!a.escaped);for(let a=0;a<bodies.length;a++)for(let b=a+1;b<bodies.length;b++)closest=Math.min(closest,Math.hypot(bodies[a].x-bodies[b].x,bodies[a].z-bodies[b].z));}return {s,closest};}
 test('allies fight and take casualties; active Teresod changes a losing passive encounter',()=>{
   const passive=play(arena(),false).s;assert.equal(passive.outcome,'defeat');assert.equal(passive.squad.alliesLost,3);assert(passive.squad.damageByAllies>0);assert.equal(passive.squad.damageByHero,0);
-  const model=arena(),{s,closest}=play(model,true);assert.equal(s.outcome,'success');assert(s.squad.damageByAllies>0&&s.squad.damageByHero>0);assert(closest>=1.1-1e-6);assert.equal(s.squad.routed,1);assert.equal(s.guards.filter(g=>!g.hp).length,3);assert(s.guards.find(g=>g.routed).hp>0);assert.equal(s.objective.held,6);
+  const model=arena(),{s,closest}=play(model,true);assert.equal(s.outcome,'success');assert(s.squad.damageByAllies>0&&s.squad.damageByHero>0);assert(closest>=1.1-1e-6);assert.equal(s.squad.routed,1);assert.equal(s.guards.filter(g=>!g.hp).length,3);assert(s.guards.find(g=>g.routed).hp>0);assert.equal(s.objective.secured,ENCOUNTER_TIMING.victory);
   const before=s.allies.map(a=>[a.x,a.z]);for(let i=0;i<180;i++)model.aftermath(1/60);const after=model.snapshot();assert.notDeepEqual(after.allies.map(a=>[a.x,a.z]),before);assert.deepEqual(after.squad,{...s.squad,regrouped:true});assert.equal(after.time,s.time);
 });
 test('allies cannot become hero melee, spell, or focus targets',()=>{
@@ -48,19 +48,28 @@ test('nearby flank attacks draw attention and the last survivor visibly breaks b
     if(s.guards.some(g=>g.phase==='breaking')){broken=s;break;}
   }
   assert(turns>0,'At least one enemy reacts during an ordinary flank-and-counter fight');assert(broken);
-  const g=broken.guards.find(g=>g.routed),hp=g.hp,point={x:g.x,z:g.z};assert(hp>0);assert.equal(g.speed,0);assert.equal(encounterCue(g).text,'THEIR LINE BREAKS');assert.equal(encounterInstruction(broken).kind,'rally');
+  const g=broken.guards.find(g=>g.routed),hp=g.hp,point={x:g.x,z:g.z};assert(hp>0);assert.equal(g.speed,0);assert.equal(encounterCue(g).text,'THEIR LINE BREAKS');assert.equal(encounterInstruction(broken).kind,'victory');
   assert.equal(model.fireballHit(g.id,50),false,'Retreat is not an extra kill');
   for(let i=0;i<20;i++)s=model.tick(1/60);assert.deepEqual({x:s.guards[g.id].x,z:s.guards[g.id].z},point);
   for(let i=0;i<60;i++)s=model.tick(1/60);assert.equal(s.guards[g.id].phase,'retreat');assert.equal(s.guards[g.id].hp,hp);assert.equal(s.squad.routed,1);assert(Math.hypot(s.guards[g.id].x-point.x,s.guards[g.id].z-point.z)>1);
-  for(let i=0;i<120;i++)s=model.tick(1/60,{z:1});
-  assert.match(encounterInstruction(s).text,/Follow the gold arrow/);
-  for(let i=0;i<600;i++)s=model.tick(1/60);
+  assert(s.squad.regrouped&&s.allies.filter(a=>a.hp).every(a=>a.phase==='regroup'),'Survivors regroup before the result screen');
+  for(let i=0;i<120&&!s.outcome;i++)s=model.tick(1/60,{z:1});
+  assert.equal(s.outcome,'success');assert(s.time-broken.time<=ENCOUNTER_TIMING.victory+1/60);
+  for(let i=0;i<600;i++)s=model.aftermath(1/60);
   assert(s.guards[g.id].departed,'Routed survivor leaves instead of standing at a fixed destination forever');
   assert.equal(encounterCue(s.guards[g.id]),null);assert.equal(s.guards[g.id].hp,hp);assert.equal(s.squad.routed,1);
-  for(let i=0;i<5400;i++)s=model.tick(1/60);
-  assert(s.time>90);assert.equal(s.outcome,null,'An empty field cannot defeat the player while they find the standard');
-  for(let i=0;i<900&&!s.outcome;i++)s=model.tick(1/60,encounterAutoplayInput(s));
-  assert.equal(s.outcome,'success');assert.equal(s.objective.held,6);
+  assert.equal(s.outcome,'success');assert.equal(s.objective.secured,ENCOUNTER_TIMING.victory);
+});
+test('clearing a solo or depleted allied assault secures victory without visiting an unreachable standard',()=>{
+  for(const allyStarts of [null,[]]){
+    const model=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:20,z:0}],rallyPoint:{x:100,z:100},allyStarts,move:p=>({x:p.x,z:p.z})});
+    for(let i=0;i<899;i++)model.tick(.1);assert.equal(model.snapshot().outcome,null);
+    assert(model.fireballHit(0,50));let s=model.tick(.1);assert.equal(s.outcome,null,'Victory has a short presentation beat');
+    const at={x:s.hero.x,z:s.hero.z};
+    for(let i=0;i<30&&!s.outcome;i++)s=model.tick(.1);
+    assert.equal(s.outcome,'success');assert.equal(s.objective.reason,'rally-secured');assert(s.time>90,'Combat deadline does not overturn a broken enemy line');
+    assert.deepEqual({x:s.hero.x,z:s.hero.z},at,'Securing the field does not teleport or move the hero');
+  }
 });
 test('blocked evacuation replans twice and terminates without extra casualties or a frozen opponent',()=>{
   const state={time:0,hero:{x:0,z:0,hp:100},guards:[{id:0,x:0,z:2,hp:30},{id:1,hp:0},{id:2,hp:0}],objective:{rally:{x:0,z:3}}};

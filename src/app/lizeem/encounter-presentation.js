@@ -5,7 +5,7 @@ import {isEncounterGuarding,ENCOUNTER_TIMING} from '../../gameplay/combat/lizeem
 
 export function encounterGuardPose(g,fall=1){
   const a=encounterAttack(g);
-  return {attackStyle:g.attack,shieldRaised:isEncounterGuarding(g),blockImpact:g.block/ENCOUNTER_TIMING.hurt,hitImpact:g.hurt/ENCOUNTER_TIMING.hurt,
+  return {attackStyle:g.attack,shieldRaised:g.phase!=='regroup'&&isEncounterGuarding(g),blockImpact:g.block/ENCOUNTER_TIMING.hurt,hitImpact:g.hurt/ENCOUNTER_TIMING.hurt,
     action:!g.hp?'dead':g.phase==='breaking'?'recover':g.phase==='windup'?'windup':g.phase==='strike'?'attack':g.hurt?'hurt':g.open?'recover':'idle',
     progress:!g.hp?fall:g.phase==='breaking'?.5:g.phase==='windup'?1-g.timer/a.windup:g.phase==='strike'?1-g.timer/a.strike:g.hurt?1-g.hurt/ENCOUNTER_TIMING.hurt:g.open?1-Math.max(0,g.timer)/a.recovery:0};
 }

@@ -31,7 +31,7 @@ export function createCombatFocus({scene,world,yaw,canSee,snapshot}){
       manual=Math.max(0,manual-dt);sightClock+=dt;let g=target(s);
       if(id!==null&&(!aliveTarget(g)||s.outcome||Math.hypot(g.x-s.hero.x,g.z-s.hero.z)>FOCUS_RANGE)){id=null;g=null;status='Target lost / T to choose another';}
       if(g&&sightClock>=.25){sightClock=0;blocked=!canSee(s.hero,g);}
-      writeHud(group,'hidden',!!s.outcome);writeHud(toggle,'disabled',paused);writeHud(next,'disabled',paused);
+      writeHud(group,'hidden',!!s.outcome||s.objective?.secured>0);writeHud(toggle,'disabled',paused);writeHud(next,'disabled',paused);
       const pressed=String(id!==null);if(toggle.getAttribute('aria-pressed')!==pressed)toggle.setAttribute('aria-pressed',pressed);
       writeHud(toggle,'textContent',id===null?'Lock target (T)':'Unlock (T)');
       const d=g?Math.hypot(g.x-s.hero.x,g.z-s.hero.z):0;

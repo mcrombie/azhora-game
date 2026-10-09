@@ -7,7 +7,7 @@ import {aliveTarget,FOCUS_RANGE} from './combat-focus.js';
 import {encounterAttack,ENCOUNTER_ATTACKS} from './encounter-attacks.js';
 import {moveEncounterBody,encounterSteering,escortScreen} from './encounter-space.js';
 import {selectEncounterTarget,encounterClearStrike,encounterFacing as facing,ENCOUNTER_REACH} from './encounter-target.js';
-export const ENCOUNTER_TIMING=Object.freeze({swing:.35,contact:.15,attackCooldown:.55,buffer:.16,hurt:.28,dodge:.3,dodgeCooldown:.9});
+export const ENCOUNTER_TIMING=Object.freeze({swing:.35,contact:.15,attackCooldown:.55,buffer:.16,hurt:.28,dodge:.3,dodgeCooldown:.9,victory:2.25});
 export const isEncounterGuarding=g=>g.hp>0&&!g.escaped&&g.role!=='runner'&&!g.open&&g.phase!=='stagger';
 export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:-3},{x:3,z:-3},{x:0,z:-5}],move=null,canHit=()=>true,reinforcementRoute=null,rallyPoint=null,attackPattern=['thrust','sweep'],allyStarts=null,retreatRoute=null}={}){
   if(reinforcementRoute&&rallyPoint)throw Error('Choose one encounter objective.');
@@ -17,7 +17,7 @@ export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:
   const state={time:0,outcome:null,hero:{...heroStart,hp:100,heading:Math.PI,cooldown:0,swing:0,swingTargetId:null,targetId:null,focusId:null,dodge:0,dodgeCooldown:0,dodgeStartedAt:null,dodgeObstruction:null,lastDodge:null,hurt:0,hitGrace:0,lastStrike:null,lastDefense:null},
     guards:guardStarts.map(({x,z,role},i)=>({id:i,x,z,hp:50,role:reinforcementRoute?(role??(i===guardStarts.length-1?'runner':'escort')):'soldier',phase:'approach',timer:i*.3,heading:Math.atan2(heroStart.x-x,heroStart.z-z),waypoint:0,escaped:false,hurt:0,block:0,open:false,evadedAt:null,dodged:false,attack:attackPattern[i%attackPattern.length],attacks:0,contactResolved:false,hitThisAttack:false,speed:0})),
     skill:{blocks:0,dodges:0,counters:0,dodgeCounters:0,counterTypes:{thrust:0,sweep:0}},
-    objective:rallyPoint?{type:'rally',rally:{...rallyPoint},held:0,required:6,reason:null}:reinforcementRoute?{type:'intercept',rally:{...reinforcementRoute.at(-1)},reason:null}:null};
+    objective:rallyPoint?{type:'rally',rally:{...rallyPoint},secured:0,required:T.victory,reason:null}:reinforcementRoute?{type:'intercept',rally:{...reinforcementRoute.at(-1)},reason:null}:null};
   const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z),clamp=n=>Math.max(-7,Math.min(7,n));
   let attackBuffer=0,contactPending=false,dodgeHeld=false,dodgeDirection={x:0,z:0},nextEnemyAttackAt=0;
   const bodies=()=>[state.hero,...state.guards,...(state.allies??[])];
@@ -149,9 +149,11 @@ export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:
       }
     }
     squad?.tick(dt);
-    if(rallyPoint){const o=state.objective;o.held=state.guards.every(g=>!g.hp||g.routed)&&distance(h,rallyPoint)<=2.5?Math.min(o.required,o.held+dt):0;}
+    // The fight decides victory. This short beat lets the line break and allies
+    // regroup; neither the hero's location nor an ally's path can delay it.
+    if(rallyPoint){const o=state.objective;o.secured=state.guards.every(g=>!g.hp||g.routed)?Math.min(o.required,o.secured+dt):0;}
     if(h.hp===0||state.time>=90&&!(rallyPoint&&state.guards.every(g=>!g.hp||g.routed))){state.outcome='defeat';if(state.objective)state.objective.reason=h.hp===0?'driven-back':'time-expired';}
-    else if(state.guards.every(g=>!g.hp||g.routed)&&(!rallyPoint||state.objective.held>=state.objective.required)){state.outcome='success';if(state.objective)state.objective.reason=rallyPoint?'rally-secured':'vanguard-broken';}
+    else if(state.guards.every(g=>!g.hp||g.routed)&&(!rallyPoint||state.objective.secured>=state.objective.required)){state.outcome='success';if(state.objective)state.objective.reason=rallyPoint?'rally-secured':'vanguard-broken';}
     else if(reinforcementRoute&&state.guards.every(g=>!g.hp||g.escaped)){state.outcome='defeat';state.objective.reason='runner-arrived';}
     return snapshot();
   }

@@ -18,9 +18,9 @@
 #world-skirmish-health-meter::-webkit-meter-optimum-value{background:#aac387}
 #world-skirmish #world-skirmish-objective{min-height:3em;color:#f6e1ad;font-size:14px}
 #world-skirmish-objective[data-kind="feedback"]{color:#ffd2ae!important}
-#world-skirmish-rally-guide{display:flex;align-items:center;gap:14px;padding:10px 12px;border:1px solid #e5bc62;border-radius:4px;background:#54401dcc;color:#ffe6a3;font:14px/1.4 system-ui}
+#world-skirmish-rally-guide{display:grid;gap:10px;padding:10px 12px;border:1px solid #e5bc62;border-radius:4px;background:#54401dcc;color:#ffe6a3;font:14px/1.4 system-ui}
 #world-skirmish-rally-guide[hidden]{display:none}
-#world-skirmish-rally-guide span{display:block;font:30px/1 system-ui}
+#world-skirmish-rally-guide progress{width:100%;height:7px;accent-color:#e5bc62}
 #world-skirmish-actions{display:flex;gap:8px;margin:12px 0 6px}
 #world-skirmish button{font-size:12px;padding:8px 10px;margin-top:6px}
 #world-skirmish-actions button{flex:1;margin:0}

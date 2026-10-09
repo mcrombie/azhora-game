@@ -72,6 +72,7 @@ export function createAlliedAssault(state,{starts,walk,canHit,retreatRoute}){
     return true;
   }
   function tick(dt){
+    if(state.guards.every(g=>!alive(g))){retreat(dt);regroup(dt);return;}
     for(const a of state.allies){
       a.speed=0;a.hurt=Math.max(0,a.hurt-dt);a.block=Math.max(0,a.block-dt);if(!alive(a))continue;
       const attack=encounterAttack(a);
@@ -126,12 +127,12 @@ export function createAlliedAssault(state,{starts,walk,canHit,retreatRoute}){
       if(!target||g.retreatStall>1.5||g.retreatElapsed>30){g.departed=true;g.phase='escaped';g.speed=0;}
     }
   }}
-  function aftermath(dt){
-    retreat(dt);
+  function regroup(dt){
     state.allies.forEach((a,i)=>{if(!a.hp)return;const p=state.objective.rally;
-      const target={x:p.x+(i-1)*2.2,z:p.z+3};a.phase='approach';a.open=false;a.hurt=Math.max(0,a.hurt-dt);
+      const target={x:p.x+(i-1)*2.2,z:p.z+3};a.phase='regroup';a.targetId=null;a.open=false;a.hurt=Math.max(0,a.hurt-dt);
       if(distance(a,target)>.3)walk(a,target,dt,1.8);else a.speed=0;
     });state.squad.regrouped=true;
   }
+  function aftermath(dt){retreat(dt);regroup(dt);}
   return {enemyTarget,heroHit,turn,strike,tick,aftermath,bodies};
 }

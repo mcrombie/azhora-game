@@ -66,6 +66,15 @@ app.whenReady().then(async()=>{
           fs.writeFileSync(path.join(dir,process.argv.includes('--profile-before')?'combat-performance-before.json':'combat-performance-after.json'),JSON.stringify({...result,errors},null,2));
           console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
         }
+        if(process.argv.includes('--assault-comparison-checks')){
+          const results=[];
+          for(const method of ['prepare','transition','result','compare']){
+            const check=await win.webContents.executeJavaScript(`import('./src/dev/checks/assault-comparison-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);
+            if(check)results.push(check);
+            fs.writeFileSync(path.join(dir,'assault-comparison-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+          }
+          fs.writeFileSync(path.join(dir,'assault-comparison-checks.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({checks:results.at(-1).checks,runs:results.at(-1).runs,errors},null,2));app.exit(errors.length?1:0);return;
+        }
         if(process.argv.includes('--allied-cue-checks')){
           const results=[];
           for(const method of ['formation','reaction','breaking']){

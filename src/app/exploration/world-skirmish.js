@@ -19,7 +19,7 @@ import {renderBattleFacts} from './battle-facts-view.js';
 
 // Owns only the temporary opponents and their warnings. The exploration host
 // keeps its renderer, scene, camera and hero and drives this controller's tick.
-export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,site,enemyColor,allyColor='#548d88',allyName,watch=()=>false,reinforcements,pending,practice=false,onEnd,onContinue,onWithdraw}){
+export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,site,enemyColor,allyColor='#548d88',allyName,watch=()=>false,reinforcements,pending,practice=false,onEnd,onContinue,onWithdraw,onCompare}){
   const ground=createSkirmishGround(world,centre,site.regionId,pending.entryRadius??SKIRMISH_RADIUS);
   const lesson=practice==='lesson'||practice==='advanced',advanced=practice==='advanced';
   const assaultPractice=practice==='allied'||practice==='solo-assault',assault=!!pending.rally||assaultPractice;
@@ -47,6 +47,8 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
   const panel=document.getElementById('world-skirmish');
   panel.querySelector('.eyebrow').textContent=`${site.name.toUpperCase()} / ${allyName?'HELPING '+allyName.toUpperCase():assault?(allied?'ALLIED ASSAULT':'SOLO ASSAULT'):'INTERCEPT REINFORCEMENTS'}`;
   const resultPanel=document.getElementById('world-skirmish-result'),withdraw=document.getElementById('world-skirmish-withdraw');
+  const compare=assaultPractice&&onCompare?document.createElement('button'):null;
+  if(compare){compare.id='world-skirmish-compare';compare.textContent=allied?'Try solo · same 4 enemies':'Try with 3 allies · same 4 enemies';compare.onclick=onCompare;resultPanel.append(compare);}
   panel.hidden=false;resultPanel.hidden=true;withdraw.hidden=false;withdraw.onclick=onWithdraw;
   renderBattleFacts(document.getElementById('world-skirmish-facts'));
   document.getElementById('world-skirmish-next').hidden=true;
@@ -74,15 +76,15 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
     targetMarker.draw(s,(x,z)=>world.heightAt(x,z));
     effects.draw(s,(x,z)=>world.heightAt(x,z),visualTime);
     combatFeedback.draw(s);alliedView?.draw(s,visualTime);
-    const title=assault?(s.guards.every(g=>!g.hp||g.routed)?'SECURE THE FIELD':'BREAK THEIR RALLY'):'ENEMY RALLY POINT';
+    const title=assault?(s.guards.every(g=>!g.hp||g.routed)?'FIELD SECURED':'BREAK THEIR RALLY'):'ENEMY RALLY POINT';
     if(title!==rallyTitle){paintRally(title);labelTexture.needsUpdate=true;}
     rallyMarker.visible=beacon.visible=label.visible=(!!setup.route||assault)&&!s.outcome;
     if(assault&&title==='BREAK THEIR RALLY'&&Math.hypot(s.hero.x-rally.x,s.hero.z-rally.z)<8)label.visible=false;
-    hud.draw(s,{inactive:paused,introRemaining,watching:watch(),yaw:yaw()});
+    hud.draw(s,{inactive:paused,introRemaining,watching:watch()});
     focus.update(s,elapsed,hud.paused()||paused||watch());
   }
   draw(model.snapshot(),false);
-  return {cameraTarget:focus.cameraTarget,manualCamera:focus.manual,focusId:focus.id,spellTargets:()=>model.snapshot().guards,fireballHit:model.fireballHit,spellPaused:()=>hud.paused()||ended||!model.snapshot().hero.hp,
+  return {cameraTarget:focus.cameraTarget,manualCamera:focus.manual,focusId:focus.id,spellTargets:()=>model.snapshot().guards,fireballHit:model.fireballHit,spellPaused:()=>hud.paused()||ended||!model.snapshot().hero.hp||model.snapshot().objective?.secured>0,
     snapshot:()=>({...model.snapshot(),site:pending.region+'-world',staging:{...heroStart},centre:{...centre},interception:!assault,stage:assault?'rally':'intercept',rally:{...rally},radius:pending.entryRadius??SKIRMISH_RADIUS,presentation:{focus:focus.state(),introRemaining,speed:1,helpOpen:hud.paused(),sound:effects.state()}}),keydown:event=>hud.keydown(event)||focus.keydown(event),attack:()=>{if(!hud.paused())clickAttack=true;},
     tick(dt,active){
       if(disposed)return;
@@ -99,18 +101,18 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
         if(s.outcome){
           ended=true;keys.clear();draw(s,false);
           if(!practice&&s.hero.hp===0){onEnd(s.outcome,s.objective?.reason,s);return;}
-          let feedback=practice?null:assault?{title:s.outcome==='success'?`Rally broken / ${site.name} won`:'Rally assault repelled',detail:s.outcome==='success'?`You broke all ${guards.length} rally guards and held the standard. ${allyName} wins ${site.name}: the enemy retreats and surviving allies regroup here. Your interception removed ${(pending.rally?.blocked??0)} strength before this final push. Continue to record the victory and see the aftermath.`:`${s.hero.hp===0?'You were driven back.':'The 90-second assault window ended.'} ${s.guards.filter(g=>!g.hp).length} rally guards stopped. Your earlier ${(pending.rally?.blocked??0)} strength interception still counts. The armies will decide the battle on day ${pending.endsOn}; there is no second rally attempt.`}:interceptionFeedback(s,{strength:reinforcements.strength,endsOn:pending.endsOn,regionName:site.name});
+          let feedback=practice?null:assault?{title:s.outcome==='success'?`Rally broken / ${site.name} won`:'Rally assault repelled',detail:s.outcome==='success'?`You broke the enemy line. ${allyName} wins ${site.name}: the enemy retreats and surviving allies regroup here. Your interception removed ${(pending.rally?.blocked??0)} strength before this final push. Continue to record the victory and see the aftermath.`:`${s.hero.hp===0?'You were driven back.':'The 90-second assault window ended.'} ${s.guards.filter(g=>!g.hp).length} rally guards stopped. Your earlier ${(pending.rally?.blocked??0)} strength interception still counts. The armies will decide the battle on day ${pending.endsOn}; there is no second rally attempt.`}:interceptionFeedback(s,{strength:reinforcements.strength,endsOn:pending.endsOn,regionName:site.name});
           if(feedback&&!pending.participation&&pending.stage==='intercept')feedback.detail+=` Next: regroup at full health and break the enemy rally to win ${site.name}. Leaving keeps your contribution, but leaves the outcome to the armies. You can re-enter the battlefield before the deadline.`;
           const debrief=!practice&&phaseDebrief(pending,s,{regionName:site.name,allyName,strength:reinforcements?.strength});
           if(debrief){feedback=debrief;renderBattleFacts(document.getElementById('world-skirmish-facts'),debrief.facts);const next=document.getElementById('world-skirmish-next');next.hidden=false;next.textContent=debrief.next;document.getElementById('world-skirmish-continue').textContent=debrief.button;}
           document.getElementById('world-skirmish-result-title').textContent=practice?(lesson?(dodgeLesson(s,advanced).complete?(advanced?'Thrust and sweep lesson complete':'Dodge lesson complete'):'Try the dodge lesson again'):(s.outcome==='success'?'Practice complete':'Practice ended')):feedback.title;
-          document.getElementById('world-skirmish-result-detail').textContent=practice?`${s.guards.filter(g=>!g.hp).length} of ${guards.length} soldiers defeated. ${s.hero.hp===0?'Teresod was defeated. ':''}${s.skill.dodgeCounters} dodge counters.${setup.route?' '+s.guards.filter(g=>g.escaped).length+' escaped.':''} Health remaining: ${s.hero.hp}/100. ${s.squad?`${s.allies.filter(a=>a.hp).length}/${s.allies.length} allies survived; allies dealt ${s.squad.damageByAllies} damage, Teresod dealt ${s.squad.damageByHero}. ${s.squad.routed} enemy retreated. `:''}${lesson?dodgeLesson(s,advanced).text+' ':''}No campaign troops or territory changed. Press R to try again.`:feedback.detail;
-          document.getElementById('world-skirmish-review').textContent=s.squad&&s.outcome==='success'?'The surviving allies regroup while you review the result.':'Encounter ended. The scene is paused for review.';
+          document.getElementById('world-skirmish-result-detail').textContent=practice?`${s.guards.filter(g=>!g.hp).length} of ${guards.length} soldiers defeated. ${s.hero.hp===0?'Teresod was defeated. ':''}${s.skill.dodgeCounters} dodge counters.${setup.route?' '+s.guards.filter(g=>g.escaped).length+' escaped.':''} Health remaining: ${s.hero.hp}/100. Time: ${s.time.toFixed(1)}s. ${s.squad?`${s.allies.filter(a=>a.hp).length}/${s.allies.length} allies survived; allies dealt ${s.squad.damageByAllies} damage, Teresod dealt ${s.squad.damageByHero}. ${s.squad.routed} enemy retreated. `:''}${lesson?dodgeLesson(s,advanced).text+' ':''}No campaign troops or territory changed. Press R to try again.`:feedback.detail;
+          document.getElementById('world-skirmish-review').textContent=s.squad&&s.outcome==='success'?'The field is yours. Surviving allies regroup while you review the result.':'Encounter ended. The scene is paused for review.';
           resultPanel.hidden=false;withdraw.hidden=true;onEnd(s.outcome,s.objective?.reason,s);return;
         }
       }
       draw(model.snapshot(),!active);
     },
-    dispose(){if(disposed)return;disposed=true;focus.dispose();hud.dispose();alliedView?.dispose();combatFeedback.dispose();targetMarker.dispose();effects.dispose();panel.hidden=true;resultPanel.hidden=true;document.getElementById('world-skirmish-retry').hidden=true;keys.clear();actor.setArmed(false);for(const guard of guards)disposeCharacter(guard);warnings.dispose();scene.remove(rallyMarker,beacon,label);labelTexture.dispose();labelMaterial.dispose();beaconGeometry.dispose();rallyMaterial.dispose();ringGeometry.dispose();}
+    dispose(){if(disposed)return;disposed=true;compare?.remove();focus.dispose();hud.dispose();alliedView?.dispose();combatFeedback.dispose();targetMarker.dispose();effects.dispose();panel.hidden=true;resultPanel.hidden=true;document.getElementById('world-skirmish-retry').hidden=true;keys.clear();actor.setArmed(false);for(const guard of guards)disposeCharacter(guard);warnings.dispose();scene.remove(rallyMarker,beacon,label);labelTexture.dispose();labelMaterial.dispose();beaconGeometry.dispose();rallyMaterial.dispose();ringGeometry.dispose();}
   };
 }
