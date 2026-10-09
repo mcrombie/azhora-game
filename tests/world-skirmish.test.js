@@ -19,7 +19,7 @@ test('evacuation search is bounded on enclosed, flooded or unloaded ground',()=>
     const ground=createSkirmishGround({...plain(),...change},{x:0,z:0});assert.deepEqual(ground.retreatRoute({x:0,z:0},{x:0,z:-1}),[]);
   }
 });
-test('both field sites reuse ground validation, playable approaches and region-correct results',()=>{
+test('all field sites reuse ground validation, playable approaches and region-correct results',()=>{
   for(const [id,site] of Object.entries(LIZEEM_FIELD_SITES)){
     const world={...plain(),regionAt:()=>({id:site.regionId})},centre={x:0,z:0},ground=createSkirmishGround(world,centre,site.regionId);
     for(const hero of [centre,{x:8,z:6},{x:-8,z:-6}]){

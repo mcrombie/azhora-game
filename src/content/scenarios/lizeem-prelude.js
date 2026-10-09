@@ -42,5 +42,5 @@ export const LIZEEM_PRELUDE=Object.freeze({
   frames:Object.freeze(frames.map(frame=>Object.freeze({...frame,owners:Object.freeze({...frame.owners}),highlight:Object.freeze([...frame.highlight])}))),
 });
 
-const supported=new Set(['lizeem-east-west-v3','lizeem-world-v3','lizeem-world-v4','lizeem-world-v5','lizeem-world-v6']);
+const supported=new Set(['lizeem-east-west-v3','lizeem-world-v3','lizeem-world-v4','lizeem-world-v5','lizeem-world-v6','lizeem-world-v7']);
 export function preludeForScenario(scenarioId){return supported.has(scenarioId)?LIZEEM_PRELUDE:null;}

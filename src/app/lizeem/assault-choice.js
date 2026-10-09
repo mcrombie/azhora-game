@@ -6,7 +6,7 @@ export function createAssaultChoice(anchor){
   return {show(pending,supported){
     root.hidden=!supported||!pending.rally||!pending.participation;
     input.checked=pending.rally?.style==='allied';input.disabled=!!pending.rally?.style||!!pending.rally?.stopped;
-    const alive=pending.rally?.allied?pending.rally.allied.totalAllies-pending.rally.allied.lost:3;
+    const alive=pending.rally?.allied?pending.rally.allied.totalAllies-pending.rally.allied.lost:(pending.rally?.supportAllies??3);
     text.textContent=`Fight with allies (experimental): ${alive} allied soldiers join you. Enemies remain determined by the interception. The last isolated enemy may retreat. Unchecked uses the original solo assault.`;
   },style:()=>input.checked?'allied':'solo'};
 }

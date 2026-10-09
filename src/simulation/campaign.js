@@ -26,6 +26,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   for(const key of ['garrisonCap','decisionEvery','armyRecoveryDays','maxRaisedArmies'])if(!Number.isInteger(rules[key])||rules[key]<1)throw Error('Invalid rule: '+key);
   for(const key of ['reserve','recoveryDays'])if(!Number.isInteger(rules[key])||rules[key]<0)throw Error('Invalid rule: '+key);
   if(!Number.isFinite(rules.defenseBonus)||rules.defenseBonus<=0)throw Error('Invalid defense bonus.');
+  if(rules.assaultSupportGap!==undefined&&(!Number.isInteger(rules.assaultSupportGap)||rules.assaultSupportGap<0||rules.assaultSupportGap>3))throw Error('Invalid assault support gap.');
   const battleDays=rules.battleDays??0;
   if(!Number.isInteger(battleDays)||battleDays<0)throw Error('Invalid battle duration.');
   for(const r of regions.values())if(r.interceptionStrength!==undefined&&(!battleDays||!Number.isInteger(r.interceptionStrength)||r.interceptionStrength<1))throw Error('Invalid interception strength.');
@@ -224,7 +225,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     if(state.pending||!stage||engagement.endsOn<=state.day||state.hero.readyOn>state.day||state.hero.region!==engagement.region||
       !Number.isFinite(position?.x)||!Number.isFinite(position?.z)||Math.hypot(position.x-engagement.location.x,position.z-engagement.location.z)>(engagement.entryRadius??(stage==='rally'?45:24)))
       return {ok:false,reason:'Reach the active battlefield before it ends, while ready to help.'};
-    state.pending={id:stage==='rally'?engagement.id+':rally':engagement.id,battleId:engagement.id,...(engagement.rally||engagement.participation?{stage}:{}),...(engagement.participation?{entryRadius:engagement.entryRadius,participation:{faction:engagement.participation.faction,...engagement.participation.intercept,guards:Math.max(0,engagement.participation.intercept.totalGuards-engagement.participation.intercept.stopped-engagement.participation.intercept.escaped)}}:{}),...(stage==='rally'?{rally:{faction:engagement.rally.faction,guards:rallyGuardCount(engagement),blocked:engagement.heroResult.objective.blocked,...(engagement.participation?{stopped:engagement.rally.stopped??0,totalGuards:engagement.rally.totalGuards,...(engagement.rally.style?{style:engagement.rally.style}:{}),...(engagement.rally.allied?{allied:copy(engagement.rally.allied)}:{})}: {})}}:{}),day:state.day,region:engagement.region,armyId:engagement.attackingIds[0],attacker:engagement.attacker,defender:engagement.defender,
+    state.pending={id:stage==='rally'?engagement.id+':rally':engagement.id,battleId:engagement.id,...(engagement.rally||engagement.participation?{stage}:{}),...(engagement.participation?{entryRadius:engagement.entryRadius,participation:{faction:engagement.participation.faction,...engagement.participation.intercept,guards:Math.max(0,engagement.participation.intercept.totalGuards-engagement.participation.intercept.stopped-engagement.participation.intercept.escaped)}}:{}),...(stage==='rally'?{rally:{faction:engagement.rally.faction,guards:rallyGuardCount(engagement),blocked:engagement.heroResult.objective.blocked,...(rules.assaultSupportGap!==undefined?{supportAllies:Math.min(3,Math.max(0,rallyGuardCount(engagement)-rules.assaultSupportGap))}:{}),...(engagement.participation?{stopped:engagement.rally.stopped??0,totalGuards:engagement.rally.totalGuards,...(engagement.rally.style?{style:engagement.rally.style}:{}),...(engagement.rally.allied?{allied:copy(engagement.rally.allied)}:{})}: {})}}:{}),day:state.day,region:engagement.region,armyId:engagement.attackingIds[0],attacker:engagement.attacker,defender:engagement.defender,
       attackers:engagement.attackingIds.reduce((n,id)=>n+state.armies.find(a=>a.id===id).strength,0),defenders:defendingStrength(state,engagement.region),endsOn:engagement.endsOn,...(engagement.reinforcements?{reinforcements:copy(engagement.reinforcements)}:{})};
     state.commands.push({type:'join-battle',day:state.day,id,position:{x:position.x,z:position.z}});emit('encounter',state.pending);return {ok:true};
   }
@@ -234,7 +235,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     if(b.rally.style)return b.rally.style===style?{ok:true}:{ok:false,reason:'Resume this assault in its original style.'};
     if((b.rally.stopped??0)>0&&style!=='solo')return {ok:false,reason:'An existing solo assault must resume without replacement allies.'};
     b.rally.style=p.rally.style=style;
-    if(style==='allied')b.rally.allied=p.rally.allied={totalAllies:3,lost:0,routed:0,damage:0};
+    if(style==='allied')b.rally.allied=p.rally.allied={totalAllies:p.rally.supportAllies??3,lost:0,routed:0,damage:0};
     state.commands.push({type:'assault-style',day:state.day,id,style});return {ok:true};
   }
   function resolveEncounter(id,faction,outcome,reason=null,stopped=null,progress=null){

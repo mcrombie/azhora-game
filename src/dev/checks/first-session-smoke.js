@@ -8,6 +8,7 @@ async function loaded(a){const end=performance.now()+300000;while(a.state().mode
 async function travel(a,target,{entry=false,reach=1}={}){
   let stuck=0,seconds=0;
   try{for(let i=0;i<2400;i++){
+    if(i%90===0)window.dispatchEvent(new Event('focus'));
     await loaded(a);const s=a.state(),p=s.position,d=Math.hypot(target.x-p[0],target.z-p[2]);
     if(entry&&s.mode==='encounter')return seconds;
     assert(s.mode==='playing','Travel stays in the world: '+s.mode);
@@ -45,6 +46,7 @@ export async function ride(a){
 }
 async function fight(a){
   for(let i=0;i<6600;i++){
+    if(i%180===0)window.dispatchEvent(new Event('focus'));
     const s=a.war.state().encounter.encounter;if(s?.outcome){clearCombatKeys(a);return s;}
     assert(a.state().mode==='skirmish'&&s,'Battle remains playable');driveWorldEncounter(a,s);a.step(1/60);if(i%180===179)await frames();
   }throw Error('Battle did not finish');

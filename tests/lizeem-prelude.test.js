@@ -30,14 +30,14 @@ test('The Chronoscope follows the declarations, independent states and voluntary
 
 test('The bounded historical projection ends at the live scenario without advancing or changing it',()=>{
   const session=createWorldWar(),snapshot=session.snapshot(),checkpoint=session.checkpoint(),scenarioBefore=structuredClone(LIZEEM_SCENARIO);
-  for(const id of ['lizeem-east-west-v3','lizeem-world-v3','lizeem-world-v4','lizeem-world-v5','lizeem-world-v6']){
+  for(const id of ['lizeem-east-west-v3','lizeem-world-v3','lizeem-world-v4','lizeem-world-v5','lizeem-world-v6','lizeem-world-v7']){
     const prelude=preludeForScenario(id),scenario=id===LIZEEM_SCENARIO.id?LIZEEM_SCENARIO:worldWarScenario(id);
     assert.equal(prelude,LIZEEM_PRELUDE);
     assert.deepEqual(prelude.frames.at(-1).owners,Object.fromEntries(scenario.regions.map(region=>[region.id,region.owner])));
     assert.deepEqual(scenario.wars,[['west','east']]);
     for(const faction of scenario.factions)assert.deepEqual(prelude.factions.find(f=>f.id===faction.id),faction);
   }
-  for(const id of [null,undefined,'other-scenario','lizeem-world-v7','lizeem-world-v1'])assert.equal(preludeForScenario(id),null);
+  for(const id of [null,undefined,'other-scenario','lizeem-world-v8','lizeem-world-v1'])assert.equal(preludeForScenario(id),null);
   const duration=LIZEEM_PRELUDE.frames.reduce((seconds,frame)=>seconds+frame.seconds,0);
   assert(duration>=24&&duration<=26);
   const factions=new Set(LIZEEM_PRELUDE.factions.map(faction=>faction.id));

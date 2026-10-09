@@ -28,7 +28,7 @@ export async function summons(a){
   window.dispatchEvent(new Event('focus'));click('taleth-letter-close');click('world-war-report-dismiss');assert(a.save().ok,'Dismissed letter and campaign save together');await a.loadSaved();a.step(.04);
   assert(!a.war.state().courier.visible,'Continue does not redeliver a dismissed dispatch');a.openMap();click('taleth-letters');assert(document.querySelectorAll('#taleth-letter-select option').length>0,'Map archive keeps dismissed letters');click('taleth-letter-close');a.resume();
   a.war.advance(200);assert(!!a.war.state().campaign.winner,'The existing simulation settles the war');assert(a.war.state().letters.at(-1).finale,'Victory delivers the tower invitation');
-  assert(!document.getElementById('world-war-report-minora').hidden,'Invitation offers tracking back to the tower');return capture(a);
+  assert(!document.getElementById('world-war-next').disabled&&document.getElementById('world-war-next').textContent==='Return to Taleth','Invitation offers tracking back to the tower');return capture(a);
 }
 export async function river(a){
   window.dispatchEvent(new Event('focus'));await a.visit(TOWER_EXIT);f();await ready(a);await a.visit({...TALETH_SPOT,z:TALETH_SPOT.z+2});f();

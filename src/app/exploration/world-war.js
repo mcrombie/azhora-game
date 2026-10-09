@@ -6,15 +6,17 @@ import {LIZEEM_FIELD_SITES} from '../../content/scenarios/lizeem-field-sites.js'
 export const LEGACY_WORLD_WAR_SCENARIO={...LIZEEM_SCENARIO,id:'lizeem-world-v3',heroTracking:'world',rules:{...LIZEEM_SCENARIO.rules,battleDays:3},
   regions:LIZEEM_SCENARIO.regions.map(r=>({...r,battlefield:LIZEEM_BATTLEFIELDS[r.id],...(r.id==='caricas'?{interceptionStrength:12}:{})}))};
 export const INTERCEPTION_WORLD_WAR_SCENARIO={...LEGACY_WORLD_WAR_SCENARIO,id:'lizeem-world-v4',
-  regions:LEGACY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(LIZEEM_FIELD_SITES[r.id]?{interceptionStrength:LIZEEM_FIELD_SITES[r.id].interceptionStrength}:{})}))};
+  regions:LEGACY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(['caricas','ovesos'].includes(r.id)?{interceptionStrength:12}:{})}))};
 export const RALLY_WORLD_WAR_SCENARIO={...INTERCEPTION_WORLD_WAR_SCENARIO,id:'lizeem-world-v5',
   regions:INTERCEPTION_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(r.id==='ovesos'?{rallyAssault:true}:{})}))};
 export const BATTLEFIELD_ENTRY_RADIUS=70;
-export const WORLD_WAR_SCENARIO={...RALLY_WORLD_WAR_SCENARIO,id:'lizeem-world-v6',battlefieldEntryRadius:BATTLEFIELD_ENTRY_RADIUS,
+export const ENTRY_WORLD_WAR_SCENARIO={...RALLY_WORLD_WAR_SCENARIO,id:'lizeem-world-v6',battlefieldEntryRadius:BATTLEFIELD_ENTRY_RADIUS,
   openingOrders:[{faction:'west',from:'nethereum',to:'caricas',marchDays:2}],
   regions:RALLY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(r.id==='caricas'?{rallyAssault:true}:{})}))};
+export const WORLD_WAR_SCENARIO={...ENTRY_WORLD_WAR_SCENARIO,id:'lizeem-world-v7',rules:{...ENTRY_WORLD_WAR_SCENARIO.rules,assaultSupportGap:1},
+  regions:ENTRY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(LIZEEM_FIELD_SITES[r.id]?{interceptionStrength:LIZEEM_FIELD_SITES[r.id].interceptionStrength,rallyAssault:true}:{})}))};
 export function worldWarScenario(id){
-  const scenario=[WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO].find(s=>s.id===id);
+  const scenario=[WORLD_WAR_SCENARIO,ENTRY_WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO].find(s=>s.id===id);
   if(!scenario)throw Error('Unknown world-test scenario.');return scenario;
 }
 export const SECONDS_PER_DAY=30;

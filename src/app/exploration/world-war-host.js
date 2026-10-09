@@ -24,6 +24,7 @@ import {renderBattleFacts} from './battle-facts-view.js';
 import {createWarTrackingView} from './war-tracking-view.js';
 import {savedWarNavigation,COUNCIL_DESTINATIONS} from './war-navigation-state.js';
 import {writeHud} from './hud-write.js';
+import {nextCampaignOpportunity} from './campaign-opportunity.js';
 import {talethLetters} from './taleth-correspondence.js';
 import {createTalethCourier} from './taleth-courier.js';
 
@@ -35,8 +36,8 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   let session=createWorldWar(saved),lastRegion,returnMode='playing',cached,active=[],stamp,resumeAfterChoice=false;
   const area=createBattlefieldArea(),areaView=createBattlefieldAreaView(scene,world);
   let report=null,armies=[];const dismissed=new Set([saved?.reportReadThrough??0]);
-  let letters=[];
-  const courier=createTalethCourier({scene,world,position,getMode,setMode,letters:()=>letters});
+  let letters=[],opportunity=null;
+  const courier=createTalethCourier({scene,world,position,getMode,setMode,letters:()=>letters,opportunity:()=>opportunity,onFollow:followNext});
   const initialNavigation=savedWarNavigation(saved);
   let tracked=initialNavigation?.kind==='opening'?null:initialNavigation,tracking=null,opening=initialNavigation?.kind==='opening'?initialNavigation.id:null,guidance=null,mapClock=0;
   const light=createWarGuidanceView(scene,world),columns=createMarchingColumns(scene,world),frontline=createWarFrontline(scene,world);
@@ -74,6 +75,15 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     },
     pause:()=>{resumeAfterChoice=session.clock().running;session.pause();returnMode=getMode()==='map'?'map':'playing';setMode('encounter');},
     onClose:()=>{onDirty();if(resumeAfterChoice&&!session.clock().running)session.toggle();resumeAfterChoice=false;refresh();setMode(returnMode);updateLocal();}});
+  function followNext(){
+    if(!canBegin()||!['playing','map','tower'].includes(getMode()))return false;
+    refreshReports();const next=opportunity;if(!next||next.kind==='briefing')return false;
+    if(next.kind==='finale')trackCouncil();
+    else if(next.target){if(tracked?.kind!==next.target.kind||tracked?.id!==next.target.id)track(next.target);}
+    else track(null);
+    if(!cached.winner&&!session.clock().running)session.toggle();
+    onDirty();setMode('playing');refresh();updateLocal();return true;
+  }
   function reportTarget(){
     if(report?.armyId!==undefined&&armies.some(a=>a.id===report.armyId))return {kind:'army',id:report.armyId};
     if(report?.battleId!==undefined&&active.some(b=>b.id===report.battleId&&availableBattleStage(b)))return {kind:'battle',id:report.battleId};
@@ -81,6 +91,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   }
   function refreshReports(){
     letters=talethLetters(cached);
+    opportunity=nextCampaignOpportunity(cached,WORLD_WAR_SCENARIO,presentedArmies(),known);
     const reports=[...new Map([...worldWarReports(cached,WORLD_WAR_SCENARIO,known),...armies.flatMap(a=>a.report?[a.report]:[]),...letters].map(r=>[r.id,r])).values()].sort((a,b)=>a.id-b.id);
     // Keep the hero's consequence readable even if another battle starts on
     // the same day. Dismissing it allows subsequent dispatches through.
@@ -97,7 +108,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     $('world-war-report-followup').hidden=!summary&&!report?.note;
     write('world-war-report-followup',report?.note??(summary?summary.note+(returnVisit?' '+councilReturnHint(cached):''):''));
     write('world-war-report-minora',report?.finale?'Return to Taleth / tower lookout':'Track Minora / council');
-    $('world-war-report-minora').hidden=!returnVisit;
+    $('world-war-report-minora').hidden=!returnVisit||!!cached.winner;
     const lastHero=reports.findLast(r=>r.hero)??report;
     $('world-war-result').hidden=!lastHero;
     write('world-war-result',lastHero?`${lastHero.title}. ${lastHero.detail} ${footer}`:'');
@@ -201,13 +212,13 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
         return candidates.find(clear)??previous;
       }return null;
     },
-    tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,keydown:courier.keydown,
+    tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,followNext,keydown:courier.keydown,
     drawGuidance(camera){light.draw(camera,position);},
     begin(){if(!canBegin())return false;session.begin();onDirty();refresh();updateLocal();return true;},
     pause(){session.pause();refresh();},
     run(){if(!canBegin())return false;if(!session.clock().running)session.toggle();onDirty();refresh();},
     setSpeed(value){session.setSpeed(value);onDirty();refresh();},
     save:exploration=>{sync();return {format:WORLD_WAR_KEY,version:1,exploration,...session.checkpoint(),navigation:opening?{kind:'opening',id:opening}:tracked?{...tracked}:null,reportReadThrough:Math.max(0,...dismissed)};},
-    state:()=>({campaign:session.snapshot(),clock:session.clock(),encounter:dialog.state(),beacons:beacons.state(),presence:site.state(),aftermath:aftermath.state(),frontline:frontline.state(),battlefield:{entry:area.state(),footprints:areaView.state()},tracking:tracking?structuredClone(tracking):null,guidance:guidance?structuredClone(guidance):null,light:light.state(),columns:columns.state(),courier:courier.state(),letters:structuredClone(letters)}),
+    state:()=>({campaign:session.snapshot(),clock:session.clock(),encounter:dialog.state(),beacons:beacons.state(),presence:site.state(),aftermath:aftermath.state(),frontline:frontline.state(),battlefield:{entry:area.state(),footprints:areaView.state()},tracking:tracking?structuredClone(tracking):null,guidance:guidance?structuredClone(guidance):null,light:light.state(),columns:columns.state(),courier:courier.state(),letters:structuredClone(letters),opportunity:structuredClone(opportunity)}),
     dispose(){dialog.clear();courier.dispose();areaView.dispose();beacons.dispose();site.dispose();aftermath.dispose();frontline.dispose();tracker.dispose();light.dispose();columns.dispose();map.setTrackingHandler(null);map.setTrackedTarget(null);$('world-site-status').hidden=true;}};
 }

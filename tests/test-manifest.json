@@ -553,5 +553,6 @@
   "tests/ovesos-practice.test.js",
   "tests/combat-camp-world.test.js",
   "tests/telemonia-streaming.test.js",
-  "tests/taleth-correspondence.test.js"
+  "tests/taleth-correspondence.test.js",
+  "tests/campaign-continuity.test.js"
 ]

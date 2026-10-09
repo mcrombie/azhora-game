@@ -16,6 +16,13 @@ test('allies fight and take casualties; active Teresod changes a losing passive 
   const model=arena(),{s,closest}=play(model,true);assert.equal(s.outcome,'success');assert(s.squad.damageByAllies>0&&s.squad.damageByHero>0);assert(closest>=1.1-1e-6);assert.equal(s.squad.routed,1);assert.equal(s.guards.filter(g=>!g.hp).length,3);assert(s.guards.find(g=>g.routed).hp>0);assert.equal(s.objective.secured,ENCOUNTER_TIMING.victory);
   const before=s.allies.map(a=>[a.x,a.z]);for(let i=0;i<180;i++)model.aftermath(1/60);const after=model.snapshot();assert.notDeepEqual(after.allies.map(a=>[a.x,a.z]),before);assert.deepEqual(after.squad,{...s.squad,regrouped:true});assert.equal(after.time,s.time);
 });
+test('the fresh three-enemy campaign assault needs Teresod with its two-allied-soldier support',()=>{
+  const encounter=()=>createLizeemEncounter({heroStart:{x:0,z:3},guardStarts:[-2.7,0,2.7].map(x=>({x,z:-8})),allyStarts:[-1.5,1.5].map(x=>({x,z:0})),rallyPoint:{x:0,z:-3},move:(p,x,z)=>({x:p.x+x,z:p.z+z})});
+  const passive=play(encounter(),false).s,active=play(encounter(),true).s;
+  assert.equal(passive.outcome,'defeat');assert.equal(passive.squad.alliesLost,2);assert.equal(passive.squad.damageByHero,0);
+  assert.equal(active.outcome,'success');assert(active.squad.damageByAllies>0&&active.squad.damageByHero>0);
+});
+
 test('allies cannot become hero melee, spell, or focus targets',()=>{
   const model=arena();assert.equal(model.fireballHit(100,50),false);let s=model.snapshot();
   for(let i=0;i<120;i++){s=model.tick(1/60,{attack:true,focusId:100});assert.equal(s.hero.focusId,null);assert(s.hero.targetId===null||s.hero.targetId<100);}

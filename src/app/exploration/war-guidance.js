@@ -15,7 +15,7 @@ export function openingWarGuidance(selection,{owned,horse=null,mounted=false}){
 
 // Select the force itself, never intermediate crossings on the player's route.
 export function openingArmyTarget(state,armies,known){
-  const first=state.scenario==='lizeem-world-v6'?'caricas':'ovesos',side=first==='caricas'?'west':'east';
+  const first=['lizeem-world-v6','lizeem-world-v7'].includes(state.scenario)?'caricas':'ovesos',side=first==='caricas'?'west':'east';
   const battle=state.engagements.findLast(b=>b.region===first&&known(b.location));
   if(battle?.status==='active')return {kind:'battle',id:battle.id};
   const army=state.armies.find(a=>a.owner===side&&a.status==='marching'&&a.to===first&&armies.some(m=>m.id===a.id));

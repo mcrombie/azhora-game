@@ -184,6 +184,19 @@ app.whenReady().then(async()=>{
         const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/war-resource-smoke.js').then(m=>m.resources())`);
         fs.writeFileSync(path.join(dir,'war-resource-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(warTest&&process.argv.includes('--campaign-continuity-checks')){
+        const results=[],side=process.argv.includes('--east-side')?'east':'west';
+        const check=async(module,method,label)=>{
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/${module}.js').then(m=>m.${method}(window.__EXPLORATION__,${JSON.stringify(side)})).catch(e=>{console.error(e.stack);throw e;})`);
+          results.push(result);fs.writeFileSync(path.join(dir,'continuity-'+side+'-'+label+'.png'),(await win.webContents.capturePage()).toPNG());return result;
+        };
+        for(const method of ['departure','ride','battle'])await check('first-session-smoke',method,method);
+        await check('campaign-continuity-smoke','letter','letter');
+        for(let n=0;n<12;n++){const result=await check('campaign-continuity-smoke','next','battle-'+n);if(result.winner)break;}
+        await check('campaign-continuity-smoke','verify','result');
+        for(const method of ['river','politics','east','complete'])await check('taleth-story-smoke',method,method);
+        fs.writeFileSync(path.join(dir,'continuity-'+side+'.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(warTest&&process.argv.includes('--first-session-checks')){
         const results=[];
         for(const method of ['departure','ride','battle']){
