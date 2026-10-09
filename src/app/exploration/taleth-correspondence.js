@@ -27,9 +27,10 @@ export function talethLetters(state){
       if(event.captured)owners[event.region]=victor;recent=victor;
       const battle=state.engagements.find(b=>b.resultId===event.id),impact=battleConsequence(state,battle);
       const advice=talethAdvice(owners,recent);
+      const recovery=event.reattackOn?` The defeated command must reorganize until at least day ${event.reattackOn} before ordering another attack here. Troops already marching can still arrive. Use that opening to defend your gains or press the next front.`:'';
       letters.push({id:event.id,day:event.day,taleth:true,battleId:battle?.id,hero:!!impact?.side,
         title:`Taleth / After ${name(event.region)}`,side:advice.side,
-        detail:`Teresod: ${impact?.explanation??`${league(victor)} has ${event.captured?'taken':'held'} ${name(event.region)}.`}${impact?.side?' '+(impact.reinforcements?`Your interception removed ${impact.intercepted} enemy strength; your assault removed ${impact.rally} more.`:`Your part: ${impact.contribution.toLowerCase()}.`):' You did not take part in this battle.'} ${advice.text}`,
+        detail:`Teresod: ${impact?.explanation??`${league(victor)} has ${event.captured?'taken':'held'} ${name(event.region)}.`}${impact?.side?' '+(impact.reinforcements?`Your interception removed ${impact.intercepted} enemy strength; your assault removed ${impact.rally} more.`:`Your part: ${impact.contribution.toLowerCase()}.`):' You did not take part in this battle.'} ${advice.text}${recovery}`,
         facts:impact?.facts??[['Battle losses',`${league(event.attacker)}: ${event.attackLoss}; ${league(event.defender)}: ${event.defenseLoss}`]],
         note:letters.length===0?'End this war swiftly, if you can. We must preserve the people’s strength for greater troubles to come. Minora’s walls command this crossroads. When we come to terms with the victor, this city will be the seat of the new league.':'Every reversal spends strength we may soon need elsewhere. I seek an end to the war, not the ruin of either people.'});
     }else if(event.type==='battle-start'&&letters.length){

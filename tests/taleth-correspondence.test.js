@@ -22,7 +22,7 @@ test('personal battle letter describes real contribution without claiming a skip
 });
 test('victory summons and lookout conclusion support either winner and nonparticipation',()=>{
   for(const side of ['east','west']){
-    const w=createWorldWar();if(side==='west')w.campaign.reinforce('nethereum',500);w.advance(200);
+    const w=createWorldWar();w.campaign.reinforce(side==='west'?'nethereum':'caricas',500);w.advance(200);
     const s=w.snapshot();assert.equal(s.winner,side);const before=structuredClone(s),last=talethLetters(s).at(-1);assert(last.finale);assert.match(last.detail,/lookout/);
     const pages=talethFinale(s);assert.equal(pages.length,3);assert.match(pages[1].words,/left the fighting to the armies/);assert.match(pages[1].words,side==='west'?/Mayor/:/Priest/);assert.equal(pages[2].view,'east');assert.match(pages[2].closing,/complete/);assert.deepEqual(s,before);
   }

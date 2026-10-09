@@ -89,8 +89,8 @@ test('invalid interventions and seeds are rejected without mutation; snapshots a
   c.step(100);const ended=c.snapshot();assert(!c.reinforce('ovesos',80).ok);c.step(10);assert.deepEqual(c.snapshot(),ended);
 });
 test('the core and scenario have no graphics, platform or legacy gameplay imports',()=>{
-  for(const file of ['../src/simulation/campaign.js','../src/simulation/routes.js','../src/simulation/forces.js','../src/simulation/reinforcements.js','../src/simulation/battle-stages.js','../src/content/scenarios/lizeem.js']){
-    const source=readFileSync(new URL(file,import.meta.url),'utf8');for(const edge of source.matchAll(/from ['"]([^'"]+)['"]/g))assert(['./forces.js','./routes.js','./reinforcements.js','./battle-stages.js'].includes(edge[1]));assert(!/Math\.random\(|Date\.now\(|performance\.now\(/.test(source));
+  for(const file of ['../src/simulation/campaign.js','../src/simulation/routes.js','../src/simulation/forces.js','../src/simulation/reinforcements.js','../src/simulation/battle-stages.js','../src/simulation/offensive-recovery.js','../src/content/scenarios/lizeem.js']){
+    const source=readFileSync(new URL(file,import.meta.url),'utf8');for(const edge of source.matchAll(/from ['"]([^'"]+)['"]/g))assert(['./forces.js','./routes.js','./reinforcements.js','./battle-stages.js','./offensive-recovery.js'].includes(edge[1]));assert(!/Math\.random\(|Date\.now\(|performance\.now\(/.test(source));
   }
 });
 test('scenario tuning rejects invalid rules and supports a decision every day',()=>{

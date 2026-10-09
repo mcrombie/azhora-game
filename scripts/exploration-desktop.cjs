@@ -184,6 +184,22 @@ app.whenReady().then(async()=>{
         const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/war-resource-smoke.js').then(m=>m.resources())`);
         fs.writeFileSync(path.join(dir,'war-resource-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(warTest&&process.argv.includes('--campaign-wait-checks')){
+        const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/campaign-journey-smoke.js').then(m=>m.waitFixture(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);
+        fs.writeFileSync(path.join(dir,'campaign-wait.png'),(await win.webContents.capturePage()).toPNG());
+        fs.writeFileSync(path.join(dir,'campaign-wait.json'),JSON.stringify({result,errors},null,2));console.log(JSON.stringify({result,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--campaign-journey-checks')){
+        const results=[],side=process.argv.includes('--east-side')?'east':'west';
+        const check=async(module,method)=>{
+          console.log('EXPLORATION_JOURNEY '+method);
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/${module}.js').then(m=>m.${method}(window.__EXPLORATION__,${JSON.stringify(side)})).catch(e=>{console.error(e.stack);throw e;})`);
+          results.push(result);fs.writeFileSync(path.join(dir,'journey-'+side+'-'+method+'.png'),(await win.webContents.capturePage()).toPNG());return result;
+        };
+        for(const method of ['departure','ride','battle'])await check('first-session-smoke',method);
+        for(const method of ['firstLetter','secondRide','secondBattle','secondResult','quietWait','choices','alternate'])await check('campaign-journey-smoke',method);
+        fs.writeFileSync(path.join(dir,'journey-'+side+'.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(warTest&&process.argv.includes('--campaign-continuity-checks')){
         const results=[],side=process.argv.includes('--east-side')?'east':'west';
         const check=async(module,method,label)=>{

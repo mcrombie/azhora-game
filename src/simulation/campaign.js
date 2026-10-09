@@ -1,6 +1,7 @@
 // One step is one campaign day. State and seeded randomness stay independent of UI time.
 import {availableBattleStage,rallyGuardCount,removeRallyGuards,continueInterception} from './battle-stages.js';
 import {createRoutes} from './routes.js';
+import {offensiveRecoveryUntil} from './offensive-recovery.js';
 import {isAlive,isMoving,stationed,defendingStrength,inflictLosses} from './forces.js';
 import {reserveReinforcements,interceptReinforcements} from './reinforcements.js';
 const copy=value=>JSON.parse(JSON.stringify(value));
@@ -27,6 +28,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   for(const key of ['reserve','recoveryDays'])if(!Number.isInteger(rules[key])||rules[key]<0)throw Error('Invalid rule: '+key);
   if(!Number.isFinite(rules.defenseBonus)||rules.defenseBonus<=0)throw Error('Invalid defense bonus.');
   if(rules.assaultSupportGap!==undefined&&(!Number.isInteger(rules.assaultSupportGap)||rules.assaultSupportGap<0||rules.assaultSupportGap>3))throw Error('Invalid assault support gap.');
+  if(rules.reattackDelayDays!==undefined&&(!Number.isInteger(rules.reattackDelayDays)||rules.reattackDelayDays<0))throw Error('Invalid reattack delay.');
   const battleDays=rules.battleDays??0;
   if(!Number.isInteger(battleDays)||battleDays<0)throw Error('Invalid battle duration.');
   for(const r of regions.values())if(r.interceptionStrength!==undefined&&(!battleDays||!Number.isInteger(r.interceptionStrength)||r.interceptionStrength<1))throw Error('Invalid interception strength.');
@@ -110,7 +112,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     target.lastBattle=state.day;
     const surrendered=state.events.slice(surrenderStart).filter(e=>e.type==='surrender').map(e=>({armyId:e.armyId,strength:e.strength,faction:e.faction}));
     return emit('battle',{region,from:attackOrigin,armyId:army.id,armyName:army.name,attackingIds:attackingArmies.map(a=>a.id),engagementId:engagement?.id??null,defendingIds,attacker:army.owner,defender,attackers,defenders,chance,roll,captured,
-      attackLoss,defenseLoss,retreats,surrendered,survivors:defendingStrength(state,region),defenseBonus:rules.defenseBonus,baseChance,unassistedChance,hero,...(decisive?{resolution:'rally-rout',rally:copy(engagement.rally)}:{})});
+      attackLoss,defenseLoss,retreats,surrendered,...(rules.reattackDelayDays?{reattackOn:state.day+rules.reattackDelayDays}:{}),survivors:defendingStrength(state,region),defenseBonus:rules.defenseBonus,baseChance,unassistedChance,hero,...(decisive?{resolution:'rally-rout',rally:copy(engagement.rally)}:{})});
   }
   function arrive(army){
     const region=army.to,target=state.regions[region];
@@ -150,7 +152,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     for(const r of scenario.regions){
       const ready=available(r.id,faction);if(!ready)continue;
       for(const to of r.neighbors){
-        if(!atWar(faction,state.regions[to].owner))continue;
+        if(!atWar(faction,state.regions[to].owner)||state.day<offensiveRecoveryUntil(state,to,faction))continue;
         const defenders=defendingStrength(state,to),inbound=state.armies.filter(a=>(isMoving(a)||a.status==='engaged')&&a.to===to&&a.owner===faction).reduce((n,a)=>n+a.strength,0);
         const ratio=ready.strength/(defenders*rules.defenseBonus+inbound+1),route=travel(r.id,to);
         if(ratio>=.72)options.push({...ready,to,kind:'attack',score:ratio/(1+route.days*.12),reason:`Exposed frontier: ${ready.strength} attacking vs ${defenders} defending; ${route.days}-day route. Shorter routes rank higher.`});

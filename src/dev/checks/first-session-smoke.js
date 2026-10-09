@@ -5,7 +5,7 @@ const assert=(v,m)=>{if(!v)throw Error(m);};
 const frames=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 const key=code=>document.dispatchEvent(new KeyboardEvent('keydown',{code,bubbles:true}));
 async function loaded(a){const end=performance.now()+300000;while(a.state().mode==='loading'&&performance.now()<end)await new Promise(r=>setTimeout(r,50));assert(a.state().mode!=='loading','Loading completes');}
-async function travel(a,target,{entry=false,reach=1}={}){
+export async function travel(a,target,{entry=false,reach=1}={}){
   let stuck=0,seconds=0;
   try{for(let i=0;i<2400;i++){
     if(i%90===0)window.dispatchEvent(new Event('focus'));
@@ -44,7 +44,7 @@ export async function ride(a){
   assert(a.war.state().campaign.pending?.region==='caricas'&&a.stable.mounted,'Normal ride enters Caricas battlefield decision');
   return {checks:['Ride the city streets and White Bridge without teleportation','Reach Caricas before the first battle closes','Mounted save/Continue retains army tracking and horse','Ordinary campaign time starts day-three battle; riding triggers entry'],rideSeconds,arrivalDay};
 }
-async function fight(a){
+export async function fight(a){
   for(let i=0;i<6600;i++){
     if(i%180===0)window.dispatchEvent(new Event('focus'));
     const s=a.war.state().encounter.encounter;if(s?.outcome){clearCombatKeys(a);return s;}

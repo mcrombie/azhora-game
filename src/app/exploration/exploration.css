@@ -74,3 +74,6 @@ body:has(#world-skirmish:not([hidden])) #exploration-status{top:auto;bottom:22px
   #world-skirmish #combat-focus small{display:none}
   #world-skirmish #world-skirmish-objective{font-size:13px}
 }
+
+#world-skirmish:has(#world-skirmish-result:not([hidden])){display:flex;flex-direction:column;overflow:hidden}#world-skirmish:has(#world-skirmish-result:not([hidden]))>:not(#world-skirmish-result){flex-shrink:0}
+#world-skirmish-result:not([hidden]){display:flex;flex-direction:column;min-height:0}#world-skirmish-result>h2,#world-skirmish-result>button,#world-skirmish-result-actions{flex-shrink:0}#world-skirmish-result-copy{overflow:auto;min-height:0;padding-right:8px}#world-skirmish-result-actions{border-top:1px solid #a8b09c55;padding-top:8px}#world-skirmish-result-actions button{width:100%}

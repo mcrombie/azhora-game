@@ -27,7 +27,7 @@ export async function next(a,side){
   window.dispatchEvent(new Event('focus'));
   if(a.state().mode==='briefing')click('taleth-letter-follow');
   else a.war.followNext();
-  assert(a.war.state().clock.running||a.war.state().campaign.winner,'Following explicitly resumes time');
+  assert(a.war.state().clock.running||a.war.state().campaign.winner||a.war.state().opportunity.kind!=='regroup','Following resumes time or an explicit wait finds the next front');
   const target=a.war.state().tracking?.target;a.war.followNext();
   assert(JSON.stringify(a.war.state().tracking?.target)===JSON.stringify(target),'Repeated follow does not toggle tracking off');
   a.war.pause();

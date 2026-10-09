@@ -13,10 +13,12 @@ export const BATTLEFIELD_ENTRY_RADIUS=70;
 export const ENTRY_WORLD_WAR_SCENARIO={...RALLY_WORLD_WAR_SCENARIO,id:'lizeem-world-v6',battlefieldEntryRadius:BATTLEFIELD_ENTRY_RADIUS,
   openingOrders:[{faction:'west',from:'nethereum',to:'caricas',marchDays:2}],
   regions:RALLY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(r.id==='caricas'?{rallyAssault:true}:{})}))};
-export const WORLD_WAR_SCENARIO={...ENTRY_WORLD_WAR_SCENARIO,id:'lizeem-world-v7',rules:{...ENTRY_WORLD_WAR_SCENARIO.rules,assaultSupportGap:1},
+export const CONTINUITY_WORLD_WAR_SCENARIO={...ENTRY_WORLD_WAR_SCENARIO,id:'lizeem-world-v7',rules:{...ENTRY_WORLD_WAR_SCENARIO.rules,assaultSupportGap:1},
   regions:ENTRY_WORLD_WAR_SCENARIO.regions.map(r=>({...r,...(LIZEEM_FIELD_SITES[r.id]?{interceptionStrength:LIZEEM_FIELD_SITES[r.id].interceptionStrength,rallyAssault:true}:{})}))};
+export const WORLD_WAR_SCENARIO={...CONTINUITY_WORLD_WAR_SCENARIO,id:'lizeem-world-v8',
+  rules:{...CONTINUITY_WORLD_WAR_SCENARIO.rules,armyRecoveryDays:2,reattackDelayDays:3}};
 export function worldWarScenario(id){
-  const scenario=[WORLD_WAR_SCENARIO,ENTRY_WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO].find(s=>s.id===id);
+  const scenario=[WORLD_WAR_SCENARIO,CONTINUITY_WORLD_WAR_SCENARIO,ENTRY_WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO].find(s=>s.id===id);
   if(!scenario)throw Error('Unknown world-test scenario.');return scenario;
 }
 export const SECONDS_PER_DAY=30;

@@ -24,7 +24,7 @@ import {renderBattleFacts} from './battle-facts-view.js';
 import {createWarTrackingView} from './war-tracking-view.js';
 import {savedWarNavigation,COUNCIL_DESTINATIONS} from './war-navigation-state.js';
 import {writeHud} from './hud-write.js';
-import {nextCampaignOpportunity} from './campaign-opportunity.js';
+import {nextCampaignOpportunity,waitForCampaignDispatch} from './campaign-opportunity.js';
 import {talethLetters} from './taleth-correspondence.js';
 import {createTalethCourier} from './taleth-courier.js';
 
@@ -75,9 +75,13 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     },
     pause:()=>{resumeAfterChoice=session.clock().running;session.pause();returnMode=getMode()==='map'?'map':'playing';setMode('encounter');},
     onClose:()=>{onDirty();if(resumeAfterChoice&&!session.clock().running)session.toggle();resumeAfterChoice=false;refresh();setMode(returnMode);updateLocal();}});
-  function followNext(){
+  function followNext(alternative=false){
     if(!canBegin()||!['playing','map','tower'].includes(getMode()))return false;
-    refreshReports();const next=opportunity;if(!next||next.kind==='briefing')return false;
+    refreshReports();const next=alternative?opportunity?.alternative:opportunity;if(!next||next.kind==='briefing')return false;
+    if(next.kind==='regroup'){
+      waitForCampaignDispatch(session,state=>nextCampaignOpportunity(state,WORLD_WAR_SCENARIO,worldWarArmies(state,WORLD_WAR_SCENARIO,p=>known(TRANSFORM.atlasToWorld(p.x,p.y))),known));
+      onDirty();refresh();setMode('playing');offer();updateLocal();return true;
+    }
     if(next.kind==='finale')trackCouncil();
     else if(next.target){if(tracked?.kind!==next.target.kind||tracked?.id!==next.target.id)track(next.target);}
     else track(null);
