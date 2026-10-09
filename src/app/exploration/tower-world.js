@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createTowerChamber} from '../../content/regions/minora-frontier/tower-chamber.js';
+import {createTowerLookout} from '../../content/regions/minora-frontier/tower-lookout.js';
 import {createCouncilChamber} from '../../content/regions/minora-frontier/council-chambers.js';
 import {createCouncilGates} from '../../content/regions/minora-frontier/council-gates.js';
 import {councilRoom,MINORA_COUNCIL} from '../../content/regions/minora-frontier/minora-council.js';
@@ -26,7 +27,7 @@ export async function createTowerWorld(scene,onProgress,{inside,room=null,positi
       update:(time,dt,player)=>view.update(time,player,dt)};
   }
   rooms.set('tower',interior(chamber,towerBounds,TOWER));
-  function ensureRoom(id){if(!rooms.has(id)){if(!councilRoom(id))throw Error('Unknown Minora room.');const v=createCouncilChamber(scene,id);rooms.set(id,interior(v,v.bounds,v.origin));}return rooms.get(id);}
+  function ensureRoom(id){if(!rooms.has(id)){if(id!=='lookout'&&!councilRoom(id))throw Error('Unknown Minora room.');const v=id==='lookout'?createTowerLookout(scene):createCouncilChamber(scene,id);rooms.set(id,interior(v,v.bounds,v.origin));}return rooms.get(id);}
   const active=()=>inLimbo?rooms.get('limbo'):current?ensureRoom(current):exterior;
   async function prepareExterior(at=TOWER_EXIT){
     if(!exterior){building??=loadExplorationWorld(outside,at,onProgress,{enabledRegions}).then(w=>exterior=w).catch(e=>{building=null;throw e;});await building;}
@@ -34,11 +35,19 @@ export async function createTowerWorld(scene,onProgress,{inside,room=null,positi
     if(!gates&&exterior.readyAt(TOWER.x,TOWER.z)){gates=createCouncilGates(outside,exterior.heightAt);gates.update(leader);}
     if(!residents){residents=createMinoraResidents(outside,exterior);residents.setEnabled(residentsEnabled);}
   }
+  async function prepareLookout(){
+    await prepareExterior(TOWER_EXIT);
+    // The finale overlooks all five scenario provinces. Prepare their existing
+    // landscape only here, so unseen ground does not read as ocean from above.
+    for(const id of enabledRegions??[])await exterior.prepareRegion(id);
+    await exterior.prepareBackdrop({minX:TOWER.x-1400,maxX:TOWER.x+1700,minZ:TOWER.z-1100,maxZ:TOWER.z+1500});
+    exterior.update(0,0,TOWER_EXIT);exterior.stop();
+  }
   function show(value){
     const id=value===true?'tower':value===false||value==null?null:value;
     if(id)ensureRoom(id);inLimbo=false;current=id;
     for(const [key,r]of rooms)r.view.root.visible=key===id;
-    outside.visible=!id;exterior?.stop();
+    outside.visible=!id||id==='lookout';exterior?.stop();
   }
   function showLimbo(){if(!limbo){limbo=createLimboChamber(scene);rooms.set('limbo',interior(limbo,{minX:TOWER.x-11.2,maxX:TOWER.x+11.2,minZ:TOWER.z-11.2,maxZ:TOWER.z+11.2},TOWER));}for(const [key,r]of rooms)r.view.root.visible=key==='limbo';inLimbo=true;outside.visible=false;exterior?.stop();}
   const world={enabledRegions,bounds:{minX:-60000,maxX:60000,minZ:-60000,maxZ:60000},
@@ -50,13 +59,13 @@ export async function createTowerWorld(scene,onProgress,{inside,room=null,positi
     regionAt:(...a)=>active().regionAt(...a),canExploreAt:(...a)=>active().canExploreAt(...a),readyAt:(...a)=>active().readyAt(...a),
     prepare:(...a)=>active().prepare(...a),prepareRegion:(...a)=>active().prepareRegion(...a),prefetchRegion:(...a)=>active().prefetchRegion(...a),
     reindexColliders:()=>active().reindexColliders(),update(time,dt,point){active().update(time,dt,point);residents?.update(time,dt,point,!current&&!inLimbo);},stop:()=>active().stop(),
-    prepareExterior,show,showLimbo,setChronicle:value=>chamber.setChronicle(value),
+    prepareExterior,prepareLookout,show,showLimbo,setChronicle:value=>chamber.setChronicle(value),setLookoutView:value=>rooms.get('lookout')?.view.point(value),
     setCouncil(campaign){leader=councilInfluence(campaign).leader;gates?.update(leader);},
     residentTarget:player=>!current&&!inLimbo?residents?.target(player)??null:null,
     setResidentTalking:(id,player)=>residents?.setTalking(id,player),
     setResidents(value){residentsEnabled=!!value;residents?.setEnabled(value);},
     dispose(){for(const r of rooms.values())r.view.dispose();gates?.dispose();residents?.dispose();exterior?.stop();outside.removeFromParent();},
-    state:()=>({inside:!!current,room:current,inLimbo,exteriorLoaded:!!exterior,loadedRooms:[...rooms.keys()],occupants:inLimbo?['The Grim Reaper']:current?[MINORA_COUNCIL[current==='tower'?'taleth':current].name]:[],bounds:active()?.bounds??towerBounds,councilFlags:gates?.state()??null,residents:residents?.state()??null}),
+    state:()=>({inside:!!current,room:current,inLimbo,exteriorLoaded:!!exterior,loadedRooms:[...rooms.keys()],occupants:inLimbo?['The Grim Reaper']:current?[MINORA_COUNCIL[['tower','lookout'].includes(current)?'taleth':current].name]:[],bounds:active()?.bounds??towerBounds,councilFlags:gates?.state()??null,residents:residents?.state()??null}),
   };
-  if(!inside)await prepareExterior(position);show(current);return world;
+  if(current==='lookout')await prepareLookout();else if(!inside)await prepareExterior(position);show(current);return world;
 }

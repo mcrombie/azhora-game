@@ -24,6 +24,8 @@ import {renderBattleFacts} from './battle-facts-view.js';
 import {createWarTrackingView} from './war-tracking-view.js';
 import {savedWarNavigation,COUNCIL_DESTINATIONS} from './war-navigation-state.js';
 import {writeHud} from './hud-write.js';
+import {talethLetters} from './taleth-correspondence.js';
+import {createTalethCourier} from './taleth-courier.js';
 
 export function connectWorldWar({saved,map,regionName,position,scene,world,known,knowledgeStamp,openMap,getMode,setMode,onDirty,localEncounter,canFightOnFoot,cameraYaw=()=>0,canBegin=()=>true,horseOwned=()=>false,horseState=()=>null,onBeforeFight=()=>{},onDeath=()=>{},isGhost=()=>false,canEnterBattle=canFightOnFoot,prepareBattle=()=>{},autoEntry=()=>true,onCampaignChange=()=>{}}){
   const $=id=>document.getElementById(id),beacons=createBattlefieldBeacons(scene,world);
@@ -33,6 +35,8 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   let session=createWorldWar(saved),lastRegion,returnMode='playing',cached,active=[],stamp,resumeAfterChoice=false;
   const area=createBattlefieldArea(),areaView=createBattlefieldAreaView(scene,world);
   let report=null,armies=[];const dismissed=new Set([saved?.reportReadThrough??0]);
+  let letters=[];
+  const courier=createTalethCourier({scene,world,position,getMode,setMode,letters:()=>letters});
   const initialNavigation=savedWarNavigation(saved);
   let tracked=initialNavigation?.kind==='opening'?null:initialNavigation,tracking=null,opening=initialNavigation?.kind==='opening'?initialNavigation.id:null,guidance=null,mapClock=0;
   const light=createWarGuidanceView(scene,world),columns=createMarchingColumns(scene,world),frontline=createWarFrontline(scene,world);
@@ -76,19 +80,23 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     return null;
   }
   function refreshReports(){
-    const reports=[...worldWarReports(cached,WORLD_WAR_SCENARIO,known),...armies.flatMap(a=>a.report?[a.report]:[])].sort((a,b)=>a.id-b.id);
+    letters=talethLetters(cached);
+    const reports=[...new Map([...worldWarReports(cached,WORLD_WAR_SCENARIO,known),...armies.flatMap(a=>a.report?[a.report]:[]),...letters].map(r=>[r.id,r])).values()].sort((a,b)=>a.id-b.id);
     // Keep the hero's consequence readable even if another battle starts on
     // the same day. Dismissing it allows subsequent dispatches through.
     const unread=reports.filter(r=>r.id>Math.max(0,...dismissed));
     report=selectWarReport(unread,armies);
+    courier.present(report);
+    $('world-war-report').querySelector('.eyebrow').textContent=report?.taleth?'PIGEON POST / TALETH':'WAR REPORT';
     const footer=cached.winner?`${faction(cached.winner)} wins the East-West War.`:session.clock().running?'Campaign running. Open M to follow the war.':'Campaign paused. Open M to resume or advance a day.';
     const write=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
     const summary=report?.summary;
     write('world-war-report-title',summary?.title??report?.title??'');write('world-war-report-detail',summary?.explanation??report?.detail??'');write('world-war-report-clock',report?footer:'');
-    renderBattleFacts($('world-war-report-facts'),summary?.facts);
-    const returnVisit=!!summary?.side;
-    $('world-war-report-followup').hidden=!summary;
-    write('world-war-report-followup',summary?summary.note+(returnVisit?' '+councilReturnHint(cached):''):'');
+    renderBattleFacts($('world-war-report-facts'),summary?.facts??report?.facts);
+    const returnVisit=!!summary?.side||!!report?.finale||!!report?.hero;
+    $('world-war-report-followup').hidden=!summary&&!report?.note;
+    write('world-war-report-followup',report?.note??(summary?summary.note+(returnVisit?' '+councilReturnHint(cached):''):''));
+    write('world-war-report-minora',report?.finale?'Return to Taleth / tower lookout':'Track Minora / council');
     $('world-war-report-minora').hidden=!returnVisit;
     const lastHero=reports.findLast(r=>r.hero)??report;
     $('world-war-result').hidden=!lastHero;
@@ -131,6 +139,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   function nearby(){return active.find(b=>known(b.location)&&cached.hero.region===b.region&&Math.hypot(position.x-b.location.x,position.z-b.location.z)<=(b.entryRadius??24));}
   function atGround(b){return world.readyAt(b.location.x,b.location.z)&&Math.abs(position.y-Math.max(world.heightAt(position.x,position.z),world.waterAt(position.x,position.z)))<=12;}
   function updateLocal(dt=0){
+    courier.update(report,dt,getMode()==='playing'&&!!report&&!dismissed.has(report.id));
     columns.update(cached,session.clock(),position,known,dt,getMode()==='playing');
     frontline.update(cached,WORLD_WAR_SCENARIO,known,position,getMode()==='playing',dt,session.clock().running);
     mapClock+=dt;if(mapClock>.25){
@@ -167,7 +176,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   }
   function tick(dt,enabled){enabled=enabled&&canBegin();if(enabled&&session.clock().running)onDirty();const changed=enabled&&sync(),advanced=session.tick(dt,enabled);if(changed||advanced){onDirty();refresh();}else if(stamp!==knowledgeStamp())refreshKnowledge();offer();updateLocal(enabled?dt:0);}
   function advance(days=1){if(!canBegin())return false;sync();session.advance(days);onDirty();refresh();offer();updateLocal();}
-  function restore(data){const restored=createWorldWar(data);dialog.clear();area.reset();resumeAfterChoice=false;session=restored;dismissed.clear();dismissed.add(data?.reportReadThrough??0);const nav=savedWarNavigation(data);tracked=nav?.kind==='opening'?null:nav;map.setTrackedTarget(tracked);opening=nav?.kind==='opening'?nav.id:null;lastRegion=undefined;sync();refresh();updateLocal();}
+  function restore(data){const restored=createWorldWar(data);dialog.clear();courier.reset();area.reset();resumeAfterChoice=false;session=restored;dismissed.clear();dismissed.add(data?.reportReadThrough??0);const nav=savedWarNavigation(data);tracked=nav?.kind==='opening'?null:nav;map.setTrackedTarget(tracked);opening=nav?.kind==='opening'?nav.id:null;lastRegion=undefined;sync();refresh();updateLocal();}
   $('world-war-report-track').onclick=()=>{const target=reportTarget();if(target)track(target);};
   $('world-war-report-minora').onclick=()=>trackCouncil();
   $('world-war-report-map').onclick=()=>{const armyId=report?.armyId;openMap();if(armyId!==undefined)requestAnimationFrame(()=>requestAnimationFrame(()=>{if(getMode()==='map')map.focusArmy(armyId);}));};
@@ -192,13 +201,13 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
         return candidates.find(clear)??previous;
       }return null;
     },
-    tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,
+    tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,keydown:courier.keydown,
     drawGuidance(camera){light.draw(camera,position);},
     begin(){if(!canBegin())return false;session.begin();onDirty();refresh();updateLocal();return true;},
     pause(){session.pause();refresh();},
     run(){if(!canBegin())return false;if(!session.clock().running)session.toggle();onDirty();refresh();},
     setSpeed(value){session.setSpeed(value);onDirty();refresh();},
     save:exploration=>{sync();return {format:WORLD_WAR_KEY,version:1,exploration,...session.checkpoint(),navigation:opening?{kind:'opening',id:opening}:tracked?{...tracked}:null,reportReadThrough:Math.max(0,...dismissed)};},
-    state:()=>({campaign:session.snapshot(),clock:session.clock(),encounter:dialog.state(),beacons:beacons.state(),presence:site.state(),aftermath:aftermath.state(),frontline:frontline.state(),battlefield:{entry:area.state(),footprints:areaView.state()},tracking:tracking?structuredClone(tracking):null,guidance:guidance?structuredClone(guidance):null,light:light.state(),columns:columns.state()}),
-    dispose(){dialog.clear();areaView.dispose();beacons.dispose();site.dispose();aftermath.dispose();frontline.dispose();tracker.dispose();light.dispose();columns.dispose();map.setTrackingHandler(null);map.setTrackedTarget(null);$('world-site-status').hidden=true;}};
+    state:()=>({campaign:session.snapshot(),clock:session.clock(),encounter:dialog.state(),beacons:beacons.state(),presence:site.state(),aftermath:aftermath.state(),frontline:frontline.state(),battlefield:{entry:area.state(),footprints:areaView.state()},tracking:tracking?structuredClone(tracking):null,guidance:guidance?structuredClone(guidance):null,light:light.state(),columns:columns.state(),courier:courier.state(),letters:structuredClone(letters)}),
+    dispose(){dialog.clear();courier.dispose();areaView.dispose();beacons.dispose();site.dispose();aftermath.dispose();frontline.dispose();tracker.dispose();light.dispose();columns.dispose();map.setTrackingHandler(null);map.setTrackedTarget(null);$('world-site-status').hidden=true;}};
 }

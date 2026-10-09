@@ -1,3 +1,9 @@
+#taleth-letter-dialog{position:fixed;inset:0;z-index:24;display:flex;align-items:center;justify-content:center;padding:20px;background:#102b3377;box-sizing:border-box}
+#taleth-letter-dialog[hidden]{display:none}#taleth-letter-dialog select{max-width:100%;display:block;margin-top:10px;padding:8px;background:#254539;color:#f1e8cb;border:1px solid #9fac94}#taleth-letter-dialog label{font:12px system-ui}
+#tower-briefing[data-lookout="true"]{justify-content:flex-end;padding:18px;background:linear-gradient(90deg,transparent 40%,#091d2544)}
+#tower-briefing[data-lookout="true"] .tower-dialog-card{width:min(440px,94vw);max-height:66vh;padding:18px 22px}
+#tower-briefing[data-lookout="true"] .tower-dialog-card p{font:14px/1.5 system-ui}#tower-briefing[data-lookout="true"] .tower-dialog-card h2{font-size:24px}
+#tower-briefing[data-lookout="true"] .tower-dialog-actions{gap:8px}#tower-briefing[data-lookout="true"] .tower-dialog-actions button{font-size:12px;padding:9px 12px}
 #tower-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
 #tower-objective{position:fixed;left:32px;top:130px;max-width:310px;padding:12px 16px;background:#183b30e8;border-left:3px solid #d5bb7b;font:14px/1.5 system-ui;color:#f4e3b9;pointer-events:none}
 #tower-briefing{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:28px;background:linear-gradient(transparent 20%,#091d2577);box-sizing:border-box}

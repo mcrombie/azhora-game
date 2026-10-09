@@ -130,6 +130,20 @@ app.whenReady().then(async()=>{
         fs.writeFileSync(path.join(dir,'hearthfall-checks.json'),JSON.stringify({...result,errors},null,2));
         console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(warTest&&(process.argv.includes('--taleth-story-checks')||process.argv.includes('--taleth-lookout-checks'))){
+        const results=[];
+        const methods=process.argv.includes('--taleth-lookout-checks')?['settled','river','politics','east','complete']:['battle','letter','summons','river','politics','east','complete'];
+        for(const method of methods){
+          results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/taleth-story-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`));
+          fs.writeFileSync(path.join(dir,'taleth-story-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+        }
+        const navigated=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
+        await win.webContents.executeJavaScript(`document.getElementById('return-start').click()`);await navigated;
+        await win.webContents.executeJavaScript(`new Promise((resolve,reject)=>{const end=Date.now()+10000;const poll=()=>{const b=document.querySelector('[data-continue-mode="war"]');if(b&&!b.disabled){b.click();resolve();}else if(Date.now()>end)reject(Error('Lookout Continue unavailable'));else setTimeout(poll,50);};poll();})`);
+        await waitReady();results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/taleth-story-smoke.js').then(m=>m.continued(window.__EXPLORATION__))`));
+        fs.writeFileSync(path.join(dir,'taleth-story-continued.png'),(await win.webContents.capturePage()).toPNG());
+        fs.writeFileSync(path.join(dir,'taleth-story-checks.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({checks:[...new Set(results.flatMap(r=>r.checks))],errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(warTest&&process.argv.includes('--allied-retreat-checks')){
         const results=[];
         for(const method of ['rout','evacuated','secure']){

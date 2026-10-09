@@ -35,6 +35,12 @@ export async function loadExplorationWorld(scene, position, onProgress, {enabled
     readyAt(x,z){const id=regionAt(x,z).id;return allowed(id)&&(id===0||loading.isReady(id));},
     prefetchRegion(id){assertRegion(id);return loading.prefetchRegion(id);},
     async prepareRegion(id){assertRegion(id);await loading.ensureRegion(id);},
+    async prepareBackdrop(bounds){
+      // Existing coarse terrain is scenery only: it adds no regions, actors,
+      // collision or travel permissions to the five-province scenario.
+      let until=performance.now()+8;
+      for(const _ of built.buildTerrainBackdrop(bounds))if(performance.now()>until){await new Promise(resolve=>setTimeout(resolve,0));until=performance.now()+8;}
+    },
     async prepare(x,z){const id=regionAt(x,z).id;assertRegion(id);if(id!==0)await loading.ensureRegion(id);},
     stop(){loading.stop();},
   };

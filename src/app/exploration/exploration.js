@@ -18,7 +18,7 @@ import {councilRoom,councilSpawn} from '../../content/regions/minora-frontier/mi
 import {createTowerHost} from './tower-host.js';
 import {createStableHost} from './stable-host.js';
 import {createLocalMap} from './local-map.js';
-import {TOWER,TALETH_SPOT,TOWER_DOOR} from './tower-state.js';
+import {TOWER,TALETH_SPOT,TOWER_DOOR,LOOKOUT,LOOKOUT_SPAWN} from './tower-state.js';
 import {MODES,allowsRegion} from './modes.js';
 import {explorationDestinations,findRegionArrival} from './developer-travel.js';
 import {openWorldSkirmish} from './world-skirmish.js';
@@ -46,7 +46,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   scene.add(new THREE.HemisphereLight(0xf0f2d8,0x53644b,1.65));
   const sun=new THREE.DirectionalLight(0xffe6ba,2.1);sun.position.set(-100,180,70);scene.add(sun);
   const loading=message=>{$('loading-message').textContent=message;console.log('EXPLORATION_LOADING '+message);};
-  let towerState=warMode?createTowerState(warSaved):null,tower=null,council=null;
+  let towerState=warMode?createTowerState(warSaved):null,tower=null,council=null,lookoutView=null;
   function boundedWarSave(data,opening){
     return warMode&&data&&!opening.inside&&!allowsRegion(launch,regionAt(data.position.x,data.position.z).id)
       ?{...data,position:{...TOWER_EXIT,y:21.3},heading:0}:data;
@@ -137,28 +137,31 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   }
   function setTowerEnvironment(){
     if(!towerState)return;
-    const limbo=world.state().inLimbo;
-    scene.background=new THREE.Color(limbo?0x101c2b:towerState.inside?0x354751:0xb6c8b0);
-    scene.fog=towerState.inside||limbo?null:new THREE.Fog(0xb6c8b0,180,560);
-    sun.intensity=limbo?.15:towerState.inside?.45:2.1;refreshTravelHelp();
+    const limbo=world.state().inLimbo,lookout=towerState.room==='lookout';
+    scene.background=new THREE.Color(limbo?0x101c2b:lookout?0xb6c8b0:towerState.inside?0x354751:0xb6c8b0);
+    scene.fog=lookout?new THREE.Fog(0xb6c8b0,700,1800):towerState.inside||limbo?null:new THREE.Fog(0xb6c8b0,180,560);
+    camera.far=lookout?Math.max(quality.far,2000):quality.far;camera.updateProjectionMatrix();
+    sun.intensity=limbo?.15:towerState.inside&&!lookout?.45:2.1;refreshTravelHelp();
   }
   const changeTower=enter=>changeRoom(enter?'tower':null);
   async function changeRoom(next){
     if(mode!=='playing'||next===towerState.room)return false;
     if(!towerState.briefed){notice('Speak with Taleth before leaving.');return false;}
+    if(next==='lookout'&&!war.state().campaign.winner){notice('Taleth will invite you to the lookout once the war is settled.');return false;}
     if(mounts.kind!=='foot'||!movement.state().grounded){notice('Land and dismount before entering.');return false;}
     const before=snapshot(),opening=towerState.snapshot(war.state().clock.running),previous=towerState.room;
-    const exit=councilRoom(previous)?.exit??TOWER_EXIT,spawn=next==='tower'?TOWER_SPAWN:next?councilSpawn(next):exit;
-    stopAutoplay();setMode('loading');$('loading-screen').hidden=false;loading(next?'Entering '+(councilRoom(next)?.room??'Taleth\u2019s chamber'):'Returning to Minora');
+    const exit=councilRoom(previous)?.exit??TOWER_EXIT,spawn=next==='lookout'?LOOKOUT_SPAWN:next==='tower'?TOWER_SPAWN:next?councilSpawn(next):exit;
+    stopAutoplay();setMode('loading');$('loading-screen').hidden=false;loading(next==='lookout'?'Ascending to the guild lookout':next?'Entering '+(councilRoom(next)?.room??'Taleth\u2019s chamber'):'Returning to Minora');
     try{
       if(!next)await world.prepareExterior(exit);
+      if(next==='lookout')await world.prepareLookout();
       world.show(next);if(next)towerState.enter(next);else towerState.leave();
       place(spawn,next?Math.PI:0);yaw=next?0:Math.PI-.55;pitch=.27;distance=8;setTowerEnvironment();
       dirty=true;updateLocation();updateCamera(true);war.sync();war.refresh();setMode('playing');return true;
     }catch(error){world.show(opening.location==='world'?null:opening.location);towerState=createTowerState({tower:opening});place(before.position,before.heading);({yaw,pitch,distance}=before.camera);setTowerEnvironment();updateLocation();updateCamera(true);setMode('playing');notice('The doorway could not open: '+error.message);return false;}
     finally{$('loading-screen').hidden=true;}
   }
-  function updateLocation(){if(world.state?.().inLimbo){$('location-name').textContent='The room between departures';return;}const region=world.regionAt(position.x,position.z).name;$('location-name').textContent=towerState?.inside?'Minora / '+(councilRoom(towerState.room)?.room??'Guild chamber'):Math.hypot(position.x-START.x,position.z-START.z)<250?'Minora':region;}
+  function updateLocation(){if(world.state?.().inLimbo){$('location-name').textContent='The room between departures';return;}const region=world.regionAt(position.x,position.z).name;$('location-name').textContent=towerState?.room==='lookout'?'Minora / Guild lookout':towerState?.inside?'Minora / '+(councilRoom(towerState.room)?.room??'Guild chamber'):Math.hypot(position.x-START.x,position.z-START.z)<250?'Minora':region;}
   function snapshot(){return {version:1,character:'teresod',position:{x:position.x,y:position.y,z:position.z},heading:actor.group.rotation.y,
     camera:{yaw,pitch,distance},elapsed,cells:[...cells]};}
   function save(){
@@ -209,7 +212,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     const result=store.read();if(!result.ok||!result.data){notice(result.reason||'No exploration has been saved yet.');return;}
     let data=war||hearthfall?result.data.exploration:result.data;setMode('loading');$('loading-screen').hidden=false;loading('Returning to your saved place');
     try{
-      if(towerState){const restored=createTowerState(result.data);data=boundedWarSave(data,restored);afterlife.restore(result.data.afterlife);actor.setForm(afterlife.inLimbo?'living':afterlife.form);if(!restored.inside&&!afterlife.inLimbo)await world.prepareExterior(data.position);towerState=restored;if(afterlife.inLimbo)world.showLimbo();else world.show(restored.room);setTowerEnvironment();}
+      if(towerState){const restored=createTowerState(result.data);data=boundedWarSave(data,restored);afterlife.restore(result.data.afterlife);actor.setForm(afterlife.inLimbo?'living':afterlife.form);if(!restored.inside&&!afterlife.inLimbo)await world.prepareExterior(data.position);if(restored.room==='lookout'&&!afterlife.inLimbo)await world.prepareLookout();towerState=restored;if(afterlife.inLimbo)world.showLimbo();else world.show(restored.room);setTowerEnvironment();}
       await world.prepare(data.position.x,data.position.z);cells.clear();for(const key of data.cells)cells.add(key);elapsed=data.elapsed;
       ({yaw,pitch,distance}=data.camera);place(data.position,data.heading);stable?.restore(result.data.riding);council?.restore(result.data.council);sorcery?.restore(result.data.sorcery);if(war){war.restore(result.data);if(towerState.snapshot().running&&!afterlife.inLimbo)war.run();}if(hearthfall)hearthfall.restore(result.data);dirty=false;updateLocation();updateCamera(true);setMode(afterlife?.inLimbo?'limbo':'playing');notice(war?'Saved war scenario restored.':'Saved exploration restored.');
     }catch(error){setMode('pause');notice(error.message);}finally{$('loading-screen').hidden=true;}
@@ -228,6 +231,11 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   let cameraYaw=yaw;const followOffset=new THREE.Vector3(),cameraObstruction=createCameraObstruction(world);
   function updateCamera(snap=false,dt=1/60){
     const blend=1-Math.exp(-10*dt);
+    if(towerState?.room==='lookout'&&mode==='briefing'&&lookoutView){
+      const east=lookoutView==='east';desired.set(LOOKOUT.x+(east?3:6),LOOKOUT.y+3.2,LOOKOUT.z+(east?8.5:3));
+      if(snap)camera.position.copy(desired);else camera.position.lerp(desired,blend);
+      camera.lookAt(LOOKOUT.x+(east?350:80),25,LOOKOUT.z+(east?10:320));return;
+    }
     if(mode==='chronicle'){
       desired.set(TOWER.x+7,TOWER.y+7,TOWER.z+1);
       if(snap)camera.position.copy(desired);else camera.position.lerp(desired,blend);
@@ -283,7 +291,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   listen(window,'resize',resize);listen(window,'blur',()=>{keys.clear();drag=false;windowActive=false;});listen(window,'focus',()=>{windowActive=true;});
   listen(document,'keydown',event=>{
     if(mode==='crossing'){event.preventDefault();return;}
-    if(afterlife?.keydown(event)||tower?.keydown(event)||council?.keydown(event)||stable?.keydown(event)||residentHost?.keydown(event))return;
+    if(war?.keydown(event)||afterlife?.keydown(event)||tower?.keydown(event)||council?.keydown(event)||stable?.keydown(event)||residentHost?.keydown(event))return;
     if(mode==='limbo'){
       if(event.code==='KeyF'||event.code==='Escape'){event.preventDefault();if(!event.repeat)afterlife.talk();return;}
       if(event.code==='F5'){event.preventDefault();if(!event.repeat)save();return;}
@@ -382,12 +390,13 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     war.sync();war.refresh();
     if(towerState.snapshot().running)war.run();
     tower=createTowerHost({state:()=>towerState,position,mode:()=>mode,setMode,notice,scenario:()=>war.state().campaign.scenario,campaign:()=>war.state().campaign,onChronicle:value=>world.setChronicle(value),
+      onLookout:enter=>changeRoom(enter?'lookout':'tower'),onLookoutView:view=>{lookoutView=view;world.setLookoutView(view);},onConclude(){dirty=true;save();},
       onBegin(){dirty=true;war.begin();notice('Day 1: the armies are on the march. Meet Bear outside the tower.');},onDoor:changeTower});
     council=createCouncilHost({saved:warSaved?.council,state:()=>towerState,position,mode:()=>mode,setMode,campaign:()=>war.state().campaign,onDoor:changeRoom,onDirty(){dirty=true;}});
     residentHost=createResidentHost({world,position,mode:()=>mode,setMode,available:()=>!towerState.inside&&!world.state().inLimbo&&!mounts.airborne()});
     stable=createStableHost({scene,world,actor,position,mounts,movement,saved:warSaved?.riding,inside:()=>towerState.inside||world.state().inLimbo,mode:()=>actor.form==='ghost'?'ghost':mode,setMode,notice,onChange(){dirty=true;refreshTravelHelp();}});
     minimap=createLocalMap({world,position,heading:()=>actor.group.rotation.y,inside:()=>towerState.inside,mode:()=>mode,openMap,events:()=>war.minimapEvents(),track:target=>war.track(target),
-      marker:()=>council.marker()??(towerState.inside?(towerState.briefed?{...TOWER_DOOR,id:'door',label:'Door to Minora'}:{...TALETH_SPOT,id:'taleth',label:'Taleth'}):war.minimapDestination()??stable.marker()),
+      marker:()=>tower.marker()??council.marker()??(towerState.inside?(towerState.briefed?{...TOWER_DOOR,id:'door',label:'Door to Minora'}:{...TALETH_SPOT,id:'taleth',label:'Taleth'}):war.minimapDestination()??stable.marker()),
       chart:()=>({cells, reveal:$('reveal-all').checked})});
     afterlife=createAfterlifeHost({saved:warSaved?.afterlife,position,mode:()=>mode,setMode,capture:captureWarCheckpoint,enter:enterLimbo,restore:restoreWarAttempt,returnToWorld:returnFromLimbo,save,mainMenu,onChange(){dirty=true;refreshTravelHelp();},notice});
     sorcery=createFireballHost({scene,world,actor,position,yaw:()=>yaw,mode:()=>mode,inside:()=>towerState.inside||world.state().inLimbo,canCast:()=>actor.form!=='ghost'&&mounts.kind==='foot',combat:()=>skirmish,saved:warSaved?.sorcery,notice,onDirty(){dirty=true;}});

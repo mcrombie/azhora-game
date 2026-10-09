@@ -2438,6 +2438,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   const api = {
     loadingMode, loading, sceneryResidency:residency,
     terrainBackdrop:()=>streamTerrain?.backdropCount()??0,
+    buildTerrainBackdrop:bounds=>streamTerrain?.buildBackdrop(bounds)??[][Symbol.iterator](),
     enabledRegions:enabled?[...enabled]:null,isRegionEnabled:(x,z)=>enabledId(regionAt(x,z)?.id),
     updateStreaming(position){
       if(!residency)return;

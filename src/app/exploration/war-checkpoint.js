@@ -15,7 +15,7 @@ export function validateWorldWarSave(data){
     !Number.isInteger(data.simulation.seed)||data.simulation.seed<0||data.simulation.seed>0xffffffff||
     !Array.isArray(data.simulation.commands)||data.simulation.commands.length>10000||
     !validAfterlife(data.afterlife,validateWorldWarSave))return false;
-  try{worldWarScenario(data.simulation.scenario);createWorldWar(data);return true;}catch{return false;}
+  try{worldWarScenario(data.simulation.scenario);const war=createWorldWar(data);return !(data.tower?.location==='lookout'||data.tower?.concluded)||!!war.snapshot().winner;}catch{return false;}
 }
 export function worldWarStore(storage){
   return {

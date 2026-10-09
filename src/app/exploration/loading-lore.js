@@ -6,6 +6,7 @@ export const WAR_LOADING_PASSAGES=[
   {title:'Divided loyalties',text:'The Mayor, an Ovesan, favors West Lizeem. The High Priest, from Nesdor, favors East. Taleth remains neutral, but does not forbid Teresod to intervene.'},
   {title:'The standard above the gate',text:'The highest central flag shows who leads Minora\u2019s council: the Guild star, the civic bridge, or the temple sun. Your intervention and the war\u2019s outcome can change its order.'},
   {title:'Between moments',text:'Taleth\u2019s tower stands between dimensions. The Chronoscope shows the thirty days before the war; the vision cannot rewrite events you have already lived.'},
+  {title:'The guild’s pigeons',text:'Rock doves roost above the Wizard Guild. Their slate wings carry two dark bars; small message tubes bear Taleth’s counsel to Teresod in the field. He wants the war ended before greater troubles spend the people’s remaining strength.'},
 ];
 export function installLoadingLore(mode){
   const screen=document.getElementById('loading-screen');if(mode!=='war')return;
