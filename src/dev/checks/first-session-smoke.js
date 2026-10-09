@@ -54,7 +54,7 @@ export async function fight(a){
 export async function battle(a,side='west'){
   await a.war.help(side);const first=await fight(a);assert(first.hero.hp>0,'Interception can be completed with ordinary combat inputs');
   a.war.continue();assert(a.state().mode==='encounter'&&a.war.state().campaign.pending.rally,'Regroup opens final assault');
-  document.getElementById('assault-with-allies').checked=true;await a.war.help(side);const final=await fight(a);assert(final.outcome==='success','Allied final assault is winnable');
+  await a.war.help(side);const final=await fight(a);assert(final.outcome==='success','Allied final assault is winnable');
   a.war.continue();a.war.pause();assert(a.war.state().campaign.day===6,'Final assault advances directly to result');
   assert(a.war.state().campaign.regions.caricas.owner===side,'Victory matches the actual controlling faction');
   assert(a.council.state().influence.leader===(side==='west'?'mayor':'temple'),'Council responds to the chosen side');

@@ -11,7 +11,7 @@ async function ready(a){for(let i=0;i<600&&a.state().mode==='loading';i++)await 
 async function capture(a){for(let i=0;i<25;i++)a.step(.04);window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],state:a.tower.state(),courier:a.war.state().courier};}
 
 export async function battle(a){
-  window.dispatchEvent(new Event('focus'));await prepareWarExterior(a);await prepareRally(a);document.getElementById('assault-with-allies').checked=true;await a.war.help('west');
+  window.dispatchEvent(new Event('focus'));await prepareWarExterior(a);await prepareRally(a);await a.war.help('west');
   for(let i=0;i<5401&&!a.war.state().encounter.encounter.outcome;i++){driveWorldEncounter(a,a.war.state().encounter.encounter);a.step(1/60);}clearCombatKeys(a);
   assert(a.war.state().encounter.encounter.outcome==='success','Real allied assault reaches victory before Taleth writes');click('world-skirmish-continue');a.war.pause();a.step(.04);
   assert(a.war.state().letters[0].hero,'First letter recognizes the player’s real battle');assert(document.querySelector('#world-war-report .eyebrow').textContent.includes('PIGEON'),'Pigeon dispatch replaces the ordinary battle report');

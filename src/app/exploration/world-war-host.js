@@ -1,6 +1,8 @@
 import {createBattlefieldArea,battlefieldBoundary,stopAtBattleBoundary} from './battlefield-area.js';
 import {canStand} from '../../gameplay/movement/locomotion.js';
 import {createBattlefieldAreaView} from './battlefield-area-view.js';
+import {createSoldierHost} from './soldier-host.js';
+import {stopAtSoldier} from './soldier-contact.js';
 import {createBattleAftermath} from './battle-aftermath-view.js';
 import {deathReport} from './afterlife-state.js';
 import {createWarFrontline} from './war-frontline-view.js';
@@ -38,6 +40,8 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   let report=null,armies=[];const dismissed=new Set([saved?.reportReadThrough??0]);
   let letters=[],opportunity=null;
   const courier=createTalethCourier({scene,world,position,getMode,setMode,letters:()=>letters,opportunity:()=>opportunity,onFollow:followNext});
+  const soldierPeople=()=>[...aftermath.people(),...site.people()];
+  const soldiers=createSoldierHost({world,position,getMode,setMode,people:soldierPeople,campaign:()=>cached,opportunity:()=>opportunity,faction,region,available:()=>!isGhost()&&canEnterBattle()});
   const initialNavigation=savedWarNavigation(saved);
   let tracked=initialNavigation?.kind==='opening'?null:initialNavigation,tracking=null,opening=initialNavigation?.kind==='opening'?initialNavigation.id:null,guidance=null,mapClock=0;
   const light=createWarGuidanceView(scene,world),columns=createMarchingColumns(scene,world),frontline=createWarFrontline(scene,world);
@@ -103,7 +107,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     report=selectWarReport(unread,armies);
     courier.present(report);
     $('world-war-report').querySelector('.eyebrow').textContent=report?.taleth?'PIGEON POST / TALETH':'WAR REPORT';
-    const footer=cached.winner?`${faction(cached.winner)} wins the East-West War.`:session.clock().running?'Campaign running. Open M to follow the war.':'Campaign paused. Open M to resume or advance a day.';
+    const footer=cached.winner?`${faction(cached.winner)} has prevailed. The united country is the Lizeemi League.`:session.clock().running?'Campaign running. Open M to follow the war.':'Campaign paused. Open M to resume or advance a day.';
     const write=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
     const summary=report?.summary;
     write('world-war-report-title',summary?.title??report?.title??'');write('world-war-report-detail',summary?.explanation??report?.detail??'');write('world-war-report-clock',report?footer:'');
@@ -148,7 +152,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     $('world-war-day').textContent='Day '+state.day;$('world-war-run').textContent=clock.running?'Pause campaign':'Run campaign';
     $('world-war-run').disabled=!canBegin()||!!state.pending||!!state.winner;$('world-war-step').disabled=!canBegin()||clock.running||!!state.pending||!!state.winner;
     $('world-war-speed').value=String(clock.speed);
-    $('world-war-status').textContent=!canBegin()?'Speak with Taleth in the tower before beginning.':state.winner?`${faction(state.winner)} wins.`:`${state.hero.region?'Teresod in '+regionName():'Outside the five-region war'}. 1 day = ${30/clock.speed} active seconds.`;
+    $('world-war-status').textContent=!canBegin()?'Speak with Taleth in the tower before beginning.':state.winner?`Lizeemi League / ${faction(state.winner)} prevailed.`:`${state.hero.region?'Teresod in '+regionName():'Outside the five-region war'}. 1 day = ${30/clock.speed} active seconds.`;
     refreshKnowledge();
   }
   function nearby(){return active.find(b=>known(b.location)&&cached.hero.region===b.region&&Math.hypot(position.x-b.location.x,position.z-b.location.z)<=(b.entryRadius??24));}
@@ -169,7 +173,8 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     light.update(guidance,getMode()==='playing');
     writeHud($('world-war-report'),'hidden',getMode()!=='playing'||!report||dismissed.has(report.id));
     beacons.update(cached.engagements,known,position,cached,WORLD_WAR_SCENARIO);
-    aftermath.update(cached,WORLD_WAR_SCENARIO,known,position,getMode()==='playing',dt);
+    aftermath.update(cached,WORLD_WAR_SCENARIO,known,position,getMode()==='playing'||soldiers.open(),dt);
+    soldiers.update(dt);
     const mode=getMode(),near=site.update(presence,known,position,dt,!['encounter','skirmish','loading'].includes(mode));
     writeHud($('world-site-status'),'hidden',mode!=='playing'||!near);
     areaView.update(active.filter(b=>b.entryRadius),known,position,{enabled:getMode()==='playing',dt});
@@ -214,15 +219,17 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
         const candidates=[],angle=Math.atan2(edge.x-b.location.x,edge.z-b.location.z);
         for(let i=1;i<=32;i++)for(const side of [-1,1]){const t=angle+side*i*Math.PI/32;candidates.push({x:b.location.x+Math.sin(t)*(b.entryRadius-.0001),z:b.location.z+Math.cos(t)*(b.entryRadius-.0001)});}
         return candidates.find(clear)??previous;
-      }return null;
+      }
+      if(isGhost()||!canEnterBattle())return null;
+      return stopAtSoldier(previous,position,soldierPeople(),horseState()?.mounted?1.45:1);
     },
-    tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,followNext,keydown:courier.keydown,
+    tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,followNext,interactSoldier:soldiers.interact,keydown:e=>soldiers.keydown(e)||courier.keydown(e),
     drawGuidance(camera){light.draw(camera,position);},
     begin(){if(!canBegin())return false;session.begin();onDirty();refresh();updateLocal();return true;},
     pause(){session.pause();refresh();},
     run(){if(!canBegin())return false;if(!session.clock().running)session.toggle();onDirty();refresh();},
     setSpeed(value){session.setSpeed(value);onDirty();refresh();},
     save:exploration=>{sync();return {format:WORLD_WAR_KEY,version:1,exploration,...session.checkpoint(),navigation:opening?{kind:'opening',id:opening}:tracked?{...tracked}:null,reportReadThrough:Math.max(0,...dismissed)};},
-    state:()=>({campaign:session.snapshot(),clock:session.clock(),encounter:dialog.state(),beacons:beacons.state(),presence:site.state(),aftermath:aftermath.state(),frontline:frontline.state(),battlefield:{entry:area.state(),footprints:areaView.state()},tracking:tracking?structuredClone(tracking):null,guidance:guidance?structuredClone(guidance):null,light:light.state(),columns:columns.state(),courier:courier.state(),letters:structuredClone(letters),opportunity:structuredClone(opportunity)}),
-    dispose(){dialog.clear();courier.dispose();areaView.dispose();beacons.dispose();site.dispose();aftermath.dispose();frontline.dispose();tracker.dispose();light.dispose();columns.dispose();map.setTrackingHandler(null);map.setTrackedTarget(null);$('world-site-status').hidden=true;}};
+    state:()=>({campaign:session.snapshot(),clock:session.clock(),encounter:dialog.state(),beacons:beacons.state(),presence:site.state(),aftermath:aftermath.state(),soldiers:{...soldiers.state(),people:soldierPeople()},frontline:frontline.state(),battlefield:{entry:area.state(),footprints:areaView.state()},tracking:tracking?structuredClone(tracking):null,guidance:guidance?structuredClone(guidance):null,light:light.state(),columns:columns.state(),courier:courier.state(),letters:structuredClone(letters),opportunity:structuredClone(opportunity)}),
+    dispose(){dialog.clear();soldiers.dispose();courier.dispose();areaView.dispose();beacons.dispose();site.dispose();aftermath.dispose();frontline.dispose();tracker.dispose();light.dispose();columns.dispose();map.setTrackingHandler(null);map.setTrackedTarget(null);$('world-site-status').hidden=true;}};
 }

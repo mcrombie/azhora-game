@@ -144,6 +144,17 @@ app.whenReady().then(async()=>{
         fs.writeFileSync(path.join(dir,'taleth-story-continued.png'),(await win.webContents.capturePage()).toPNG());
         fs.writeFileSync(path.join(dir,'taleth-story-checks.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({checks:[...new Set(results.flatMap(r=>r.checks))],errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(warTest&&process.argv.includes('--battle-review-checks')){
+        const results=[],run=async method=>{const r=await win.webContents.executeJavaScript(`import('./src/dev/checks/battle-review-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);results.push(r);fs.writeFileSync(path.join(dir,'battle-review-'+method+'.png'),(await win.webContents.capturePage()).toPNG());};
+        for(const method of ['stable','briefing','victory'])await run(method);
+        for(const [width,height] of [[1024,600],[390,844],[844,390]]){win.setContentSize(width,height);await new Promise(r=>setTimeout(r,150));await run('layout');fs.writeFileSync(path.join(dir,`battle-review-${width}x${height}.png`),(await win.webContents.capturePage()).toPNG());}
+        win.setContentSize(1280,720);await new Promise(r=>setTimeout(r,150));
+        for(let i=0;i<6;i++){win.webContents.sendInputEvent({type:'keyDown',keyCode:'Tab'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'Tab'});await new Promise(r=>setTimeout(r,20));await run('layout');}
+        await win.webContents.executeJavaScript(`document.getElementById('world-skirmish-continue').focus()`);
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'Return'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'Return'});
+        for(const method of ['continued','soldiers','mounted'])await run(method);
+        fs.writeFileSync(path.join(dir,'battle-review.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({checks:results.at(-1).checks,errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(warTest&&process.argv.includes('--allied-retreat-checks')){
         const results=[];
         for(const method of ['rout','evacuated','secure']){
@@ -275,6 +286,11 @@ app.whenReady().then(async()=>{
         }
         const result={checks:results.flatMap(r=>r.checks),results,errors};
         fs.writeFileSync(path.join(dir,'battlefield-checks.json'),JSON.stringify(result,null,2));console.log(JSON.stringify({checks:result.checks,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--campaign-chronicle-checks')){
+        const results=[];
+        for(const method of ['ongoing','west','east','finished']){results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/campaign-chronicle-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`));fs.writeFileSync(path.join(dir,'campaign-chronicle-'+method+'.png'),(await win.webContents.capturePage()).toPNG());}
+        fs.writeFileSync(path.join(dir,'campaign-chronicle.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({checks:results.at(-1).checks,errors},null,2));app.exit(errors.length?1:0);return;
       }
       if(warTest&&process.argv.includes('--chronicle-checks')){
         const run=method=>win.webContents.executeJavaScript(`import('./src/dev/checks/chronicle-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).then(r=>JSON.parse(JSON.stringify(r))).catch(e=>{console.error(e.stack||String(e));throw e;})`);

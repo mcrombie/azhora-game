@@ -77,3 +77,28 @@ body:has(#world-skirmish:not([hidden])) #exploration-status{top:auto;bottom:22px
 
 #world-skirmish:has(#world-skirmish-result:not([hidden])){display:flex;flex-direction:column;overflow:hidden}#world-skirmish:has(#world-skirmish-result:not([hidden]))>:not(#world-skirmish-result){flex-shrink:0}
 #world-skirmish-result:not([hidden]){display:flex;flex-direction:column;min-height:0}#world-skirmish-result>h2,#world-skirmish-result>button,#world-skirmish-result-actions{flex-shrink:0}#world-skirmish-result-copy{overflow:auto;min-height:0;padding-right:8px}#world-skirmish-result-actions{border-top:1px solid #a8b09c55;padding-top:8px}#world-skirmish-result-actions button{width:100%}
+
+/* A battle receipt is a deliberate pause, separate from the left combat HUD. */
+#battle-result-dialog,#soldier-dialog{color:#f1e8cb;background:#173b32;border:1px solid #cfb878;border-radius:8px;box-shadow:0 20px 80px #0008;box-sizing:border-box;width:min(640px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:26px 30px;overflow:auto}
+#battle-result-dialog[open]{display:flex;flex-direction:column;overflow:hidden}
+#battle-result-dialog::backdrop,#soldier-dialog::backdrop{background:#061a20ad}
+#battle-result-dialog .eyebrow,#soldier-dialog .eyebrow{font:11px/1.5 system-ui;letter-spacing:.14em;color:#c4d6c4;flex-shrink:0;margin:0 0 10px}
+#battle-result-dialog #world-skirmish-result{border:0;margin:0;padding:0;min-height:0}
+#battle-result-dialog h2,#soldier-dialog h2{font:32px/1.12 Georgia;margin:4px 0 16px;color:#ffe0a0}
+#battle-result-dialog p,#soldier-dialog p{font:14px/1.55 system-ui}
+#battle-result-dialog #world-skirmish-result-copy{overscroll-behavior:contain}
+#battle-result-dialog #world-skirmish-result-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:14px}
+#battle-result-dialog button{min-height:44px;padding:10px 14px;font:14px system-ui;flex:1 1 40%}
+#battle-result-dialog #world-skirmish-continue{background:#f1d69a;color:#173b32;border-color:#f1d69a;flex-basis:100%;font-weight:650}
+#battle-result-dialog #world-skirmish-review{color:#c4d6c4;margin-bottom:0}
+#world-skirmish-result-actions [hidden]{display:none}
+body:has(#battle-result-dialog[open]) #teresod-sorcery,body:has(#battle-result-dialog[open]) #world-autoplay{visibility:hidden}
+#soldier-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
+#soldier-dialog #soldier-office{color:#cfb878}
+#soldier-dialog button{min-height:44px}
+@media(max-width:650px),(max-height:650px){
+ #battle-result-dialog,#soldier-dialog{padding:16px 20px}
+ #battle-result-dialog h2,#soldier-dialog h2{font-size:25px;margin-bottom:10px}
+ #battle-result-dialog .battle-facts{font-size:12px}
+ #battle-result-dialog #world-skirmish-result-actions{margin-top:8px;padding-top:8px}
+}

@@ -33,7 +33,7 @@ export function createSitePresence(scene,world){
     for(const guard of guards){guard.group.visible=visible;if(visible)guard.animate(time,0,true,{action:'idle',progress:0});}
     return visible&&Math.hypot(position.x-at.x,position.z-at.z)<36&&Math.abs(position.y-world.heightAt(position.x,position.z))<12;
   }
-  return {update,state:()=>({owner,color,banner:painted?.state()??null,visible,
+  return {update,people:()=>visible?guards.filter(g=>g.group.visible).map(g=>({owner,region:'caricas',kind:'sentry',x:g.group.position.x,y:g.group.position.y,z:g.group.position.z})):[],state:()=>({owner,color,banner:painted?.state()??null,visible,
     guards:guards.filter(g=>g.group.visible).map(g=>({position:g.group.position.toArray(),ground:world.heightAt(g.group.position.x,g.group.position.z),clear:canStand(g.group.position.x,g.group.position.z,world,.5,g.group.position.y)}))}),
     dispose(){clear();painted?.setColor();painted=null;}};
 }

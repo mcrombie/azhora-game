@@ -1,3 +1,4 @@
+import {presentFaction} from './league-settlement.js';
 import {parseCells,unionCells,labelAnchor} from '../../ui/map/campaign-map-geometry.js';
 
 const NS='http://www.w3.org/2000/svg';
@@ -27,21 +28,21 @@ async function loadAtlas(){
   return atlasPromise;
 }
 
-/** Read-only, authored history: this view has no campaign, clock or save access. */
+/** Read-only historical projection: this view has no campaign, clock or save access. */
 export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{}}={}){
   const root=document.createElement('section');root.id='chronicle-view';root.hidden=true;root.setAttribute('role','dialog');root.setAttribute('aria-modal','true');root.setAttribute('aria-labelledby','chronicle-title');
   root.innerHTML=`<div class="chronicle-shell">
     <header class="chronicle-header"><div><span class="eyebrow">TALETH / WIZARD GUILD MASTER</span><h1 id="chronicle-title">Chronoscope</h1><p id="chronicle-held-caption">History is held here. The campaign waits for you.</p></div><nav aria-label="Leave the history"><button id="chronicle-start" class="chronicle-primary">Start campaign</button><button id="chronicle-close">Return to Taleth</button></nav></header>
     <div class="chronicle-body"><div class="chronicle-projection"><div id="chronicle-map" role="img" aria-label="Historical political boundaries of the five Lizeem regions"></div><p id="chronicle-map-message" role="status">Drawing the remembered borders…</p><div class="chronicle-map-caption"><span>THE LIZEEM PROVINCES</span><span>HISTORICAL PROJECTION / NORTH ↑</span></div></div>
     <article class="chronicle-narration"><span id="chronicle-day" class="eyebrow"></span><div id="chronicle-event" aria-live="polite" aria-atomic="true"><h2 id="chronicle-event-title"></h2><p id="chronicle-caption"></p></div><div id="chronicle-owners" aria-label="States visible on the chart"></div><p id="chronicle-present" hidden>The memory reaches the present. What happens next is yours.</p><small id="chronicle-play-state"></small></article></div>
-    <footer class="chronicle-controls"><div class="chronicle-playback"><button id="chronicle-previous" aria-label="Previous historical event">← Previous</button><button id="chronicle-play">Pause</button><button id="chronicle-next" aria-label="Next historical event">Next →</button><span id="chronicle-duration"></span></div><div id="chronicle-progress" role="progressbar" aria-label="History playback" aria-valuemin="0" aria-valuemax="100"><span></span></div><nav id="chronicle-timeline" aria-label="Historical events"></nav><p class="chronicle-key-help">Space: pause / play · ← →: events · Esc: return to Taleth</p></footer>
+    <footer class="chronicle-controls"><div class="chronicle-playback"><button id="chronicle-previous" aria-label="Previous historical event">← Previous</button><button id="chronicle-play">Pause</button><button id="chronicle-next" aria-label="Next historical event">Next →</button><button id="chronicle-speed" hidden>Speed 1x</button><span id="chronicle-duration"></span></div><div id="chronicle-progress" role="progressbar" aria-label="History playback" aria-valuemin="0" aria-valuemax="100"><span></span></div><nav id="chronicle-timeline" aria-label="Historical events"></nav><p class="chronicle-key-help">Space: pause / play · ← →: events · Esc: return to Taleth</p></footer>
   </div>`;
   document.body.append(root);
   const $=id=>root.querySelector('#'+id),map=$('chronicle-map'),timeline=$('chronicle-timeline'),clipId=`chronicle-scope-${++instanceId}`;
   let data=null,active=false,index=0,playing=false,elapsed=0,ready=false,error=null,disposed=false,request=0,completed=false,busy=false,previousFocus=null,focused=true,hasBegun=false;
-  let shapes=new Map(),labels=new Map(),chart=null;
+  let shapes=new Map(),labels=new Map(),chart=null,marks=null,speed=1;
   const frame=()=>data?.frames[index];
-  const faction=id=>data?.factions.find(f=>f.id===id);
+  const faction=id=>{const f=data?.factions.find(f=>f.id===id);return f?presentFaction(f,{winner:frame()?.winner}):null;};
   const duration=()=>data?.frames.reduce((sum,f)=>sum+f.seconds,0)??0;
   const progress=()=>data?.frames.slice(0,index).reduce((sum,f)=>sum+f.seconds,0)+elapsed;
 
@@ -62,11 +63,23 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
     defs.append(clip);svg.append(defs,territories,rivers,names);
     const city=svgNode('g',{class:'chronicle-minora',transform:`translate(${MINORA.x} ${MINORA.y})`});
     city.append(svgNode('circle',{r:4.5}),svgNode('path',{d:'M-2 2V-2H2V2M0-2V-4'}));svgText(city,9,3,'Minora','chronicle-city-name');svg.append(city);
-    chart=svg;map.replaceChildren(svg);ready=true;renderFrame();
+    marks=svgNode('g',{class:'chronicle-campaign-marks'});svg.append(marks);chart=svg;map.replaceChildren(svg);ready=true;renderFrame();
+  }
+  function renderMarks(current){
+    if(!marks)return;marks.replaceChildren();
+    const point=id=>data.regions?.find(r=>r.id===id)?.position;
+    for(const route of current.routes??[]){
+      const a=point(route.from),b=point(route.to);if(!a||!b)continue;
+      const color=faction(route.owner)?.color??'#fff0a4',line=svgNode('path',{d:`M${a.x} ${a.y}L${b.x} ${b.y}`,fill:'none',stroke:color,'stroke-width':3,'stroke-dasharray':route.retreat?'5 4':'none',class:'chronicle-army-route'});
+      const title=svgNode('title');title.textContent=`${route.retreat?'Retreat':'March'} / army ${route.armyId}`;line.append(title);marks.append(line);
+      const x=a.x+(b.x-a.x)*.67,y=a.y+(b.y-a.y)*.67,angle=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+      marks.append(svgNode('path',{d:'M-6 -4L2 0L-6 4',transform:`translate(${x} ${y}) rotate(${angle})`,fill:'none',stroke:'#fff3c6','stroke-width':2}));
+    }
+    for(const b of current.battles??[]){const p=point(b.region);if(!p)continue;const icon=svgNode('g',{transform:`translate(${p.x+18} ${p.y+18})`,class:'chronicle-battle'});icon.append(svgNode('circle',{r:8,fill:'#273c35',stroke:'#f6d590','stroke-width':1.2}),svgNode('path',{d:'M-4 -4L4 4M-4 4L4 -4',stroke:'#f6d590','stroke-width':2}));marks.append(icon);}
   }
   function renderFrame(){
     const current=frame();if(!current)return;
-    $('chronicle-day').textContent=`HISTORICAL DAY ${current.day} / 30`;
+    $('chronicle-day').textContent=`${data.dayLabel??'HISTORICAL DAY'} ${current.day} / ${data.lastDay??30}`;
     $('chronicle-event-title').textContent=current.title;$('chronicle-caption').textContent=current.caption;
     $('chronicle-present').hidden=!completed;
     for(const [id,path]of shapes){
@@ -75,6 +88,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
       path.classList.toggle('neutral',id==='isareos'&&current.owners[id]==='minora');
       labels.get(id).textContent=owner?.short??owner?.name??'';
     }
+    renderMarks(current);
     chart?.classList.toggle('at-war',Boolean(current.war));
     $('chronicle-owners').replaceChildren();
     for(const ownerId of new Set(REGIONS.map(([id])=>current.owners[id]))){
@@ -84,6 +98,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
     }
     for(const [i,button]of [...timeline.children].entries()){button.setAttribute('aria-current',i===index?'step':'false');button.classList.toggle('seen',i<index);}
     onFrame(current);renderProgress();
+    const selected=timeline.children[index];if(selected)timeline.scrollLeft=Math.max(0,selected.offsetLeft-timeline.offsetLeft-timeline.clientWidth/2+selected.offsetWidth/2);
   }
   function renderProgress(){
     const total=duration(),value=total?Math.min(100,progress()/total*100):0;
@@ -104,16 +119,20 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
     try{await onStart();}catch(e){error=e.message;$('chronicle-map-message').hidden=false;$('chronicle-map-message').textContent=error;}
     finally{busy=false;$('chronicle-start').disabled=false;}
   }
+  $('chronicle-speed').onclick=()=>{speed=speed===4?1:speed*2;$('chronicle-speed').textContent=`Speed ${speed}x`;};
   $('chronicle-start').onclick=start;$('chronicle-close').onclick=close;$('chronicle-play').onclick=toggle;
   $('chronicle-previous').onclick=()=>seek(index-1,{play:false});$('chronicle-next').onclick=()=>seek(index+1,{play:false});
   return {
     async open(nextData,{started=false}={}){
       if(disposed)return false;const token=++request;
-      data=nextData;index=0;elapsed=0;playing=true;active=true;ready=false;error=null;completed=false;focused=true;hasBegun=started;previousFocus=document.activeElement;
-      root.hidden=false;$('chronicle-title').textContent=data.deviceName??'Chronoscope';$('chronicle-start').textContent=started?'Return to the chamber':'Start campaign';
+      data=nextData;speed=1;index=0;elapsed=0;playing=true;active=true;ready=false;error=null;completed=false;focused=true;hasBegun=started;previousFocus=document.activeElement;
+      root.hidden=false;$('chronicle-title').textContent=data.deviceName??'Chronoscope';$('chronicle-start').textContent=data.kind==='campaign'?'Return to Taleth':started?'Return to the chamber':'Start campaign';
+      $('chronicle-close').hidden=data.kind==='campaign';
+      $('chronicle-speed').hidden=data.kind!=='campaign';$('chronicle-speed').textContent='Speed 1x';
       $('chronicle-held-caption').textContent=started?'A memory of the war’s beginning. Your present waits outside the glass.':'History is held here. The campaign waits for you.';
       $('chronicle-present').textContent=started?'The memory ends where your campaign began. Return to the chamber to continue.':'The memory reaches the present. What happens next is yours.';
-      map.replaceChildren();shapes=new Map();labels=new Map();chart=null;
+      if(data.kind==='campaign'){$('chronicle-held-caption').textContent='Your recorded campaign. Viewing changes neither time nor your save.';$('chronicle-present').textContent='The memory has reached your present. Return to Taleth when ready.';}
+      map.replaceChildren();shapes=new Map();labels=new Map();chart=null;marks=null;
       $('chronicle-map-message').hidden=false;$('chronicle-map-message').textContent='Drawing the remembered borders…';
       timeline.replaceChildren();
       data.frames.forEach((f,i)=>{const button=document.createElement('button');button.textContent=`${f.day}`;button.title=`Day ${f.day}: ${f.title}`;button.setAttribute('aria-label',button.title);button.dataset.chronicleFrame=String(i);button.onclick=()=>seek(i,{play:false});timeline.append(button);});
@@ -125,7 +144,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
     tick(dt,windowActive=true){
       if(!active)return;focused=windowActive;
       if(ready&&playing&&windowActive&&Number.isFinite(dt)&&dt>0){
-        elapsed+=dt;
+        elapsed+=dt*speed;
         while(elapsed>=frame().seconds){
           if(index===data.frames.length-1){elapsed=frame().seconds;playing=false;completed=true;$('chronicle-present').hidden=false;break;}
           elapsed-=frame().seconds;index++;renderFrame();
@@ -145,7 +164,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
       }
       return true;
     },
-    state:()=>({active,index,playing,elapsed,ready,error,completed,day:frame()?.day??null,owners:frame()?{...frame().owners}:{},duration:duration()}),
+    state:()=>({id:data?.id,kind:data?.kind??'prelude',frames:data?.frames.length??0,active,index,playing,elapsed,ready,error,completed,day:frame()?.day??null,owners:frame()?{...frame().owners}:{},duration:duration()}),
     dispose(){disposed=true;request++;active=false;playing=false;root.remove();}
   };
 }

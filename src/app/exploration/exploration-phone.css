@@ -60,7 +60,7 @@ body.touch #world-skirmish-actions{display:none}
   #teresod-sorcery meter{height:8px}
 
   /* What F would do: a wide button over the thumbs. */
-  #tower-interact,#stable-interact,#council-interact,#resident-interact,#world-war-join,#reaper-talk{bottom:calc(176px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);min-height:46px;padding:10px 16px;font-size:14px}
+  #tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact,#world-war-join,#reaper-talk{bottom:calc(176px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);min-height:46px;padding:10px 16px;font-size:14px}
   #tower-objective{left:10px;top:calc(100px + env(safe-area-inset-top));max-width:calc(100vw - 130px);padding:8px 10px;font-size:12px}
 
   /* Cards: the width of the screen, buttons for a thumb. They open in their own mode, so the stick is away. */
@@ -131,7 +131,7 @@ body.touch #world-skirmish-actions{display:none}
   #world-war-report,#world-war-report:has(#world-war-report-facts:not([hidden])){top:calc(56px + env(safe-area-inset-top));bottom:auto;left:calc(min(300px,36vw) + 18px);right:110px;width:auto;max-height:calc(100dvh - 56px - 196px);padding:10px 12px}
   #world-war-report h2{font-size:18px;margin:4px 0}#world-war-report p{font-size:12px;margin:5px 0}
   .war-report-actions{gap:6px;margin-top:6px}.war-report-actions button{flex:1 1 auto;min-height:38px;padding:6px 10px}
-  #tower-interact,#stable-interact,#council-interact,#resident-interact,#world-war-join,#reaper-talk{bottom:calc(14px + env(safe-area-inset-bottom));max-width:44vw}
+  #tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact,#world-war-join,#reaper-talk{bottom:calc(14px + env(safe-area-inset-bottom));max-width:44vw}
   #exploration-touch-help{bottom:calc(70px + env(safe-area-inset-bottom));max-width:44vw}
   #exploration-status{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);max-width:44vw}
   #world-autoplay{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));right:auto;left:50%;transform:translateX(-50%);max-width:44vw}

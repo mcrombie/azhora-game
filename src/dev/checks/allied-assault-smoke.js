@@ -64,7 +64,7 @@ export async function disposal(a){
 }
 const warFight=a=>a.war.state().encounter.encounter;
 export async function rout(a){
-  await prepareWarExterior(a);await prepareRally(a);document.getElementById('assault-with-allies').checked=true;await a.war.help('west');
+  await prepareWarExterior(a);await prepareRally(a);await a.war.help('west');
   for(let i=0;i<5401&&a.state().mode==='skirmish'&&!warFight(a).outcome&&!warFight(a).guards.some(g=>g.routed);i++){driveWorldEncounter(a,warFight(a));a.step(1/60);}clearCombatKeys(a);
   const s=warFight(a);assert(s.guards.some(g=>g.routed&&g.hp>0),'Real Caricas final assault reaches a living enemy rout with ordinary inputs');
   const yaw=Math.atan2(s.hero.x-s.rally.x,s.hero.z-s.rally.z);a.look({yaw,pitch:.3,distance:12});
@@ -78,11 +78,10 @@ export async function rout(a){
 export async function evacuated(a){
   window.dispatchEvent(new Event('focus'));for(let i=0;i<2000;i++)a.step(1/60);
   const s=warFight(a),routed=s.guards.find(g=>g.routed);
-  assert(routed.departed&&routed.phase==='escaped','Routed soldier finishes leaving the real field instead of freezing beside Teresod');
-  assert(routed.retreatRetries===0&&routed.retreatElapsed<30,'Terrain route reaches its exit without needing the obstruction fallback');
-  assert(!a.state().fieldActors.some(g=>g.visible&&Math.hypot(g.position[0]-routed.x,g.position[2]-routed.z)<.01),'Departed soldier is absent from the rendered scene');
-  assert(!a.state().combatCues.some(c=>c.visible&&c.cue==='retreat'),'Departed soldier leaves no floating combat label');
-  assert(s.squad.routed===1&&s.guards.filter(g=>!g.hp).length===3,'Evacuation preserves one survivor and exactly three kills');
+  assert(s.outcome==='success'&&document.getElementById('battle-result-dialog').open,'Victory stops the retreat scene behind an explicit result modal');
+  const before=JSON.stringify(s);for(let i=0;i<90;i++)a.step(1/60);
+  assert(JSON.stringify(warFight(a))===before,'Review freezes the whole scene until Continue');
+  assert(routed.hp>0&&s.squad.routed===1&&s.guards.filter(g=>!g.hp).length===3,'Paused retreat preserves one survivor and exactly three kills');
   window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],state:s};
 }
 export async function secure(a){
@@ -97,8 +96,8 @@ export async function secure(a){
   window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],campaign:s};
 }
 export async function campaign(a){
-  await prepareWarExterior(a);await prepareRally(a);assert(!document.getElementById('assault-choice').hidden&&!document.getElementById('assault-with-allies').checked,'Final assault offers allies without changing the default solo choice');
-  document.getElementById('assault-with-allies').checked=true;await a.war.help('west');assert(a.state().mode==='skirmish'&&warFight(a).allies.length===3,'Campaign checkbox starts three allied soldiers in the central field');
+  await prepareWarExterior(a);await prepareRally(a);assert(!document.getElementById('assault-choice').hidden&&document.getElementById('assault-choice').textContent.includes('allied soldiers'),'Final assault uses allies by default');
+  await a.war.help('west');assert(a.state().mode==='skirmish'&&warFight(a).allies.length===3,'Campaign starts three allied soldiers by default in the central field');
   for(let i=0;i<1400&&a.state().mode==='skirmish'&&!warFight(a).squad.alliesLost;i++)a.step(1/60);
   assert(a.state().mode==='skirmish'&&warFight(a).squad.alliesLost>0,'Actual allied AI produces a campaign casualty before withdrawal');
   const losses=warFight(a).squad.alliesLost,defeated=warFight(a).guards.filter(g=>!g.hp||g.routed).length;
@@ -106,7 +105,7 @@ export async function campaign(a){
   assert(prior.day===4&&prior.engagements[0].rally.allied.lost===losses,'Withdrawal preserves friendly losses without advancing to battle end');
   assert(a.save().ok&&validateWorldWarSave(a.store.read().data),'Allied choice and partial losses save and validate through command replay');
   assert(a.war.join().ok,'Can return to the same unfinished battle');
-  assert(document.getElementById('assault-with-allies').checked&&document.getElementById('assault-with-allies').disabled,'Re-entry retains the chosen variant');
+  assert(!document.getElementById('assault-with-allies')&&document.getElementById('assault-choice').textContent.includes('allied'),'Re-entry retains the committed allied squad');
   await a.war.help('west');assert(warFight(a).allies.length===3-losses&&warFight(a).guards.length===4-defeated,'Neither side receives replacement soldiers after re-entry');
   for(let i=0;i<5401&&a.state().mode==='skirmish'&&!warFight(a).outcome;i++){driveWorldEncounter(a,warFight(a));a.step(1/60);}clearCombatKeys(a);
   assert(a.state().mode==='skirmish'&&warFight(a).outcome==='success','Partially depleted allied campaign assault remains winnable');
@@ -117,7 +116,7 @@ export async function campaign(a){
   window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],campaign:after};
 }
 export async function reaper(a){
-  await prepareWarExterior(a);await prepareRally(a);document.getElementById('assault-with-allies').checked=true;await a.war.help('west');
+  await prepareWarExterior(a);await prepareRally(a);await a.war.help('west');
   for(let i=0;i<5401&&a.state().mode==='skirmish';i++)a.step(1/60);
   for(let i=0;i<200&&(a.state().mode!=='limbo'||document.body.classList.contains('crossing-limbo'));i++)await frames();
   assert(a.state().mode==='limbo','Losing an allied fight enters the Reaper room');

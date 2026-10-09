@@ -1,12 +1,12 @@
-// A comparison choice within the existing briefing, not a second campaign mode.
+import {campaignAssaultStyle,campaignAssaultBriefing} from './assault-briefing.js';
+
+// The campaign briefing describes the committed squad; solo comparisons live
+// in Combat Testing. Existing solo save histories continue unchanged.
 export function createAssaultChoice(anchor){
-  const root=document.createElement('label');root.id='assault-choice';root.hidden=true;
-  const input=document.createElement('input');input.type='checkbox';input.id='assault-with-allies';
-  const text=document.createElement('span');root.append(input,text);anchor.after(root);
+  const root=document.createElement('p');root.id='assault-choice';root.hidden=true;anchor.after(root);
+  let style='allied';
   return {show(pending,supported){
     root.hidden=!supported||!pending.rally||!pending.participation;
-    input.checked=pending.rally?.style==='allied';input.disabled=!!pending.rally?.style||!!pending.rally?.stopped;
-    const alive=pending.rally?.allied?pending.rally.allied.totalAllies-pending.rally.allied.lost:(pending.rally?.supportAllies??3);
-    text.textContent=`Fight with allies (experimental): ${alive} allied soldiers join you. Enemies remain determined by the interception. The last isolated enemy may retreat. Unchecked uses the original solo assault.`;
-  },style:()=>input.checked?'allied':'solo'};
+    style=campaignAssaultStyle(pending);root.textContent=campaignAssaultBriefing(pending);
+  },style:()=>style};
 }

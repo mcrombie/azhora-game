@@ -41,7 +41,7 @@ export async function next(a,side){
   assert(a.war.state().campaign.pending?.id===b.id,'Actual site allows entry');
   const first=await fight(a,side);a.war.continue();
   assert(a.war.state().campaign.pending?.rally,'The final-province encounter also offers a final assault');
-  document.getElementById('assault-with-allies').checked=true;const final=await fight(a,side);a.war.continue();a.war.pause();
+  const final=await fight(a,side);a.war.continue();a.war.pause();
   const s=a.war.state().campaign;assert(s.regions[b.region].owner===side&&s.day>=b.endsOn,'Victory agrees with regional ownership and deadline');
   assert(!a.state().frameErrors.length,'Repeated battles have no frame errors');
   assert(a.save().ok,'Campaign saves between battles');await a.loadSaved();a.war.pause();

@@ -176,3 +176,14 @@ test('City planting is typed timber with separate harvestable instance slots; Be
   for(const p of [MINORA_STABLE.bear,MINORA_STABLE.horse,{x:-2414,z:59}])
     for(const c of city.polish)assert.ok(!overlaps({...p,r:1.8},c),`${c.id} blocks the new tower departure`);
 });
+
+
+test('Guild stable is a single mesh with open stalls, clear horse mounting and tower departure',()=>{
+  assert.equal(city.scene.root.children.filter(m=>m.name==='Minora guild stable / open stalls').length,1);
+  const solids=city.colliders.filter(c=>c.id?.startsWith('guild-stable-'));
+  assert.equal(solids.length,10);
+  for(const p of [{x:-2422,z:65,r:.8},{x:-2419,z:65,r:.6},{x:-2414,z:59,r:.8},
+    {x:-2422,z:62,r:.8},{x:-2429,z:62,r:.8}])
+    for(const c of solids)assert.ok(!overlaps(p,c),`${c.id} obstructs a stall, horse, Bear or doorway`);
+  for(let x=-2434;x<=-2400;x+=1)for(const c of solids)assert.ok(!overlaps({x,z:70,r:1},c),'Guild Way stays open');
+});

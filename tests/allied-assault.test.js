@@ -97,7 +97,7 @@ test('allied withdrawal saves losses on both sides, keeps the choice, and never 
   assert(c.resolveEncounter(id,'west','success','rally-secured',2,{escaped:0,alliesLost:1,routed:0,allyDamage:50}).ok);
   const s=c.snapshot();assert.equal(s.day,6);assert.equal(s.regions.caricas.owner,'west');assert.equal(s.engagements[0].rally.removed,3);assert.equal(s.engagements[0].rally.allied.lost,2);assert.equal(s.engagements[0].rally.allied.routed,1);assert.equal(s.engagements[0].status,'resolved');assert(!c.resolveEncounter(id,'west','success','rally-secured',2).ok);assert.deepEqual(replayCampaign(WORLD_WAR_SCENARIO,s).snapshot(),s);
 });
-test('solo remains the default, legacy progress cannot recruit a fresh allied squad',()=>{
+test('legacy solo progress cannot recruit a fresh allied squad',()=>{
   const {c,b,id}=rally();assert.equal(c.snapshot().pending.rally.style,undefined);assert(c.resolveEncounter(id,'west','withdraw','withdrew',1,{escaped:0}).ok);assert(c.joinBattle(b.id,b.location).ok);assert(!c.chooseAssault(id,'allied').ok);assert(c.chooseAssault(id,'solo').ok);assert.deepEqual(replayCampaign(WORLD_WAR_SCENARIO,c.snapshot()).snapshot(),c.snapshot());
 });
 test('temporary soldier disposal frees its resources without disposing shared primitives or cached materials',async()=>{

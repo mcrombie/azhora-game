@@ -1,4 +1,5 @@
 [
+  "tests/soldier-contact.test.js",
   "tests/camera-obstruction.test.js",
   "tests/allied-assault.test.js",
   "tests/combat-readability.test.js",
@@ -554,6 +555,7 @@
   "tests/combat-camp-world.test.js",
   "tests/telemonia-streaming.test.js",
   "tests/taleth-correspondence.test.js",
+  "tests/campaign-chronicle.test.js",
   "tests/campaign-continuity.test.js",
   "tests/campaign-pacing.test.js"
 ]

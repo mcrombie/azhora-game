@@ -15,6 +15,7 @@ import {createAlliedAssaultView} from './allied-assault-view.js';
 import {ALLIED_ASSAULT} from '../../gameplay/combat/allied-assault.js';
 import {localSight} from './local-sight.js';
 import {createCombatFocus} from './combat-focus-view.js';
+import {createBattleResultDialog} from './battle-result-dialog.js';
 import {renderBattleFacts} from './battle-facts-view.js';
 
 // Owns only the temporary opponents and their warnings. The exploration host
@@ -48,7 +49,8 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
   panel.querySelector('.eyebrow').textContent=`${site.name.toUpperCase()} / ${allyName?'HELPING '+allyName.toUpperCase():assault?(allied?'ALLIED ASSAULT':'SOLO ASSAULT'):'INTERCEPT REINFORCEMENTS'}`;
   const resultPanel=document.getElementById('world-skirmish-result'),withdraw=document.getElementById('world-skirmish-withdraw');
   const compare=assaultPractice&&onCompare?document.createElement('button'):null;
-  if(compare){compare.id='world-skirmish-compare';compare.textContent=allied?'Try solo · same 4 enemies':'Try with 3 allies · same 4 enemies';compare.onclick=onCompare;resultPanel.append(compare);}
+  if(compare){compare.id='world-skirmish-compare';compare.textContent=allied?'Try solo · same 4 enemies':'Try with 3 allies · same 4 enemies';compare.onclick=onCompare;document.getElementById('world-skirmish-result-actions').append(compare);}
+  const resultDialog=createBattleResultDialog(panel,resultPanel);
   panel.hidden=false;resultPanel.hidden=true;withdraw.hidden=false;withdraw.onclick=onWithdraw;
   renderBattleFacts(document.getElementById('world-skirmish-facts'));
   document.getElementById('world-skirmish-next').hidden=true;
@@ -84,13 +86,13 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
     focus.update(s,elapsed,hud.paused()||paused||watch());
   }
   draw(model.snapshot(),false);
-  return {cameraTarget:focus.cameraTarget,manualCamera:focus.manual,focusId:focus.id,spellTargets:()=>model.snapshot().guards,fireballHit:model.fireballHit,spellPaused:()=>hud.paused()||ended||!model.snapshot().hero.hp||model.snapshot().objective?.secured>0,
+  return {reviewing:()=>ended,cameraTarget:focus.cameraTarget,manualCamera:focus.manual,focusId:focus.id,spellTargets:()=>model.snapshot().guards,fireballHit:model.fireballHit,spellPaused:()=>hud.paused()||ended||!model.snapshot().hero.hp||model.snapshot().objective?.secured>0,
     snapshot:()=>({...model.snapshot(),site:pending.region+'-world',staging:{...heroStart},centre:{...centre},interception:!assault,stage:assault?'rally':'intercept',rally:{...rally},radius:pending.entryRadius??SKIRMISH_RADIUS,presentation:{focus:focus.state(),introRemaining,speed:1,helpOpen:hud.paused(),sound:effects.state()}}),keydown:event=>hud.keydown(event)||focus.keydown(event),attack:()=>{if(!hud.paused())clickAttack=true;},
     tick(dt,active){
       if(disposed)return;
       if(hud.paused()){keys.clear();accumulator=0;clickAttack=clickDodge=false;draw(model.snapshot(),!active);return;}
+      if(ended)return; // The result modal explicitly pauses the whole scene.
       if(active)visualTime+=Math.min(.1,dt);
-      if(ended){draw(active?model.aftermath(dt):model.snapshot(),!active);return;}
       if(!watch())introRemaining=0;
       if(introRemaining>0){if(active)introRemaining=Math.max(0,introRemaining-dt);keys.clear();clickAttack=clickDodge=false;draw(model.snapshot(),!active);return;}
       if(active)accumulator+=Math.min(.1,dt);else{accumulator=0;clickAttack=clickDodge=false;}
@@ -107,12 +109,12 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
           if(debrief){feedback=debrief;renderBattleFacts(document.getElementById('world-skirmish-facts'),debrief.facts);const next=document.getElementById('world-skirmish-next');next.hidden=false;next.textContent=debrief.next;document.getElementById('world-skirmish-continue').textContent=debrief.button;}
           document.getElementById('world-skirmish-result-title').textContent=practice?(lesson?(dodgeLesson(s,advanced).complete?(advanced?'Thrust and sweep lesson complete':'Dodge lesson complete'):'Try the dodge lesson again'):(s.outcome==='success'?'Practice complete':'Practice ended')):feedback.title;
           document.getElementById('world-skirmish-result-detail').textContent=practice?`${s.guards.filter(g=>!g.hp).length} of ${guards.length} soldiers defeated. ${s.hero.hp===0?'Teresod was defeated. ':''}${s.skill.dodgeCounters} dodge counters.${setup.route?' '+s.guards.filter(g=>g.escaped).length+' escaped.':''} Health remaining: ${s.hero.hp}/100. Time: ${s.time.toFixed(1)}s. ${s.squad?`${s.allies.filter(a=>a.hp).length}/${s.allies.length} allies survived; allies dealt ${s.squad.damageByAllies} damage, Teresod dealt ${s.squad.damageByHero}. ${s.squad.routed} enemy retreated. `:''}${lesson?dodgeLesson(s,advanced).text+' ':''}No campaign troops or territory changed. Press R to try again.`:feedback.detail;
-          document.getElementById('world-skirmish-review').textContent=s.squad&&s.outcome==='success'?'The field is yours. Surviving allies regroup while you review the result.':'Encounter ended. The scene is paused for review.';
-          resultPanel.hidden=false;withdraw.hidden=true;onEnd(s.outcome,s.objective?.reason,s);return;
+          document.getElementById('world-skirmish-review').textContent='Game paused. Choose Continue when you are ready.';
+          withdraw.hidden=true;resultDialog.open();onEnd(s.outcome,s.objective?.reason,s);return;
         }
       }
       draw(model.snapshot(),!active);
     },
-    dispose(){if(disposed)return;disposed=true;compare?.remove();focus.dispose();hud.dispose();alliedView?.dispose();combatFeedback.dispose();targetMarker.dispose();effects.dispose();panel.hidden=true;resultPanel.hidden=true;document.getElementById('world-skirmish-retry').hidden=true;keys.clear();actor.setArmed(false);for(const guard of guards)disposeCharacter(guard);warnings.dispose();scene.remove(rallyMarker,beacon,label);labelTexture.dispose();labelMaterial.dispose();beaconGeometry.dispose();rallyMaterial.dispose();ringGeometry.dispose();}
+    dispose(){if(disposed)return;disposed=true;resultDialog.dispose();compare?.remove();focus.dispose();hud.dispose();alliedView?.dispose();combatFeedback.dispose();targetMarker.dispose();effects.dispose();panel.hidden=true;resultPanel.hidden=true;document.getElementById('world-skirmish-retry').hidden=true;keys.clear();actor.setArmed(false);for(const guard of guards)disposeCharacter(guard);warnings.dispose();scene.remove(rallyMarker,beacon,label);labelTexture.dispose();labelMaterial.dispose();beaconGeometry.dispose();rallyMaterial.dispose();ringGeometry.dispose();}
   };
 }

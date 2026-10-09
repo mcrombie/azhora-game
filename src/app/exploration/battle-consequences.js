@@ -35,7 +35,7 @@ export function latestPersonalBattle(state){
 
 export function councilBalance(state){
   const i=councilInfluence(state),leader=MINORA_COUNCIL[i.leader];
-  if(i.settled)return `${faction(i.faction)} has won the war. ${leader.name} leads the council; the ${leader.banner} banner flies highest at the gates. Minora remains independent.`;
+  if(i.settled)return `${faction(i.faction)} has won the war. ${leader.name} leads the council; the ${leader.banner} banner flies highest at the gates. Minora is the seat of the united Lizeemi League, which retains the victor's colors.`;
   if(i.faction)return `Your intervention for ${faction(i.faction)} strengthens ${leader.name}'s voice. The ${leader.banner} banner flies highest at the gates. This is provisional; the war is not over.`;
   return 'Taleth chairs the neutral council. The Wizard Guild banner flies highest, with the civic bridge and temple sun beside it.';
 }

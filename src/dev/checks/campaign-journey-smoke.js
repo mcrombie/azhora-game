@@ -35,7 +35,7 @@ export async function secondRide(a){
 }
 export async function secondBattle(a,side){
   window.dispatchEvent(new Event('focus'));await a.war.help(side);const first=await fight(a);assert(first.outcome==='success','Second interception remains winnable');a.war.continue();
-  assert(a.war.state().campaign.pending?.rally,'Second battle offers its assault');document.getElementById('assault-with-allies').checked=true;await a.war.help(side);const final=await fight(a);
+  assert(a.war.state().campaign.pending?.rally,'Second battle offers its assault');await a.war.help(side);const final=await fight(a);
   assert(final.outcome==='success'&&final.squad.damageByAllies>0&&final.squad.damageByHero>0,'Teresod and allies complete the second assault');
   const button=document.getElementById('world-skirmish-continue'),r=button.getBoundingClientRect();assert(r.top>=0&&r.bottom<=innerHeight&&r.width>0,'Result Continue stays visible on a compact screen');
   await frames();return {checks:['Four phases fought through ordinary inputs','Visible result Continue without scrolling'],side,first:{hp:first.hero.hp},final:{hp:final.hero.hp,squad:final.squad}};

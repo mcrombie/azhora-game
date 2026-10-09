@@ -1,3 +1,4 @@
+import {presentFaction,settledOwners} from './league-settlement.js';
 import {LIZEEM_SCENARIO} from '../../content/scenarios/lizeem.js';
 import {createCampaign,replayCampaign} from '../../simulation/campaign.js';
 import {LIZEEM_BATTLEFIELDS} from '../../content/scenarios/lizeem-battlefields.js';
@@ -48,7 +49,8 @@ export function createWorldWar(saved=null){
 // Projection is presentation data. Outside the five regions has no simulated
 // ownership or stability; avoid mixing this test with the authored campaign.
 export function worldWarProjection(state){
-  return {id:state.scenario,day:state.day,factions:WORLD_WAR_SCENARIO.factions.map(f=>({...f})),
-    regions:Object.fromEntries(WORLD_WAR_SCENARIO.regions.map(r=>[r.name,{owner:state.regions[r.id].owner,
-      condition:state.engagements.some(b=>b.region===r.id&&b.status==='active')?['Battle underway','conflict']:state.regions[r.id].owner==='minora'?['Neutral','stable']:state.regions[r.id].recovery?['Recovering from conquest','conflict']:state.winner?['War ended; stability unassessed','unknown']:['At war','conflict']}]))};
+  const owners=settledOwners(Object.fromEntries(Object.entries(state.regions).map(([id,r])=>[id,r.owner])),state.winner);
+  return {id:state.scenario,day:state.day,factions:WORLD_WAR_SCENARIO.factions.map(f=>presentFaction(f,state)),
+    regions:Object.fromEntries(WORLD_WAR_SCENARIO.regions.map(r=>[r.name,{owner:owners[r.id],
+      condition:state.engagements.some(b=>b.region===r.id&&b.status==='active')?['Battle underway','conflict']:state.winner?['Lizeemi League / war ended; stability unassessed','unknown']:state.regions[r.id].owner==='minora'?['Neutral','stable']:state.regions[r.id].recovery?['Recovering from conquest','conflict']:['At war','conflict']}]))};
 }

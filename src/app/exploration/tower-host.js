@@ -1,4 +1,6 @@
 import {TOWER,TOWER_DOOR,TOWER_EXIT,TALETH_SPOT,LOOKOUT,LOOKOUT_DOOR,LOOKOUT_TALETH} from './tower-state.js';
+import {campaignChronicle} from './campaign-chronicle.js';
+import {councilPeaceWords} from './league-settlement.js';
 import {talethFinale} from './taleth-correspondence.js';
 import {preludeForScenario} from '../../content/scenarios/lizeem-prelude.js';
 import {createChronicleView} from './chronicle-view.js';
@@ -9,12 +11,12 @@ export function createTowerHost({state,position,mode,setMode,notice,onBegin,onDo
   const prompt=document.createElement('button');prompt.id='tower-interact';prompt.hidden=true;document.body.append(prompt);
   const objective=document.createElement('aside');objective.id='tower-objective';objective.setAttribute('role','status');document.body.append(objective);
   const dialog=document.createElement('section');dialog.id='tower-briefing';dialog.hidden=true;dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','tower-speaker');
-  dialog.innerHTML='<div class="tower-dialog-card"><span class="eyebrow">MINORA / THE WIZARD GUILD</span><h2 id="tower-speaker">Taleth</h2><h3 id="tower-topic">Wizard Guild Master</h3><p id="tower-words"></p><p id="tower-road"></p><small id="tower-page"></small><div class="tower-dialog-actions"><button id="tower-next"></button><button id="tower-background">Background / the preceding thirty days</button><button id="tower-close">Not yet</button></div></div>';
+  dialog.innerHTML='<div class="tower-dialog-card"><span class="eyebrow">MINORA / THE WIZARD GUILD</span><h2 id="tower-speaker">Taleth</h2><h3 id="tower-topic">Wizard Guild Master</h3><p id="tower-words"></p><p id="tower-road"></p><small id="tower-page"></small><div class="tower-dialog-actions"><button id="tower-next"></button><button id="tower-background">Background / the preceding thirty days</button><button id="tower-review-campaign" hidden>Chronoscope / Review this campaign</button><button id="tower-close">Not yet</button></div></div>';
   document.body.append(dialog);
   const $=id=>dialog.querySelector('#'+id);let prelude=null,finalePage=0;
   const chronicle=createChronicleView({
-    onClose(){onChronicle({active:false});setMode('briefing');dialog.hidden=false;paint();$('tower-background').focus();},
-    onStart:begin,
+    onClose(){onChronicle({active:false});setMode('briefing');dialog.hidden=false;paint();$(prelude?.kind==='campaign'?'tower-review-campaign':'tower-background').focus();},
+    onStart(){if(prelude?.kind==='campaign')chronicle.close();else begin();},
     onFrame(frame){onChronicle({active:true,colors:['isareos','nethereum','ovesos','caricas','nesdor'].map(id=>prelude.factions.find(f=>f.id===frame.owners[id]).color)});},
   });
   const near=point=>Math.hypot(position.x-point.x,position.z-point.z)<3.7&&Math.abs(position.y-(point.y??TOWER.y))<2.8;
@@ -24,7 +26,7 @@ export function createTowerHost({state,position,mode,setMode,notice,onBegin,onDo
     const done=state().briefed;
     const finale=state().room==='lookout'?talethFinale(campaign()):[];
     dialog.dataset.lookout=String(!!finale.length);
-    if(finale.length){const page=finale[finalePage];$('tower-topic').textContent=page.title;$('tower-words').textContent=page.words;$('tower-road').textContent=page.closing??'Taleth gestures across the country below.';$('tower-page').textContent=`${finalePage+1} / ${finale.length}`;$('tower-background').hidden=true;$('tower-next').textContent=finalePage===finale.length-1?'Complete the Lizeemi War campaign':'Look with Taleth';$('tower-close').textContent='Continue this conversation later';onLookoutView(page.view);$('tower-next').focus();return;}
+    if(finale.length){const page=finale[finalePage];$('tower-topic').textContent=page.title;$('tower-words').textContent=page.words;$('tower-road').textContent=page.closing??'Taleth gestures across the country below.';$('tower-page').textContent=`${finalePage+1} / ${finale.length}`;$('tower-background').hidden=true;$('tower-review-campaign').hidden=true;$('tower-next').textContent=finalePage===finale.length-1?'Complete the Lizeemi War campaign':'Look with Taleth';$('tower-close').textContent='Continue this conversation later';onLookoutView(page.view);$('tower-next').focus();return;}
     $('tower-words').textContent=done
       ?'Minora remains neutral, Teresod. I sit on its Council of Three with Mayor Ishkur Vey of Ovesos and High Priest Haldor Sorn of Nesdor. The Mayor favors West Lizeem; the Priest favors East. I will not forbid you to intervene. The highest central flag at our gates shows whose voice leads the council. Visit them in the riverside Hall and Grand Temple. The Chronoscope can show you the month before this war again. Its memories cannot change what you have since done. Your campaign waits while we speak.'
       :'Welcome, Teresod. I am Taleth, Wizard Guild Master. I speak for neutral Minora; receiving you here does not enlist you in either army. Like the hidden paths of Elfland, this tower crosses the boundaries of the ordinary world. I hold this chamber between moments. The Chronoscope can show you the month that brought us here. End this war as swiftly as you can: we must preserve the people’s strength for greater troubles to come. My pigeons will carry news and counsel. When you are ready, I will release us into the present.';
@@ -35,8 +37,9 @@ export function createTowerHost({state,position,mode,setMode,notice,onBegin,onDo
     const response=done&&councilBattleResponse('taleth',campaign());
     if(response){$('tower-topic').textContent=`Wizard Guild Master / After ${response.record.region}`;$('tower-words').textContent=response.words+' '+response.detail;$('tower-road').textContent=response.balance;$('tower-page').textContent=response.next;}
     else $('tower-topic').textContent='Wizard Guild Master';
+    $('tower-review-campaign').hidden=!done;
     const settled=done&&!!campaign()?.winner;
-    if(settled){$('tower-words').textContent='The war between the leagues is settled, Teresod. Come to the lookout above this chamber. Let us see what remains of the river country, and what your choices mean for Minora.';$('tower-road').textContent='We will look along the Lizeem first. Then I must turn your eyes eastward, toward Ambron.';}
+    if(settled){$('tower-words').textContent=councilPeaceWords('taleth',campaign())+' Come to the lookout above this chamber. Let us see what remains of the river country, and what your choices mean for Minora.';$('tower-road').textContent='We will look along the Lizeem first. Then I must turn your eyes eastward, toward Ambron.';}
     $('tower-next').textContent=settled?'Join Taleth at the lookout':done?'Return to the chamber':'Start campaign';
     $('tower-background').hidden=!preludeForScenario(scenario());
     $('tower-close').textContent=done?'Close':'Not yet';$('tower-next').focus();
@@ -48,6 +51,7 @@ export function createTowerHost({state,position,mode,setMode,notice,onBegin,onDo
     if(state().begin())onBegin();close();}
   $('tower-next').onclick=begin;
   $('tower-background').onclick=()=>{prelude=preludeForScenario(scenario());if(!prelude)return;dialog.hidden=true;setMode('chronicle');chronicle.open(prelude,{started:state().briefed});};
+  $('tower-review-campaign').onclick=()=>{prelude=campaignChronicle(campaign());if(!prelude)return;dialog.hidden=true;setMode('chronicle');chronicle.open(prelude,{started:true});};
   $('tower-close').onclick=close;
   function interact(){
     if(mode()!=='playing')return false;
@@ -71,7 +75,7 @@ export function createTowerHost({state,position,mode,setMode,notice,onBegin,onDo
     if(event.code==='F5')event.preventDefault();
     if(event.code==='Escape'){event.preventDefault();close();}
     else if(event.code==='Tab'){
-      event.preventDefault();const buttons=[$('tower-next'),$('tower-background'),$('tower-close')].filter(b=>!b.hidden),i=buttons.indexOf(document.activeElement);
+      event.preventDefault();const buttons=[$('tower-next'),$('tower-background'),$('tower-review-campaign'),$('tower-close')].filter(b=>!b.hidden),i=buttons.indexOf(document.activeElement);
       buttons[(i+(event.shiftKey?-1:1)+buttons.length)%buttons.length].focus();
     }
     return true;

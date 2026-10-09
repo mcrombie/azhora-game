@@ -260,6 +260,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(mode==='combat-menu')return;
     autoplay?.tick(dt,windowActive);journey?.tick(dt,windowActive);
     if(mode==='loading')return; // The loading veil keeps the last frame; give terrain construction the frame budget.
+    if(mode==='skirmish'&&skirmish?.reviewing()){keys.clear();renderer.render(scene,camera);return;}
     if(mode==='skirmish'){if(windowActive)elapsed+=dt;skirmish?.tick(dt,windowActive);if(!practice?.state().active){discover();dirty=true;}}
     if(mode==='playing'||mode==='limbo'){
       elapsed+=dt;const previousPosition={x:position.x,z:position.z},previousMount=mounts.kind,moved=actor.form==='ghost'&&!world.state?.().inLimbo?ghostStep(position,world,...touch.steer(keys,yaw),dt,actor.group.rotation.y):mounts.step(...touch.steer(keys,yaw),dt);
@@ -311,7 +312,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(event.code==='Escape'){event.preventDefault();if(!event.repeat){if(mode==='playing')pause();else if(mode!=='loading')setMode('playing');}return;}
     if(event.code==='KeyM'&&(mode==='playing'||mode==='map')){event.preventDefault();if(!event.repeat){if(mode==='map')setMode('playing');else if(mode==='playing')openMap();}return;}
     if(mode!=='playing')return;
-    if(event.code==='KeyF'&&war){event.preventDefault();if(!event.repeat&&!tower?.interact()&&!council?.interact()&&!stable?.interact()&&!residentHost?.interact())war.join();return;}
+    if(event.code==='KeyF'&&war){event.preventDefault();if(!event.repeat&&!tower?.interact()&&!council?.interact()&&!stable?.interact()&&!residentHost?.interact()&&!war.interactSoldier())war.join();return;}
     if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))event.preventDefault();
     if(afterlife?.form==='ghost'&&['KeyG','KeyH','KeyF','Space'].includes(event.code)){event.preventDefault();return;}
     if(event.code==='KeyG'&&!event.repeat){if(!stable?.toggleMount())selectMount('foot');refreshTravelHelp();return;}
@@ -393,7 +394,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
       onLookout:enter=>changeRoom(enter?'lookout':'tower'),onLookoutView:view=>{lookoutView=view;world.setLookoutView(view);},onConclude(){dirty=true;save();},
       onBegin(){dirty=true;war.begin();notice('Day 1: the armies are on the march. Meet Bear outside the tower.');},onDoor:changeTower});
     council=createCouncilHost({saved:warSaved?.council,state:()=>towerState,position,mode:()=>mode,setMode,campaign:()=>war.state().campaign,onDoor:changeRoom,onDirty(){dirty=true;}});
-    residentHost=createResidentHost({world,position,mode:()=>mode,setMode,available:()=>!towerState.inside&&!world.state().inLimbo&&!mounts.airborne()});
+    residentHost=createResidentHost({world,position,campaign:()=>war?.state().campaign,mode:()=>mode,setMode,available:()=>!towerState.inside&&!world.state().inLimbo&&!mounts.airborne()});
     stable=createStableHost({scene,world,actor,position,mounts,movement,saved:warSaved?.riding,inside:()=>towerState.inside||world.state().inLimbo,mode:()=>actor.form==='ghost'?'ghost':mode,setMode,notice,onChange(){dirty=true;refreshTravelHelp();}});
     minimap=createLocalMap({world,position,heading:()=>actor.group.rotation.y,inside:()=>towerState.inside,mode:()=>mode,openMap,events:()=>war.minimapEvents(),track:target=>war.track(target),
       marker:()=>tower.marker()??council.marker()??(towerState.inside?(towerState.briefed?{...TOWER_DOOR,id:'door',label:'Door to Minora'}:{...TALETH_SPOT,id:'taleth',label:'Taleth'}):war.minimapDestination()??stable.marker()),

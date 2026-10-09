@@ -23,3 +23,5 @@
   #chronicle-owners{gap:5px;margin:12px 0}#chronicle-play-state{padding-top:8px;font-size:10px}#chronicle-present{font-size:12px;line-height:1.4}
   .chronicle-controls{padding:10px 20px}#chronicle-progress{margin:8px 0 6px}.chronicle-key-help{margin-top:5px}
 }
+
+#chronicle-caption{white-space:pre-line;max-height:36vh;overflow:auto}#chronicle-timeline{overflow-x:auto}#chronicle-timeline button{min-width:34px;flex:1 0 34px}.chronicle-campaign-marks{pointer-events:none}.chronicle-army-route{paint-order:stroke;opacity:.95}

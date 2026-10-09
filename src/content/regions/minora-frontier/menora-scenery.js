@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
 import { MENORA, MENORA_OUTLINE, MENORA_GATES, MENORA_BUILDINGS, MENORA_PATHS,
   MENORA_BRIDGES, MENORA_GARDENS, MENORA_CAMP, LIZEEM_MARKET_STANDS, menoraRiverClearance, menoraDeckHeight } from './menora-city.js';
+import {createGuildStableSteps} from './guild-stable.js';
 import { createMenoraPolishSteps } from './menora-polish.js';
 
 const WHITE='#e2e2d2', IVORY='#eee9d4', SHADE='#b9c4bd', DARK='#385052', GOLD='#c6ad6b';
@@ -291,7 +292,9 @@ export function* createMenoraScenerySteps({parent,heightAt,colliders}) {
     push({x,z,r:.9,minY:y,maxY:y+1.4,kind:'barrel'});
   }
   (yield* finish(camp));
+  const stable=yield* createGuildStableSteps({root,ground,push,metrics});
   (yield* createMenoraPolishSteps({root,heightAt,ground,push,metrics,colliders})); // the polish pass (7 October 2026)
   const mapFeatures=MENORA_BUILDINGS.map(b=>({id:b.id,name:b.name,x:b.x,z:b.z,width:b.width,depth:b.depth,kind:b.kind}));
+  mapFeatures.push(stable);
   return {root,metrics,mapFeatures,bridges:MENORA_BRIDGES};
 }
