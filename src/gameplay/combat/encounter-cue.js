@@ -2,7 +2,7 @@ import {encounterAttack} from './encounter-attacks.js';
 
 // Read-only visual timing from the same attack used by collision and animation.
 export function encounterCue(g){
-  if(!g.hp)return null;
+  if(!g.hp||g.departed)return null;
   const a=encounterAttack(g),clamp=n=>Math.max(0,Math.min(1,n));
   if(g.routed)return {kind:'retreat',text:g.phase==='breaking'?'THEIR LINE BREAKS':'RETREATING',fraction:1,color:0xe5bc62};
   if(g.escaped)return null;

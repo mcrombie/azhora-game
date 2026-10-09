@@ -9,7 +9,7 @@ import {moveEncounterBody,encounterSteering,escortScreen} from './encounter-spac
 import {selectEncounterTarget,encounterClearStrike,encounterFacing as facing,ENCOUNTER_REACH} from './encounter-target.js';
 export const ENCOUNTER_TIMING=Object.freeze({swing:.35,contact:.15,attackCooldown:.55,buffer:.16,hurt:.28,dodge:.3,dodgeCooldown:.9});
 export const isEncounterGuarding=g=>g.hp>0&&!g.escaped&&g.role!=='runner'&&!g.open&&g.phase!=='stagger';
-export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:-3},{x:3,z:-3},{x:0,z:-5}],move=null,canHit=()=>true,reinforcementRoute=null,rallyPoint=null,attackPattern=['thrust','sweep'],allyStarts=null}={}){
+export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:-3},{x:3,z:-3},{x:0,z:-5}],move=null,canHit=()=>true,reinforcementRoute=null,rallyPoint=null,attackPattern=['thrust','sweep'],allyStarts=null,retreatRoute=null}={}){
   if(reinforcementRoute&&rallyPoint)throw Error('Choose one encounter objective.');
   if(!attackPattern.length||attackPattern.some(name=>!ENCOUNTER_ATTACKS[name]))throw Error('Choose a known encounter attack pattern.');
   if(allyStarts&&(!rallyPoint||reinforcementRoute||allyStarts.length>3))throw Error('Allies require a bounded rally assault.');
@@ -30,7 +30,7 @@ export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:
     const direction=encounterSteering(g,target,bodies()),stride=Math.min(distance(g,target),speed*dt),before={x:g.x,z:g.z};
     g.heading=Math.atan2(direction.x,direction.z);advance(g,direction.x*stride,direction.z*stride);g.speed=distance(g,before)/dt;
   }
-  const squad=allyStarts?createAlliedAssault(state,{starts:allyStarts,walk,canHit:(a,b)=>encounterClearStrike(a,b,bodies().filter(t=>t!==a),canHit)}):null;
+  const squad=allyStarts?createAlliedAssault(state,{starts:allyStarts,walk,retreatRoute,canHit:(a,b)=>encounterClearStrike(a,b,bodies().filter(t=>t!==a),canHit)}):null;
   function tick(dt,input={}){
     if(!Number.isFinite(dt)||dt<=0||dt>.1)throw Error('Encounter steps must be between 0 and 0.1 seconds.');
     if(state.outcome)return snapshot();
@@ -150,7 +150,7 @@ export function createLizeemEncounter({heroStart={x:0,z:5},guardStarts=[{x:-3,z:
     }
     squad?.tick(dt);
     if(rallyPoint){const o=state.objective;o.held=state.guards.every(g=>!g.hp||g.routed)&&distance(h,rallyPoint)<=2.5?Math.min(o.required,o.held+dt):0;}
-    if(h.hp===0||state.time>=90){state.outcome='defeat';if(state.objective)state.objective.reason=h.hp===0?'driven-back':'time-expired';}
+    if(h.hp===0||state.time>=90&&!(rallyPoint&&state.guards.every(g=>!g.hp||g.routed))){state.outcome='defeat';if(state.objective)state.objective.reason=h.hp===0?'driven-back':'time-expired';}
     else if(state.guards.every(g=>!g.hp||g.routed)&&(!rallyPoint||state.objective.held>=state.objective.required)){state.outcome='success';if(state.objective)state.objective.reason=rallyPoint?'rally-secured':'vanguard-broken';}
     else if(reinforcementRoute&&state.guards.every(g=>!g.hp||g.escaped)){state.outcome='defeat';state.objective.reason='runner-arrived';}
     return snapshot();

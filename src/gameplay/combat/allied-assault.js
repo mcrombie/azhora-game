@@ -7,7 +7,7 @@ export const ALLIED_ASSAULT=Object.freeze({allies:3,practiceEnemies:4,allyHealth
 
 // Bounded local soldiers, not additional campaign armies. The hero's own input,
 // attacks, dodge and damage remain in the ordinary encounter model.
-export function createAlliedAssault(state,{starts,walk,canHit}){
+export function createAlliedAssault(state,{starts,walk,canHit,retreatRoute}){
   const S=ALLIED_ASSAULT;
   state.allies=starts.map((p,i)=>({...p,id:100+i,hp:S.allyHealth,role:'ally',heading:0,phase:'approach',timer:i*.13,attack:'thrust',attacks:0,open:false,hurt:0,block:0,speed:0,targetId:null,contactResolved:false}));
   state.squad={damageByAllies:0,damageByHero:0,alliesLost:0,routed:0,regrouped:false};
@@ -103,12 +103,28 @@ export function createAlliedAssault(state,{starts,walk,canHit}){
     // deaths and never removes that soldier from campaign strength as a kill.
     if(hero.hp>0&&standing.length===1&&state.guards.length>=3&&state.guards.filter(g=>!g.hp).length>=state.guards.length-1){
       const g=standing[0];g.routed=true;g.escaped=true;g.phase='breaking';g.timer=S.breakPause;g.brokeAt=state.time;g.open=false;g.speed=0;state.squad.routed++;
-      const dx=g.x-hero.x,dz=g.z-hero.z,d=Math.hypot(dx,dz)||1;g.retreat={x:g.x+dx/d*12,z:g.z+dz/d*12};
+      g.retreatElapsed=0;g.retreatStall=0;g.retreatRetries=0;planRetreat(g);
     }
   }
-  function retreat(dt){for(const g of state.guards.filter(g=>g.routed)){
+  function planRetreat(g){
+    const heading=Math.atan2(g.x-hero.x,g.z-hero.z);
+    g.retreatPath=retreatRoute?retreatRoute(g,hero):[{x:g.x+Math.sin(heading)*24,z:g.z+Math.cos(heading)*24}];
+    g.retreatIndex=0;g.retreatStall=0;
+  }
+  function retreat(dt){for(const g of state.guards.filter(g=>g.routed&&!g.departed)){
     if(g.phase==='breaking'){g.timer=Math.max(0,g.timer-dt);g.speed=0;if(!g.timer)g.phase='retreat';}
-    else walk(g,g.retreat,dt,3.2);
+    else{
+      g.retreatElapsed+=dt;const target=g.retreatPath[g.retreatIndex];
+      if(target){
+        const before={x:g.x,z:g.z};walk(g,target,dt,3.2);
+        g.retreatStall=distance(g,before)<dt*.3?g.retreatStall+dt:0;
+        if(distance(g,target)<.25)g.retreatIndex++;
+        if(g.retreatStall>.6&&g.retreatRetries<2){g.retreatRetries++;planRetreat(g);}
+      }
+      // Finish evacuation, including on constrained ground or after a dynamic
+      // obstruction. A routed soldier must never remain as a frozen opponent.
+      if(!target||g.retreatStall>1.5||g.retreatElapsed>30){g.departed=true;g.phase='escaped';g.speed=0;}
+    }
   }}
   function aftermath(dt){
     retreat(dt);

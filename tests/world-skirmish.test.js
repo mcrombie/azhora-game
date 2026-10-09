@@ -6,6 +6,19 @@ import {createLizeemEncounter} from '../src/gameplay/combat/lizeem-encounter.js'
 import {interceptionFeedback} from '../src/app/exploration/interception-feedback.js';
 import {LIZEEM_FIELD_SITES} from '../src/content/scenarios/lizeem-field-sites.js';
 const plain=()=>({bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},heightAt:()=>2,waterAt:()=>0,readyAt:()=>true,regionAt:()=>({id:13}),nearColliders:()=>[]});
+test('routed soldiers find a connected escape route around obstructed exits',()=>{
+  // A bent wall blocks every direct exit from this starting pocket. Escape
+  // requires a dogleg through the gap at the northeastern corner.
+  const walls=[{x:6,z:0,hx:.4,hz:12},{x:-6,z:0,hx:.4,hz:12},{x:0,z:-12,hx:6.4,hz:.4},{x:-1.5,z:6,hx:4.5,hz:.4}];
+  const ground=createSkirmishGround({...plain(),nearColliders:()=>walls},{x:0,z:0}),start={x:0,z:-8},hero={x:0,z:-7};
+  const route=ground.retreatRoute(start,hero);assert(route.length>1);assert(Math.hypot(route.at(-1).x,route.at(-1).z)>40);
+  let at=start;for(const next of route){assert(ground.canHit(at,next),'Every leg avoids solid scenery');at=next;}
+});
+test('evacuation search is bounded on enclosed, flooded or unloaded ground',()=>{
+  for(const change of [{nearColliders:()=>[{x:2,z:0,hx:.2,hz:3},{x:-2,z:0,hx:.2,hz:3},{x:0,z:2,hx:3,hz:.2},{x:0,z:-2,hx:3,hz:.2}]},{waterAt:()=>3},{readyAt:()=>false}]){
+    const ground=createSkirmishGround({...plain(),...change},{x:0,z:0});assert.deepEqual(ground.retreatRoute({x:0,z:0},{x:0,z:-1}),[]);
+  }
+});
 test('both field sites reuse ground validation, playable approaches and region-correct results',()=>{
   for(const [id,site] of Object.entries(LIZEEM_FIELD_SITES)){
     const world={...plain(),regionAt:()=>({id:site.regionId})},centre={x:0,z:0},ground=createSkirmishGround(world,centre,site.regionId);

@@ -48,10 +48,26 @@ test('nearby flank attacks draw attention and the last survivor visibly breaks b
     if(s.guards.some(g=>g.phase==='breaking')){broken=s;break;}
   }
   assert(turns>0,'At least one enemy reacts during an ordinary flank-and-counter fight');assert(broken);
-  const g=broken.guards.find(g=>g.routed),hp=g.hp,point={x:g.x,z:g.z};assert(hp>0);assert.equal(g.speed,0);assert.equal(encounterCue(g).text,'THEIR LINE BREAKS');assert.match(encounterInstruction(broken).text,/Secure the gold ring/);
+  const g=broken.guards.find(g=>g.routed),hp=g.hp,point={x:g.x,z:g.z};assert(hp>0);assert.equal(g.speed,0);assert.equal(encounterCue(g).text,'THEIR LINE BREAKS');assert.equal(encounterInstruction(broken).kind,'rally');
   assert.equal(model.fireballHit(g.id,50),false,'Retreat is not an extra kill');
   for(let i=0;i<20;i++)s=model.tick(1/60);assert.deepEqual({x:s.guards[g.id].x,z:s.guards[g.id].z},point);
   for(let i=0;i<60;i++)s=model.tick(1/60);assert.equal(s.guards[g.id].phase,'retreat');assert.equal(s.guards[g.id].hp,hp);assert.equal(s.squad.routed,1);assert(Math.hypot(s.guards[g.id].x-point.x,s.guards[g.id].z-point.z)>1);
+  for(let i=0;i<120;i++)s=model.tick(1/60,{z:1});
+  assert.match(encounterInstruction(s).text,/Follow the gold arrow/);
+  for(let i=0;i<600;i++)s=model.tick(1/60);
+  assert(s.guards[g.id].departed,'Routed survivor leaves instead of standing at a fixed destination forever');
+  assert.equal(encounterCue(s.guards[g.id]),null);assert.equal(s.guards[g.id].hp,hp);assert.equal(s.squad.routed,1);
+  for(let i=0;i<5400;i++)s=model.tick(1/60);
+  assert(s.time>90);assert.equal(s.outcome,null,'An empty field cannot defeat the player while they find the standard');
+  for(let i=0;i<900&&!s.outcome;i++)s=model.tick(1/60,encounterAutoplayInput(s));
+  assert.equal(s.outcome,'success');assert.equal(s.objective.held,6);
+});
+test('blocked evacuation replans twice and terminates without extra casualties or a frozen opponent',()=>{
+  const state={time:0,hero:{x:0,z:0,hp:100},guards:[{id:0,x:0,z:2,hp:30},{id:1,hp:0},{id:2,hp:0}],objective:{rally:{x:0,z:3}}};
+  let plans=0;const squad=createAlliedAssault(state,{starts:[],walk:()=>{},canHit:()=>true,retreatRoute:()=>{plans++;return [{x:0,z:20}];}});
+  for(let i=0;i<300;i++){state.time+=1/60;squad.tick(1/60);}
+  const g=state.guards[0];assert.equal(plans,3);assert(g.departed);assert.equal(g.hp,30);assert.equal(g.speed,0);assert.equal(state.squad.routed,1);
+  const before={...g};for(let i=0;i<120;i++)squad.aftermath(1/60);assert.deepEqual(g,before);
 });
 function rally(){const c=createCampaign(WORLD_WAR_SCENARIO);c.step(3);c.locateHero('caricas');const b=c.snapshot().engagements[0];assert(c.joinBattle(b.id,b.location).ok);assert(c.resolveEncounter(b.id,'west','defeat','runner-arrived',2,{escaped:1}).ok);assert(c.joinBattle(b.id,b.location).ok);return {c,b,id:c.snapshot().pending.id};}
 const total=s=>s.armies.reduce((n,a)=>n+a.strength,0)+Object.values(s.regions).reduce((n,r)=>n+r.garrison,0);

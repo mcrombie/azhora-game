@@ -63,6 +63,38 @@ export async function disposal(a){
   a.practice.finish();return {checks:[...checks],geometriesDuringFight:initial,geometriesAfterLeaving:a.renderStats().geometries};
 }
 const warFight=a=>a.war.state().encounter.encounter;
+export async function rout(a){
+  await prepareWarExterior(a);await prepareRally(a);document.getElementById('assault-with-allies').checked=true;await a.war.help('west');
+  for(let i=0;i<5401&&a.state().mode==='skirmish'&&!warFight(a).outcome&&!warFight(a).guards.some(g=>g.routed);i++){driveWorldEncounter(a,warFight(a));a.step(1/60);}clearCombatKeys(a);
+  const s=warFight(a);assert(s.guards.some(g=>g.routed&&g.hp>0),'Real Caricas final assault reaches a living enemy rout with ordinary inputs');
+  const yaw=Math.atan2(s.hero.x-s.rally.x,s.hero.z-s.rally.z);a.look({yaw,pitch:.3,distance:12});
+  a.hold('KeyS',true);for(let i=0;i<120;i++)a.step(1/60);clearCombatKeys(a);
+  assert(!warFight(a).outcome&&Math.hypot(warFight(a).hero.x-s.rally.x,warFight(a).hero.z-s.rally.z)>3,'Player can leave the gold ring while the enemy retreats');
+  assert(!document.getElementById('world-skirmish-rally-guide').hidden&&document.getElementById('world-skirmish-rally-guide').textContent.includes('Gold standard'),'Gold direction and distance remain visible after combat');
+  assert(a.state().combatCues.some(c=>c.visible&&c.cue==='retreat'),'Routed soldier remains clearly labelled during evacuation');
+  window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],state:warFight(a)};
+}
+export async function evacuated(a){
+  window.dispatchEvent(new Event('focus'));for(let i=0;i<2000&&!warFight(a).outcome;i++)a.step(1/60);
+  const s=warFight(a),routed=s.guards.find(g=>g.routed);
+  assert(routed.departed&&routed.phase==='escaped','Routed soldier finishes leaving the real field instead of freezing beside Teresod');
+  assert(routed.retreatRetries===0&&routed.retreatElapsed<30,'Terrain route reaches its exit without needing the obstruction fallback');
+  assert(!a.state().fieldActors.some(g=>g.visible&&Math.hypot(g.position[0]-routed.x,g.position[2]-routed.z)<.01),'Departed soldier is absent from the rendered scene');
+  assert(!a.state().combatCues.some(c=>c.visible&&c.cue==='retreat'),'Departed soldier leaves no floating combat label');
+  assert(s.squad.routed===1&&s.guards.filter(g=>!g.hp).length===3,'Evacuation preserves one survivor and exactly three kills');
+  window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],state:s};
+}
+export async function secure(a){
+  window.dispatchEvent(new Event('focus'));
+  for(let i=0;i<3000&&!warFight(a).outcome;i++){driveWorldEncounter(a,warFight(a));a.step(1/60);}clearCombatKeys(a);
+  assert(warFight(a).outcome==='success','After watching the retreat, ordinary movement and holding the gold ring still wins');
+  assert(document.getElementById('world-skirmish-rally-guide').hidden,'Victory removes capture guidance');
+  document.getElementById('world-skirmish-continue').click();const s=a.war.state().campaign;
+  assert(s.day===6&&s.regions.caricas.owner==='west','Second-round victory records West Lizeem control immediately on day six');
+  assert(a.save().ok&&validateWorldWarSave(a.store.read().data),'Fixed assault still produces a valid isolated campaign save');
+  assert(!a.state().frameErrors.length,'Retreat, capture and continuation produce no frame errors');
+  window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks],campaign:s};
+}
 export async function campaign(a){
   await prepareWarExterior(a);await prepareRally(a);assert(!document.getElementById('assault-choice').hidden&&!document.getElementById('assault-with-allies').checked,'Final assault offers allies without changing the default solo choice');
   document.getElementById('assault-with-allies').checked=true;await a.war.help('west');assert(a.state().mode==='skirmish'&&warFight(a).allies.length===3,'Campaign checkbox starts three allied soldiers in the central field');

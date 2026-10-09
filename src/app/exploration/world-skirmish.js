@@ -29,7 +29,7 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
   const staged=allied||assaultPractice?ground.assaultStage(site.approachHeading??0,count,allyCount):practice?null:ground.stage(site.approachHeading??0,count,assault);
   const heroStart=staged?.hero??{x:position.x,z:position.z};
   const setup=staged??(lesson?{guards:ground.spawn(heroStart,site.approachHeading??yaw()).slice(0,1),route:null}:ground.interception(heroStart,site.approachHeading??yaw(),count));
-  const model=createLizeemEncounter({heroStart,guardStarts:setup.guards,move:ground.move,canHit:ground.canHit,reinforcementRoute:setup.route,rallyPoint:assault?(setup.rally??heroStart):null,allyStarts:allied?setup.allies:null,attackPattern:practice==='lesson'?['thrust']:['thrust','sweep']});
+  const model=createLizeemEncounter({heroStart,guardStarts:setup.guards,move:ground.move,canHit:ground.canHit,retreatRoute:ground.retreatRoute,reinforcementRoute:setup.route,rallyPoint:assault?(setup.rally??heroStart):null,allyStarts:allied?setup.allies:null,attackPattern:practice==='lesson'?['thrust']:['thrust','sweep']});
   const alliedView=allied?createAlliedAssaultView(scene,world,allyCount,allyColor):null;
   const guards=model.snapshot().guards.map(g=>{const guard=createCharacter({role:'legion-soldier',tunic:new THREE.Color(enemyColor).getHex(),armed:true});if(g.role==='runner')guard.setShield(false);guard.group.userData.worldSkirmish=true;guard.group.userData.encounterRole=g.role;scene.add(guard.group);return guard;});
   const combatFeedback=createSkirmishFeedback(scene,world,guards.length),targetMarker=createEncounterTarget(scene),effects=createEncounterEffects(scene,document.getElementById('world-skirmish-settings'));
@@ -67,7 +67,7 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
     position.set(s.hero.x,world.heightAt(s.hero.x,s.hero.z),s.hero.z);actor.group.position.copy(position);actor.group.rotation.y=s.hero.heading;
     if(!s.hero.hp&&!fallenAt.has('hero'))fallenAt.set('hero',visualTime);
     actor.animate(visualTime,speed,true,{action:!s.hero.hp?'dead':s.hero.dodge?'dodge':s.hero.hurt?'hurt':s.hero.swing?'attack':'idle',progress:!s.hero.hp?Math.min(1,(visualTime-fallenAt.get('hero'))/.4):s.hero.dodge?1-s.hero.dodge/T.dodge:s.hero.hurt?1-s.hero.hurt/T.hurt:s.hero.swing?1-s.hero.swing/T.swing:0});
-    guards.forEach((guard,i)=>{const g=s.guards[i],y=world.heightAt(g.x,g.z);guard.group.position.set(g.x,y,g.z);guard.group.rotation.y=g.heading;guard.group.visible=!g.escaped||g.routed;
+    guards.forEach((guard,i)=>{const g=s.guards[i],y=world.heightAt(g.x,g.z);guard.group.position.set(g.x,y,g.z);guard.group.rotation.y=g.heading;guard.group.visible=!g.escaped||g.routed&&!g.departed;
       if(!g.hp&&!fallenAt.has(i))fallenAt.set(i,visualTime);
       guard.animate(visualTime,g.speed,true,encounterGuardPose(g,Math.min(1,(visualTime-(fallenAt.get(i)??visualTime))/.4)));});
     warnings.draw(s.guards,(x,z)=>world.heightAt(x,z));
@@ -78,7 +78,7 @@ export function openWorldSkirmish({scene,world,actor,position,keys,yaw,centre,si
     if(title!==rallyTitle){paintRally(title);labelTexture.needsUpdate=true;}
     rallyMarker.visible=beacon.visible=label.visible=(!!setup.route||assault)&&!s.outcome;
     if(assault&&title==='BREAK THEIR RALLY'&&Math.hypot(s.hero.x-rally.x,s.hero.z-rally.z)<8)label.visible=false;
-    hud.draw(s,{inactive:paused,introRemaining,watching:watch()});
+    hud.draw(s,{inactive:paused,introRemaining,watching:watch(),yaw:yaw()});
     focus.update(s,elapsed,hud.paused()||paused||watch());
   }
   draw(model.snapshot(),false);

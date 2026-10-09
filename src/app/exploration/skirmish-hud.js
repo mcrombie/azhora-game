@@ -1,12 +1,16 @@
 import {encounterInstruction} from '../../gameplay/combat/encounter-lesson.js';
 import {battleProgress} from './battle-progress.js';
 import {writeHud} from './hud-write.js';
+import {trackingBearing} from './war-tracking.js';
 
 // One active instruction; reference controls are available without advancing combat.
 export function createSkirmishHud({practice,reinforcements,pending,site,onPauseChange}){
   const $=id=>document.getElementById('world-skirmish-'+id);
   const objective=$('objective'),help=$('controls'),toggle=$('help'),health=$('health'),dodge=$('dodge');
   const phase=$('phase');phase.hidden=!!practice;
+  const guide=document.createElement('div');guide.id='world-skirmish-rally-guide';guide.hidden=true;
+  const arrow=document.createElement('span');arrow.textContent='↑';arrow.setAttribute('aria-hidden','true');
+  const destination=document.createElement('strong');guide.append(arrow,destination);objective.after(guide);
   let helpOpen=false,ended=false,withdrawLabel;
   const context=practice
     ?'Practice only. No campaign troops or territory change. R restarts this exercise.'
@@ -22,7 +26,7 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
     if(ended)return;
     if(value)withdrawLabel=$('withdraw').textContent;
     $('withdraw').textContent=value?withdrawLabel.replace(' (Esc)',''):withdrawLabel;
-    helpOpen=value;help.hidden=!value;objective.hidden=value;
+    helpOpen=value;help.hidden=!value;objective.hidden=value;if(value)guide.hidden=true;
     toggle.setAttribute('aria-expanded',String(value));toggle.textContent=value?'Resume (H / Esc)':'Help / pause (H)';
     $('strike').disabled=dodge.disabled=value;
     onPauseChange();
@@ -42,9 +46,17 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
       }
       return false;
     },
-    draw(state,{inactive=false,introRemaining=0,watching=false}={}){
+    draw(state,{inactive=false,introRemaining=0,watching=false,yaw=0}={}){
       if(!practice){const progress=battleProgress(pending,state);for(const [tag,text] of [['strong',progress.label],['span',progress.detail]]){const node=phase.querySelector(tag);if(node.textContent!==text)node.textContent=text;}}
       ended=!!state.outcome;
+      const securing=state.objective?.type==='rally'&&state.guards.every(g=>!g.hp||g.routed);
+      writeHud(guide,'hidden',!securing||ended||helpOpen);
+      if(!guide.hidden){
+        const bearing=trackingBearing(state.hero,state.objective.rally,yaw),holding=bearing.distance<=2.5;
+        writeHud(arrow,'hidden',holding);
+        if(!holding)writeHud(arrow.style,'transform',`rotate(${Math.round(bearing.angle*180/Math.PI)}deg)`);
+        writeHud(destination,'textContent',holding?`Hold position · ${Math.ceil(state.objective.required-state.objective.held)}s`:`Gold standard · ${Math.ceil(bearing.distance)} m`);
+      }
       if(ended){
         for(const name of ['objective','vitals','actions','help','controls'])writeHud($(name),'hidden',true);
         return;
@@ -62,6 +74,6 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
       const text=(watching&&!inactive&&!introRemaining?'Watching / P takes control. ':'')+instruction.text;
       if(objective.textContent!==text)objective.textContent=text;
     },
-    dispose(){toggle.onclick=null;help.hidden=true;phase.hidden=true;toggle.setAttribute('aria-expanded','false');}
+    dispose(){guide.remove();toggle.onclick=null;help.hidden=true;phase.hidden=true;toggle.setAttribute('aria-expanded','false');}
   };
 }

@@ -24,7 +24,7 @@ export function createSkirmishFeedback(scene,world,count){
       else if(!current||distance(current)>distance(nearby[0])+.65)focusedId=nearby[0]?.id??null;
       state.guards.forEach((g,i)=>{
         const runner=g.role==='runner',cue=encounterCue(g),detailed=g.routed||g.id===focusedId||runner&&!threat,label=labels[i],key=`${g.hp}/${g.phase}/${g.attack}/${g.hurt>0}/${g.open}/${g.block>0}/${detailed}/${cue?.kind}/${Math.floor((cue?.fraction??0)*12)}`;
-        label.sprite.position.set(g.x,world.heightAt(g.x,g.z)+(detailed?3.15:2.35),g.z);label.sprite.visible=g.hp>0&&(!g.escaped||g.routed&&state.time-g.brokeAt<3);
+        label.sprite.position.set(g.x,world.heightAt(g.x,g.z)+(detailed?3.15:2.35),g.z);label.sprite.visible=g.hp>0&&(!g.escaped||g.routed&&!g.departed);
         const notice=cue?.kind==='attention'&&!detailed;
         label.sprite.scale.set(detailed?2.6:notice ? .65 : 1,detailed?1.3:notice ? .65 : .15,1);
         if(notice)label.sprite.position.y+=2;

@@ -1,4 +1,5 @@
 import {canStand,moveCharacter} from '../../gameplay/movement/locomotion.js';
+import {findRetreatRoute} from '../../gameplay/combat/retreat-route.js';
 
 export const SKIRMISH_RADIUS=45;
 // The local fight stays on loaded, dry ground in the configured region. Shared walking collision
@@ -58,5 +59,5 @@ export function createSkirmishGround(world,centre,regionId=13,radius=SKIRMISH_RA
     }
     throw Error('The central battlefield has no clear space for both formations. Try the solo assault.');
   }
-  return {move,spawn,interception,stage,assaultStage,clear,canHit:(a,b)=>Math.abs(world.heightAt(a.x,a.z)-world.heightAt(b.x,b.z))<=1.5&&segment(a,b)};
+  return {move,spawn,interception,stage,assaultStage,clear,retreatRoute:(at,hero)=>findRetreatRoute(at,hero,{centre,radius,clear,segment}),canHit:(a,b)=>Math.abs(world.heightAt(a.x,a.z)-world.heightAt(b.x,b.z))<=1.5&&segment(a,b)};
 }

@@ -121,6 +121,14 @@ app.whenReady().then(async()=>{
         fs.writeFileSync(path.join(dir,'hearthfall-checks.json'),JSON.stringify({...result,errors},null,2));
         console.log(JSON.stringify({...result,errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(warTest&&process.argv.includes('--allied-retreat-checks')){
+        const results=[];
+        for(const method of ['rout','evacuated','secure']){
+          results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/allied-assault-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`));
+          fs.writeFileSync(path.join(dir,'allied-retreat-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+        }
+        fs.writeFileSync(path.join(dir,'allied-retreat-checks.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({checks:results.at(-1).checks,errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(warTest&&(process.argv.includes('--allied-campaign-checks')||process.argv.includes('--allied-reaper-checks'))){
         const result=process.argv.includes('--allied-reaper-checks')?{}:await win.webContents.executeJavaScript(`import('./src/dev/checks/allied-assault-smoke.js').then(m=>m.campaign(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);
         const recovery=await win.webContents.executeJavaScript(`import('./src/dev/checks/allied-assault-smoke.js').then(m=>m.reaper(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);result.checks=recovery.checks;
