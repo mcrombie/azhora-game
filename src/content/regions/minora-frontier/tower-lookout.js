@@ -1,8 +1,9 @@
+import {lookoutCamera} from '../../../app/exploration/lookout-panorama.js';
 import * as THREE from 'three';
 import {createCharacter,disposeCharacter} from '../../characters/characters.js';
 import {TALETH} from '../../quests/lizeem-farmlands/taleth.js';
 import {LOOKOUT,LOOKOUT_TALETH} from '../../../app/exploration/tower-state.js';
-import {createCourierPigeon} from './courier-pigeon.js';
+import {createLookoutPigeons} from './lookout-pigeons.js';
 
 export function createTowerLookout(parent){
   const root=new THREE.Group();root.name='Wizard Guild / river lookout';root.position.set(LOOKOUT.x,LOOKOUT.y,LOOKOUT.z);parent.add(root);
@@ -20,12 +21,14 @@ export function createTowerLookout(parent){
   // the surrounding country behind a solid room or loading more regions.
   block('#536575',0,0,8,4,2.8,2,true);block('#384b51',0,.02,6.9,3,.06,2);block('#b6a66f',0,2.8,8,4.5,.25,2.5);
   block('#766553',-7,0,5,3,2.2,1.2,true);for(const x of [-8,-7,-6]){block('#203d41',x,1.3,4.36,.65,.55,.05);block('#c4b18a',x,1.22,4.1,.8,.12,.65);}
-  const birds=[-8,-7,-6].map((x,i)=>{const b=createCourierPigeon(root);b.root.position.set(x,1.4,4.02);b.root.rotation.y=i*.4;b.flap(0,false);return b;});
+  const birds=createLookoutPigeons(root);
+  block('#bca876',-7,1.23,3.97,2.5,.045,.4);
+  for(const x of [-7.8,-7.3,-6.7,-6.2])block('#c7aa63',x,1.29,3.85,.06,.04,.06);
   const taleth=createCharacter({...TALETH,role:TALETH.modelRole,tunic:TALETH.color,armed:false});taleth.setArmed(false);taleth.group.position.set(LOOKOUT_TALETH.x-LOOKOUT.x,0,LOOKOUT_TALETH.z-LOOKOUT.z);root.add(taleth.group);
   colliders.push({x:LOOKOUT_TALETH.x,z:LOOKOUT_TALETH.z,r:.5,minY:LOOKOUT.y,maxY:LOOKOUT.y+2.2,kind:'taleth'});
   const shoulder=taleth.group.getObjectByName('Left Shoulder'),elbow=taleth.group.getObjectByName('Left Elbow');let direction=null;
-  return {root,colliders,origin:LOOKOUT,bounds:{minX:LOOKOUT.x-9.5,maxX:LOOKOUT.x+9.5,minZ:LOOKOUT.z-9.5,maxZ:LOOKOUT.z+9.5},
+  return {root,colliders,birds,origin:LOOKOUT,bounds:{minX:LOOKOUT.x-9.5,maxX:LOOKOUT.x+9.5,minZ:LOOKOUT.z-9.5,maxZ:LOOKOUT.z+9.5},
     point:value=>{direction=value;},
-    update(time,player){taleth.animate(time,0,true);taleth.group.rotation.y=direction?(direction==='east'?Math.PI/2:Math.atan2(80,320)):Math.atan2(player.x-LOOKOUT_TALETH.x,player.z-LOOKOUT_TALETH.z);if(direction&&shoulder&&elbow){shoulder.rotation.set(-1.4,0,-.2);elbow.rotation.x=-.08;}},
-    dispose(){disposeCharacter(taleth);for(const b of birds)b.dispose();for(const g of geometries)g.dispose();for(const m of materials.values())m.dispose();root.removeFromParent();}};
+    update(time,player,dt){birds.update(dt);taleth.animate(time,0,true);const aimed=direction&&lookoutCamera(direction).target;taleth.group.rotation.y=aimed?Math.atan2(aimed.x-LOOKOUT_TALETH.x,aimed.z-LOOKOUT_TALETH.z):Math.atan2(player.x-LOOKOUT_TALETH.x,player.z-LOOKOUT_TALETH.z);if(direction&&shoulder&&elbow){shoulder.rotation.set(-1.4,0,-.2);elbow.rotation.x=-.08;}},
+    dispose(){disposeCharacter(taleth);birds.dispose();for(const g of geometries)g.dispose();for(const m of materials.values())m.dispose();root.removeFromParent();}};
 }

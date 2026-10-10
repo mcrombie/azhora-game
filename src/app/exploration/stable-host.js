@@ -1,3 +1,4 @@
+import {bearAfterWar} from './postwar-conversations.js';
 import * as THREE from 'three';
 import {createCharacter,createHorse,groundShadow} from '../../content/characters/characters.js';
 import {createRiding,RIDE} from '../../gameplay/movement/riding.js';
@@ -21,7 +22,7 @@ export function createStableGrounding(world,position){
   return {support,field,at,mountFloor,remember:y=>{if(Number.isFinite(y))knownY=y;},reset:()=>{knownY=null;}};
 }
 
-export function createStableHost({scene,world,actor,position,mounts,movement,saved,inside,mode,setMode,notice,onChange}){
+export function createStableHost({scene,world,actor,position,mounts,movement,saved,campaign=()=>null,inside,mode,setMode,notice,onChange}){
   const riding=createRiding({onEvent:onChange}),empty=riding.snapshot();
   if(saved)riding.restore(saved);
   const root=new THREE.Group();root.name='Bear and the Minora horse';scene.add(root);
@@ -42,7 +43,8 @@ export function createStableHost({scene,world,actor,position,mounts,movement,sav
   const nearBear=()=>outside()&&Math.hypot(position.x-STABLE.bear.x,position.z-STABLE.bear.z)<3.4&&Math.abs(position.y-world.heightAt(STABLE.bear.x,STABLE.bear.z))<2.8;
   function close(){dialog.hidden=true;setMode('playing');update(0,0);}
   function paint(){
-    const [topic,words]=BEAR_RIDING_LESSON[page];$('stable-topic').textContent=topic;$('stable-words').textContent=words;
+    if(page===-1){$('stable-topic').textContent='Home after the war';$('stable-words').textContent=bearAfterWar(campaign());$('stable-page').textContent='Your horse remains yours.';$('stable-next').textContent='Remind me how to ride';$('stable-close').textContent='Thanks, Bear';$('stable-close').focus();return;}
+    const [topic,words]=BEAR_RIDING_LESSON[page];$('stable-topic').textContent=topic;$('stable-words').textContent=page===2&&bearAfterWar(campaign())?'Your horse stays where you leave him. Press H to whistle him over when you are outside. Dismount before entering a building. The green ring on your minimap marks your horse, and M opens the campaign map. The war is over; take your time on the road.':words;
     $('stable-page').textContent=`${page+1} / ${BEAR_RIDING_LESSON.length}`;
     $('stable-next').textContent=page<2?'Continue':riding.owned?'Thanks, Bear':'Take the reins';
     $('stable-close').textContent=riding.owned?'Close':'Not yet';$('stable-next').focus();
@@ -50,7 +52,7 @@ export function createStableHost({scene,world,actor,position,mounts,movement,sav
   function interact(){
     if(!nearBear())return false;
     if(mounts.kind!=='foot'||!movement.state().grounded){notice('Dismount beside Bear to speak with him.');return true;}
-    page=0;setMode('briefing');dialog.hidden=false;paint();return true;
+    page=riding.owned&&bearAfterWar(campaign())?-1:0;setMode('briefing');dialog.hidden=false;paint();return true;
   }
   $('stable-next').onclick=()=>{
     if(page<2){page++;paint();return;}

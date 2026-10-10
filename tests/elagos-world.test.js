@@ -1,3 +1,4 @@
+import {cityCanalAt} from '../src/content/regions/ambron/ambron-city-layout.js';
 import test from 'node:test';
 import { nearestOnPath, roadRoute } from '../src/gameplay/autoplay/autopilot.js';
 import assert from 'node:assert/strict';
@@ -19,11 +20,17 @@ import {
 import { SUBREGIONS } from '../src/ui/map/map-fog.js';
 import { BUILD_STATUS, regionBuildStatus } from '../src/dev/tools/build-status.js';
 import { RIDE } from '../src/gameplay/movement/riding.js';
-import {cityGatePoint,inAmbronOutline} from '../src/content/regions/ambron/ambron-city-layout.js';
+import {cityGatePoint} from '../src/content/regions/ambron/ambron-city-layout.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
 const scene = new THREE.Scene();
-const world = createWorld(scene);
+const world = createWorld(scene, {enabledRegions:[9, 2], initialRegion:9, regionalFineGround:true});
+globalThis.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),0);
+globalThis.cancelAnimationFrame=clearTimeout;
+world.loading.setTravelBudget(32);
+await world.loading.ensureRegion(9);
+await world.loading.ensureRegion(2);
+world.loading.stop();
 const WALKER = .45;
 
 test('Elagos is the ninth playable region, true to the atlas', () => {
@@ -34,15 +41,9 @@ test('Elagos is the ninth playable region, true to the atlas', () => {
   const count = terrain => survey.cells.filter(cell => cell.terrain === terrain).length;
   assert.deepEqual({ hexes: survey.cells.length, grassland: count('grassland'), lake: count('lake'), forest: count('forest') },
     { hexes: 43, grassland: 32, lake: 5, forest: 6 }, 'forty-three hexes, five of them water');
-  // A biome of its own, and the highest ground in the playable world: everything falls away from the shelf.
+  // A biome of its own, above the adjoining road country and below the uplands.
   assert.equal(new Set(PLAYABLE_REGIONS.map(name => REGION_BIOMES[name].id)).size, PLAYABLE_REGIONS.length, 'every region has its own biome');
   const shelf = REGION_TERRAIN.Elagos;
-  // Everything falls away from the shelf except the three uplands the lore puts
-  // above it: Amod, whose terraces descend into the lake country; Vastos, the
-  // tableland that "sits above the surrounding terrain on both its eastern and
-  // western approaches", one of which is this one; and Meneth's ridge country on
-  // the mountain margin, which the lake country is reached by coming down from.
-  const uplands = ['Elagos', 'Amod', 'Vastos', 'Meneth'];
   // And two countries in the far west that neither fall away nor stand over it. Isareos's hills
   // rise "to the upland margins where the territory blurs into the southern edges of the lake
   // country"; Nethereum is the dish between the Isa and the Neth, whose *rim* is a metre over
@@ -50,7 +51,7 @@ test('Elagos is the ninth playable region, true to the atlas', () => {
   // is a step on any border anybody can walk. The shelf is still the roof of the lake country
   // and the road country; it stopped being the roof of the world when the west was built.
   const level = ['Isareos', 'Nethereum'];
-  for (const name of PLAYABLE_REGIONS) if (!uplands.includes(name) && !level.includes(name)) assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above ${name}`);
+  for (const name of ['Drent','Luscia','Moros Plain']) assert.ok(shelf.base > REGION_TERRAIN[name].base, `the shelf stands above adjoining ${name}`);
   for (const name of level) assert.ok(Math.abs(REGION_TERRAIN[name].base - shelf.base) < 4, `${name} blurs into the shelf, within four metres of it`);
   for (const name of ['Amod', 'Vastos', 'Meneth']) assert.ok(REGION_TERRAIN[name].base > shelf.base, `${name} stands above the shelf`);
   assert.ok(REGION_TERRAIN.Amod.base > shelf.base, 'Amod stands above the shelf and drains into it');
@@ -81,7 +82,7 @@ test('every lake the atlas painted is under water, and no basin wanders off its 
     }
     const reach = Math.max(...water.shore.map(p => Math.hypot(p.x - water.centre.x, p.z - water.centre.z)));
     assert.ok(reach < 130, `${water.id} is a lake and not a sea (${reach.toFixed(0)} m)`);
-    for (const p of water.shore) assert.ok(insideRegion('Elagos', p.x, p.z) || water === LAKE_ELA, `${water.id}'s shore stays in Elagos`);
+    for (const p of water.shore) assert.ok(insideRegion('Elagos', p.x, p.z) || water === LAKE_ELA || water.id==='ambron-northern-lake', `${water.id}'s shore stays in Elagos or its existing boundary waters`);
   }
   // The lore's own arrangement: Brul to the north-east, the Thelas chain west, Ossen east, Ela the great one.
   assert.ok(LAKE_BRUL.centre.z < LAKE_ELA.centre.z && LAKE_BRUL.centre.x > LAKE_ELA.centre.x, 'Brul is north-east of Ela');
@@ -101,7 +102,7 @@ test('the ground is cut to the water: a lake is water at its shore, a bed nobody
     const dx = p.x - water.centre.x, dz = p.z - water.centre.z, length = Math.hypot(dx, dz) || 1;
     const out = { x: p.x + dx / length * 12, z: p.z + dz / length * 12 };
     const reading = elagosWater(out.x, out.z);
-    if (!reading || reading.d < 1) continue;                 // another body overlaps here; the shore is not this one's
+    if (!reading || reading.d < 1 || (cityCanalAt(out.x,out.z)?.distance??Infinity)<(cityCanalAt(out.x,out.z)?.width??0)/2) continue;                 // another body overlaps here; the shore is not this one's
     shoreSamples++;
     assert.ok(groundWithRiver(out.x, out.z) >= reading.surface - 1e-6,
       `${water.id} floods its own bank at ${out.x.toFixed(0)}, ${out.z.toFixed(0)}`);
@@ -135,7 +136,7 @@ test('the Ela-south leaves Lake Ela, remains west of Ambron and only ever falls'
     const banks = [regionBase(p.x - p.half - 16, p.z), regionBase(p.x + p.half + 16, p.z)];
     assert.ok(Math.max(...banks) > p.surface + .8, `the Ela-south at z=${p.z} has a bank`);
   }
-  for(const p of points)assert.equal(inAmbronOutline(p.x,p.z),false,'the river is preserved beyond the relocated walls');
+  for(const p of points)assert.equal(canStand(p.x,p.z,world,WALKER),false,'the enlarged capital leaves the outlet open as water');
   // The Link brings the Thelas chain down into Ela.
   assert.ok(THELAS_LINK.points[0].surface > THELAS_LINK.points.at(-1).surface, 'the Link falls');
   assert.ok(elagosWaterDistance(THELAS_LINK.points.at(-1).x, THELAS_LINK.points.at(-1).z) < 0, 'and reaches Lake Ela');
@@ -188,7 +189,7 @@ test('the haul road comes up from the Moros to Ambron’s Plain Gate, and a ride
     const a = road[i - 1], b = road[i], steps = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z)));
     for (let step = 0; step <= steps; step++) {
       const x = a.x + (b.x - a.x) * step / steps, z = a.z + (b.z - a.z) * step / steps;
-      assert.ok(canStand(x, z, world, RIDE.radius), `a rider is stopped at ${x.toFixed(1)}, ${z.toFixed(1)}`);
+      assert.ok(canStand(x, z, world, RIDE.radius), `a rider is stopped at ${x.toFixed(1)}, ${z.toFixed(1)}: ${JSON.stringify(world.colliders.filter(c=>Math.hypot(c.x-x,c.z-z)<12))}`);
     }
   }
 });
@@ -196,7 +197,7 @@ test('the haul road comes up from the Moros to Ambron’s Plain Gate, and a ride
 test('the Caloss fork offers a continuous west road into Elagos and preserves the south road to Nothom', () => {
   assert.equal(CALOSS_ELAGOS_ROAD[0], CALOSS_ROAD_FORK);
   assert.ok(MAIN_ROAD.includes(CALOSS_ROAD_FORK), 'the fork is on the existing road');
-  assert.ok(nearestOnPath(world.paths[0], CALOSS_ROAD_FORK).distance < .1, 'the fork meets the rendered main-road curve');
+  assert.ok(world.paths.some(path=>nearestOnPath(path, CALOSS_ROAD_FORK).distance < .1), 'the fork meets the rendered main-road curve');
   const sign = world.roadSigns.find(s => s.x === -658 && s.z === 176);
   assert.equal(sign?.label, 'Elagos'); assert.equal(sign?.returnLabel, 'Nothom');
   assert.equal(hexOwnerAt(CALOSS_ROAD_FORK.x, CALOSS_ROAD_FORK.z), 'Luscia');

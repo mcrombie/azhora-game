@@ -4,11 +4,13 @@ import {talethAdvice} from './taleth-correspondence.js';
 
 // Live advice is separate from historical letters. Only already-known map
 // intelligence may become a destination, and selecting it never enlists you.
-export function nextCampaignOpportunity(state,scenario,armies,known=()=>true){
+export function nextCampaignOpportunity(state,scenario,armies,known=()=>true,{concluded=false}={}){
   const region=id=>scenario.regions.find(r=>r.id===id)?.name??id;
   const faction=id=>scenario.factions.find(f=>f.id===id)?.short??id;
   if(!state.day)return {kind:'briefing',label:'Speak to Taleth',detail:'Speak with Taleth in the tower to begin the campaign.',target:null};
-  if(state.winner)return {kind:'finale',label:'Return to Taleth',detail:`${faction(state.winner)} has won. The Lizeemi League is united. Return to the Wizard Guild lookout to conclude the campaign.`,target:null};
+  if(state.winner)return concluded
+    ?{kind:'complete',label:'Visit Taleth / optional',detail:'The Lizeemi War campaign is complete. Explore Minora, speak with its people, or visit Taleth to review your campaign and the surrounding countries. The wider regions on the chart are reference territory; this scenario still contains five playable regions.',target:null}
+    :{kind:'finale',label:'Return to Taleth',detail:`${faction(state.winner)} has won. The Lizeemi League is united. Return to the Wizard Guild lookout to conclude the campaign.`,target:null};
   const owners=Object.fromEntries(Object.entries(state.regions).map(([id,r])=>[id,r.owner]));
   const last=state.events.findLast(e=>e.type==='battle'),advice=talethAdvice(owners,last?(last.captured?last.attacker:last.defender):null);
   const personal=latestPersonalBattle(state),side=personal?.side??advice.side;

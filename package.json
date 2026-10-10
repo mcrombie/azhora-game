@@ -7,6 +7,9 @@
   "type": "module",
   "main": "scripts/exploration-desktop.cjs",
   "scripts": {
+    "review:cities": "node scripts/launch.cjs --cities-review",
+    "review:ambron": "node scripts/launch.cjs --ambron-review",
+    "test:ambron:desktop": "node scripts/launch.cjs --ambron-review --smoke-test",
     "test:tower:desktop": "node scripts/launch.cjs --exploration --world-war --smoke-test --tower-checks",
     "start:combat": "node scripts/launch.cjs --exploration --combat-testing",
     "start:lizeem-world": "node scripts/launch.cjs --exploration --world-war",
@@ -60,6 +63,7 @@
     "test:autoplay": "node scripts/launch.cjs --smoke-test --autoplay-checks",
     "test:autoplay:leg": "node scripts/launch.cjs --smoke-test --autoplay-checks --autoplay-from=solis-parley --autoplay-side=empire",
     "test:autoplay:leg:republic": "node scripts/launch.cjs --smoke-test --autoplay-checks --autoplay-from=solis-parley --autoplay-side=coalition",
+    "build:lookout": "node scripts/build-lookout.mjs",
     "build:web": "node scripts/build-web.mjs",
     "test:web:desktop": "npm run build:web && node scripts/launch.cjs --smoke-test --web-checks",
     "test:window": "node scripts/launch.cjs --window-test",
@@ -141,6 +145,7 @@
     "!reference-private/**"
   ],
   "devDependencies": {
-    "electron": "32.3.3"
+    "electron": "32.3.3",
+    "meshoptimizer": "1.3.0"
   }
 }

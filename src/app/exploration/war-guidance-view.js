@@ -24,7 +24,7 @@ export function createWarGuidanceView(scene,world){
       beam.scale.x=beam.scale.z=Math.max(1,distance/150);
       camera.updateMatrixWorld();target.set(at.x,ground+(distance>24?Math.min(height*.6,25):2.5),at.z).applyMatrix4(camera.matrixWorldInverse);
       const focal=1/Math.tan(camera.fov*Math.PI/360),point=guidanceScreenPoint({x:target.x*focal,y:target.y*focal,z:target.z},camera.aspect);
-      label.style.left=`${(point.x+1)*50}%`;label.style.top=`${(point.y+1)*50}%`;
+      label.style.left=`clamp(min(120px,25vw), ${(point.x+1)*50}%, calc(100% - min(120px,25vw)))`;label.style.top=`${(point.y+1)*50}%`;
       arrow.textContent=point.edge?'\u279c':'\u25c6';arrow.style.transform=point.edge?`rotate(${point.angle}rad)`:'none';
       const words=distance<6?(model.near??model.label):`${model.label} / ${Math.round(distance)} m`;
       if(text.textContent!==words)text.textContent=words;

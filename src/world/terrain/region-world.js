@@ -16,7 +16,7 @@
 import { PLAYABLE_SURVEY, LAND_HEXES, SURVEY_ORIGIN } from '../../dev/tools/region-survey.js';
 import { OUTER_PROFILES } from '../../content/regions/outer-regions/outer-regions-data.js';
 import { PORT_CALOS_REGION_IDS } from '../../content/regions/port-calos/port-calos-roster.js';
-import { ambronTerraceWeight } from '../../content/regions/ambron/ambron-city-layout.js';
+import { ambronTerraceWeight, ambronGroundLevel } from '../../content/regions/ambron/ambron-city-layout.js';
 import {
   HEX_WORLD_TRANSFORM, REGION_BIOMES, PLAYABLE_REGIONS, METRES_PER_HEX, ATLAS_HEX_SIZE, ATLAS_HEX_WIDTH,
   regionCells, regionOutline, worldBoundsFor, routeAnchors, borderMidpoint, pointInPolygon,
@@ -950,11 +950,11 @@ export const KELVATH_SHELF = Object.freeze({ id: 'kelvath', x: 250, z: 1748, hal
 
 /** Ambron occupies dry interlake ground. The detailed outline follows the
  * lakes; these rectangular extents are only a broad-phase bound. */
-export const AMBRON = Object.freeze({ name: 'Ambron', centre: point(-1130, 10), halfA: 164, halfB: 180, channelHalf: 0, hasChannel: false });
+export const AMBRON = Object.freeze({ name: 'Ambron', centre: point(-1130, 10), halfA: 220, halfB: 240, channelHalf: 0, hasChannel: false });
 export const ambronPoint = (a, b) => point(AMBRON.centre.x + a, AMBRON.centre.z + b);
-/** The made ground the city stands on: level, tilting up to the old east bank. */
+/** Made ground rises through the city districts to the northern royal precinct. */
 export const AMBRON_TERRACE = Object.freeze({ id: 'ambron', x: AMBRON.centre.x, z: AMBRON.centre.z,
-  halfX: AMBRON.halfA + 12, halfZ: AMBRON.halfB + 12, feather: 30, weightAt: ambronTerraceWeight, level: 19.2, slopeX: .012, slopeZ: 0 });
+  halfX: AMBRON.halfA + 12, halfZ: AMBRON.halfB + 12, feather: 30, weightAt: ambronTerraceWeight, heightAt: ambronGroundLevel, level: 20, slopeX: .008, slopeZ: 0 });
 
 export const TERRAIN_PADS = Object.freeze([
   Object.freeze({ id: 'solis', x: SOLIS.centre.x, z: SOLIS.centre.z, halfX: SOLIS.halfX + 13, halfZ: SOLIS.halfZ + 13, feather: 28, level: 6.5, slopeX: .05, slopeZ: 0 }),
@@ -1229,7 +1229,7 @@ const REGION_TEXT = {
     palette: { ground: '#7e8b62', accent: '#d8d0ae', fog: '#b4c3c0' },
     npcIds: [], landmarks: [] },
   // Elagos is authored in world metres too (src/content/regions/ambron/elagos-world.js); its spawn is the haul road below Ambron's Plain Gate.
-  Elagos: { subtitle: 'The Lake Lands and Ambron', spawn: point(-1178, 196),
+  Elagos: { subtitle: 'The Lake Lands and Ambron', spawn: point(-1184, 268),
     description: 'The northern shelf, and the lakes that made an empire: Ela running north out of sight, Brul and Ossen and the Thelas chain beyond it, and Ambron filling the dry interlake ground. Its high courts, crowded market and working southern quarters gather the trade of the four lakes.',
     palette: { ground: '#7d9560', accent: '#cfe0e4', fog: '#b4c6c4' },
     npcIds: ['ambron-toll-clerk', 'ambron-legate', 'ambron-committee', 'ambron-gate-optio'],

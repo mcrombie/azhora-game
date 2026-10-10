@@ -1,4 +1,13 @@
 [
+  "tests/campaign-guidance.test.js",
+  "tests/resident-population.test.js",
+  "tests/lookout-chart.test.js",
+  "tests/lookout-landscape.test.js",
+  "tests/lookout-preview.test.js",
+  "tests/war-autoplay.test.js",
+  "tests/lookout-panorama.test.js",
+  "tests/lookout-pigeons.test.js",
+  "tests/postwar-conversations.test.js",
   "tests/soldier-contact.test.js",
   "tests/camera-obstruction.test.js",
   "tests/allied-assault.test.js",

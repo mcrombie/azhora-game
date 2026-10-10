@@ -25,7 +25,7 @@ export async function checkWorldWar(h){
   h.reveal(true);assert(h.state().map.battleMarkers.includes(active.id),'Developer reveal exposes an active battlefield');
   h.resume();await frames();assert(!document.getElementById('world-war-report').hidden&&document.getElementById('world-war-report-detail').textContent.includes('Caricas')&&/before day 12|Expected day 13/.test(document.getElementById('world-war-report-detail').textContent),'Known battle or marching-army news is visible while exploring elsewhere');
   h.reveal(false);assert(!h.state().map.battleMarkers.length,'Turning reveal off hides an unknown battlefield again');
-  assert(document.getElementById('world-war-report').hidden,'Turning reveal off also hides undiscovered battle reports');
+  assert(document.getElementById('world-war-latest-report').hidden,'Turning reveal off hides undiscovered reports while keeping the objective');
   const beforeTravel=war().campaign.day;assert(await h.travelToRegion(13),'Developer Go loads real Caricas scenery');await frames(2);
   assert(war().campaign.day===beforeTravel,'Scenery loading does not consume campaign days');
   assert(war().campaign.hero.region==='caricas'&&h.state().region===13,'Physical arrival updates campaign hero location');
@@ -92,7 +92,7 @@ export async function checkWorldWar(h){
   assert(!document.getElementById('world-war-report').hidden&&document.getElementById('world-war-report-title').textContent==='Reinforcements stopped at Caricas','Returning to the world clearly reports the skirmish victory');
   assert(document.getElementById('world-war-report-detail').textContent.includes('still controls Caricas')&&document.getElementById('world-war-report-clock').textContent.includes('paused'),'Aftermath distinguishes pending regional outcome and explains how to resume time');
   const postEncounter=h.war.save(h.snapshot());
-  click('world-war-report-dismiss');await frames();assert(document.getElementById('world-war-report').hidden,'Dismissed report stays dismissed during ordinary exploration');
+  click('world-war-report-dismiss');await frames();assert(document.getElementById('world-war-latest-report').hidden&&!document.getElementById('world-war-report').hidden,'Dismissed report stays dismissed and the objective remains');
   assert(!h.war.join(active.id).ok,'The hero cannot fight the same engagement twice');
   h.war.advance(2);
   assert(!document.getElementById('world-war-report').hidden&&document.getElementById('world-war-report-title').textContent==='West Lizeem captured Caricas','Regional resolution presents a new report after the skirmish report was dismissed');

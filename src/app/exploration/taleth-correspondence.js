@@ -1,5 +1,6 @@
 import {battleConsequence,latestPersonalBattle,councilBalance} from './battle-consequences.js';
 import {LIZEEM_SCENARIO} from '../../content/scenarios/lizeem.js';
+import {LOOKOUT_TOUR} from '../../content/regions/minora-frontier/lookout-tour.js';
 
 const league=id=>id==='west'?'West Lizeem':'East Lizeem';
 const name=id=>LIZEEM_SCENARIO.regions.find(r=>r.id===id)?.name??id;
@@ -52,6 +53,7 @@ export function talethFinale(state){
   return [
     {view:'river',title:'The river country',words:`Look along the Lizeem, Teresod: Nethereum and Ovesos, Caricas and Nesdor. ${league(state.winner)} has prevailed. The united country is now the Lizeemi League, and their war is settled. The fields must feed people again, not armies. This is why I asked for haste: greater troubles will demand the strength we have left.`},
     {view:'river',title:'What your choices changed',words:`${effect} ${state.winner==='west'?'The Mayor’s western allies have prevailed.':'The High Priest’s eastern allies have prevailed.'} ${councilBalance(state)} Our settlement with the victors makes Minora the ruling seat of the Lizeemi League. Our walls command their crossings. The victor gains the provinces, and their friends gain the louder voice in our council.`},
-    {view:'east',title:'Beyond the Lizeem',words:'Now look east, toward Ambron. What happened here was only one tremor in the greater realm. Remember the lives spared, as well as the battles won. Our next concern lies in that direction.',closing:'The Lizeemi War campaign is complete. The road toward Ambron will continue in a later chapter.'},
+    {view:'east',title:'Beyond the Lizeem',words:'Now look east, toward Ambron. What happened here was only one tremor in the greater realm. Remember the lives spared, as well as the battles won. Before you decide where to turn next, let me show you the countries around us.'},
+    ...LOOKOUT_TOUR,
   ];
 }

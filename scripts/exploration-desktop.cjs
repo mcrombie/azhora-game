@@ -1,4 +1,4 @@
-const {app,BrowserWindow,ipcMain}=require('electron');
+const {app,BrowserWindow,ipcMain,nativeImage}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {createCheckpointStore}=require('./checkpoint-store.cjs');
 const {isPublicFile}=require('./public-file.cjs');
@@ -28,7 +28,7 @@ app.whenReady().then(async()=>{
     try{pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);}catch{res.writeHead(400);res.end();return;}
     if(pathname==='/')pathname='/index.html';
     const file=path.resolve(root,'.'+pathname);
-    const allowed=['/index.html','/exploration.html'].includes(pathname)||/^\/(src|assets|vendor)\//.test(pathname);
+    const allowed=['/index.html','/exploration.html'].includes(pathname)||/^\/(src|assets|vendor)\//.test(pathname)||(test&&/^\/tests\/artifacts\/lookout-reference\/landscape\.(json|bin\.gz)$/.test(pathname));
     if(!allowed||!isPublicFile(root,file)){res.writeHead(403);res.end();return;}
     fs.readFile(file,(error,data)=>{
       if(error){res.writeHead(404);res.end();return;}
@@ -49,7 +49,7 @@ app.whenReady().then(async()=>{
   const errors=[];
   win.webContents.on('console-message',(_e,level,message)=>{if(level>=3){errors.push(message);if(test)console.log('EXPLORATION_ERROR '+message);}if(test&&message.startsWith('EXPLORATION_'))console.log(message);});
   win.webContents.on('before-input-event',(_event,input)=>{if(input.type==='keyDown'&&(input.key==='F11'||input.alt&&input.key==='Enter'))win.setFullScreen(!win.isFullScreen());});
-  await win.loadURL(`http://127.0.0.1:${server.address().port}/?${test?'test=1&':''}${combatTest?'mode=combat'+(test?'&menu=1':''):hearthfallTest?'mode=hearthfall&menu=1':warTest?'war=1':''}`);
+  await win.loadURL(`http://127.0.0.1:${server.address().port}/?${test?'test=1&':''}${(process.argv.includes('--campaign-autoplay-checks')||process.argv.includes('--autoplay-takeover-checks')||process.argv.includes('--autoplay-modal-checks')||process.argv.includes('--autoplay-realtime-checks')||process.argv.includes('--autoplay-resilience-checks'))?'autoplay='+(process.argv.includes('--east-side')?'east':'west')+'&':''}${(process.argv.includes('--lookout-performance-checks')||process.argv.includes('--lookout-preview-checks')||process.argv.includes('--lookout-landscape-checks')||process.argv.includes('--lookout-tour-checks')||process.argv.includes('--lookout-life-checks'))?'preview=unattended-lookout&':''}${combatTest?'mode=combat'+(test?'&menu=1':''):hearthfallTest?'mode=hearthfall&menu=1':warTest?'war=1':''}`);
   if(test){
     const dir=path.join(root,'tests','artifacts');fs.mkdirSync(dir,{recursive:true});
     try{
@@ -169,6 +169,31 @@ app.whenReady().then(async()=>{
         fs.writeFileSync(path.join(dir,'allied-campaign.png'),(await win.webContents.capturePage()).toPNG());
         fs.writeFileSync(path.join(dir,process.argv.includes('--allied-reaper-checks')?'allied-reaper-checks.json':'allied-campaign-checks.json'),JSON.stringify({...result,errors},null,2));console.log(JSON.stringify({checks:result.checks,errors},null,2));app.exit(errors.length?1:0);return;
       }
+      if(warTest&&process.argv.includes('--guidance-clarity-checks')){
+        const results=[];
+        for(const method of ['opening','battlefield','finale','details','civilian','resumed']){
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/campaign-guidance-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);
+          results.push({method,...result});console.log('EXPLORATION_GUIDANCE '+JSON.stringify(result));
+          fs.writeFileSync(path.join(dir,'guidance-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+        }
+        for(const [width,height] of [[1024,600],[390,844],[844,390]]){
+          win.setContentSize(width,height);await new Promise(r=>setTimeout(r,200));
+          const layout=await win.webContents.executeJavaScript(`import('./src/dev/checks/campaign-guidance-smoke.js').then(m=>m.finale(window.__EXPLORATION__))`);results.push(layout);
+          fs.writeFileSync(path.join(dir,`guidance-${width}x${height}.png`),(await win.webContents.capturePage()).toPNG());
+        }
+        fs.writeFileSync(path.join(dir,'guidance-clarity.json'),JSON.stringify({results,errors},null,2));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--population-checks')){
+        const results=[];
+        const visualOnly=process.argv.includes('--population-visual-only');
+        for(const method of (visualOnly?['survey','town','shelter','returned','conversation']:['survey','contact','town','shelter','returned','performanceCheck','conversation'])){
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/resident-population-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`);
+          results.push({method,...result});console.log('EXPLORATION_POPULATION '+method+' '+JSON.stringify(result));
+          await new Promise(resolve=>setTimeout(resolve,180));
+          fs.writeFileSync(path.join(dir,'resident-population-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+        }
+        fs.writeFileSync(path.join(dir,visualOnly?'resident-population-visual.json':'resident-population-checks.json'),JSON.stringify({results,errors},null,2));app.exit(errors.length?1:0);return;
+      }
       if(warTest&&process.argv.includes('--resident-dialogue-checks')){
         const results=[];
         for(const method of ['residents','spellFocus']){
@@ -200,7 +225,169 @@ app.whenReady().then(async()=>{
         fs.writeFileSync(path.join(dir,'campaign-wait.png'),(await win.webContents.capturePage()).toPNG());
         fs.writeFileSync(path.join(dir,'campaign-wait.json'),JSON.stringify({result,errors},null,2));console.log(JSON.stringify({result,errors},null,2));app.exit(errors.length?1:0);return;
       }
-      if(warTest&&process.argv.includes('--campaign-journey-checks')){
+      if(warTest&&process.argv.includes('--lookout-performance-checks')){
+        const results=[],label=process.argv.includes('--profile-before')?'before':'after';
+        for(const method of ['river','ambron','pyra','north']){
+          results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-performance-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`));
+          fs.writeFileSync(path.join(dir,'lookout-performance-'+label+'-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+        }
+        fs.writeFileSync(path.join(dir,'lookout-performance-'+label+'.json'),JSON.stringify({results,errors},null,2));
+        console.log(JSON.stringify({results:results.map(r=>({name:r.name,readyMs:r.readyMs,calls:r.render.calls,triangles:r.render.triangles,cpuMs:r.cpuMs,frameMs:r.frameMs})),errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--lookout-landscape-checks')){
+        const results=[];
+        for(const method of ['river','east','south','pyra','west','north','freeEast','lifecycle']){
+          results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-landscape-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`));
+          fs.writeFileSync(path.join(dir,'lookout-landscape-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+          if(['east','south','pyra','west'].includes(method)){
+            await win.webContents.executeJavaScript(`window.__EXPLORATION__.testWorld.testLookoutReference(true).then(()=>window.__EXPLORATION__.renderStats())`);
+            await new Promise(r=>setTimeout(r,500));
+            const refImage=await win.webContents.capturePage();
+            fs.writeFileSync(path.join(dir,'lookout-reference-'+method+'.png'),refImage.toPNG());
+            const actual=nativeImage.createFromPath(path.join(dir,'lookout-landscape-'+method+'.png'));
+            const first=actual.toBitmap(),second=refImage.toBitmap();let delta=0,changed=0,pixels=0;
+            const {width,height}=actual.getSize();
+            for(let y=160;y<Math.min(height-160,520);y++)for(let x=0;x<width;x++){
+              if(method==='east'?x>width*.64:x>width*.37&&x<width*.64)continue;
+              const k=(y*width+x)*4;let max=0;for(let c=0;c<3;c++){const d=Math.abs(first[k+c]-second[k+c]);delta+=d;max=Math.max(max,d);}pixels++;if(max>12)changed++;
+            }
+            results.at(-1).referenceComparison={meanChannelDifference:delta/(pixels*3),changedOver12Percent:changed/pixels*100,pixels};
+            await win.webContents.executeJavaScript(`window.__EXPLORATION__.testWorld.testLookoutReference(false).then(()=>window.__EXPLORATION__.renderStats())`);
+          }
+        }
+        if(interceptionStore.handle('get','azhora-road-checkpoint-v1').value)throw Error('Lookout landscape check wrote the normal save');
+        fs.writeFileSync(path.join(dir,'lookout-landscape.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results:results.map(r=>({name:r.name,render:r.render,comparison:r.referenceComparison})),errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--lookout-life-checks')){
+        const results=[];
+        for(const method of ['conclusion','pigeons','flight','archive','descent','bear','mayor','priest','residents','returnLookout']){
+          results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-life-smoke.js').then(m=>m.${method}(window.__EXPLORATION__)).catch(e=>{console.error(e.stack);throw e;})`));
+          fs.writeFileSync(path.join(dir,'lookout-life-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+          if(method==='pigeons'){
+            for(const [w,h]of [[1024,600],[390,844]]){
+              win.setContentSize(w,h);await new Promise(r=>setTimeout(r,250));
+              results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-life-smoke.js').then(m=>m.compact(window.__EXPLORATION__))`));
+              fs.writeFileSync(path.join(dir,`lookout-life-${w}x${h}.png`),(await win.webContents.capturePage()).toPNG());
+            }
+            win.setContentSize(1280,720);await new Promise(r=>setTimeout(r,250));
+          }
+          console.log('EXPLORATION_CHECK '+method);
+        }
+        if(interceptionStore.handle('get','azhora-road-checkpoint-v1').value)throw Error('Lookout life check wrote a normal save');
+        fs.writeFileSync(path.join(dir,'lookout-life.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--lookout-tour-checks')){
+        const results=[];
+        const tour=async(method,...args)=>win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-tour-smoke.js').then(m=>m.${method}(window.__EXPLORATION__,...${JSON.stringify(args)})).catch(e=>{console.error(e.stack);throw e;})`);
+        if(process.argv.includes('--chart-only')){
+          results.push(await tour('quickChart'));fs.writeFileSync(path.join(dir,'lookout-chart-expanded.png'),(await win.webContents.capturePage()).toPNG());
+          fs.writeFileSync(path.join(dir,'lookout-chart.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors}));app.exit(errors.length?1:0);return;
+        }
+        for(const method of ['river','chartBefore','impact','ambron','chartAfter']){results.push(await tour(method));fs.writeFileSync(path.join(dir,'lookout-tour-'+method+'.png'),(await win.webContents.capturePage()).toPNG());if(method==='chartBefore')await tour('returnToReview');if(method==='chartAfter')await tour('resumeTour');}
+        const regionCount=await tour('regionCount');
+        for(let i=0;i<regionCount;i++){const r=await tour('region',i);results.push(r);fs.writeFileSync(path.join(dir,'lookout-tour-'+r.view+'.png'),(await win.webContents.capturePage()).toPNG());}
+        results.push(await tour('navigation'));
+        for(const [w,h]of [[1024,600],[390,844]]){win.setContentSize(w,h);await new Promise(r=>setTimeout(r,250));results.push(await tour('compact'));fs.writeFileSync(path.join(dir,`lookout-tour-${w}x${h}.png`),(await win.webContents.capturePage()).toPNG());}
+        results.push(await tour('complete'));
+        if(interceptionStore.handle('get','azhora-road-checkpoint-v1').value)throw Error('Tour check wrote a normal save');
+        fs.writeFileSync(path.join(dir,'lookout-tour.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--lookout-preview-checks')){
+        const results=[];
+        for(const method of ['river','east','complete']){
+          results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-preview-smoke.js').then(m=>m.${method}(window.__EXPLORATION__))`));
+          await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-preview-smoke.js').then(m=>m.paint(window.__EXPLORATION__))`);fs.writeFileSync(path.join(dir,'lookout-preview-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+        }
+        if(interceptionStore.handle('get','azhora-road-checkpoint-v1').value)throw Error('Lookout preview wrote the normal save');
+        fs.writeFileSync(path.join(dir,'lookout-preview.json'),JSON.stringify({results,errors},null,2));console.log(JSON.stringify({results,errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&(process.argv.includes('--autoplay-realtime-checks')||process.argv.includes('--autoplay-resilience-checks'))){
+        const recovery=process.argv.includes('--autoplay-resilience-checks');
+        if(recovery){
+          await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-loading-smoke.js').then(m=>m.waitForDoor(window.__EXPLORATION__))`);
+          win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+          const stopped=await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-loading-smoke.js').then(m=>m.outsidePaused(window.__EXPLORATION__))`);
+          fs.writeFileSync(path.join(dir,'autoplay-loading-paused.json'),JSON.stringify(stopped,null,2));
+          fs.writeFileSync(path.join(dir,'autoplay-loading-paused.png'),(await win.webContents.capturePage()).toPNG());
+          win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+        }
+        win.webContents.sendInputEvent({type:'mouseDown',x:600,y:300,button:'left',clickCount:1});win.webContents.sendInputEvent({type:'mouseUp',x:600,y:300,button:'left',clickCount:1});
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'F2'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'F2'});
+        const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-realtime-smoke.js').then(m=>m.watch(window.__EXPLORATION__,{full:${process.argv.includes('--full-campaign')}}))`);
+        fs.writeFileSync(path.join(dir,'autoplay-realtime'+(recovery?'-recovery':'')+(process.argv.includes('--full-campaign')?'-full-'+(process.argv.includes('--east-side')?'east':'west'):'')+'.json'),JSON.stringify({result,errors},null,2));
+        fs.writeFileSync(path.join(dir,'autoplay-realtime'+(recovery?'-recovery':'')+(process.argv.includes('--full-campaign')?'-full-'+(process.argv.includes('--east-side')?'east':'west'):'')+'.png'),(await win.webContents.capturePage()).toPNG());console.log(JSON.stringify({result,errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--autoplay-modal-checks')){
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.ready(window.__EXPLORATION__))`);
+        for(const [key,method]of [['P','paused'],['P','resumed'],['button:Enter','paused'],['button:Space','resumed'],['Enter','continued'],['P','resumedBriefing']]){
+          const buttonKey=key.startsWith('button:'),inputKey=buttonKey?key.slice(7):key;
+          await win.webContents.executeJavaScript(buttonKey?`document.getElementById('world-autoplay').focus()`:`document.getElementById('world-skirmish-continue')?.focus()`);
+          win.webContents.sendInputEvent({type:'keyDown',keyCode:inputKey});win.webContents.sendInputEvent({type:'keyUp',keyCode:inputKey});
+          await new Promise(r=>setTimeout(r,100));
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.${method}(window.__EXPLORATION__))`);
+          if(result)fs.writeFileSync(path.join(dir,'autoplay-modal.json'),JSON.stringify({result,errors},null,2));
+          if(method==='paused')for(const [width,height] of [[1280,720],[1024,600],[390,844],[844,390]]){
+            win.setContentSize(width,height);await new Promise(r=>setTimeout(r,150));
+            fs.writeFileSync(path.join(dir,`autoplay-modal-${width}x${height}.png`),(await win.webContents.capturePage()).toPNG());
+            await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.layout())`);
+          }
+
+        }
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.finalResult(window.__EXPLORATION__))`);
+        for(const [key,method]of [['Enter','finalContinued'],['P','resumedCampaign']]){
+          if(key==='Enter')await win.webContents.executeJavaScript(`document.getElementById('world-skirmish-continue').focus()`);
+          win.webContents.sendInputEvent({type:'keyDown',keyCode:key});win.webContents.sendInputEvent({type:'keyUp',keyCode:key});
+          await new Promise(r=>setTimeout(r,100));
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.${method}(window.__EXPLORATION__))`);
+          fs.writeFileSync(path.join(dir,'autoplay-final-handoff-'+method+'.json'),JSON.stringify({result,errors},null,2));
+        }
+        fs.writeFileSync(path.join(dir,'autoplay-final-handoff.png'),(await win.webContents.capturePage()).toPNG());
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.legacyResult(window.__EXPLORATION__))`);
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-modal-smoke.js').then(m=>m.legacyStopped(window.__EXPLORATION__))`);
+        fs.writeFileSync(path.join(dir,'autoplay-modal.png'),(await win.webContents.capturePage()).toPNG());
+        if(interceptionStore.handle('get','azhora-road-checkpoint-v1').value)throw Error('Rehearsal touched the normal native save');
+        console.log('EXPLORATION_CHECK Native modal pause, resume and manual Continue passed');app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--autoplay-takeover-checks')){
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-takeover-smoke.js').then(m=>m.ready(window.__EXPLORATION__))`);
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+        await new Promise(r=>setTimeout(r,100));
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-takeover-smoke.js').then(m=>m.paused(window.__EXPLORATION__))`);
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+        await new Promise(r=>setTimeout(r,100));
+        await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-takeover-smoke.js').then(m=>m.resumed(window.__EXPLORATION__))`);
+        win.webContents.sendInputEvent({type:'keyDown',keyCode:'P'});win.webContents.sendInputEvent({type:'keyUp',keyCode:'P'});
+        await new Promise(r=>setTimeout(r,100));
+        const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/autoplay-takeover-smoke.js').then(m=>m.verify(window.__EXPLORATION__))`);
+        if(interceptionStore.handle('get','azhora-road-checkpoint-v1').value)throw Error('Rehearsal touched the normal native save');
+        await win.webContents.executeJavaScript(`window.__EXPLORATION__.pause();document.getElementById('return-start').click()`);
+        await new Promise((resolve,reject)=>{let tries=0;const check=async()=>{try{if(await win.webContents.executeJavaScript(`!document.getElementById('start-screen')?.hidden&&!new URL(location.href).searchParams.has('autoplay')&&document.querySelectorAll('#start-screen [data-watch-war]').length===2`))return resolve();}catch{}if(tries++>100)return reject(Error('Rehearsal did not return to its menu'));setTimeout(check,100);};check();});
+        await win.webContents.executeJavaScript(`document.querySelector('#start-screen [data-watch-war]').closest('article').scrollIntoView({block:'center'});new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))`);
+        fs.writeFileSync(path.join(dir,'autoplay-menu.png'),(await win.webContents.capturePage()).toPNG());
+        fs.writeFileSync(path.join(dir,'autoplay-takeover.json'),JSON.stringify({result,errors},null,2));console.log(JSON.stringify({result,errors}));app.exit(errors.length?1:0);return;
+      }
+      if(warTest&&process.argv.includes('--lookout-checks')){
+          const results=[];
+          for(const method of ['settled','river','politics','east','complete']){
+            results.push(await win.webContents.executeJavaScript(`import('./src/dev/checks/lookout-panorama-smoke.js').then(m=>m.${method}(window.__EXPLORATION__))`));
+            fs.writeFileSync(path.join(dir,'lookout-'+method+'.png'),(await win.webContents.capturePage()).toPNG());
+          }
+          const stats=await win.webContents.executeJavaScript('JSON.parse(JSON.stringify({state:window.__EXPLORATION__.state(),world:window.__EXPLORATION__.tower.state(),render:window.__EXPLORATION__.renderStats()}))');
+          fs.writeFileSync(path.join(dir,'lookout-checks.json'),JSON.stringify({results,stats,errors},null,2));console.log(JSON.stringify({stats,errors}));app.exit(errors.length?1:0);return;
+        }
+        if(warTest&&process.argv.includes('--campaign-autoplay-checks')){
+          const side=process.argv.includes('--east-side')?'east':'west',results=[];
+          for(let n=0;n<50;n++){
+            const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/campaign-autoplay-smoke.js').then(m=>m.next(window.__EXPLORATION__))`);
+            results.push(result);console.log('EXPLORATION_WATCH '+JSON.stringify(result));
+            fs.writeFileSync(path.join(dir,'autoplay-'+side+'-'+n+'.png'),(await win.webContents.capturePage()).toPNG());
+            if(result.done)break;
+          }
+          const result=await win.webContents.executeJavaScript(`import('./src/dev/checks/campaign-autoplay-smoke.js').then(m=>m.verify(window.__EXPLORATION__,${JSON.stringify(side)})).then(v=>JSON.parse(JSON.stringify(v)))`);
+          fs.writeFileSync(path.join(dir,'autoplay-'+side+'.json'),JSON.stringify({results,result,errors},null,2));console.log(JSON.stringify({result,errors}));app.exit(errors.length?1:0);return;
+        }
+        if(warTest&&process.argv.includes('--campaign-journey-checks')){
         const results=[],side=process.argv.includes('--east-side')?'east':'west';
         const check=async(module,method)=>{
           console.log('EXPLORATION_JOURNEY '+method);

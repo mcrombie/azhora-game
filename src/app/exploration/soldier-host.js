@@ -23,7 +23,11 @@ export function createSoldierHost({world,position,getMode,setMode,people,campaig
   prompt.onclick=interact;
   for(const b of dialog.querySelectorAll('button'))b.onclick=()=>{if(b.dataset.topic==='close')close();else dialog.querySelector('#soldier-words').textContent=words[b.dataset.topic];};
   dialog.addEventListener('cancel',e=>{e.preventDefault();close();});
-  function update(dt=0){scan-=dt;if(getMode()!=='playing'){prompt.hidden=true;return;}if(scan>0)return;scan=.12;const p=target();prompt.hidden=!p;if(p)prompt.textContent=`F / Talk to ${campaign().winner?'Lizeemi League':faction(p.owner)} ${p.kind==='survivor'?'soldier':'sentry'}`;}
+  function update(dt=0){
+    scan-=dt;if(getMode()!=='playing'){if(!prompt.hidden)prompt.hidden=true;return;}
+    if(scan>0)return;scan=.12;const p=target();if(prompt.hidden!==!p)prompt.hidden=!p;
+    if(p){const text=`F / Talk to ${campaign().winner?'Lizeemi League':faction(p.owner)} ${p.kind==='survivor'?'soldier':'sentry'}`;if(prompt.textContent!==text)prompt.textContent=text;}
+  }
   return {update,interact,open:()=>!!speaking,state:()=>({speaking:speaking?{...speaking}:null}),
     keydown(e){if(!speaking)return false;if(e.code==='Escape'){e.preventDefault();close();}else if(!['Tab','Enter','Space'].includes(e.code))e.preventDefault();return true;},
     dispose(){if(dialog.open)dialog.close();prompt.remove();dialog.remove();}

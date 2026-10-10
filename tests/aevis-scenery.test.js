@@ -19,7 +19,7 @@ test('Aevis keeps detailed bronze scenery within bounded merged batches',()=>{
   assert.equal(city.metrics.gates,AEVIS_GATES.length);
   assert.equal(city.metrics.ships,AEVIS_BOATS.length);
   assert.ok(city.metrics.batches<45,`${city.metrics.batches} batches`);
-  assert.ok(city.metrics.vertices<360000,`${city.metrics.vertices} vertices`);
+  assert.ok(city.metrics.vertices<400000,`${city.metrics.vertices} vertices including bronze facade and street detail`);
   for(const mesh of city.root.children){
     assert.ok(mesh.isMesh,mesh.name);
     assert.ok(Number.isFinite(mesh.geometry.boundingSphere.radius)&&mesh.geometry.boundingSphere.radius>0,mesh.name);

@@ -40,7 +40,7 @@ test('resident trial is bounded, lazy, culled and disabled without new world wor
  view.update(0,.3,{x:0,z:0});assert.equal(view.state().constructed,0);
  const p=MINORA_RESIDENTS[0];view.update(1,.3,p);assert.equal(view.state().constructed,1,'Only one new rig per update');
  for(let i=0;i<80;i++)view.update(i/10,.1,{x:-2350,z:135});
- assert.equal(view.state().constructed,6);assert.equal(view.state().limit,6);
+ assert(view.state().constructed>=6&&view.state().constructed<=12);assert.equal(view.state().limit,12);assert.equal(view.state().total,18);
  view.update(10,.3,{x:0,z:0});assert.equal(view.state().visible,0);const count=view.state().animationUpdates;
  for(let i=0;i<10;i++)view.update(10+i,.1,{x:0,z:0});assert.equal(view.state().animationUpdates,count);
  view.setEnabled(false);view.update(20,.3,p);assert.equal(view.state().visible,0);assert.equal(view.state().animationUpdates,count);view.dispose();

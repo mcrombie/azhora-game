@@ -57,3 +57,18 @@ test('explicit wait stops at the first known front, keeps position and speed, an
   w.advance(3);const b=w.snapshot().engagements.find(availableBattleStage);if(b){w.campaign.locateHero(b.region);w.campaign.joinBattle(b.id,b.location);const s=w.snapshot();assert.equal(waitForCampaignDispatch(w,()=>({kind:'regroup'})).days,0);assert.deepEqual(w.snapshot(),s);}
   const unknown=createWorldWar();unknown.advance();assert.equal(waitForCampaignDispatch(unknown,()=>({kind:'regroup'})).days,7,'Unknown territory cannot cause an unbounded wait');
 });
+
+test('the completed review offers optional exploration without reopening the war or rewriting dispatches',()=>{
+  for(const side of ['west','east']){
+    const s=run(current,side).snapshot(),before=structuredClone(s),letters=talethLetters(s);
+    const unfinished=nextCampaignOpportunity(s,current,[],()=>true);
+    assert.equal(unfinished.kind,'finale');assert.match(unfinished.detail,/conclude the campaign/);
+    const complete=nextCampaignOpportunity(s,current,[],()=>true,{concluded:true});
+    assert.equal(complete.kind,'complete');assert.equal(complete.target,null);assert.match(complete.label,/optional/);
+    assert.match(complete.detail,/campaign is complete/);assert.match(complete.detail,/five playable regions/);
+    assert.doesNotMatch(complete.detail,/to conclude|resume time/);
+    assert.deepEqual(s,before);assert.deepEqual(talethLetters(s),letters);
+  }
+  const ongoing=createWorldWar().snapshot();
+  assert.equal(nextCampaignOpportunity(ongoing,current,[],()=>true,{concluded:true}).kind,'briefing','An invalid completion flag cannot end an ongoing war');
+});

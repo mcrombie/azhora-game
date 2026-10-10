@@ -1,3 +1,5 @@
+import {AMBRON_FIELDS,AMBRON_FARMSTEADS,AMBRON_CROPS,farmPoint,farmRoadDistance} from '../src/content/regions/ambron/ambron-farmland.js';
+import {ambronCultivatedField,ambronGroundTint,ELAGOS_ROADS} from '../src/content/regions/ambron/elagos-world.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
@@ -8,7 +10,7 @@ import { SOLIS_CIRCUIT } from '../src/content/regions/solis/west-suval.js';
 import { FORT_STANDARD, longestTowerGap } from '../src/world/scenery/fortification.js';
 import {
   AMBRON_STANDARD, AMBRON_CIRCUIT, AMBRON_GATES, AMBRON_LAND_GATES, AMBRON_WATER_GATES, AMBRON_BUILDINGS,
-  ambronLocal,
+  ambronLocal, ambronDryDistance, AMBRON_SHORE_GAPS,
   AMBRON_OUTSIDE, AMBRON_STREETS, AMBRON_QUAYS, AMBRON_STANDS, AMBRON_ENCLOSURE, AMBRON_CHAIN, AMBRON_MARKET,
   AMBRON_FORGE, CAUSEWAY, CHANNEL, ambronDeckHeight, cityGround,
 } from '../src/content/regions/ambron/ambron.js';
@@ -16,19 +18,26 @@ import {
   AMBRON_NPCS, ELAGOS_NPCS, ELAGOS_AMBIENT, ELAGOS_NPC_POSITIONS, elagosConversation, isElagosNpc,
   AMBRON_SPECIALISTS, SPECIALIST_IDS, TALKING_TREE_QUEST, TALKING_TREE_LINES,
 } from '../src/content/regions/ambron/ambron-people.js';
-import { elagosWaterDistance, AMBRON_ROAD } from '../src/content/regions/ambron/elagos-world.js';
+import { elagosWaterDistance, onLinkBridge, elagosGround, AMBRON_ROAD } from '../src/content/regions/ambron/elagos-world.js';
 import { RIDE } from '../src/gameplay/movement/riding.js';
 import {AMBRON_OUTLINE,inAmbronOutline,ambronTerraceWeight} from '../src/content/regions/ambron/ambron-city-layout.js';
 import {ELAGOS_BASINS} from '../src/content/regions/ambron/elagos-world.js';
+import {AMBRON_PALACE,CITY_CANALS,cityCanalAt,ambronGroundLevel} from '../src/content/regions/ambron/ambron-city-layout.js';
+import {AMBRON_FORTRESSES,AMBRON_HARBOURS,AMBRON_SHIPS} from '../src/content/regions/ambron/ambron-capital.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const world = createWorld(new THREE.Scene(), {enabledRegions:[9], initialRegion:9, regionalFineGround:true});
+globalThis.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),0);
+globalThis.cancelAnimationFrame=clearTimeout;
+world.loading.setTravelBudget(32);
+await world.loading.ensureRegion(9);
+world.loading.stop();
 const P = ambronPoint;
 const WALKER = .45;
 
 /** The world with only the colliders near Ambron: a fine grid over the city stays quick. */
 const nearAmbron = (() => {
-  const reach = 220;
+  const reach = 290;
   const colliders = world.colliders.filter(c => Math.abs(c.x - AMBRON.centre.x) < reach && Math.abs(c.z - AMBRON.centre.z) < reach);
   return { bounds: world.bounds, heightAt: world.heightAt, colliders };
 })();
@@ -44,22 +53,20 @@ test('Ambron is built to the shared fortification standard, at the measures of a
   assert.ok(AMBRON_CIRCUIT.perimeter > solisPerimeter * 1.6, `${AMBRON_CIRCUIT.perimeter.toFixed(0)} m of circuit against Solis's ${solisPerimeter.toFixed(0)}`);
   assert.ok(AMBRON.halfA * AMBRON.halfB > SOLIS.halfX * SOLIS.halfZ * 2.5, 'and three times the ground');
   assert.ok(AMBRON_CIRCUIT.towers.length >= 20, `${AMBRON_CIRCUIT.towers.length} towers`);
-  assert.equal(AMBRON_CIRCUIT.towers.filter(tower => tower.kind === 'corner').length, AMBRON_OUTLINE.length, 'a tower at every bend');
-  for (const gate of AMBRON_GATES) assert.equal(AMBRON_CIRCUIT.towers.filter(tower => tower.id.startsWith(`${gate.id}-tower`)).length, 2, `${gate.name} has two flanking towers`);
+  assert.ok(AMBRON_CIRCUIT.towers.every(t=>elagosWaterDistance(t.x,t.z)>7), 'all towers stand on dry land');
+  for (const gate of AMBRON_LAND_GATES) assert.equal(AMBRON_CIRCUIT.towers.filter(tower => tower.id.startsWith(`${gate.id}-tower`)).length, 2, `${gate.name} has two flanking towers`);
   // No curtain run goes far uncovered, once the two water gates (which are water, not wall) are set aside.
   const along = tower => { let before = 0; for (let i = 0; i < tower.edge; i++) before += AMBRON_CIRCUIT.edges[i].length; return before + tower.at; };
   const positions = AMBRON_CIRCUIT.towers.map(along).sort((a, b) => a - b);
   const gaps = positions.map((p, i) => (i + 1 < positions.length ? positions[i + 1] : positions[0] + AMBRON_CIRCUIT.perimeter) - p);
-  const water = gaps.filter(gap => gap > 46);
-  assert.equal(water.length, AMBRON_WATER_GATES.length, 'the only long gaps are the two water gates');
-  assert.ok(Math.max(...gaps.filter(gap => gap <= 46)) <= AMBRON_STANDARD.towerSpacing.max, 'and every run of wall is covered');
+  assert.ok(gaps.some(gap=>gap>46),'lakes replace curtains along open shore arcs');
   assert.ok(longestTowerGap(AMBRON_CIRCUIT) === Math.max(...gaps));
   const counts = AMBRON_BUILDINGS.length + AMBRON_OUTSIDE.length;
   assert.ok(counts >= 26, `${counts} buildings inside the walls and out`);
   assert.ok(world.elagosMetrics.buildings >= 26, 'and the scenery built them');
 });
 
-test('the walls of Ambron are a closed circuit: the four land gates are the only way in, and each can be walked', () => {
+test('Ambron curtains block passage between lake defenses, and each land gate can be walked', () => {
   const passages = AMBRON_LAND_GATES.map(gate => AMBRON_CIRCUIT.gates.find(entry => entry.id === gate.id));
   let samples = 0, blocked = 0;
   for (const edge of AMBRON_CIRCUIT.edges) {
@@ -68,7 +75,7 @@ test('the walls of Ambron are a closed circuit: the four land gates are the only
       for (const depth of [-AMBRON_STANDARD.wallThickness / 2 + .2, 0, AMBRON_STANDARD.wallThickness / 2 - .2]) {
         const spot = AMBRON_CIRCUIT.pointOn(edge, at, depth);
         samples++;
-        if (gate) continue;
+        if (gate || elagosWaterDistance(spot.x,spot.z)<6) continue;
         if (canStand(spot.x, spot.z, world, WALKER)) blocked++;
       }
     }
@@ -97,16 +104,56 @@ test('the walls of Ambron are a closed circuit: the four land gates are the only
   }
 });
 
-test('the enlarged capital occupies dry land between unchanged lakes', () => {
+test('the enlarged capital uses unchanged lakes as open defensive arcs', () => {
   let twiceArea=0;
-  for(let i=0;i<AMBRON_OUTLINE.length;i++){const a=AMBRON_OUTLINE[i],b=AMBRON_OUTLINE[(i+1)%AMBRON_OUTLINE.length];twiceArea+=a.x*b.z-b.x*a.z;
-    for(let t=0;t<=1;t+=.05){const x=a.x+(b.x-a.x)*t,z=a.z+(b.z-a.z)*t;assert.ok(elagosWaterDistance(x,z)>10,'walls leave a natural shore');}}
+  for(let i=0;i<AMBRON_OUTLINE.length;i++){const a=AMBRON_OUTLINE[i],b=AMBRON_OUTLINE[(i+1)%AMBRON_OUTLINE.length];twiceArea+=a.x*b.z-b.x*a.z;}
+  for(const run of AMBRON_CIRCUIT.runs){const edge=AMBRON_CIRCUIT.edges[run.edge];for(let at=run.from;at<=run.to;at+=.5){const p=AMBRON_CIRCUIT.pointOn(edge,at);assert.ok(ambronDryDistance(p.x,p.z)>=3,'no curtain masonry in water');}}
   assert.ok(Math.abs(twiceArea)/2>184*136*2,'more than twice the former footprint');
-  assert.ok(AMBRON_BUILDINGS.length>=45,'expanded districts have substantial building density');
+  assert.ok(AMBRON_BUILDINGS.length>=160,'expanded districts have substantial building density');
   assert.equal(CHANNEL.enabled,false);assert.equal(AMBRON_QUAYS.length,0);
   assert.equal(ambronDeckHeight(AMBRON.centre.x,AMBRON.centre.z),null,'no phantom causeway deck on the market');
   for(const lake of ELAGOS_BASINS){assert.ok(elagosWaterDistance(lake.centre.x,lake.centre.z)<0);assert.equal(canStand(lake.centre.x,lake.centre.z,world,WALKER),false);}
-  assert.equal(ambronTerraceWeight(-1260,-30),0,'concave lake shoulder is not a rectangular made-ground pad');
+  assert.ok(inAmbronOutline(-1250,-58),'the oval includes a Thelas basin without draining it');
+});
+
+test('the royal skyline, dry fortresses and lake fleet are built in the real world', () => {
+  const palaceTop=ambronGroundLevel(AMBRON_PALACE.x,AMBRON_PALACE.z)+AMBRON_PALACE.height;
+  for(const dx of [-1,1])for(const dz of [-1,1])assert.ok(elagosWaterDistance(AMBRON_PALACE.x+dx*AMBRON_PALACE.w/2,AMBRON_PALACE.z+dz*AMBRON_PALACE.d/2)>3,'the palace footprint is on dry central ground');
+  for(const h of AMBRON_BUILDINGS)assert.ok(cityGround(h.a,h.b)+h.h<palaceTop,`${h.id} leaves the royal palace highest`);
+  for(const f of AMBRON_FORTRESSES)for(const dx of [-1,0,1])for(const dz of [-1,0,1]){
+    const x=f.x+dx*(f.w/2+3.5),z=f.z+dz*(f.d/2+3.5);
+    assert.ok(elagosWaterDistance(x,z)>0,`${f.id} has no masonry in a lake`);
+    assert.ok(Math.abs(world.heightAt(x,z)-f.level)<1,`${f.id} has a grounded foundation at ${x}, ${z}`);
+  }
+  assert.deepEqual(Object.fromEntries(['warship','trader','fishing'].map(kind=>[kind,AMBRON_SHIPS.filter(s=>s.kind===kind).length])),{warship:4,trader:5,fishing:6});
+  for(const s of AMBRON_SHIPS)for(const dx of [-1,1])for(const dz of [-1,1]){
+    const x=s.x+dx*s.width/2*Math.cos(s.yaw)+dz*s.length/2*Math.sin(s.yaw);
+    const z=s.z-dx*s.width/2*Math.sin(s.yaw)+dz*s.length/2*Math.cos(s.yaw);
+    assert.ok(elagosWaterDistance(x,z)<-1,`${s.id} floats within its lake`);
+  }
+  assert.equal(world.elagosMetrics.fortresses,3);assert.equal(world.elagosMetrics.ships,15);
+  assert.ok(world.elagosMetrics.soldiers>=30,'gates, towers and fortresses have an anonymous garrison');
+});
+
+test('harbour ramps can be walked from the city to the water, and canals preserve street crossings', () => {
+  for(const h of AMBRON_HARBOURS){
+    let previous=null;
+    for(let along=-16;along<=59;along++){
+      const x=h.shore.x+h.dx*along,z=h.shore.z+h.dz*along;
+      assert.ok(canStand(x,z,world,WALKER),`${h.id} blocks its deck at ${along}: ${JSON.stringify(world.colliders.filter(c=>Math.hypot(c.x-x,c.z-z)<7))}`);
+      const y=world.heightAt(x,z);if(previous!==null)assert.ok(Math.abs(y-previous)<.5,`${h.id} has a continuous graded approach`);previous=y;
+    }
+  }
+  let crossings=0,water=0;
+  for(const c of CITY_CANALS)for(let i=1;i<c.points.length;i++){
+    const a=c.points[i-1],b=c.points[i],length=Math.hypot(b.a-a.a,b.b-a.b);
+    for(let d=4;d<length-4;d+=4){
+      const p=P(a.a+(b.a-a.a)*d/length,a.b+(b.b-a.b)*d/length),sample=cityCanalAt(p.x,p.z);
+      if(sample.bridge){crossings++;assert.ok(world.heightAt(p.x,p.z)>sample.surface,`the street crosses above ${c.id} at ${p.x}, ${p.z}`);}
+      else {water++;assert.equal(canStand(p.x,p.z,world,WALKER),false,'open canals are not dry paving');}
+    }
+  }
+  assert.ok(crossings>5&&water>20,'both canal banks and street bridges are exercised');
 });
 
 test('everyone in Ambron and the lake country has footing, and every stand in the city is reachable from the Plain Gate', () => {
@@ -117,7 +164,7 @@ test('everyone in Ambron and the lake country has footing, and every stand in th
   }
   for (const [id, stand] of Object.entries(AMBRON_STANDS)) assert.ok(Number.isFinite(stand.yaw), `${id} faces somewhere`);
   // Flood the ground from the haul road outside the Plain Gate, on a half-metre grid.
-  const minA = -152, maxA = 184, minB = -188, maxB = 194, cell = 1;
+  const minA = -152, maxA = 184, minB = -188, maxB = 245, cell = 1;
   const columns = Math.round((maxA - minA) / cell) + 1;
   const seen = new Uint8Array(columns * (Math.round((maxB - minB) / cell) + 1)), queue = [];
   const index = (a, b) => Math.round((b - minB) / cell) * columns + Math.round((a - minA) / cell);
@@ -170,12 +217,13 @@ test('Ambron’s streets and buildings are laid out on the ground, not through e
   for (const entry of AMBRON_BUILDINGS) {
     assert.ok(Math.abs(entry.a) + entry.w / 2 <= inset + .01, `${entry.id} stands clear of the east and west walls`);
     assert.ok(Math.abs(entry.b) + entry.d / 2 <= insetB + .01, `${entry.id} stands clear of the north and south walls`);
-    for(const dx of [-1,1])for(const dz of [-1,1]){const p=P(entry.a+dx*(entry.w/2+1),entry.b+dz*(entry.d/2+1));assert.ok(inAmbronOutline(p.x,p.z),`${entry.id} fits the dry irregular outline`);}
+    for(const dx of [-1,1])for(const dz of [-1,1]){const p=P(entry.a+dx*(entry.w/2+1),entry.b+dz*(entry.d/2+1));assert.ok(inAmbronOutline(p.x,p.z),`${entry.id} fits the dry irregular outline`);assert.ok(ambronDryDistance(p.x,p.z)>=0,`${entry.id} keeps its foundations out of water`);}
   }
   for (const street of AMBRON_STREETS) for (let i = 1; i < street.points.length; i++) {
     const a = street.points[i - 1], b = street.points[i];
     for (let t = 0; t <= 1; t += .02) {
       const pa = a.a + (b.a - a.a) * t, pb = a.b + (b.b - a.b) * t;
+      const p=P(pa,pb);assert.ok(elagosWaterDistance(p.x,p.z)>=0||onLinkBridge(p.x,p.z),`${street.id} uses dry land or the Link bridge`);
       for (const entry of AMBRON_BUILDINGS)
         assert.ok(Math.abs(entry.a - pa) >= entry.w / 2 || Math.abs(entry.b - pb) >= entry.d / 2, `${street.id} runs through ${entry.id}`);
     }
@@ -291,4 +339,75 @@ test('the people of Ambron speak as the day and the place require', () => {
   assert.equal(ok, true);
   assert.ok(opened.lines.length >= 2 && opened.back && opened.extra.choices.length === 1);
   assert.equal(elagosConversation({ id: 'harbormaster' }, { openDialogue: () => {}, closeDialogue: () => {} }), false, 'and it answers for nobody else');
+});
+
+
+test('every separate dry wall section has a land gate', () => {
+  const samples=[];
+  for(const edge of AMBRON_CIRCUIT.edges)for(let at=0;at<edge.length;at+=.5)samples.push({
+    wet:AMBRON_SHORE_GAPS.some(g=>g.edge===edge.index&&at>=g.from&&at<=g.to),
+    gate:AMBRON_LAND_GATES.some(g=>g.edge===edge.index&&Math.abs(at-g.at)<2),
+  });
+  const start=samples.findIndex(s=>s.wet),groups=[];let current=null;
+  for(let i=1;i<=samples.length;i++){
+    const sample=samples[(start+i)%samples.length];
+    if(sample.wet){current=null;continue;}
+    if(!current){current={length:0,gate:false};groups.push(current);}
+    current.length+=.5;current.gate||=sample.gate;
+  }
+  assert.equal(groups.length,5,'five curtains separated by the lakes');
+  for(const section of groups)assert.ok(section.gate,`${section.length}m curtain has a gate`);
+});
+
+test('shipping canals connect all seven basins with wet beds beneath the road bridges', () => {
+  const links=[['thelas-upper','thelas-middle'],['thelas-middle','thelas-lower'],['thelas-lower','lake-ela'],...CITY_CANALS.map(c=>[c.from,c.to])];
+  const reached=new Set(['lake-ela']);
+  for(let i=0;i<ELAGOS_BASINS.length;i++)for(const [a,b] of links)if(reached.has(a)||reached.has(b)){reached.add(a);reached.add(b);}
+  assert.deepEqual([...reached].sort(),ELAGOS_BASINS.map(b=>b.id).sort(),'no isolated lake');
+  let bridges=0;
+  for(const canal of CITY_CANALS){
+    assert.ok(canal.navigable&&canal.width>=12,'wide enough for shipping');
+    for(const p of [canal.points[0],canal.points.at(-1)])assert.ok(elagosWaterDistance(P(p.a,p.b).x,P(p.a,p.b).z)<-2,'canal mouths enter lake water');
+    for(let j=1;j<canal.points.length;j++){
+      const a=canal.points[j-1],b=canal.points[j],length=Math.hypot(b.a-a.a,b.b-a.b);
+      for(let d=1;d<length;d+=3){
+        const p=P(a.a+(b.a-a.a)*d/length,a.b+(b.b-a.b)*d/length),sample=cityCanalAt(p.x,p.z);
+        assert.ok(elagosGround(p.x,p.z,80)<=sample.surface-2.5,'no dry dam under a bridge');
+        if(sample.bridge){bridges++;assert.ok(world.heightAt(p.x,p.z)>=sample.surface+4,'clear passage for low cargo barges');}
+      }
+    }
+  }
+  assert.ok(bridges>10);assert.equal(world.elagosMetrics.locks,4);assert.ok(world.elagosMetrics.barges>=4);
+});
+
+test('the central palace rises above mixed high and low urban districts, with open fortress gates', () => {
+  assert.ok(Math.hypot(AMBRON_PALACE.x-AMBRON.centre.x,AMBRON_PALACE.z-AMBRON.centre.z)<60,'palace is near the heart of the city');
+  assert.ok(AMBRON_BUILDINGS.filter(b=>b.h>=20).length>=55,'substantial tall residential districts');
+  assert.ok(AMBRON_BUILDINGS.filter(b=>b.h<10).length>=30,'older small buildings remain mixed in');
+  for(const f of AMBRON_FORTRESSES)for(let dz=f.d/2+4;dz>9;dz-=.5)assert.ok(canStand(f.x,f.z+dz,world,WALKER),`${f.id} has an actual gateway into its courtyard`);
+});
+
+
+test('the farmland belt is planted outside the defenses and preserves roads and lake banks', () => {
+  let samples=0;
+  for(const field of AMBRON_FIELDS){
+    let planted=0;
+    for(let u=-field.w/2+4;u<field.w/2;u+=6)for(let v=-field.d/2+4;v<field.d/2;v+=6){
+      const p=farmPoint(field,u,v);if(!ambronCultivatedField(p.x,p.z))continue;
+      assert.equal(inAmbronOutline(p.x,p.z),false,'crops stay outside the walls');
+      assert.ok(elagosWaterDistance(p.x,p.z)>=7,'lake banks stay open');
+      assert.ok(farmRoadDistance(p.x,p.z,ELAGOS_ROADS)>=7,'fields respect road approaches');
+      assert.ok(Object.values(AMBRON_CROPS[field.crop]).includes(ambronGroundTint(p.x,p.z)),'cultivated ground is painted as the field, not grass');
+      planted++;samples++;
+    }
+    assert.ok(planted>5,`${field.id} has usable cultivated ground`);
+  }
+  for(const c of world.colliders.filter(c=>c.kind==='ambron-farm-building'||c.kind==='ambron-orchard-tree'||c.kind==='ambron-haystack')){
+    const margin=Math.hypot(c.hx??c.r,c.hz??c.r)+1;
+    assert.ok(elagosWaterDistance(c.x,c.z)>margin,'farm infrastructure stays on dry land');
+    assert.ok(farmRoadDistance(c.x,c.z,ELAGOS_ROADS)>margin+4,'buildings and trees leave traffic room');
+  }
+  assert.ok(samples>700);assert.equal(world.elagosMetrics.fields,AMBRON_FIELDS.length);
+  assert.equal(world.elagosMetrics.farmsteads,AMBRON_FARMSTEADS.length);
+  assert.ok(world.elagosMetrics.orchardTrees>80&&world.elagosMetrics.cropClumps>1500,'the food belt is visibly planted');
 });

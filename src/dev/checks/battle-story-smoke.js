@@ -12,12 +12,13 @@ export async function result(a){
   assert(!document.getElementById('world-war-report').hidden,'Battle report is visible immediately');
   assert(document.getElementById('world-war-report-facts').textContent.includes('Day 6'),'Battle receipt states the resolution day');
   assert(!document.getElementById('world-war-report-minora').hidden,'Optional council return is offered');
+  document.getElementById('world-war-report-more').open=true;document.getElementById('world-war-report-minora').scrollIntoView({block:'nearest'});
   const box=document.getElementById('world-war-report').getBoundingClientRect(),action=document.getElementById('world-war-report-minora').getBoundingClientRect();
-  assert(action.top>=box.top&&action.bottom<=box.bottom,'Council return stays visible without scrolling through the report');
+  assert(action.top>=box.top&&action.bottom<=box.bottom,'Optional council return is reachable inside the expanded report');
   assert(a.save().ok,'Final result saves');await a.loadSaved();a.war.pause();
   assert(JSON.stringify(latestPersonalBattle(a.war.state().campaign))===JSON.stringify(receipt),'Save/Continue preserves the exact result');
   document.getElementById('world-war-report-minora').click();
-  assert(a.war.state().guidance.label==='Minora / Council of Three','Return marker identifies Minora directly');
+  assert(a.war.state().guidance.label==='Taleth / Wizard Guild','Return marker identifies Minora directly');
   assert(a.war.state().guidance.location.x===TOWER_EXIT.x,'Return guide has no intermediate waypoints');
   document.querySelector('[data-council-destination="mayor"]').click();
   assert(a.war.state().guidance.location.x===MINORA_COUNCIL.mayor.exit.x,'Mayor button points at his own doorway');

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
 <title>Azhora</title>
 <link rel="stylesheet" href="./src/ui/map/world-map.css"><link rel="stylesheet" href="./src/app/exploration/exploration.css">
 <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script><link rel="stylesheet" href="./src/app/lizeem/encounter.css"><link rel="stylesheet" href="./src/app/exploration/tower.css"><link rel="stylesheet" href="./src/app/exploration/afterlife.css"><link rel="stylesheet" href="./src/app/exploration/chronicle.css"><link rel="stylesheet" href="./src/ui/input/touch-controls.css"><link rel="stylesheet" href="./src/app/exploration/exploration-phone.css"></head>
@@ -11,7 +11,7 @@
 <div class="launch-options">
 <article><h2>Explore the World</h2><p>Begin as Teresod in Minora with the full atlas revealed. Explore freely with the developer mounts.</p><div class="menu-actions"><button id="new-exploration" data-start-mode="explore">Explore the World</button><button id="continue-exploration" data-continue-mode="explore" disabled>Continue exploration</button></div><small data-save-note="explore">Free exploration &middot; No active war or settlement simulation</small></article>
 <article><h2>Combat Testing</h2><p>Choose a Minora camp exercise and jump straight into combat. Retry or switch exercises without starting a war.</p><div class="menu-actions"><button id="new-combat-testing" data-start-mode="combat">Choose combat exercise</button></div><small>Five exercises &middot; No campaign or saved progress</small></article>
-<article><h2>Lizeemi War Scenario</h2><p>Enter the current five-region conflict. Follow the armies and test how Teresod's interventions affect the campaign.</p><div class="menu-actions"><button id="new-world-war" data-start-mode="war">Lizeemi War Scenario</button><button data-continue-mode="war" disabled>Continue war scenario</button></div><small data-save-note="war">The existing East-West War &middot; Separate hero and campaign save</small></article>
+<article><h2>Lizeemi War Scenario</h2><p>Enter the current five-region conflict. Follow the armies and test how Teresod's interventions affect the campaign.</p><div class="menu-actions"><button id="new-world-war" data-start-mode="war">Lizeemi War Scenario</button><button data-continue-mode="war" disabled>Continue war scenario</button></div><div class="menu-actions"><button data-watch-war="west">Watch campaign / Support West Lizeem</button><button data-watch-war="east">Watch campaign / Support East Lizeem</button></div><small>Computer rehearsal &middot; P pauses/resumes &middot; Saves untouched</small><div class="menu-actions"><button data-lookout-preview>Preview / Unattended war &rarr; Taleth's lookout</button></div><small data-save-note="war">The existing East-West War &middot; Separate hero and campaign save</small></article>
 <article><h2>Hearthfall Integration</h2><p>A Feradom-only workspace for developing living settlements on the current game foundation.</p><div class="menu-actions"><button id="new-hearthfall" data-start-mode="hearthfall">Hearthfall Integration</button><button data-continue-mode="hearthfall" disabled>Continue Hearthfall</button></div><small data-save-note="hearthfall">Sandbox foundation ready &middot; Settlement port pending &middot; Local only</small></article>
 </div><p id="start-note" role="status">New runs use this mode's save slot. Choose Continue to keep your saved journey. Save before returning to the main menu.</p>
 </div></section>
@@ -49,9 +49,10 @@
 </div>
 <button id="world-skirmish-withdraw">Withdraw (Esc)</button><button id="world-skirmish-retry" hidden>Retry (R)</button>
 </section>
-<aside id="world-war-report" aria-label="War report" hidden>
-<div role="status" aria-live="polite"><span class="eyebrow">WAR REPORT</span><h2 id="world-war-report-title"></h2><p id="world-war-report-detail"></p><dl id="world-war-report-facts" class="battle-facts" hidden></dl><p id="world-war-report-followup" hidden></p><p id="world-war-report-clock"></p></div>
-<div class="war-report-actions"><button id="world-war-report-track">Track this event</button><button id="world-war-report-minora" hidden>Track Minora / council</button><button id="world-war-report-map">Open map (M)</button><button id="world-war-report-dismiss">Dismiss</button></div>
+<aside id="world-war-report" aria-label="Current campaign objective" hidden>
+<div class="war-objective" role="status" aria-live="polite"><span id="world-war-objective-stage" class="eyebrow">LIZEEMI WAR</span><h2 id="world-war-objective-title"></h2><p id="world-war-objective-detail"></p><small id="world-war-objective-clock"></small></div>
+<div class="war-report-actions"><button id="world-war-report-map">Map (M)</button></div>
+<details id="world-war-report-more"><summary>Report and strategy</summary><div class="war-report-body"><section id="world-war-latest-report"><span id="world-war-report-source" class="eyebrow">WAR REPORT</span><h3 id="world-war-report-title"></h3><p id="world-war-report-detail"></p><dl id="world-war-report-facts" class="battle-facts" hidden></dl><p id="world-war-report-followup" hidden></p></section><p id="world-war-report-clock"></p><div class="war-report-extra-actions"><button id="world-war-report-track">Track this event</button><button id="world-war-report-minora" hidden>Visit council / optional</button><button id="world-war-report-dismiss">Dismiss report</button></div></div></details>
 </aside>
 <header id="exploration-hud" hidden><div><span class="eyebrow">AZHORA / EXPLORATION</span><h2 id="location-name">Minora</h2><p id="world-site-status" role="status" hidden></p></div><nav><button id="world-war-hud" hidden>War: day 0</button><button id="open-map">Map <kbd>M</kbd></button><button id="open-developer">Developer <kbd>F8</kbd></button><button id="open-pause">Pause <kbd>Esc</kbd></button></nav></header>
 <div id="exploration-status" role="status" hidden></div>
@@ -68,7 +69,7 @@
 <label class="developer-reveal"><input id="developer-reveal" type="checkbox"> Reveal all map</label>
 <p class="developer-hint">All map views. Turn off to return to your discoveries. Mounts and reveal are temporary; land before saving.</p>
 <div id="developer-autoplay" hidden>
-<label class="developer-reveal"><input id="developer-residents" type="checkbox" checked> Minora residents trial (six people)</label>
+<label class="developer-reveal"><input id="developer-residents" type="checkbox" checked> Local civilians: Minora and Caricas (18 people; 12 loaded at most)</label>
 <h2>Combat practice</h2>
 <button id="practice-minora">Minora camp: dodge and counter lesson (1 soldier)</button>
 <button id="practice-minora-advanced">Minora camp: thrust and sweep lesson (1 soldier)</button>
@@ -76,11 +77,13 @@
 <button id="practice-minora-solo-assault">Minora camp: solo assault comparison (4 soldiers)</button>
 <button id="practice-minora-squad">Minora camp: interception practice (runner + 2 escorts)</button>
 <p class="developer-hint">Train in the empty muster camp outside Minora. Space dodges; hold A or D to dodge sideways. R retries; Esc returns you to your original location on foot. Campaign, discoveries and saved game are unchanged.</p>
-<h2>Computer test scenarios</h2>
-<button id="autoplay-ovesos" data-autoplay-control>Minora &rarr; Ovesos: ride and defend West (fresh run)</button>
-<p class="developer-hint">Replaces the unsaved run. Rides a horse over the bridges to Ovesos, dismounts, and intercepts East's reinforcements. Travel at 1x; waiting and aftermath at 20x. Shows the campaign map before the ride, at the battle, and through the outcome. Normal-speed combat; short preparation and result pauses. Your saved game is untouched.</p>
-<button id="autoplay-caricas" data-autoplay-control>Caricas: quick interception (current run)</button>
-<p class="developer-hint">Developer transfer to Caricas; helps West at 20x campaign speed. Movement keys or P stop either test and give you control. Neither test saves automatically.</p>
+<h2>Watch the Lizeemi War</h2>
+<button data-watch-war="west" data-autoplay-control>Autoplay / Support West Lizeem</button>
+<button data-watch-war="east" data-autoplay-control>Autoplay / Support East Lizeem</button>
+<p class="developer-hint">Starts a fresh, separate rehearsal from Taleth's chamber. Watch the briefing, horse ride, battles with allies, letters and lookout finale. Combat runs at normal speed; quiet campaign days pass faster. P pauses or resumes autoplay; a movement key or clicking a game control hands play back to you. A Resume button remains available when stopped. Your saved campaign stays untouched, including after takeover. Return to the main menu to Continue it. Save this current run first if you want to keep unsaved progress.</p>
+<button data-lookout-preview>Unattended war &rarr; Taleth's lookout</button>
+<p class="developer-hint">Skip to the natural outcome of the default war with no intervention. Review the river campaign, then tour Ambron and six neighboring regions with Taleth. Separate temporary preview; your saved campaign is untouched.</p>
+<button id="autoplay-ovesos" hidden></button><button id="autoplay-caricas" hidden></button>
 </div>
 <div class="developer-actions"><button id="developer-map">Open map</button><button id="close-developer">Back to exploring <kbd>F8 / Esc</kbd></button></div>
 </div></section>

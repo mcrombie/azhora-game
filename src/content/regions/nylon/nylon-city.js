@@ -84,19 +84,25 @@ export const NYLON_HARBOR = freeze({
 export const NYLON_QUAYS = freeze([
   freeze({id:'nylon-estuary-quay',name:'The Estuary Provision Quay',x:-1296,z:1191,width:64,depth:10,elevation:NYLON_HARBOR.deckHeight}),
 ]);
-/** The harbor is a complete second enclosure, attached to the river gate.
- * Its long moles protect the sea basin east of the river mouth; the Lizeem's
- * existing channel and western bank remain unobstructed. The two terminal
- * sea towers leave a 36m gap between their centres, over 20m clear between foundations. */
+/** The city's curtain is also the harbor's landward defense. Each mole starts
+ * at an existing corner bastion, without a second wall behind the quays.
+ * The river gate opens onto the protected provision approach; the original
+ * Lizeem channel and the 36m gap between the sea tower centres stay open. */
 export const NYLON_HARBOR_WALLS = freeze([
-  freeze({id:'nylon-harbor-west',height:27,thickness:4,points:freeze([
-    point(-1354.27,1142.83),point(-1364,1128),point(-1374,1134),point(-1376,1160),
+  freeze({id:'nylon-harbor-west',height:27,thickness:4,bastionIndex:4,points:freeze([
+    NYLON_OUTLINE[5],point(-1376,1160),
     point(-1360,1175),point(-1340,1188),point(-1320,1200),point(-1324,1230),point(-1324,1286),point(-1306,1300),
   ])}),
-  freeze({id:'nylon-harbor-east',height:27,thickness:4,points:freeze([
-    point(-1346.73,1152.17),point(-1330,1178),point(-1260,1180),point(-1242,1245),point(-1246,1288),point(-1270,1300),
+  freeze({id:'nylon-harbor-east',height:27,thickness:4,bastionIndex:1,points:freeze([
+    NYLON_OUTLINE[2],point(-1242,1245),point(-1246,1288),point(-1270,1300),
   ])}),
 ]);
+export const NYLON_COLOSSUS = freeze({
+  id:'nylon-colossus',name:'The Beacon of Inquiry',
+  x:NYLON_HARBOR.entrance.x,z:NYLON_HARBOR.entrance.z,
+  towerHeight:35,plinthHeight:1.6,baseY:NYLON_HARBOR.deckHeight+35+1.6,
+  feet:freeze(NYLON_HARBOR_WALLS.map(wall=>wall.points.at(-1))),
+});
 const deck=(id,name,kind,a,b,width)=>freeze({id,name,kind,a:freeze({x:a[0],y:a[1],z:a[2]}),b:freeze({x:b[0],y:b[1],z:b[2]}),width});
 export const NYLON_HARBOR_DECKS=freeze([
   deck('nylon-harbor-ramp','The Provision Ramp','ramp',[-1348,6.210923476416043,1168],[-1328,4.2,1191],7),

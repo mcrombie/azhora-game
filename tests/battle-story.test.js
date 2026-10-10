@@ -56,7 +56,7 @@ test('timeout, no intervention and active battles are not falsely credited as de
   const w=createWorldWar();w.advance(3);assert.equal(latestPersonalBattle(w.snapshot()),null);assert.equal(councilBattleResponse('mayor',w.snapshot()),null);
   w.advance(3);const s=w.snapshot(),b=s.engagements[0],unassisted=battleConsequence(s,b);
   assert.equal(latestPersonalBattle(s),null);assert.match(unassisted.explanation,/without your intervention/);
-  assert.equal(openingWarGuidance('council',{owned:true}).label,'Minora / Council of Three');
+  assert.equal(openingWarGuidance('council',{owned:true}).label,'Taleth / Wizard Guild');
 });
 test('old rally saves and one-phase sites retain their distinct flow',()=>{
   const c=createCampaign(RALLY_WORLD_WAR_SCENARIO);c.step(5);c.locateHero('ovesos');const b=c.snapshot().engagements[0];c.joinBattle(b.id,b.location);

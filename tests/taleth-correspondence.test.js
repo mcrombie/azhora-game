@@ -24,7 +24,7 @@ test('victory summons and lookout conclusion support either winner and nonpartic
   for(const side of ['east','west']){
     const w=createWorldWar();w.campaign.reinforce(side==='west'?'nethereum':'caricas',500);w.advance(200);
     const s=w.snapshot();assert.equal(s.winner,side);const before=structuredClone(s),last=talethLetters(s).at(-1);assert(last.finale);assert.match(last.detail,/lookout/);
-    const pages=talethFinale(s);assert.equal(pages.length,3);assert.match(pages[1].words,/left the fighting to the armies/);assert.match(pages[1].words,side==='west'?/Mayor/:/Priest/);assert.equal(pages[2].view,'east');assert.match(pages[2].closing,/complete/);assert.deepEqual(s,before);
+    const pages=talethFinale(s);assert.equal(pages.length,8);assert.equal(new Set(pages.map(p=>p.view)).size,7);assert.match(pages[1].words,/left the fighting to the armies/);assert.match(pages[1].words,side==='west'?/Mayor/:/Priest/);assert.equal(pages[2].view,'east');assert.equal(pages[2].closing,undefined);assert.match(pages.at(-1).closing,/complete/);assert.deepEqual(s,before);
   }
 });
 test('lookout and completion restore with an ended war, but cannot be smuggled into an active save',()=>{

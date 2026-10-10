@@ -7,7 +7,7 @@ export function createWarTrackingView(onStop,onRoute,onCouncil=()=>{}){
   const body=document.createElement('div'),title=document.createElement('strong'),distance=document.createElement('span'),detail=document.createElement('p');
   const stop=document.createElement('button');stop.textContent='Stop';stop.setAttribute('aria-label','Stop tracking');stop.onclick=onStop;
   const route=document.createElement('button');route.textContent='Track the nearby army';route.onclick=onRoute;
-  const visits=document.createElement('div');visits.className='war-council-destinations';
+  const visits=document.createElement('details');visits.className='war-council-destinations';const summary=document.createElement('summary');summary.textContent='Other council visits / optional';visits.append(summary);
   for(const [id,name] of [['council','Taleth'],['mayor','Mayor'],['temple','High Priest']]){const b=document.createElement('button');b.textContent=name;b.dataset.councilDestination=id;b.onclick=()=>onCouncil(id);visits.append(b);}
   body.append(title,distance,detail,route,visits);root.append(arrow,body,stop);document.body.append(root);
   const write=(element,text)=>{if(element.textContent!==text)element.textContent=text;};

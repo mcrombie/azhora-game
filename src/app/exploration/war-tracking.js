@@ -21,7 +21,7 @@ export function trackedWarTarget(target,state,scenario,armies,known,atlasToWorld
   if(battle.participation)return {target,label,detail:`${availableBattleStage(battle)==='rally'?'Final assault available. ':battle.participation.faction?'Rejoin your side. ':''}Enter the marked battlefield on foot or horseback before day ${battle.endsOn}. You can decline and return.`,location:{...battle.location}};
   if(battle.rally?.status==='available')return {target,label:'Ovesos / rally assault',detail:`Your interception counts. Fight for a decisive victory before day ${battle.endsOn}.`,location:{...battle.location}};
   if(battle.heroResult)return {target,label,detail:`Your part is finished. Regional battle ends day ${battle.endsOn}.`,location:null};
-  return {target,label,detail:`Join before day ${battle.endsOn} (${battle.endsOn-state.day} days). ${battle.region==='ovesos'?'Find a captain at the battlefield':'Reach the gold flag'} on foot.`,location:{...battle.location}};
+  return {target,label,detail:battle.entryRadius?`Approach the marked boundary on foot or horseback before day ${battle.endsOn}.`:`Join before day ${battle.endsOn} (${battle.endsOn-state.day} days). ${battle.region==='ovesos'?'Find a captain at the battlefield':'Reach the gold flag'} on foot.`,location:{...battle.location}};
 }
 
 export function trackingBearing(position,location,yaw){

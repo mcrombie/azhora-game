@@ -264,13 +264,20 @@ test('no animal is put down on the city', () => {
   } finally { life.dispose(); }
 });
 
-// Written homes the city now stands on: the placing moves each of these off the city to the nearest clear spot, so the
-// test above holds, but the sites themselves want moving in src/content/regions/mithala/mithala-wildlife.js (not this layout's file).
+// Authored homes must remain outside the shared wall; do not silently rely on
+// the animal placer relocating a range that was swallowed by the city.
 const writtenOnCity = MITHALA_WILDLIFE_ZONES.flatMap(zone => (zone.air || zone.sea ? [] : zone.sites
   .filter(([x, z]) => mithalaCityReserved(x, z)).map(([x, z]) => `${zone.id} at ${x},${z}`)));
-test('no wildlife range writes a home on the city', {
-  todo: writtenOnCity.length ? `${writtenOnCity.join('; ')}: move in src/content/regions/mithala/mithala-wildlife.js` : false,
-}, () => assert.deepEqual(writtenOnCity, []));
+test('no wildlife range writes a home on the city', () => {
+  assert.deepEqual(writtenOnCity, []);
+  for(const zone of MITHALA_WILDLIFE_ZONES.filter(z=>['mithala-meeting-otters','south-mithala-herons','east-mithala-duck','east-mithala-deer'].includes(z.id))){
+    for(const [x,z] of zone.sites){
+      assert.ok(canStand(x,z,world,zone.radius),`${zone.id} has a blocked home at ${x},${z}`);
+      assert.equal(westWaterSurface(x,z)!==null,!!zone.float,`${zone.id} needs the right bank or water habitat`);
+      assert.ok(x>=zone.minX&&x<=zone.maxX&&z>=zone.minZ&&z<=zone.maxZ,zone.id);
+    }
+  }
+});
 
 test('the chart’s royal seat and the travel panel’s Mithala are the city', () => {
   const area = SUBREGIONS.find(one => one.id === 'mithala');
@@ -280,7 +287,7 @@ test('the chart’s royal seat and the travel panel’s Mithala are the city', (
   assert.deepEqual({ ...ATLAS_CITY_DESIGNATIONS.mithala }, { name: 'Mithala', subtitle: 'Royal seat' });
   const mark = atlasPlaceMarks([{ id: area.id, name: area.name, kind: 'area', ...TRANSFORM.worldToAtlas(area.x, area.z) }]).find(p => p.id === 'mithala');
   assert.equal(mark.kind, 'city'); assert.equal(mark.name, 'Mithala'); assert.equal(mark.subtitle, 'Royal seat');
-  assert.deepEqual(atlasCityBoundaries().filter(city => city.city === 'mithala').map(city => city.id).sort(), MITHALA_DISTRICTS.map(d => d.id).sort());
+  assert.deepEqual(atlasCityBoundaries().filter(city => city.city === 'mithala').map(city => city.id), ['mithala']);
   // The travel panel offers it, and puts a traveller down exactly at the arrival, on the Ford's platform.
   const place = travelPlaces('South Mithala').find(one => one.id === 'mithala');
   assert.ok(place, 'the travel panel offers Mithala');

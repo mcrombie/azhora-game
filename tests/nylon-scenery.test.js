@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { NYLON, NYLON_BUILDINGS, NYLON_PATHS, NYLON_GATES, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, nylonHarborDeckHeight, nylonRiverClearance } from '../src/content/regions/nylon/nylon-city.js';
+import { NYLON, NYLON_BUILDINGS, NYLON_PATHS, NYLON_GATES, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, NYLON_HARBOR_WALLS, NYLON_OUTLINE, NYLON_COLOSSUS, nylonHarborDeckHeight, nylonRiverClearance } from '../src/content/regions/nylon/nylon-city.js';
 import { LIZEEM_REACH, courseHalfAt, coursePosition } from '../src/content/regions/western-regions/west-regions.js';
 import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
@@ -16,7 +16,7 @@ const blocked=(x,z,feet=heightAt(x,z),radius=.55)=>colliders.find(c=>c.minY<=fee
 test('Nylon uses merged, bounded scenery batches for its densely detailed vertical skyline',()=>{
   assert.equal(city.metrics.buildings,NYLON_BUILDINGS.length);
   assert.equal(city.metrics.gates,NYLON_GATES.length);
-  assert.ok(city.metrics.vertices<500000,`${city.metrics.vertices} vertices`);
+  assert.ok(city.metrics.vertices<550000,`${city.metrics.vertices} vertices including facade and planted street detail`);
   assert.ok(city.metrics.batches<65,`${city.metrics.batches} batches`);
   for(const mesh of city.root.children){
     assert.ok(mesh.isMesh,mesh.name);
@@ -45,6 +45,36 @@ test('Nylon has real open gates and walkable approaches to the library, council 
     for(let k=0;k<=len;k+=.5){
       const x=a.x+(b.x-a.x)*k/len,z=a.z+(b.z-a.z)*k/len,c=blocked(x,z);
       assert.equal(c,undefined,`${path.id} at ${x},${z} blocked by ${c?.id??c?.kind}`);
+    }
+  }
+});
+
+test('The harbor shares city bastions and has no duplicate curtain behind the quay',()=>{
+  for(const wall of NYLON_HARBOR_WALLS){
+    assert.ok(NYLON_OUTLINE.some(p=>p.x===wall.points[0].x&&p.z===wall.points[0].z),`${wall.id} joins an existing bastion`);
+  }
+  for(let x=-1324;x<=-1274;x+=1){
+    assert.equal(colliders.find(c=>c.kind==='nylon-wall'&&c.id.startsWith('nylon-harbor-')&&Math.hypot(x-c.x,1179-c.z)<c.r+.55),undefined,`Redundant quay-side defense at ${x}`);
+  }
+});
+
+test('The colossus stands on both sea-tower plinths above a full ship-height passage',()=>{
+  const c=NYLON_COLOSSUS,mesh=city.root.children.find(m=>m.name===c.name);
+  assert.ok(mesh);mesh.geometry.computeBoundingBox();
+  assert.ok(Math.abs(mesh.geometry.boundingBox.min.y-c.baseY)<.001,'Feet rest at the plinth height');
+  assert.ok(mesh.geometry.boundingBox.max.y>c.baseY+75,'A monumental figure crowns the sea gate');
+  const p=mesh.geometry.attributes.position;
+  for(let i=0;i<p.count;i++)if(p.getY(i)<c.baseY+.01){
+    assert.ok(c.feet.some(f=>Math.hypot(p.getX(i)-f.x,p.getZ(i)-f.z)<7.4),'Every foot base is supported by a tower');
+  }
+  for(const f of c.feet){
+    const tower=colliders.find(s=>s.kind==='city-tower'&&s.x===f.x&&s.z===f.z);
+    assert.ok(tower);assert.equal(tower.maxY,c.baseY);
+  }
+  const mastHeight=Math.max(...NYLON_HARBOR_BOATS.map(b=>b.mast))+3;
+  for(let x=c.x-5;x<=c.x+5;x+=2.5)for(let z=c.z-10;z<=c.z+10;z+=2){
+    for(let y=NYLON_HARBOR.waterHeight;y<=NYLON_HARBOR.waterHeight+mastHeight;y+=2){
+      assert.equal(blocked(x,z,y,3.5),undefined,`Ship or mast obstructed at ${x},${y},${z}`);
     }
   }
 });

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {decorateSelemisFacade,polishSelemis} from './selamus-polish.js';
 import {createSceneryBuilder} from '../../../world/scenery/scenery-builder.js';
 import {finishBuild} from '../../../world/loading/build-steps.js';
 import {SELAMUS,SELAMUS_BUILDINGS,SELAMUS_PLAZAS,SELAMUS_BRIDGES,SELAMUS_CANALS,selamusPoint,selamusCanalAt,selamusUrban} from './selamus-city.js';
@@ -96,6 +97,7 @@ function* palazzo(s,b,y,colliders,metrics){
     s.box(STONE,0,h-.13,0,w+.65,.35,d+.6);
     s.roof(roof,0,h,0,w+.7,d+.8,Math.min(2.6,w*.22),0,tint);
     s.beam('#d89b6c',[0,h+Math.min(2.6,w*.22)+.06,-d/2-.45],[0,h+Math.min(2.6,w*.22)+.06,d/2+.45],.2);
+    decorateSelemisFacade(s,b);
     const bays=Math.max(2,Math.floor(w/3.2)),span=(w-.8)/bays;
     for(let i=0;i<=bays;i++){const x=-w/2+.4+i*span;column(s,x,0,-d/2+.3,spring,.19);metrics.columns++;const q=at(face,x,-d/2+.3);colliders.push({id:`${b.id}:column:${i}`,x:q.x,z:q.z,r:.25,minY:y,maxY:y+spring,kind:'building-column'});}
     for(let i=0;i<bays;i++){arch(s,-w/2+.4+(i+.5)*span,spring,-d/2+.3,span-.4,1.1,.18,.48);metrics.arcades++;}
@@ -338,5 +340,7 @@ export function* createSelamusScenerySteps({parent,heightAt,colliders}){
     if(s.vertexCount){const mesh=yield* s.finishSteps(root);mesh.userData.selamusQuay=canal.id;metrics.batches++;metrics.vertices+=s.vertexCount;}
   }
   for(const b of SELAMUS_BRIDGES)yield* bridgeScenery(b,heightAt,colliders,walkSurfaces,root,metrics);
-  return{root,metrics,mapFeatures,walkSurfaces};
+  const detail=yield* polishSelemis({root,colliders,heightAt});
+  metrics.vertices+=detail.vertices;metrics.batches+=detail.batches;metrics.streetDetails=detail.placements.length;
+  return{root,metrics,detail,mapFeatures,walkSurfaces};
 }

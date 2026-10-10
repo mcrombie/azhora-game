@@ -1,10 +1,11 @@
 import { TRANSFORM, hexAt } from '../../world/terrain/region-world.js';
 import { MARKER_STYLE } from '../../world/actors/marker-style.js';
 import { AMBRON_CENTRE, AMBRON_OUTLINE } from '../../content/regions/ambron/ambron-city-layout.js';
+import { AMBRON_CIRCUIT } from '../../content/regions/ambron/ambron.js';
 import { MENORA_OUTLINE } from '../../content/regions/minora-frontier/menora-city.js';
 import { NYLON_OUTLINE } from '../../content/regions/nylon/nylon-city.js';
 import { AEVIS_OUTLINE } from '../../content/regions/aevis/aevis-city.js';
-import { MITHALA_DISTRICTS } from '../../content/regions/mithala/mithala-city.js';
+import { MITHALA_CURTAIN } from '../../content/regions/mithala/mithala-city.js';
 import { VARN_CORNERS } from '../../content/regions/varn/varn-world.js';
 import { SEVRON_ENTRANCES } from '../../content/regions/west-oremindi/west-oremindi-world.js';
 
@@ -40,15 +41,16 @@ export function atlasCityDetail() {
 }
 
 /** Authored city footprints. Aevis has an open waterfront: its outline marks the city extent, not a continuous defensive wall.
- * Mithala is four quarters with the river between them, so it is drawn as four: each district's own made ground, the Fork
- * inside its curtain and the other three inside their banks, and the water at the meeting left as water. */
+ * Mithala has one shared outer boundary; its internal rivers remain visible. */
 export function atlasCityBoundaries() {
-  return [{ id: 'ambron', boundary: AMBRON_OUTLINE.map(point) },
+  return [{ id: 'ambron', boundary: AMBRON_OUTLINE.map(point), wallSegments:AMBRON_CIRCUIT.runs.map(run=>{
+    const edge=AMBRON_CIRCUIT.edges[run.edge];return [point(AMBRON_CIRCUIT.pointOn(edge,run.from)),point(AMBRON_CIRCUIT.pointOn(edge,run.to))];
+  }) },
     { id: 'menora', boundary: MENORA_OUTLINE.map(point) },
     { id: 'nylon', boundary: NYLON_OUTLINE.map(point) },
     { id: 'aevis', boundary: AEVIS_OUTLINE.map(point) },
     { id: 'varn', boundary: VARN_CORNERS.map(point) },
-    ...MITHALA_DISTRICTS.map(district => ({ id: district.id, city: 'mithala', boundary: district.outline.map(point) }))];
+    { id: 'mithala', city: 'mithala', boundary: MITHALA_CURTAIN.map(point) }];
 }
 
 /** A secret city gains a map badge only after its living galleries are found. */

@@ -6,12 +6,15 @@ import {canStand,canSwim} from '../../gameplay/movement/locomotion.js';
 import {loadExplorationWorld} from './world-adapter.js';
 import {explorationMovement} from './movement.js';
 import {createCameraObstruction} from './camera-obstruction.js';
+import {lookoutCamera} from './lookout-panorama.js';
+import {lookoutChart} from './lookout-chart.js';
 import {START} from './checkpoint.js';
 import {createTowerState,TOWER_SPAWN,TOWER_EXIT} from './tower-state.js';
 import {createAfterlifeHost} from './afterlife-host.js';
 import {createWarHero,ghostStep} from './afterlife-form.js';
 import {LIMBO_SPAWN} from '../../content/regions/minora-frontier/limbo-chamber.js';
 import {createFireballHost} from './fireball-host.js';
+import {createPigeonHost} from './pigeon-host.js';
 import {createResidentHost} from './resident-host.js';
 import {createCouncilHost} from './council-host.js';
 import {councilRoom,councilSpawn} from '../../content/regions/minora-frontier/minora-council.js';
@@ -25,6 +28,7 @@ import {openWorldSkirmish} from './world-skirmish.js';
 import {LIZEEM_BATTLEFIELDS} from '../../content/scenarios/lizeem-battlefields.js';
 import {LIZEEM_FIELD_SITES} from '../../content/scenarios/lizeem-field-sites.js';
 import {createExplorationMounts} from '../../dev/tools/exploration-mounts.js';
+import {createLizeemCampaignAutoplay} from '../../gameplay/autoplay/lizeem-campaign-autoplay.js';
 import {createOvesosJourneyAutoplay} from '../../gameplay/autoplay/ovesos-journey-autoplay.js';
 import {createLizeemWorldAutoplay} from '../../gameplay/autoplay/lizeem-world-autoplay.js';
 import {createOvesosPractice} from '../../dev/tools/ovesos-practice.js';
@@ -32,11 +36,12 @@ import {MENORA_CAMP} from '../../content/regions/minora-frontier/menora-city.js'
 import {createExplorationTouch,phoneLayout} from './exploration-touch.js';
 import {explorationQuality,createFrameLog} from './exploration-quality.js';
 
-export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun,combatExercise=null,onCombatMenu=()=>{}}){
+export async function startExploration({saved,warSaved=null,warMode=false,hearthfallSaved=null,launch=warMode?MODES.war:MODES.explore,store,begun,combatExercise=null,autoplaySide=null,lookoutPreview=false,onCombatMenu=()=>{}}){
   const hearthfallMode=launch.id==='hearthfall',combatMode=launch.id==='combat',startPoint=combatMode?MENORA_CAMP:launch.start??START;
   const $=id=>document.getElementById(id),canvas=$('exploration-canvas');
+  const autoplayButton=$('world-autoplay');
   const abort=new AbortController();
-  const listen=(target,type,handler)=>target.addEventListener(type,handler,{signal:abort.signal});
+  const listen=(target,type,handler,options={})=>target.addEventListener(type,handler,{...options,signal:abort.signal});
   const scene=new THREE.Scene();scene.background=new THREE.Color(0xb6c8b0);scene.fog=new THREE.Fog(0xb6c8b0,180,560);
   // A phone draws less (8 October 2026; src/app/exploration/exploration-quality.js): ?quality=full|phone overrides.
   const quality=explorationQuality({search:location.search,phone:phoneLayout(),coarse:!!globalThis.matchMedia?.('(pointer: coarse)').matches}),frameLog=quality.frameLog?createFrameLog():null;
@@ -46,7 +51,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   scene.add(new THREE.HemisphereLight(0xf0f2d8,0x53644b,1.65));
   const sun=new THREE.DirectionalLight(0xffe6ba,2.1);sun.position.set(-100,180,70);scene.add(sun);
   const loading=message=>{$('loading-message').textContent=message;console.log('EXPLORATION_LOADING '+message);};
-  let towerState=warMode?createTowerState(warSaved):null,tower=null,council=null,lookoutView=null;
+  let towerState=warMode?createTowerState(warSaved):null,tower=null,council=null,pigeons=null,lookoutView=null,lookoutTime=0;
   function boundedWarSave(data,opening){
     return warMode&&data&&!opening.inside&&!allowsRegion(launch,regionAt(data.position.x,data.position.z).id)
       ?{...data,position:{...TOWER_EXIT,y:21.3},heading:0}:data;
@@ -65,7 +70,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   let elapsed=saved?.elapsed??0,yaw=saved?.camera.yaw??0,pitch=saved?.camera.pitch??.27,distance=saved?.camera.distance??8;
   let mode='playing',drag=false,frameId,last=performance.now(),disposed=false,statusTimer,dirty=false;
   let sorcery=null,afterlife=null,hearthfall=null,residentHost=null,stable=null,minimap=null,boundaryBlocked=false;
-  let frameErrors=[],frames=0,streamClock=0,war=null,windowActive=true,skirmish=null,autoplay=null,journey=null,practice=null,waterBlocked=false,horseSwimming=false,lastCrossing=null;
+  let frameErrors=[],frames=0,streamClock=0,war=null,windowActive=true,skirmish=null,autoplay=null,journey=null,campaignAutoplay=null,practice=null,waterBlocked=false,horseSwimming=false,lastCrossing=null,autoplayMessage='';
   const movement=explorationMovement(position,world),map=combatMode?null:(await import('../../ui/map/world-map.js')).createWorldMap({includeQuests:false,regionScope:launch.mapRegions??null});
   const mounts=createExplorationMounts({scene,actor,position,world,movement});
   const footHelp=$('exploration-help').textContent;
@@ -75,14 +80,18 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   const combatAim=new THREE.Vector3();
   const focus=new THREE.Vector3(),desired=new THREE.Vector3(),cameraOffset=new THREE.Vector3(0,1.55,0);
 
-  function stopAutoplay(){autoplay?.stop();journey?.stop();}
-  function autoplayStatus(message,active){const button=$('world-autoplay');button.hidden=!active;button.textContent=message+' / Stop (P)';button.setAttribute('aria-pressed',String(active));if(!active)notice(message);}
+  function autoplayActive(){return !!(campaignAutoplay?.state().active||autoplay?.state().active||journey?.state().active);}
+  function stopAutoplay(){autoplay?.stop();journey?.stop();campaignAutoplay?.stop();}
+  function autoplayStatus(message,active){autoplayMessage=message;const button=autoplayButton;if(!button.isConnected)document.body.append(button);const canResume=campaignAutoplay?.state().canResume;button.hidden=!active&&!canResume;button.textContent=message+(active?' / Stop (P)':canResume?' / Resume autoplay (P)':'');button.setAttribute('aria-pressed',String(active));refreshAutoplayFocus();if(!active){notice(message);if(campaignAutoplay?.state().error)clearTimeout(statusTimer);}}
+  function refreshAutoplayFocus(){if(autoplayActive())autoplayButton.textContent=windowActive?autoplayMessage+' / Stop (P)':'Autoplay waiting / Return to this window to resume';}
   function notice(message){$('exploration-status').classList.toggle('on-map',mode==='map');$('exploration-status').hidden=false;$('exploration-status').textContent=message;clearTimeout(statusTimer);statusTimer=setTimeout(()=>{$('exploration-status').hidden=true;},4500);}
   function discover(){if(towerState?.inside||world.state?.().inLimbo)return;const h=hexAt(position.x,position.z),key=`${h.q},${h.r}`;if(!cells.has(key)){cells.add(key);dirty=true;}}
   function updateChart(){
     if(!map)return;
     const glimpsed=new Set();for(const key of cells){const [q,r]=key.split(',').map(Number);for(const [dq,dr] of [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]]){const near=`${q+dq},${r+dr}`;if(!cells.has(near))glimpsed.add(near);}}
-    map.setChart({cells:[...cells],glimpsed:[...glimpsed],reveal:$('reveal-all').checked});
+    const tourChart=warMode?lookoutChart(launch.mapRegions,towerState.snapshot().concluded):null;
+    if(tourChart){map.setRegionScope(tourChart.regions,{label:tourChart.label});document.querySelector('.atlas-help').textContent=tourChart.help;}
+    map.setChart({cells:[...cells],glimpsed:[...glimpsed],reveal:$('reveal-all').checked,chartedRegions:tourChart?.chartedRegions??[]});
     map.setTraveler(TRANSFORM.worldToAtlas(position.x,position.z),{region:world.regionAt(position.x,position.z).name,heading:TRANSFORM.worldHeadingToAtlas(actor.group.rotation.y)});
     war?.refreshKnowledge();
   }
@@ -93,10 +102,10 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     $('map-screen').hidden=next!=='map';$('exploration-pause').hidden=next!=='pause';
     $('exploration-hud').hidden=next!=='playing';$('exploration-help').hidden=!['playing','limbo'].includes(next);
     if(next==='playing'){world.loading.start();canvas.focus();}else world.stop();
-    tower?.update();council?.update();residentHost?.update();sorcery?.update(0);stable?.update(0,elapsed);minimap?.update(1,elapsed);afterlife?.update();
+    tower?.update();council?.update();residentHost?.update();pigeons?.update();sorcery?.update(0);stable?.update(0,elapsed);minimap?.update(1,elapsed);afterlife?.update();
   }
-  function openMap(options={}){if(combatMode)return;if(warMode)options={view:'geopolitical',...options,regions:launch.mapRegions};if(hearthfallMode)options={...options,regions:['Feradom']};if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;$('exploration-status').hidden=true;clearTimeout(statusTimer);setMode('map');updateChart();$('world-demo-caption').hidden=!options?.regions;map.open(options?.regions?options:{});$('close-map').focus();}
-  function pause(){if(combatMode)return;if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;setMode('pause');$('save-note').textContent=hearthfallMode?(dirty?'You have unsaved Hearthfall progress. Save before leaving.':'Hearthfall uses its own local save slot.'):war?(dirty?'You have unsaved campaign progress. Save the hero and war before leaving.':'Your war scenario save is separate from ordinary exploration.'):dirty?'You have unsaved exploration. Save before leaving to keep it.':'Your last saved exploration is kept separately from the adventure.';$('resume-exploration').focus();}
+  function openMap(options={}){if(combatMode)return;if(warMode)options={view:'geopolitical',...options,regions:lookoutChart(launch.mapRegions,towerState.snapshot().concluded).regions};if(hearthfallMode)options={...options,regions:['Feradom']};if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;$('exploration-status').hidden=true;clearTimeout(statusTimer);setMode('map');updateChart();$('world-demo-caption').hidden=!options?.regions;map.open(options?.regions?options:{});$('close-map').focus();}
+  function pause(){if(combatMode)return;if(mode==='loading'||mode==='encounter'||mode==='skirmish')return;setMode('pause');$('save-note').textContent=store.rehearsal?'This is a temporary testing rehearsal. Saving keeps a checkpoint in memory only. Your normal campaign is untouched.':hearthfallMode?(dirty?'You have unsaved Hearthfall progress. Save before leaving.':'Hearthfall uses its own local save slot.'):war?(dirty?'You have unsaved campaign progress. Save the hero and war before leaving.':'Your war scenario save is separate from ordinary exploration.'):dirty?'You have unsaved exploration. Save before leaving to keep it.':'Your last saved exploration is kept separately from the adventure.';$('resume-exploration').focus();}
   function refreshTravelHelp(){
     if(world.state?.().inLimbo){$('exploration-help').textContent='WASD walk / Right-drag look / F speak with the Reaper';return;}
     if(actor.form==='ghost'){$('exploration-help').textContent='Ghost / WASD drift / Shift faster / M map / Return to the Reaper to choose another fate';return;}
@@ -139,8 +148,8 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(!towerState)return;
     const limbo=world.state().inLimbo,lookout=towerState.room==='lookout';
     scene.background=new THREE.Color(limbo?0x101c2b:lookout?0xb6c8b0:towerState.inside?0x354751:0xb6c8b0);
-    scene.fog=lookout?new THREE.Fog(0xb6c8b0,700,1800):towerState.inside||limbo?null:new THREE.Fog(0xb6c8b0,180,560);
-    camera.far=lookout?Math.max(quality.far,2000):quality.far;camera.updateProjectionMatrix();
+    scene.fog=lookout?new THREE.Fog(0xb6c8b0,2500,4100):towerState.inside||limbo?null:new THREE.Fog(0xb6c8b0,180,560);
+    camera.far=lookout?Math.max(quality.far,6000):quality.far;camera.updateProjectionMatrix();
     sun.intensity=limbo?.15:towerState.inside&&!lookout?.45:2.1;refreshTravelHelp();
   }
   const changeTower=enter=>changeRoom(enter?'tower':null);
@@ -151,7 +160,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(mounts.kind!=='foot'||!movement.state().grounded){notice('Land and dismount before entering.');return false;}
     const before=snapshot(),opening=towerState.snapshot(war.state().clock.running),previous=towerState.room;
     const exit=councilRoom(previous)?.exit??TOWER_EXIT,spawn=next==='lookout'?LOOKOUT_SPAWN:next==='tower'?TOWER_SPAWN:next?councilSpawn(next):exit;
-    stopAutoplay();setMode('loading');$('loading-screen').hidden=false;loading(next==='lookout'?'Ascending to the guild lookout':next?'Entering '+(councilRoom(next)?.room??'Taleth\u2019s chamber'):'Returning to Minora');
+    if(!campaignAutoplay?.state().active)stopAutoplay();setMode('loading');$('loading-screen').hidden=false;loading(next==='lookout'?'Ascending to the guild lookout':next?'Entering '+(councilRoom(next)?.room??'Taleth\u2019s chamber'):'Returning to Minora');
     try{
       if(!next)await world.prepareExterior(exit);
       if(next==='lookout')await world.prepareLookout();
@@ -169,7 +178,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(mode==='loading'||mode==='crossing'||mode==='encounter'||mode==='skirmish'||mounts.airborne()||!movement.state().grounded){notice('Wait until you are on the ground before saving.');return {ok:false};}
     const data=hearthfall?hearthfall.save(snapshot()):war?{...captureWarCheckpoint(),afterlife:afterlife.snapshot()}:snapshot();
     const result=store.save(data);if(result.ok)dirty=false;
-    const message=result.ok?(hearthfall?'Hearthfall saved.':war?'War scenario saved.':'Exploration saved.'):result.reason;$('save-note').textContent=message;notice(message);return result;
+    const message=result.ok?(store.rehearsal?'Rehearsal kept in memory only. Your campaign save is untouched.':hearthfall?'Hearthfall saved.':war?'War scenario saved.':'Exploration saved.'):result.reason;$('save-note').textContent=message;notice(message);return result;
   }
   function captureWarCheckpoint(){return {...war.save(snapshot()),tower:towerState.snapshot(war.state().clock.running),riding:stable.snapshot(),council:council.snapshot(),sorcery:sorcery.snapshot()};}
   async function enterLimbo(){
@@ -231,10 +240,14 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   let cameraYaw=yaw;const followOffset=new THREE.Vector3(),cameraObstruction=createCameraObstruction(world);
   function updateCamera(snap=false,dt=1/60){
     const blend=1-Math.exp(-10*dt);
-    if(towerState?.room==='lookout'&&mode==='briefing'&&lookoutView){
-      const east=lookoutView==='east';desired.set(LOOKOUT.x+(east?3:6),LOOKOUT.y+3.2,LOOKOUT.z+(east?8.5:3));
-      if(snap)camera.position.copy(desired);else camera.position.lerp(desired,blend);
-      camera.lookAt(LOOKOUT.x+(east?350:80),25,LOOKOUT.z+(east?10:320));return;
+    const panoramic=towerState?.room==='lookout'&&mode==='briefing'&&!!lookoutView;
+    actor.group.visible=!panoramic;
+    const fov=panoramic?lookoutCamera(lookoutView).fov:55;
+    if(camera.fov!==fov){camera.fov=fov;camera.updateProjectionMatrix();}
+    if(panoramic){
+      if(windowActive)lookoutTime+=dt;
+      const {eye,target}=lookoutCamera(lookoutView,lookoutTime);
+      camera.position.set(eye.x,eye.y,eye.z);camera.lookAt(target.x,target.y,target.z);shadow.visible=false;return;
     }
     if(mode==='chronicle'){
       desired.set(TOWER.x+7,TOWER.y+7,TOWER.z+1);
@@ -257,8 +270,9 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   }
   function step(dt){
     touch.sync(mode);
+    if(autoplayActive()||campaignAutoplay?.state().canResume){const button=autoplayButton,parent=document.querySelector('dialog[open]')??document.body;if(button.parentElement!==parent)parent.append(button);}
     if(mode==='combat-menu')return;
-    autoplay?.tick(dt,windowActive);journey?.tick(dt,windowActive);
+    autoplay?.tick(dt,windowActive);journey?.tick(dt,windowActive);campaignAutoplay?.tick(dt,windowActive);
     if(mode==='loading')return; // The loading veil keeps the last frame; give terrain construction the frame budget.
     if(mode==='skirmish'&&skirmish?.reviewing()){keys.clear();renderer.render(scene,camera);return;}
     if(mode==='skirmish'){if(windowActive)elapsed+=dt;skirmish?.tick(dt,windowActive);if(!practice?.state().active){discover();dirty=true;}}
@@ -276,7 +290,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
         updateLocation();}
     }
     if(!practice?.state().active)war?.tick(dt,windowActive&&!towerState?.inside&&['playing','map'].includes(mode));
-    tower?.tick(dt,windowActive);tower?.update();council?.update();residentHost?.update();stable?.update(mode==='playing'&&windowActive?dt:0,elapsed);minimap?.update(dt,elapsed);afterlife?.update();
+    tower?.tick(dt,windowActive);tower?.update();council?.update();residentHost?.update();pigeons?.update();stable?.update(mode==='playing'&&windowActive?dt:0,elapsed);minimap?.update(dt,elapsed);afterlife?.update();
     sorcery?.update(windowActive?dt:0);
     if(mode==='encounter')return;
     if(['playing','skirmish','limbo','reaper'].includes(mode))world.update(elapsed,dt,position);
@@ -289,10 +303,23 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     frameId=requestAnimationFrame(frame);
   }
   function resize(){renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();}
-  listen(window,'resize',resize);listen(window,'blur',()=>{keys.clear();drag=false;windowActive=false;});listen(window,'focus',()=>{windowActive=true;});
+  listen(window,'resize',resize);listen(window,'blur',()=>{keys.clear();drag=false;windowActive=false;refreshAutoplayFocus();});listen(window,'focus',()=>{windowActive=true;refreshAutoplayFocus();});
+  // Capture takeover before a native result dialog consumes keyboard input.
+  // Continue by keyboard must relinquish the driver just like a manual click.
+  listen(document,'keydown',event=>{
+    const active=autoplayActive(),canResume=campaignAutoplay?.state().canResume;if(!active&&!canResume)return;
+    if(event.target?.closest?.('[data-autoplay-control]')&&['Enter','Space'].includes(event.code)){
+      event.preventDefault();event.stopImmediatePropagation();if(!event.repeat)autoplayButton.click();return;
+    }
+    if(event.code==='KeyP'){
+      event.preventDefault();event.stopImmediatePropagation();
+      if(!event.repeat){if(active)stopAutoplay();else campaignAutoplay.resume();}return;
+    }
+    if(active&&event.isTrusted&&['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','KeyF','KeyG','KeyH','KeyX','KeyT','Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape','KeyM','F5','F8'].includes(event.code))stopAutoplay();
+  },{capture:true});
   listen(document,'keydown',event=>{
     if(mode==='crossing'){event.preventDefault();return;}
-    if(war?.keydown(event)||afterlife?.keydown(event)||tower?.keydown(event)||council?.keydown(event)||stable?.keydown(event)||residentHost?.keydown(event))return;
+    if(war?.keydown(event)||afterlife?.keydown(event)||tower?.keydown(event)||council?.keydown(event)||stable?.keydown(event)||residentHost?.keydown(event)||pigeons?.keydown(event))return;
     if(mode==='limbo'){
       if(event.code==='KeyF'||event.code==='Escape'){event.preventDefault();if(!event.repeat)afterlife.talk();return;}
       if(event.code==='F5'){event.preventDefault();if(!event.repeat)save();return;}
@@ -301,7 +328,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     }
     if(combatMode&&mode==='combat-menu')return;
     if(event.code==='KeyP'&&autoplay&&!event.target?.closest?.('input,select,textarea,[contenteditable="true"]')){
-      event.preventDefault();if(!event.repeat){if(autoplay.state().active||journey?.state().active)stopAutoplay();else openDeveloper();}return;
+      event.preventDefault();if(!event.repeat){if(autoplay.state().active||journey?.state().active||campaignAutoplay?.state().active)stopAutoplay();else openDeveloper();}return;
     }
     if(['KeyT','KeyE','KeyQ','KeyH','KeyW','KeyA','KeyS','KeyD','KeyX','Space','Enter','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Escape','KeyM','KeyF','KeyG','F5','F8'].includes(event.code))stopAutoplay();
     if(mode==='encounter')return;
@@ -312,7 +339,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(event.code==='Escape'){event.preventDefault();if(!event.repeat){if(mode==='playing')pause();else if(mode!=='loading')setMode('playing');}return;}
     if(event.code==='KeyM'&&(mode==='playing'||mode==='map')){event.preventDefault();if(!event.repeat){if(mode==='map')setMode('playing');else if(mode==='playing')openMap();}return;}
     if(mode!=='playing')return;
-    if(event.code==='KeyF'&&war){event.preventDefault();if(!event.repeat&&!tower?.interact()&&!council?.interact()&&!stable?.interact()&&!residentHost?.interact()&&!war.interactSoldier())war.join();return;}
+    if(event.code==='KeyF'&&war){event.preventDefault();if(!event.repeat&&!tower?.interact()&&!pigeons?.interact()&&!council?.interact()&&!stable?.interact()&&!residentHost?.interact()&&!war.interactSoldier())war.join();return;}
     if(['Tab','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(event.code))event.preventDefault();
     if(afterlife?.form==='ghost'&&['KeyG','KeyH','KeyF','Space'].includes(event.code)){event.preventDefault();return;}
     if(event.code==='KeyG'&&!event.repeat){if(!stable?.toggleMount())selectMount('foot');refreshTravelHelp();return;}
@@ -320,10 +347,10 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(event.code==='Space'&&!event.repeat&&mounts.kind==='foot')movement.jump();keys.add(event.code);
   });
   listen(document,'keyup',event=>keys.delete(event.code));listen(canvas,'contextmenu',event=>event.preventDefault());
-  listen(document,'pointerdown',event=>{if(event.target.closest('button,input,select')&&!event.target.closest('[data-autoplay-control]'))stopAutoplay();});
-  listen(document,'click',event=>{if(event.target.closest('button,input,select')&&!event.target.closest('[data-autoplay-control]'))stopAutoplay();});
+  listen(document,'pointerdown',event=>{if(event.isTrusted&&event.target.closest('button,input,select')&&!event.target.closest('[data-autoplay-control]'))stopAutoplay();});
+  listen(document,'click',event=>{if(event.isTrusted&&event.target.closest('button,input,select')&&!event.target.closest('[data-autoplay-control]'))stopAutoplay();});
   // The right mouse button, or on a touch screen a finger on the view, turns the camera; two fingers pinch it (8 October 2026).
-  listen(canvas,'pointerdown',event=>{canvas.focus();if(touch.look.start(event)&&['playing','skirmish','limbo'].includes(mode)){skirmish?.manualCamera();drag=true;canvas.setPointerCapture(event.pointerId);}});
+  listen(canvas,'pointerdown',event=>{if(event.isTrusted&&mode==='skirmish'&&event.button===0)stopAutoplay();canvas.focus();if(touch.look.start(event)&&['playing','skirmish','limbo'].includes(mode)){skirmish?.manualCamera();drag=true;canvas.setPointerCapture(event.pointerId);}});
   listen(canvas,'click',event=>{if(event.button===0&&mode==='skirmish')skirmish?.attack();});
   listen(canvas,'pointerup',event=>drag=touch.look.end(event));listen(canvas,'pointercancel',event=>drag=touch.look.end(event));
   listen(canvas,'pointermove',event=>{const turn=drag&&['playing','skirmish','limbo'].includes(mode)&&touch.look.move(event);if(turn){skirmish?.manualCamera();yaw-=turn.dx*.006;pitch=Math.max(.05,Math.min(1.15,pitch+turn.dy*.004));distance=Math.max(3,Math.min(22,distance*turn.zoom));}});
@@ -332,14 +359,14 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     if(actor.form==='ghost'||world.state?.().inLimbo)throw Error('This form cannot fight.');
     if(mounts.kind!=='foot'||!movement.state().grounded||movement.state().swimming)throw Error('Land and dismount before fighting.');
     if(journey?.state().active||practice?.state().active){yaw=0;pitch=.4;distance=15;updateCamera(true);}
-    const controller=openWorldSkirmish({...options,scene,world,actor,position,keys,watch:()=>!!journey?.state().active||!!autoplay?.state().active,yaw:()=>cameraYaw,centre:options.centre??LIZEEM_BATTLEFIELDS[options.pending.region],site:options.site??LIZEEM_FIELD_SITES[options.pending.region]});
+    const controller=openWorldSkirmish({...options,scene,world,actor,position,keys,watch:()=>!!journey?.state().active||!!autoplay?.state().active||!!campaignAutoplay?.state().active,yaw:()=>cameraYaw,centre:options.centre??LIZEEM_BATTLEFIELDS[options.pending.region],site:options.site??LIZEEM_FIELD_SITES[options.pending.region]});
     skirmish=controller;if(!options.practice){pitch=Math.max(.36,pitch);distance=Math.max(10,distance);yaw=options.site?.approachHeading??LIZEEM_FIELD_SITES[options.pending.region]?.approachHeading??0;movement.reset(actor.group.rotation.y);updateCamera(true);}setMode('skirmish');canvas.focus();
     return {snapshot:controller.snapshot,dispose(){controller.dispose();skirmish=null;movement.reset(actor.group.rotation.y);updateLocation();}};
   }
   $('world-war-hud').onclick=openMap;
   $('open-map').onclick=openMap;$('close-map').onclick=()=>setMode('playing');$('open-pause').onclick=pause;
   $('resume-exploration').onclick=()=>setMode('playing');$('save-exploration').onclick=save;$('load-exploration').onclick=loadSaved;
-  function mainMenu(){const url=new URL(location.href);url.searchParams.delete('mode');url.searchParams.delete('war');url.searchParams.set('menu','1');location.href=url.href;}
+  function mainMenu(){const url=new URL(location.href);url.searchParams.delete('autoplay');url.searchParams.delete('preview');url.searchParams.delete('mode');url.searchParams.delete('war');url.searchParams.set('menu','1');location.href=url.href;}
   $('return-start').textContent='Exit to main menu without saving';$('return-start').onclick=mainMenu;
   $('save-return-start').onclick=()=>{if(save().ok)mainMenu();};
   $('reveal-all').onchange=()=>setReveal($('reveal-all').checked);$('developer-reveal').onchange=()=>setReveal($('developer-reveal').checked);
@@ -354,7 +381,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   }
   $('developer-go').onclick=()=>travelToRegion($('developer-region').value);
   for(const button of document.querySelectorAll('[data-exploration-mount]'))button.onclick=()=>selectMount(button.dataset.explorationMount);
-  listen(window,'pagehide',()=>{disposed=true;stopAutoplay();cancelAnimationFrame(frameId);clearTimeout(statusTimer);abort.abort();hearthfall?.dispose();war?.dispose();tower?.dispose();council?.dispose();residentHost?.dispose();stable?.dispose();minimap?.dispose();afterlife?.dispose();sorcery?.dispose();actor.dispose?.();world.stop();world.dispose?.();renderer.dispose();});
+  listen(window,'pagehide',()=>{disposed=true;stopAutoplay();cancelAnimationFrame(frameId);clearTimeout(statusTimer);abort.abort();hearthfall?.dispose();war?.dispose();tower?.dispose();council?.dispose();residentHost?.dispose();pigeons?.dispose();stable?.dispose();minimap?.dispose();afterlife?.dispose();sorcery?.dispose();actor.dispose?.();world.stop();world.dispose?.();renderer.dispose();});
   place(saved?.position??(towerState?.inside?TOWER_SPAWN:hearthfallMode?findRegionArrival({...explorationDestinations.find(r=>r.id===21),spawn:startPoint},world):startPoint)??startPoint,saved?.heading??Math.PI);if(saved)dirty=false;
   resize();updateLocation();updateCamera(true);if(map&&!await map.ready)throw new Error('The world map could not initialize.');
   setReveal(launch.reveal);
@@ -371,10 +398,10 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   if(warMode){
     const {connectWorldWar}=await import('./world-war-host.js');
     war=connectWorldWar({saved:warSaved,map,regionName:()=>world.regionAt(position.x,position.z).name,position,scene,world,
-      onCampaignChange:state=>world.setCouncil(state),cameraYaw:()=>yaw,canBegin:()=>towerState.briefed,horseOwned:()=>stable?.owned??false,horseState:()=>stable?.state(),isGhost:()=>actor.form==='ghost',
+      onCampaignChange:state=>world.setCouncil(state),cameraYaw:()=>yaw,canBegin:()=>towerState.briefed,isConcluded:()=>!!towerState.snapshot().concluded,horseOwned:()=>stable?.owned??false,horseState:()=>stable?.state(),isGhost:()=>actor.form==='ghost',
       onBeforeFight:()=>afterlife.beforeFight(),onDeath:context=>{stopAutoplay();afterlife.died(context).then(()=>save()).catch(e=>notice('Could not enter limbo: '+e.message));},
       localEncounter:{supports:pending=>!!pending.reinforcements&&!!LIZEEM_FIELD_SITES[pending.region],open:startWorldFight},
-      autoEntry:()=>!journey?.state().active&&!autoplay?.state().active,
+      autoEntry:()=>!journey?.state().active&&!autoplay?.state().active&&!campaignAutoplay?.state().active,
       canEnterBattle:()=>actor.form!=='ghost'&&!mounts.airborne()&&movement.state().grounded&&!movement.state().swimming,
       prepareBattle(pending){
         const battlefield=pending?.location??LIZEEM_BATTLEFIELDS[pending?.region];
@@ -391,17 +418,23 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     war.sync();war.refresh();
     if(towerState.snapshot().running)war.run();
     tower=createTowerHost({state:()=>towerState,position,mode:()=>mode,setMode,notice,scenario:()=>war.state().campaign.scenario,campaign:()=>war.state().campaign,onChronicle:value=>world.setChronicle(value),
-      onLookout:enter=>changeRoom(enter?'lookout':'tower'),onLookoutView:view=>{lookoutView=view;world.setLookoutView(view);},onConclude(){dirty=true;save();},
+      onLookout:enter=>changeRoom(enter?'lookout':'tower'),onLookoutView:view=>{if(lookoutView!==view)lookoutTime=0;lookoutView=view;world.setLookoutView(view);updateCamera(true);},onConclude(){dirty=true;war.completeReview();updateChart();save();},
       onBegin(){dirty=true;war.begin();notice('Day 1: the armies are on the march. Meet Bear outside the tower.');},onDoor:changeTower});
     council=createCouncilHost({saved:warSaved?.council,state:()=>towerState,position,mode:()=>mode,setMode,campaign:()=>war.state().campaign,onDoor:changeRoom,onDirty(){dirty=true;}});
+    pigeons=createPigeonHost({world,position,mode:()=>mode,setMode,onLetters:()=>$('taleth-letters')?.click()});
     residentHost=createResidentHost({world,position,campaign:()=>war?.state().campaign,mode:()=>mode,setMode,available:()=>!towerState.inside&&!world.state().inLimbo&&!mounts.airborne()});
-    stable=createStableHost({scene,world,actor,position,mounts,movement,saved:warSaved?.riding,inside:()=>towerState.inside||world.state().inLimbo,mode:()=>actor.form==='ghost'?'ghost':mode,setMode,notice,onChange(){dirty=true;refreshTravelHelp();}});
+    stable=createStableHost({scene,world,actor,position,mounts,movement,saved:warSaved?.riding,campaign:()=>war.state().campaign,inside:()=>towerState.inside||world.state().inLimbo,mode:()=>actor.form==='ghost'?'ghost':mode,setMode,notice,onChange(){dirty=true;refreshTravelHelp();}});
     minimap=createLocalMap({world,position,heading:()=>actor.group.rotation.y,inside:()=>towerState.inside,mode:()=>mode,openMap,events:()=>war.minimapEvents(),track:target=>war.track(target),
       marker:()=>tower.marker()??council.marker()??(towerState.inside?(towerState.briefed?{...TOWER_DOOR,id:'door',label:'Door to Minora'}:{...TALETH_SPOT,id:'taleth',label:'Taleth'}):war.minimapDestination()??stable.marker()),
       chart:()=>({cells, reveal:$('reveal-all').checked})});
     afterlife=createAfterlifeHost({saved:warSaved?.afterlife,position,mode:()=>mode,setMode,capture:captureWarCheckpoint,enter:enterLimbo,restore:restoreWarAttempt,returnToWorld:returnFromLimbo,save,mainMenu,onChange(){dirty=true;refreshTravelHelp();},notice});
     sorcery=createFireballHost({scene,world,actor,position,yaw:()=>yaw,mode:()=>mode,inside:()=>towerState.inside||world.state().inLimbo,canCast:()=>actor.form!=='ghost'&&mounts.kind==='foot',combat:()=>skirmish,saved:warSaved?.sorcery,notice,onDirty(){dirty=true;}});
     setTowerEnvironment();
+    if(autoplaySide)campaignAutoplay=createLizeemCampaignAutoplay({side:autoplaySide,war,world,position,stable,mode:()=>mode,room:()=>towerState.room,
+      clearInput:()=>keys.clear(),interact:()=>tower.interact(),click:id=>$(id)?.click(),status:autoplayStatus,
+      steer(target){yaw=Math.atan2(position.x-target.x,position.z-target.z);pitch=.25;distance=stable.mounted?11:8;keys.clear();keys.add('KeyW');keys.add('ShiftLeft');},
+      async prepareTravel(){setMode('loading');$('loading-screen').hidden=false;loading('Preparing the five-region rehearsal');try{for(const id of launch.regions){if(!campaignAutoplay?.state().active)break;await world.prepareRegion(id);}}finally{$('loading-screen').hidden=true;setMode('playing');}},
+    });
     autoplay=createLizeemWorldAutoplay({war,mode:()=>mode,
       resume:()=>setMode('playing'),clearInput:()=>keys.clear(),attack:()=>keys.clear(), // Encounter view drives ordinary dodge/counter inputs while watching.
       showMap(){openMap();map.setView('geopolitical');map.focus('Caricas');},
@@ -467,7 +500,7 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
     $('developer-residents').onchange=()=>world.setResidents($('developer-residents').checked);
     $('autoplay-ovesos').onclick=()=>{stopAutoplay();journey.start();};
     $('autoplay-caricas').onclick=()=>{stopAutoplay();autoplay.start();};
-    $('world-autoplay').onclick=stopAutoplay;
+    autoplayButton.onclick=()=>{if(autoplayActive())stopAutoplay();else if(campaignAutoplay?.state().canResume)campaignAutoplay.resume();};
     document.querySelector('#exploration-hud .eyebrow').textContent='TERESOD / LIZEEMI WAR';
     $('save-exploration').textContent='Save war scenario (F5)';$('load-exploration').textContent='Load saved war scenario';
     document.querySelector('.atlas-help').textContent='Five regions are playable in this scenario. Speak with Taleth before beginning; M shows the current armies and battles.';
@@ -478,19 +511,22 @@ export async function startExploration({saved,warSaved=null,warMode=false,hearth
   setMode(afterlife?.inLimbo?'limbo':'playing');frameId=requestAnimationFrame(frame);
   if(relocatedSave)notice('This scenario now covers five regions. You have returned to Minora; your campaign progress is kept.');
   if(new URLSearchParams(location.search).has('test'))window.__EXPLORATION__={
-    state:()=>({launch:launch.id,quality:quality.id,touch:touch.state(),character:'teresod',enabledRegions:world.enabledRegions,lastCrossing,combatCues:scene.children.filter(o=>o.userData.combatWarningEdge||o.userData.counterOpening||o.userData.combatHealth||o.userData.hitRecovery).map(o=>({kind:o.userData.combatWarningEdge?'edge':o.userData.counterOpening?'opening':o.userData.combatHealth?'label':'protection',visible:o.visible,cue:o.userData.cue??null,remaining:o.userData.remaining??null,detailed:o.userData.combatHealth&&o.scale.y>.2})),combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,form:actor.form??'living',position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
-    war,hearthfall,autoplay,journey,practice,stable,minimap,afterlife,council,sorcery,residentHost,
-    tower:warMode?{state:()=>({...towerState.snapshot(war.state().clock.running),...world.state()}),interact:()=>tower.interact(),chronicleState:()=>tower.chronicleState()}:null,
+    state:()=>({launch:launch.id,quality:quality.id,touch:touch.state(),character:'teresod',panoramic:!!lookoutView,heroVisible:actor.group.visible,cameraPosition:camera.position.toArray(),cameraFov:camera.fov,enabledRegions:world.enabledRegions,lastCrossing,combatCues:scene.children.filter(o=>o.userData.combatWarningEdge||o.userData.counterOpening||o.userData.combatHealth||o.userData.hitRecovery).map(o=>({kind:o.userData.combatWarningEdge?'edge':o.userData.counterOpening?'opening':o.userData.combatHealth?'label':'protection',visible:o.visible,cue:o.userData.cue??null,remaining:o.userData.remaining??null,detailed:o.userData.combatHealth&&o.scale.y>.2})),combatImpacts:scene.children.filter(o=>o.userData.combatImpact).map(o=>({kind:o.userData.kind,visible:o.visible})),combatMarkers:scene.children.filter(o=>o.userData.combatTarget||o.userData.combatFacing).map(o=>({target:o.userData.combatTarget===true,targetId:o.userData.targetId??null,visible:o.visible,position:o.position.toArray()})),rallyLabels:scene.children.filter(o=>o.userData.rallyLabel).map(o=>({visible:o.visible,scale:o.scale.toArray(),sizeAttenuation:o.material.sizeAttenuation})),fieldActors:scene.children.filter(o=>o.userData.worldSkirmish).map(o=>({position:o.position.toArray(),ground:world.heightAt(o.position.x,o.position.z),clear:canStand(o.position.x,o.position.z,world,.34),visible:o.visible})),mode,form:actor.form??'living',position:position.toArray(),camera:{yaw,pitch,distance},cells:[...cells],readyMs,frames,frameErrors:[...frameErrors],map:map?.state()??null,dirty,grounded:!mounts.airborne()&&movement.state().grounded,mount:mounts.state(),region:world.regionAt(position.x,position.z).id}),
+    war,hearthfall,autoplay,journey,campaignAutoplay,practice,stable,minimap,afterlife,council,sorcery,residentHost,
+    tower:warMode?{state:()=>({...towerState.snapshot(war.state().clock.running),...world.state()}),interact:()=>tower.interact(),chronicleState:()=>tower.chronicleState(),lookoutState:()=>tower.lookoutState(),birds:()=>world.lookoutBirds(),pigeonInteract:()=>pigeons.interact(),pigeonState:()=>pigeons.state()}:null,
     groundProbe(x,z){return {x,z,height:world.heightAt(x,z),water:world.waterAt(x,z),region:world.regionAt(x,z).id,ready:world.readyAt(x,z),clear:canStand(x,z,world,.62),colliders:world.nearColliders(x,z,1).map(c=>({...c}))};},
     testWorld:world,testHero:actor,
     project(point){const p=new THREE.Vector3(point.x,point.y,point.z).project(camera);return {x:p.x,y:p.y,z:p.z};},
-    renderStats(){const begun=performance.now();renderer.render(scene,camera);return {...renderer.info.render,cpuMs:performance.now()-begun,geometries:renderer.info.memory.geometries};},
+    renderStats({withoutLookoutLandscape=false}={}){const backdrop=scene.getObjectByName('Guild lookout / prepared surrounding landscape'),visible=backdrop?.visible;if(withoutLookoutLandscape&&backdrop)backdrop.visible=false;
+      const begun=performance.now();try{renderer.render(scene,camera);return {...renderer.info.render,cpuMs:performance.now()-begun,geometries:renderer.info.memory.geometries};}finally{if(backdrop)backdrop.visible=visible;}},
     look(view){skirmish?.manualCamera();yaw=view.yaw??yaw;pitch=view.pitch??pitch;distance=view.distance??distance;updateCamera(true);},
     snapshot,save,store,loadSaved,openMap,openDeveloper,travelToRegion,selectMount,pause,resume:()=>setMode('playing'),step,
     hold:(code,on)=>on?keys.add(code):keys.delete(code),jump:()=>movement.jump(),
     async visit(point){setMode('loading');await world.prepare(point.x,point.z);place(point);setMode('playing');updateCamera(true);},
     reveal:setReveal,
   };
+  if(store.rehearsal){document.querySelector('#exploration-hud .eyebrow').textContent=lookoutPreview?'LIZEEMI WAR / UNATTENDED LOOKOUT PREVIEW':'LIZEEMI WAR / AUTOPLAY REHEARSAL';$('save-exploration').textContent='Keep rehearsal in memory (F5)';$('load-exploration').textContent='Restore rehearsal checkpoint';$('save-return-start').hidden=true;$('return-start').textContent='Exit rehearsal to main menu';campaignAutoplay?.start();}
+  if(lookoutPreview)tower.interact();
   if(combatMode)await practice.start(combatExercise??'lesson');
   return {practice};
 }

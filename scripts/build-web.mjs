@@ -7,6 +7,7 @@
 import { cp, mkdir, rm, readdir, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import {ensureLookoutLandscape} from './build-lookout.mjs';
 
 const root = path.dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 const outArg = process.argv.indexOf('--out');
@@ -34,6 +35,7 @@ const bytes = async dir => {
   return total;
 };
 
+await ensureLookoutLandscape();
 await rm(out, { recursive: true, force: true });
 await mkdir(out, { recursive: true });
 for (const name of PUBLISHED) {

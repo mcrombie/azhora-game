@@ -29,8 +29,9 @@ import {writeHud} from './hud-write.js';
 import {nextCampaignOpportunity,waitForCampaignDispatch} from './campaign-opportunity.js';
 import {talethLetters} from './taleth-correspondence.js';
 import {createTalethCourier} from './taleth-courier.js';
+import {createCampaignGuidanceView} from './campaign-guidance-view.js';
 
-export function connectWorldWar({saved,map,regionName,position,scene,world,known,knowledgeStamp,openMap,getMode,setMode,onDirty,localEncounter,canFightOnFoot,cameraYaw=()=>0,canBegin=()=>true,horseOwned=()=>false,horseState=()=>null,onBeforeFight=()=>{},onDeath=()=>{},isGhost=()=>false,canEnterBattle=canFightOnFoot,prepareBattle=()=>{},autoEntry=()=>true,onCampaignChange=()=>{}}){
+export function connectWorldWar({saved,map,regionName,position,scene,world,known,knowledgeStamp,openMap,getMode,setMode,onDirty,localEncounter,canFightOnFoot,cameraYaw=()=>0,canBegin=()=>true,isConcluded=()=>false,horseOwned=()=>false,horseState=()=>null,onBeforeFight=()=>{},onDeath=()=>{},isGhost=()=>false,canEnterBattle=canFightOnFoot,prepareBattle=()=>{},autoEntry=()=>true,onCampaignChange=()=>{}}){
   const $=id=>document.getElementById(id),beacons=createBattlefieldBeacons(scene,world);
   const site=createSitePresence(scene,world),aftermath=createBattleAftermath(scene,world);let presence;
   const faction=id=>WORLD_WAR_SCENARIO.factions.find(f=>f.id===id)?.short??id;
@@ -40,6 +41,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   let report=null,armies=[];const dismissed=new Set([saved?.reportReadThrough??0]);
   let letters=[],opportunity=null;
   const courier=createTalethCourier({scene,world,position,getMode,setMode,letters:()=>letters,opportunity:()=>opportunity,onFollow:followNext});
+  const objective=createCampaignGuidanceView();
   const soldierPeople=()=>[...aftermath.people(),...site.people()];
   const soldiers=createSoldierHost({world,position,getMode,setMode,people:soldierPeople,campaign:()=>cached,opportunity:()=>opportunity,faction,region,available:()=>!isGhost()&&canEnterBattle()});
   const initialNavigation=savedWarNavigation(saved);
@@ -86,7 +88,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
       waitForCampaignDispatch(session,state=>nextCampaignOpportunity(state,WORLD_WAR_SCENARIO,worldWarArmies(state,WORLD_WAR_SCENARIO,p=>known(TRANSFORM.atlasToWorld(p.x,p.y))),known));
       onDirty();refresh();setMode('playing');offer();updateLocal();return true;
     }
-    if(next.kind==='finale')trackCouncil();
+    if(next.kind==='finale'||next.kind==='complete')trackCouncil();
     else if(next.target){if(tracked?.kind!==next.target.kind||tracked?.id!==next.target.id)track(next.target);}
     else track(null);
     if(!cached.winner&&!session.clock().running)session.toggle();
@@ -99,30 +101,35 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   }
   function refreshReports(){
     letters=talethLetters(cached);
-    opportunity=nextCampaignOpportunity(cached,WORLD_WAR_SCENARIO,presentedArmies(),known);
+    opportunity=nextCampaignOpportunity(cached,WORLD_WAR_SCENARIO,presentedArmies(),known,{concluded:isConcluded()});
     const reports=[...new Map([...worldWarReports(cached,WORLD_WAR_SCENARIO,known),...armies.flatMap(a=>a.report?[a.report]:[]),...letters].map(r=>[r.id,r])).values()].sort((a,b)=>a.id-b.id);
     // Keep the hero's consequence readable even if another battle starts on
     // the same day. Dismissing it allows subsequent dispatches through.
     const unread=reports.filter(r=>r.id>Math.max(0,...dismissed));
     report=selectWarReport(unread,armies);
     courier.present(report);
-    $('world-war-report').querySelector('.eyebrow').textContent=report?.taleth?'PIGEON POST / TALETH':'WAR REPORT';
-    const footer=cached.winner?`${faction(cached.winner)} has prevailed. The united country is the Lizeemi League.`:session.clock().running?'Campaign running. Open M to follow the war.':'Campaign paused. Open M to resume or advance a day.';
+    const concluded=!!cached.winner&&isConcluded(),completedFinale=concluded&&report?.finale;
+    $('world-war-report-source').textContent=completedFinale?'CAMPAIGN / COMPLETE':report?.taleth?'PIGEON POST / TALETH':'WAR REPORT';
+    const footer=cached.winner?`${concluded?'Campaign complete. ':''}${faction(cached.winner)} has prevailed. The united country is the Lizeemi League.`:session.clock().running?'Campaign running. Open M to follow the war.':'Campaign paused. Open M to resume or advance a day.';
     const write=(id,value)=>{if($(id).textContent!==value)$(id).textContent=value;};
     const summary=report?.summary;
-    write('world-war-report-title',summary?.title??report?.title??'');write('world-war-report-detail',summary?.explanation??report?.detail??'');write('world-war-report-clock',report?footer:'');
+    // The archived summons stays historical; the live card reflects its fulfilment.
+    write('world-war-report-title',completedFinale?'Lizeemi War complete':summary?.title??report?.title??'');
+    write('world-war-report-detail',completedFinale?opportunity.detail:summary?.explanation??report?.detail??'');write('world-war-report-clock',report?footer:'');
+    $('world-war-next-detail').hidden=!!completedFinale;
     renderBattleFacts($('world-war-report-facts'),summary?.facts??report?.facts);
     const returnVisit=!!summary?.side||!!report?.finale||!!report?.hero;
-    $('world-war-report-followup').hidden=!summary&&!report?.note;
+    $('world-war-report-followup').hidden=completedFinale||!summary&&!report?.note;
     write('world-war-report-followup',report?.note??(summary?summary.note+(returnVisit?' '+councilReturnHint(cached):''):''));
-    write('world-war-report-minora',report?.finale?'Return to Taleth / tower lookout':'Track Minora / council');
+    write('world-war-report-minora','Visit council / optional');
     $('world-war-report-minora').hidden=!returnVisit||!!cached.winner;
     const lastHero=reports.findLast(r=>r.hero)??report;
     $('world-war-result').hidden=!lastHero;
-    write('world-war-result',lastHero?`${lastHero.title}. ${lastHero.detail} ${footer}`:'');
-    writeHud($('world-war-report'),'hidden',getMode()!=='playing'||!report||dismissed.has(report.id));
+    write('world-war-result',concluded&&lastHero?.finale?`${opportunity.detail} ${footer}`:lastHero?`${lastHero.title}. ${lastHero.detail} ${footer}`:'');
+    paintObjective();
     $('world-war-report-track').hidden=!reportTarget();
   }
+  function paintObjective(){objective.update(opportunity,{opening,owned:horseOwned(),mounted:horseState()?.mounted,running:session.clock().running,region,winnerName:cached.winner?faction(cached.winner):null,recoveringUntil:cached.hero.readyOn>cached.day?cached.hero.readyOn:null},report,getMode()==='playing');}
   function sync(){
     if(['limbo','reaper','crossing'].includes(getMode()))return false;
     const name=regionName();if(name===lastRegion)return false;
@@ -171,7 +178,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
     guidance=openingWarGuidance(opening,{owned:horseOwned(),horse:horse?.horse,mounted:horse?.mounted})??tracking;
     tracker.update(guidance,position,cameraYaw(),getMode()==='playing');
     light.update(guidance,getMode()==='playing');
-    writeHud($('world-war-report'),'hidden',getMode()!=='playing'||!report||dismissed.has(report.id));
+    paintObjective();
     beacons.update(cached.engagements,known,position,cached,WORLD_WAR_SCENARIO);
     aftermath.update(cached,WORLD_WAR_SCENARIO,known,position,getMode()==='playing'||soldiers.open(),dt);
     soldiers.update(dt);
@@ -200,7 +207,7 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
   $('world-war-report-track').onclick=()=>{const target=reportTarget();if(target)track(target);};
   $('world-war-report-minora').onclick=()=>trackCouncil();
   $('world-war-report-map').onclick=()=>{const armyId=report?.armyId;openMap();if(armyId!==undefined)requestAnimationFrame(()=>requestAnimationFrame(()=>{if(getMode()==='map')map.focusArmy(armyId);}));};
-  $('world-war-report-dismiss').onclick=()=>{if(report){dismissed.add(report.id);onDirty();}$('world-war-report').hidden=true;};
+  $('world-war-report-dismiss').onclick=()=>{if(report){dismissed.add(report.id);onDirty();}refreshReports();$('world-war-report-more').open=false;$('world-war-report-more').querySelector('summary').focus();};
   $('world-war-run').onclick=()=>{if(!canBegin())return;sync();session.toggle();onDirty();refresh();};
   $('world-war-step').onclick=()=>advance();$('world-war-join').onclick=()=>join();
   $('world-war-speed').onchange=()=>{session.setSpeed(Number($('world-war-speed').value));onDirty();refresh();};
@@ -221,9 +228,15 @@ export function connectWorldWar({saved,map,regionName,position,scene,world,known
         return candidates.find(clear)??previous;
       }
       if(isGhost()||!canEnterBattle())return null;
-      return stopAtSoldier(previous,position,soldierPeople(),horseState()?.mounted?1.45:1);
+      return stopAtSoldier(previous,position,[...soldierPeople(),...(world.residentPeople?.()??[])],horseState()?.mounted?1.45:1);
     },
     tick,advance,restore,sync,refresh,refreshKnowledge,track,trackRoute,trackCouncil,join,help:dialog.join,withdraw:dialog.withdraw,continue:dialog.continue,followNext,interactSoldier:soldiers.interact,keydown:e=>soldiers.keydown(e)||courier.keydown(e),
+    completeReview(){
+      if(!cached.winner||!isConcluded())return false;
+      if(opening==='council')opening=null;
+      if(tracked){tracked=null;map.setTrackedTarget(null);}
+      onDirty();refresh();updateLocal();return true;
+    },
     drawGuidance(camera){light.draw(camera,position);},
     begin(){if(!canBegin())return false;session.begin();onDirty();refresh();updateLocal();return true;},
     pause(){session.pause();refresh();},

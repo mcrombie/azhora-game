@@ -14,7 +14,8 @@ import {
 import { PUETH_RIVERS, TESSEN, TESSEN_BRIDGE, nearestPuethRiver } from '../../content/regions/pueth/pueth-world.js';
 import { izolSeamInland } from '../../content/regions/izol/izol-ground.js';
 import { westernDrySeamInland, westernDrySeamWeight } from '../../content/regions/western-regions/western-dry-seams.js';
-import { elagosGround } from '../../content/regions/ambron/elagos-world.js';
+import { elagosGround, elagosWaterDistance, ambronGroundTint } from '../../content/regions/ambron/elagos-world.js';
+import { ambronFortressGround } from '../../content/regions/ambron/ambron-fortresses.js';
 import { southSuvalGround } from '../../content/regions/south-suval/south-suval-world.js';
 import { eastLotharnGround } from '../../content/regions/east-lotharn/east-lotharn-world.js';
 import { varnGround } from '../../content/regions/varn/varn-world.js';
@@ -118,7 +119,7 @@ function padded(x, z, natural) {
   for (const pad of TERRAIN_PADS) {
     const outside = Math.max(Math.abs(x - pad.x) - pad.halfX, Math.abs(z - pad.z) - pad.halfZ, 0);
     if (outside >= pad.feather) continue;
-    const plane = pad.level + (x - pad.x) * pad.slopeX + (z - pad.z) * pad.slopeZ;
+    const plane = pad.heightAt ? pad.heightAt(x,z) : pad.level + (x - pad.x) * pad.slopeX + (z - pad.z) * pad.slopeZ;
     const shapeWeight = pad.weightAt ? pad.weightAt(x, z) : 1 - smooth(0, pad.feather, outside);
     const strength = shapeWeight * (pad.shore ? smooth(-.2, 1.7, natural) : 1);
     height = lerp(height, plane, strength);
@@ -299,7 +300,7 @@ export function legacyWesternGroundHeight(x,z) {
 
 /** Ground with the river channels cut, before any deck or pier override. */
 export function groundWithRiver(x, z) {
-  return selamusGround(x,z,groundBeforeSelamus(x,z));
+  return ambronFortressGround(x,z,selamusGround(x,z,groundBeforeSelamus(x,z)),elagosWaterDistance);
 }
 /** Natural island substrate for stable scatter and its terrain regression tests. */
 export function groundBeforeSelamus(x,z) {
@@ -550,7 +551,7 @@ export const shoreTintOf = (id, x, z, distance) => SHORE_TINTS.find(family => fa
 // of allocating four or more colours at every vertex of the whole-world grid.
 const tintScratch = new WeakMap();
 export function groundTint(color, x, z, THREE) {
-  const cityTint=selamusTint(x,z)??pyraTint(x,z);if(cityTint!==null){color.set(cityTint);return color;}
+  const cityTint=ambronGroundTint(x,z)??selamusTint(x,z)??pyraTint(x,z);if(cityTint!==null){color.set(cityTint);return color;}
   const mix = terrainMix(x, z), distance = landDistance(x, z);
   let scratch = tintScratch.get(THREE);
   if (!scratch) {

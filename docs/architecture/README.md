@@ -80,6 +80,8 @@ The independent simulation now owns time, armies and territory for the isolated 
 
 In the original adventure and exploration map, existing Chapter 1 and aftermath records still determine the visible political outcome. The Lizeem test has its own live map adapter and does not modify those records. See [the Solis walkthrough](chapter-one-walkthrough.md) for the current connections.
 
+The [Yunethre campaign design](../yunethre-campaign-design.md) defines a proposed continuation after the Lizeemi War: negotiate Laketown's accession and centaur protection before implementing the alternate military routes. It documents bounded region access, independent political relationships and preservation of the completed war. This is a design plan, not an implemented campaign.
+
 ## Running and checking
 
 Run commands from the project root:
@@ -94,6 +96,8 @@ node scripts/launch.cjs --smoke-test --chapter-one-checks
 ```
 
 `node scripts/run-tests.cjs` runs the full explicit suite, isolating each file to release large world fixtures between batches. Native smoke runs use an isolated profile rather than the player's normal save. See [reorganization verification](reorganization.md) for the checks performed during this cleanup.
+
+`npm run review:cities` opens a save-free scenery review for Aevis, Nylon, Selemis, Pyra and Mithala. Choose a city and a street or landmark view, then drag to orbit and scroll to zoom. It builds the same city modules used in exploration. `node scripts/launch.cjs --cities-review --smoke-test` captures the review views and rendering errors in `tests/artifacts/`; add `--cities=mithala,pyra` to inspect a subset. City-specific polish lives beside each city's scenery; the shared static parts are in `world/scenery/city-detail.js`.
 
 The project uses native JavaScript modules and an import map for local Three.js. There is no TypeScript compilation step. The surrounding folder name `typescript` does not affect execution. Moving the project directory and migrating the language are separate decisions.
 

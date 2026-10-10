@@ -27,7 +27,7 @@ export function createLizeemWorldAutoplay({war,mode,prepare,showMap,resume,attac
     if(['pause','developer','loading'].includes(mode())){stop();return;}
     seconds+=dt;
     if(stage==='advance'){
-      const firstDay=war.state().campaign.scenario==='lizeem-world-v6'?3:10;
+      const firstDay=['lizeem-world-v6','lizeem-world-v7','lizeem-world-v8'].includes(war.state().campaign.scenario)?3:10;
       if(war.state().campaign.day<firstDay){
         if(seconds<war.state().clock.secondsPerDay/20)return;
         seconds-=war.state().clock.secondsPerDay/20;war.advance();

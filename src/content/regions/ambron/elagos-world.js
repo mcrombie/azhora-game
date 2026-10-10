@@ -35,8 +35,11 @@
  * once into a signed distance field with the water's own level carried outward,
  * so `elagosGround` can answer any point in the world in one bilinear sample.
  */
-import { AMBRON, ambronPoint, MAIN_ROAD, AMBRON_TERRACE, CALOSS_ROAD_FORK } from '../../../world/terrain/region-world.js';
-import { cityGatePoint, AMBRON_OUTLINE, inAmbronOutline, CAGNEY_ROADSIDE_HAMLET } from './ambron-city-layout.js';
+import { AMBRON, ambronPoint, MAIN_ROAD, CALOSS_ROAD_FORK, landDistance } from '../../../world/terrain/region-world.js';
+import { cityGatePoint, ambronOutsideDistance, AMBRON_OUTLINE, inAmbronOutline, CAGNEY_ROADSIDE_HAMLET, cityCanalAt, AMBRON_PALACE } from './ambron-city-layout.js';
+import { capitalHarbours, harbourDeck, harbourGround } from './ambron-harbours.js';
+import { AMBRON_FORTRESSES } from './ambron-fortresses.js';
+import {AMBRON_CROPS,AMBRON_FARM_CLEARINGS,AMBRON_FARM_TRACKS,AMBRON_FARMSTEADS,ambronFieldAt,farmLocal,farmRoadDistance} from './ambron-farmland.js';
 
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
@@ -135,7 +138,21 @@ export const THELAS_LINK = reach('thelas-link', 'The Link', [
   [-1338, 62, 10, 14.6],
 ]);
 
-export const ELAGOS_BASINS = freeze([LAKE_ELA, LAKE_BRUL, LAKE_OSSEN, ...THELAS_BASINS]);
+// This separate northern lake was already cut out of the atlas coastline, but
+// had no regional water mesh. Preserve that shoreline instead of reclaiming it
+// with the expanded capital's terrain pad. It has no Elagos-owned atlas hex.
+export const NORTHERN_CITY_LAKE=(()=>{
+  const centre=point(-1150,-230),shore=[];
+  for(let i=0;i<40;i++){
+    const angle=i*Math.PI*2/40,dx=Math.cos(angle),dz=Math.sin(angle);let low=0,high=90;
+    for(let n=0;n<18;n++){const r=(low+high)/2;if(landDistance(centre.x+dx*r,centre.z+dz*r)<0)low=r;else high=r;}
+    shore.push(point(centre.x+dx*high,centre.z+dz*high));
+  }
+  return freeze({id:'ambron-northern-lake',name:'Northern Lake',kind:'basin',surface:16.8,centre,shore:freeze(shore),hexes:freeze([]),along:52,across:58});
+})();
+export const ELAGOS_BASINS = freeze([LAKE_ELA, LAKE_BRUL, LAKE_OSSEN, ...THELAS_BASINS,NORTHERN_CITY_LAKE]);
+export const AMBRON_HARBOURS=capitalHarbours([LAKE_BRUL,LAKE_ELA,LAKE_OSSEN]);
+export const ambronHarbourDeck=(x,z,margin=0)=>harbourDeck(AMBRON_HARBOURS,x,z,margin);
 export const ELAGOS_REACHES = freeze([ELA_SOUTH, THELAS_LINK]);
 export const ELAGOS_WATERS = freeze([...ELAGOS_BASINS, ...ELAGOS_REACHES]);
 
@@ -259,15 +276,29 @@ export const inElagosWater = (x, z, margin = 0) => elagosWaterDistance(x, z) < m
  * the Ela-south runs through a valley below the Stair rather than a slot.
  */
 export function elagosGround(x, z, natural) {
+  const canal=cityCanalAt(x,z);
+  if(canal&&canal.distance<canal.width/2)return Math.min(natural,canal.surface-3);
   const water = elagosWater(x, z);
   if (!water) return natural;
   const { d, surface } = water;
   // The bed drops below footing within five metres of the shore, so a lake is water
   // and not shallows. The opaque surface hides the drop; the tests hold it to it.
   if (d < 0) return Math.min(natural, lerp(surface, WATER_FLOOR, smooth(0, -5, d)));
+  // The northern atlas lake used the sea's old coastal slope. Its dry rim must
+  // meet the inland lake surface rather than remain below it.
+  if(z< -160&&x> -1260&&x< -1040)natural=Math.max(natural,surface+1.2*smooth(0,12,d));
+  // The older Link crossing keeps its low banks as the capital rises behind it.
+  // Grade a dry approach on each side; never raise the riverbed into a causeway.
+  const bx=x-LINK_BRIDGE.crossing.x,bz=z-LINK_BRIDGE.crossing.z;
+  const along=Math.abs(bx*LINK_BRIDGE.axis.x+bz*LINK_BRIDGE.axis.z);
+  const across=Math.abs(bx*LINK_BRIDGE.side.x+bz*LINK_BRIDGE.side.z);
+  if(along<54&&across<14){
+    const level=lerp(LINK_BRIDGE.deckY,natural,smooth(19,54,along));
+    natural=lerp(level,natural,smooth(4,14,across));
+  }
   // Only the actual dry city interior is graded. The concave lake shoulders
   // outside its outline retain their natural banks.
-  if (inAmbronOutline(x,z)) return natural;
+  if (inAmbronOutline(x,z)) return harbourGround(AMBRON_HARBOURS,x,z,natural);
   const bank = surface + 1.2 * smooth(0, 12, d);
   const depth = clamp(natural - bank, 0, 18);
   const valley = 8 + depth * 2.3;
@@ -300,7 +331,7 @@ export const AMBRON_JUNCTION = mainRoadAt(-1258);
  */
 export const AMBRON_ROAD = freeze([
   AMBRON_JUNCTION, point(-1250,566), point(-1246,524), point(-1242,482), point(-1234,442), point(-1226,410),
-  point(-1220,382),point(-1200,320),point(-1185,260),point(-1178,196),cityGatePoint('plain-gate'),ambronPoint(-45,145),ambronPoint(-20,120),
+  point(-1220,382),point(-1200,320),point(-1184,268),cityGatePoint('plain-gate'),ambronPoint(-30,200),ambronPoint(-45,180),ambronPoint(-45,145),ambronPoint(-20,120),
 ]);
 
 /**
@@ -311,14 +342,14 @@ export const AMBRON_ROAD = freeze([
 export const LINK_BRIDGE = (() => {
   const crossing = point(-1272, 15), axis = point(-.3, -.9539), halfSpan = 16;
   return freeze({ id: 'link-bridge', name: 'The Link Crossing', crossing, halfSpan, laneHalf: 2.4,
-    axis, side: point(-axis.z, axis.x), deckY: 17.9,
+    axis, side: point(-axis.z, axis.x), deckY: 21.8,
     south: point(crossing.x - axis.x * halfSpan, crossing.z - axis.z * halfSpan),
     north: point(crossing.x + axis.x * halfSpan, crossing.z + axis.z * halfSpan) });
 })();
 
 /** Out of the Lake Gate, north along Ela's eastern shore, over the Link, to the shrine. */
 export const LAKE_ROAD = freeze([
-  ambronPoint(-15,-150),cityGatePoint('lake-gate'),point(-1145,-174),point(-1190,-182),point(-1240,-187),
+  ambronPoint(-15,-150),ambronPoint(-60,-145),ambronPoint(-95,-145),point(-1255,-155),point(-1255,-213),cityGatePoint('lake-gate'),point(-1255,-248),point(-1290,-255),point(-1295,-220),
   point(-1320,-145),point(-1340,-100),point(-1350,-30),point(-1332,4),
 ]);
 
@@ -329,7 +360,7 @@ export const OSSEN_TRACK = freeze([
 
 /** The strand road west out of the Raft Gate, to where the timber rafts are broken up. */
 export const RAFT_TRACK = freeze([
-  cityGatePoint('raft-gate'),point(-1250,58),point(-1276,50),point(-1280,74),point(-1270,100),point(-1258,126),
+  cityGatePoint('raft-gate'),point(-1294,-144),point(-1320,-145),point(-1340,-100),point(-1350,-30),point(-1332,4),
 ]);
 export const LINK_TRACK=freeze([point(-1276,50),LINK_BRIDGE.south,LINK_BRIDGE.north,point(-1292,-6),point(-1314,-4),point(-1332,4)]);
 
@@ -405,11 +436,13 @@ export const ELAGOS_LANDMARKS = freeze([
 // ---------------------------------------------------------------------------
 /** Water, made ground and every built place of Elagos, as circles the scatter keeps out of. */
 export const ELAGOS_CLEARINGS = freeze([
+  ...AMBRON_FARM_CLEARINGS,
   freeze({x:CAGNEY_ROADSIDE_HAMLET.x,z:CAGNEY_ROADSIDE_HAMLET.z,r:CAGNEY_ROADSIDE_HAMLET.radius}),
   freeze({ ...CALOSS_PROPHET_STAND, r: 5 }),
   freeze({ x: -658, z: 176, r: 4 }), // one fingerpost between the two outgoing lanes
   ...AMBRON_OUTLINE.flatMap((p,i) => { const b=AMBRON_OUTLINE[(i+1)%AMBRON_OUTLINE.length],length=Math.hypot(b.x-p.x,b.z-p.z),steps=Math.ceil(length/12);return Array.from({length:steps+1},(_,k)=>freeze({x:p.x+(b.x-p.x)*k/steps,z:p.z+(b.z-p.z)*k/steps,r:14})); }),
-  ...Array.from({length:23},(_,i)=>-1260+i*14).flatMap(x=>Array.from({length:26},(_,i)=>-170+i*14).filter(z=>inAmbronOutline(x,z)).map(z=>freeze({x,z,r:12}))),
+  ...Array.from({length:28},(_,i)=>-1340+i*14).flatMap(x=>Array.from({length:35},(_,i)=>-230+i*14).filter(z=>inAmbronOutline(x,z)).map(z=>freeze({x,z,r:12}))),
+  ...AMBRON_FORTRESSES.map(f=>freeze({x:f.x,z:f.z,r:Math.hypot(f.w/2+6,f.d/2+6)})),
   freeze({ x: NEMMEL.x, z: NEMMEL.z, r: NEMMEL.radius + 4 }),
   freeze({ x: ICE_ROAD_STONE.x, z: ICE_ROAD_STONE.z, r: 11 }),
   freeze({ x: LAKE_SHRINE.x, z: LAKE_SHRINE.z, r: 11 }),
@@ -461,3 +494,33 @@ export const ELAGOS_CHART_WATERS = freeze([
 ]);
 
 export { AMBRON, ambronPoint };
+
+
+/** Paved city ground is part of the terrain, so it cannot flicker against an
+ * independently tessellated grass surface. The lakes keep their own material. */
+export function ambronGroundTint(x,z){
+  if(x>=-1600&&x<=-835&&z>=-405&&z<=435){
+    const field=ambronCultivatedField(x,z);
+    if(field){
+      const p=farmLocal(field,x,z),palette=AMBRON_CROPS[field.crop];
+      return Math.abs(p.u)>field.w/2-2||Math.abs(p.v)>field.d/2-2?palette.soil:Math.cos(p.u*Math.PI/2)>-.3?palette.row:palette.soil;
+    }
+    if(AMBRON_FARMSTEADS.some(f=>Math.hypot(x-f.x,z-f.z)<15))return '#a09070';
+    if(farmRoadDistance(x,z,AMBRON_FARM_TRACKS)<1.8&&elagosWaterDistance(x,z)>5&&landDistance(x,z)>5)return '#ab9871';
+  }
+  if(x< -1345||x> -970||z< -235||z>245||!inAmbronOutline(x,z))return null;
+  if(elagosWaterDistance(x,z)<0||cityCanalAt(x,z))return null;
+  const p=AMBRON_PALACE;
+  if(Math.abs(x-p.x)<p.w/2+18&&Math.abs(z-p.z)<p.d/2+18)return '#b6b39d';
+  return z< -80?'#a9aa96':z<90?'#a6a48e':'#9f9f89';
+}
+
+/** Cultivation stays off roads, lake banks, gate approaches and military ground. */
+export function ambronCultivatedField(x,z){
+  const field=ambronFieldAt(x,z);if(!field)return null;
+  if(elagosWaterDistance(x,z)<7||landDistance(x,z)<7||cityCanalAt(x,z)||ambronOutsideDistance(x,z)<24)return null;
+  if(AMBRON_FARMSTEADS.some(f=>Math.hypot(x-f.x,z-f.z)<17))return null;
+  if(AMBRON_FORTRESSES.some(f=>Math.abs(x-f.x)<f.w/2+24&&Math.abs(z-f.z)<f.d/2+24))return null;
+  if(farmRoadDistance(x,z,ELAGOS_ROADS)<7||farmRoadDistance(x,z,AMBRON_FARM_TRACKS)<3.2)return null;
+  return field;
+}

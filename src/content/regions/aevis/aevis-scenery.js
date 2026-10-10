@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {decorateAevisFacade,polishAevis} from './aevis-polish.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
 import { SEA_LEVEL } from '../../../world/terrain/region-world.js';
@@ -205,6 +206,7 @@ export function* createAevisScenerySteps({parent,heightAt,colliders}){
       if(home.kind==='palace')megaron(b,home);
       else if(home.kind==='archive')archive(b,home);
       else buildingBody(b,home);
+      decorateAevisFacade(b,home);
       if(home.kind==='forge'){
         b.block(DARKSTONE,w*.25,home.height-1,-d*.25,2.4,5,2.4);
         b.box(PATINA,w*.25,home.height+4,-d*.25,2.9,.4,2.9);
@@ -272,5 +274,7 @@ export function* createAevisScenerySteps({parent,heightAt,colliders}){
     yield* finish(b);metrics.ships++;
     push({x:boat.x,z:boat.z,r:w*.5,minY:SEA_LEVEL-.65,maxY:SEA_LEVEL+2,kind:'ship',id:boat.id});
   }
-  return {root,metrics,walkSurfaces,mapFeatures:AEVIS_BUILDINGS.map(b=>({id:b.id,name:b.name,x:b.x,z:b.z,width:b.width,depth:b.depth,kind:b.kind}))};
+  const detail=yield* polishAevis({root,colliders,heightAt});
+  metrics.vertices+=detail.vertices;metrics.batches+=detail.batches;metrics.streetDetails=detail.placements.length;metrics.colliders+=detail.placements.length;
+  return {root,metrics,detail,walkSurfaces,mapFeatures:AEVIS_BUILDINGS.map(b=>({id:b.id,name:b.name,x:b.x,z:b.z,width:b.width,depth:b.depth,kind:b.kind}))};
 }

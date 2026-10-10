@@ -19,7 +19,7 @@ export async function checkWarMap(h){
   assert(document.querySelector('[data-army-id="2"]').style.left!==x,'Army marker advances with daily march progress');
   h.reveal(false);await frames();
   assert(!h.state().map.armies.markers.length&&$('atlas-army-detail').hidden&&!document.querySelector('#atlas-armies line'),'Turning reveal off removes unknown armies, selected details and routes');
-  h.resume();await frames();assert($('world-war-report').hidden,'Unknown armies and battles do not leak through reports');
+  h.resume();await frames();assert($('world-war-latest-report').hidden,'Unknown armies and battles do not leak through reports');
   h.reveal(true);h.war.restore(null);h.war.advance(4);await frames();
   $('world-war-report-map').click();await frames(6);
   $('atlas-army-detail').querySelector('button').click();await frames();

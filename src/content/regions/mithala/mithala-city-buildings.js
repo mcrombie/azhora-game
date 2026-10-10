@@ -1,4 +1,5 @@
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
+import {decorateMithalaBuilding} from './mithala-polish.js';
 import { MITHALA_DISTRICTS, MITHALA_BUILDINGS, MITHALA_TOWER_STAIR, MITHALA_STREETS, MITHALA_QUAY, MITHALA_BARGES,
   mithalaSegmentDistance, mithalaCityWaterClearance } from './mithala-city.js';
 import { TAU, P, FOOT, FOOT_DARK, FOOT_LIGHT, BRICKS, BURNT, TIMBER, TIMBER_2, TIMBER_OLD, TIMBER_DARK, THATCHES,
@@ -1034,7 +1035,7 @@ export function* createMithalaCityBuildingSteps({ root, groundHeight, colliders,
     for (const bd of list) {
       yield;
       const s = makeSite(bd, groundHeight, push, walk, bd.kind === 'crane' ? [0, 1] : null);
-      b.frame(bd.x, s.base, bd.z, s.yaw, () => drawerOf(bd)(b, s));
+      b.frame(bd.x, s.base, bd.z, s.yaw, () => {drawerOf(bd)(b, s);decorateMithalaBuilding(b,s);});
       metrics.buildings++;
     }
     yield* finish(b);

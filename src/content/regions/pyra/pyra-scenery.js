@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {decoratePyraHouse,decoratePyraPalace,polishPyra} from './pyra-polish.js';
+import {PYRA_INFILL_HOMES} from './pyra-neighborhoods.js';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import { WEST_PROFILES, westWaterSurface } from '../western-regions/west-ground.js';
@@ -117,6 +119,7 @@ export function* createPyraScenerySteps({parent,heightAt,colliders}){
    b.box(GOLD,u,77,v,5.5,.5,5.5);dome(b,u,v,77.25,3.1,3.4);
   }
   b.block(GOLD,0,72,-39,4,.5,3);b.block(LIGHT,0,72.5,-40,2.4,3,.5);
+  decoratePyraPalace(b);
  });
  feature('palace','The suspended imperial palace',0,-26,66,44,'palace');
  // Closed household shells are mixed with genuinely open civic and trading halls.
@@ -131,19 +134,24 @@ export function* createPyraScenerySteps({parent,heightAt,colliders}){
   for(const du of [-w*.28,w*.28]){b.box(DARK,u+du,30+h*.67,v+d/2+.015,1.5,2,.09);b.box(LIGHT,u+du,30+h*.67-1.1,v+d/2+.08,1.9,.2,.3);}
   if(open){line([u-w/2,v-d/2],[u+w/2,v-d/2],.7,30,30+h,'hall-wall');for(const s of [-1,1]){line([u+s*w/2,v-d/2],[u+s*w/2,v+d/2],.7,30,30+h,'hall-wall');line([u+s*door/2,v+d/2],[u+s*w/2,v+d/2],.7,30,30+h,'hall-wall');}}
   else {for(let dx=-w/2+1;dx<w/2;dx+=2)line([u+dx,v-d/2+1],[u+dx,v+d/2-1],2.1,30,30+h,'house');b.block(WOOD,u,30,v+d/2+.02,2.7,4.1,.12);}
+  decoratePyraHouse(b,u,v,w,d,h,index);
   metrics.buildings++;
  }
  for(const side of [-1,1])for(const row of [-1,1]){
   yield* batch(`${side<0?'West':'East'} Pyra ${row<0?'northern':'southern'} quarter`,b=>{
    let index=0;for(const v of [row*35,row*66])for(const u0 of [55,101,127]){
     if(side===-1&&row===-1&&v===-66&&u0!==55)continue;
-    const u=side*u0;house(b,u,v,side<0?15:17,17,7+(index%3)*1.8,index++,u0===55);
+    const u=side*u0;house(b,u,v,side<0?15:17,17,u0===55?9:12+(index%3)*3.5,index++,u0===55);
     feature(`house-${side}-${row}-${index}`,u0===55?'Pyra trading hall':'Pyra courtyard house',u,v,16,17);
    }
-   // Small courtyard gardens between the cross streets and the older residences.
-   for(const u0 of [99,126]){const u=side*u0,v=row*82;b.box(GREEN,u,30.08,v,16,.13,7);for(const du of [-4,0,4])b.rock('#7e9253',u+du,30.8,v,1.5,1.1,1.6);}
   });
  }
+ for(const side of [-1,1])yield* batch(`${side<0?'West':'East'} Pyra townhouses and outer terraces`,b=>{
+  for(const [i,h] of PYRA_INFILL_HOMES.entries())if(Math.sign(h.u)===side){
+   house(b,h.u,h.v,h.width,h.depth,h.height,i+3);
+   feature(`infill-${i}`,'Pyra terraced townhouse',h.u,h.v,h.width,h.depth);
+  }
+ });
  yield* batch('old civic court and eastern produce exchange',b=>{
   house(b,-108,-65,26,23,13,0,true);feature('records','Imperial records court',-108,-65,26,23);
   for(const side of [-1,1])for(let i=0;i<6;i++){
@@ -181,5 +189,7 @@ export function* createPyraScenerySteps({parent,heightAt,colliders}){
  walkRoutes.push({id:'pyra-bank-to-bank',points:[pyraPoint(-142,0),pyraPoint(-95,0),pyraPoint(-87,-16,30),pyraPoint(-49,-16,38),pyraPoint(49,-16,38),pyraPoint(87,-16,30),pyraPoint(95,0),pyraPoint(142,0)]});
  walkRoutes.push({id:'pyra-palace-ascent',points:[pyraPoint(-142,0),pyraPoint(-95,0),pyraPoint(-87,-16,30),pyraPoint(-49,-16,38),pyraPoint(15,-16,38),pyraPoint(16,8,38),PYRA_SPIRAL[0],...PYRA_SPIRAL.slice(1),pyraPoint(10,26,72),pyraPoint(20,26,72),pyraPoint(20,-8,72),pyraPoint(0,-12,72)]});
  metrics.walkSurfaces=walkSurfaces.length;
- return {root,walkSurfaces,walkRoutes,mapFeatures,metrics};
+ const detail=yield* polishPyra({root,colliders,heightAt});
+ metrics.vertices+=detail.vertices;metrics.batches+=detail.batches;metrics.streetDetails=detail.placements.length;metrics.colliders+=detail.placements.length;
+ return {root,walkSurfaces,walkRoutes,mapFeatures,metrics,detail};
 }

@@ -1,3 +1,4 @@
+import {createWorldGround} from './world/terrain/world-ground.js';
 import {URUBOND,URUBOND_LANDMARKS,urubondTerrainSink} from './content/regions/urubond/urubond-world.js';
 import {refineUrubondGroundSteps} from './content/regions/urubond/urubond-ground.js';
 import {createUrubondScenerySteps} from './content/regions/urubond/urubond-scenery.js';
@@ -24,11 +25,11 @@ import { LINK_BRIDGE } from './content/regions/ambron/elagos-world.js';
 import { createRoadDistanceIndex } from './world/terrain/road-distance-index.js';
 import { yieldStartup, terrainCacheMatches } from './app/startup/startup.js';
 import { createIbenwoodScenerySteps } from './content/regions/ibenwood/ibenwood-scenery.js';
-import { groveGround } from './content/regions/ibenwood/ibenwood-pilot.js';
+
 import { createIbenwoodRegionalScenerySteps } from './content/regions/ibenwood/ibenwood-regional-scenery.js';
 import { createWalkSurfaces } from './world/collision/walk-surfaces.js';
-import { createIbenwoodRiverSystem, createIbenwoodRiverScenerySteps } from './content/regions/ibenwood/ibenwood-rivers.js';
-import { createAlezhorBankGround } from './content/regions/alezhor/alezhor-bank-ground.js';
+import { createIbenwoodRiverScenerySteps } from './content/regions/ibenwood/ibenwood-rivers.js';
+
 import { createRegionalFarmlandScenerySteps } from './world/scenery/regional-farmland-scenery.js';
 import { FARMSTEADS } from './world/scenery/regional-farmland.js';
 // `WATERLINE` is the line the predicates judge wet by; `waterAt` below answers it for the sea
@@ -36,7 +37,7 @@ import { FARMSTEADS } from './world/scenery/regional-farmland.js';
 // there is no cycle here.
 import { WATERLINE } from './gameplay/movement/game-state.js';
 import { FARM_FIRE } from './gameplay/skills/farming/farming.js';
-import { AVREL_POND, avrelPondGround } from './content/regions/drent/avrel-pond.js';
+import { AVREL_POND } from './content/regions/drent/avrel-pond.js';
 import { createVisualArtsScenery } from './gameplay/skills/performance/visual-arts-view.js';
 import { SYLVIA_PATH } from './gameplay/skills/performance/visual-arts.js';
 import * as THREE from 'three';
@@ -105,7 +106,7 @@ import { createPuethScenerySteps } from './content/regions/pueth/pueth-scenery.j
 import { PEBLOS_LANDMARKS, PEBLOS_NPC_POSITIONS, PEBLOS_ISLANDS, COBBLE_QUAY, quayHeight, islandAt } from './content/regions/peblos/peblos-world.js';
 import { createPeblosScenerySteps } from './content/regions/peblos/peblos-scenery.js';
 import { createFerryBoat } from './world/travel/ferry-boat.js';
-import { PORT_CALOS, PORT_CALOS_QUAY, PORT_CALOS_PATHS, PORT_CALOS_LANDMARKS, PORT_CALOS_NPC_POSITIONS, inPortCalos, portCalosGround, portCalosDeckHeight } from './content/regions/port-calos/port-calos-world.js';
+import { PORT_CALOS, PORT_CALOS_QUAY, PORT_CALOS_PATHS, PORT_CALOS_LANDMARKS, PORT_CALOS_NPC_POSITIONS, inPortCalos, portCalosDeckHeight } from './content/regions/port-calos/port-calos-world.js';
 import { createPortCalosScenery } from './content/regions/port-calos/port-calos-scenery.js';
 import { RENA_ROAD, RENA_LANDMARKS, RENA_NPC_POSITIONS } from './content/quests/rena/rena.js';
 import { buildRenaWorks } from './content/quests/rena/rena-works.js';
@@ -140,7 +141,7 @@ import { IZOL_LANDMARKS, IZOL_NPC_POSITIONS, IZOL_PATHS, IZOL_SEA, IZOL_QUAY, iz
 import { createIzolScenerySteps } from './content/regions/izol/izol-scenery.js';
 import { drapeRoadOnTerrain, terrainRoadHeight } from './world/terrain/terrain-road.js';
 import { treeGroundingOffset } from './world/scenery/tree-grounding.js';
-import { brandyHomeClear, brandyHomeGround } from './content/quests/brandy/brandy-home-world.js';
+import { brandyHomeClear } from './content/quests/brandy/brandy-home-world.js';
 import { ELAGOS_ROADS, AMBRON_ROAD, LAKE_ROAD, CALOSS_ELAGOS_ROAD, ELAGOS_LANDMARKS, ELAGOS_CHART_WATERS, inElagosWater } from './content/regions/ambron/elagos-world.js';
 import { AMBRON_ENCLOSURE, AMBRON_STREETS, ambronPoint, ambronDeckHeight } from './content/regions/ambron/ambron.js';
 import { ELAGOS_NPC_POSITIONS } from './content/regions/ambron/ambron-people.js';
@@ -440,19 +441,7 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
     return original;
   }
   /** World ground: the hex biomes, Tidehaven where it stands, the Caloss channel. */
-  const avrelSurface = groundWithRiver(AVREL_POND.x, AVREL_POND.z) - 1.15;
-  function rawGroundHeight(x, z) {
-    const local = worldToVillage(x, z), weight = villageWeight(local.x, local.z);
-    if (weight <= 0) return portCalosGround(x, z, avrelPondGround(x, z, groundWithRiver(x, z), avrelSurface));
-    const village = localGround(local.x, local.z);
-    if (weight >= 1) return village;
-    return lerp(groundWithRiver(x, z), village, weight);
-  }
-  function uncarvedForestGround(x,z) { return groveGround(x,z,(a,b)=>brandyHomeGround(a,b,rawGroundHeight)); }
-  const ibenwoodRivers=createIbenwoodRiverSystem({groundHeight:uncarvedForestGround});
-  function legacyAlezhorBankHeight(x,z) { return ibenwoodRivers.ground(x,z,uncarvedForestGround(x,z)); }
-  const alezhorBanks=createAlezhorBankGround(ibenwoodRivers);
-  function groundHeight(x, z) { return alezhorBanks.ground(x,z,legacyAlezhorBankHeight(x,z)); }
+  const {avrelSurface,ibenwoodRivers,legacyAlezhorBankHeight,groundHeight}=createWorldGround(localGround);
   pond.surfaceY = villageBase(pond.x, pond.z) - .55;
   pond.castPoint.y = pond.surfaceY + .035;
   const pondWorld = villageToWorld(pond.x, pond.z);
@@ -1717,7 +1706,8 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   const elagos=yield* regionBuild('elagos',[9],stage=>createElagosScenerySteps({ parent:stage, heightAt: groundHeight, colliders, signs, roadDistance }),{bridge:{...LINK_BRIDGE,deckY:LINK_BRIDGE.deckY},waterMaterial:{uniforms:{time:{value:0}}}});
   bridgeDecks.push(elagos.bridge);
   yield 'Farmland';
-  const regionalFarmland=yield* regionBuild('regionalFarmland',[9, 21],stage=>createRegionalFarmlandScenerySteps({root:stage,groundHeight,colliders}),{});
+  const regionalFarmland=yield* regionBuild('regionalFarmland',[9, 21, 13],stage=>createRegionalFarmlandScenerySteps({root:stage,groundHeight,colliders,
+    canPlace:(point,kind)=>kind!=='farm'||enabledId(REGION_IDS[point.region])}),{});
   signs.direction({ x: -658, z: 176, label: 'Elagos', toward: CALOSS_ELAGOS_ROAD[1],
     backLabel: 'Nothom', back: MAIN_ROAD[22], parent: world });
   // Western country: settlement exteriors share the existing regional water and scenery.
@@ -2126,32 +2116,9 @@ function* createWorldSteps(scene, { spatialBatches = true, cachedTerrain=null, o
   // ---------------------------------------------------------------------------
   // Distant country and the inland horizon
   // ---------------------------------------------------------------------------
-  // The Elagos summits keep their height; only their footprint and their
-  // distance grow, so the horizon reads the same from a bigger Drent.
-  const distantSummits = [
-    { ...at(-690, -120), topY: 58, width: 34 * WORLD_SCALE, depth: 29 * WORLD_SCALE, lean: -3, phase: .2 },
-    { ...at(-760, -40), topY: 66, width: 37 * WORLD_SCALE, depth: 31 * WORLD_SCALE, lean: 2, phase: 1.1 },
-    { ...at(-800, 60), topY: 54, width: 30 * WORLD_SCALE, depth: 26 * WORLD_SCALE, lean: -1.5, phase: 2.4 },
-  ];
-  const summitMaterial = material('#7c8b83', { flatShading: true });
-  for (const [index, summit] of distantSummits.entries()) {
-    const baseY = bedrockHeight(summit.x, summit.z) - 2, height = summit.topY - baseY, positions = [], indices = [];
-    for (let ring = 0; ring < 3; ring++) for (let i = 0; i < 7; i++) {
-      const angle = i * Math.PI * 2 / 7 + summit.phase, radius = [1, .70, .29][ring] * (1 + Math.sin(i * 1.83 + summit.phase) * .13);
-      const localY = height * [0, .43, .77][ring] + (ring ? Math.sin(i * 2.2 + summit.phase) * height * .045 : 0);
-      positions.push(Math.cos(angle) * summit.width * radius + summit.lean * ring * .28, localY, Math.sin(angle) * summit.depth * radius);
-    }
-    positions.push(summit.lean, height, -1.5);
-    for (let ring = 0; ring < 2; ring++) for (let i = 0; i < 7; i++) {
-      const a = ring * 7 + i, b = ring * 7 + (i + 1) % 7;
-      indices.push(a, a + 7, b, b, a + 7, b + 7);
-    }
-    for (let i = 0; i < 7; i++) indices.push(14 + i, 21, 14 + (i + 1) % 7);
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setIndex(indices); geometry.computeVertexNormals();
-    const peak = mesh(geometry, summitMaterial, summit.x, baseY, summit.z, 1, 1, 1, world);
-    peak.name = `Three Presences summit ${index + 1}`; peak.castShadow = false;
-  }
+  // The old decorative Elagos peaks are now regional fortress architecture.
+  // Built with Elagos, so bounded combat workspaces do not load the capital.
+  const distantSummits = [];
   // The ten "mountains" of the first small world: green cones on the horizon west of Drent. The west was
   // built since, under them, and a cone on a built country is a green tent standing in somebody's fields -
   // number 9 at Telemonia's border by the Treloss, half sunk in the rim. So a cone is drawn only where all

@@ -5,7 +5,7 @@ import {MINORA_COUNCIL} from '../../content/regions/minora-frontier/minora-counc
 // Authored directions from Taleth/Bear are allowed before personal exploration.
 // Army and battle intelligence still goes through the host's discovery filter.
 export function openingWarGuidance(selection,{owned,horse=null,mounted=false}){
-  if(selection==='council')return {label:'Minora / Council of Three',location:TOWER_EXIT,council:true,detail:'Return to Taleth in the Wizard Guild, or visit the Mayor and High Priest to hear their views of the battle.',near:'F / Enter the Wizard Guild'};
+  if(selection==='council')return {label:'Taleth / Wizard Guild',location:TOWER_EXIT,council:true,detail:'Enter the tower to meet Taleth. Council visits are optional.',near:'F / Enter the Wizard Guild'};
   if(['mayor','temple'].includes(selection)){const member=MINORA_COUNCIL[selection];return {label:member.title+' / '+member.room,location:member.exit,council:true,detail:member.name+' is inside. Dismount, then use F at the doorway. Visiting commits you to nothing.',near:'F / Enter '+member.room};}
   if(selection==='bear')return owned?{label:mounted?'Ready for the road':'Your horse is ready',offer:true,location:!mounted&&horse?{x:horse.x,z:horse.z}:null,near:'G / Mount your horse',
     detail:mounted?'Shift to canter. Track the nearby army and choose your own route.':'G to mount; H calls your horse. Track the nearby army when you are ready.'}

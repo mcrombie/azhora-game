@@ -21,19 +21,25 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
   const labels=document.createElement('div');labels.id='atlas-country-labels';labels.hidden=true;viewport.append(labels);
   const key=document.createElement('div');key.id='atlas-stability-key';key.hidden=true;key.innerHTML=Object.entries(stabilityColors).map(([id,color])=>`<span><i style="background:${color}"></i>${({stable:'Stable',unstable:'Unstable',conflict:'Conflict',unknown:'Unassessed'})[id]}</span>`).join('');viewport.append(key);
   const territories=id=>['yunethre-free-state','yunethre-centaurs'].includes(id)?(knownRegions.has('Yunethre')?['Yunethre']:[]):groups.get(id)?.regions||[];
-  const name=id=>simulation?(id==='unassigned'?'Outside scenario':factions.find(f=>f.id===id)?.short??id):factionName(id,factions);
-  const owner=region=>simulation?simulation.regions[region]?.owner??'unassigned':ownerOf(region,factions,snapshot);
-  const condition=region=>simulation?simulation.regions[region]?.condition??['Outside scenario','unknown']:stability(region,snapshot);
+  const name=id=>id?.startsWith('charted:')?id.slice(8):simulation?(id==='unassigned'?'Outside scenario':factions.find(f=>f.id===id)?.short??id):factionName(id,factions);
+  const owner=region=>simulation?simulation.regions[region]?.owner??`charted:${region}`:ownerOf(region,factions,snapshot);
+  const condition=region=>simulation?simulation.regions[region]?.condition??['Charted from the Guild lookout; outside the playable scenario','unknown']:stability(region,snapshot);
   const color=id=>simulation?factions.find(f=>f.id===id)?.color??'#c4c8b8':factionColor(id,factions);
   function renderInfo(){
     aside.querySelectorAll('[data-info-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.infoTab===tab)));
     if(includeQuests&&tab==='quests'){content.innerHTML=chapterHTML(path,snapshot,{preview:false});return;}
     if(tab==='region'){
       if(!knownRegions.has(selected)){content.innerHTML='<h2 class="title">Uncharted territory</h2><p>Explore this area to learn who controls it.</p>';return;}
+      if(simulation&&!simulation.regions[selected]){
+        content.innerHTML=`<span class="eyebrow">Surrounding country</span><h2 class="title">${esc(selected)}</h2><p>Charted from the Guild lookout. This land is shown for reference, outside the five playable regions.</p>`;return;
+      }
       const heldBy=owner(selected),[status]=condition(selected);
       content.innerHTML=`<span class="eyebrow">Region</span><h2 class="title">${esc(selected)}</h2><p>${esc(status)}</p><div class="section"><h3>Territorial control</h3><button class="text-button" data-faction="${heldBy}">${esc(name(heldBy))}</button></div>${includeQuests&&CHAPTER_REGIONS.includes(selected)?'<div class="section"><button class="text-button" data-chapter="overview">Chapter 1 · The Border War →</button></div>':''}`;return;
     }
-    if(!selected||!reveal&&!territories(selected).length){content.innerHTML='<span class="eyebrow">Discovered territory</span><h2 class="title">Factions</h2>'+(factions.filter(f=>reveal||territories(f.id).length).map(f=>`<button class="faction-row" data-faction="${f.id}">${esc(name(f.id))}<small>${territories(f.id).length} ${reveal?'':'discovered '}regions</small></button>`).join('')||'<p>Explore the map to discover who controls the surrounding land.</p>');return;}
+    if(selected?.startsWith('charted:')){
+      content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Surrounding country</span><h2 class="title">${esc(name(selected))}</h2><p>Charted from the Guild lookout. Taleth can tell you about this country on his tour.</p><p>This land is shown for reference; it is outside the five playable regions of this scenario.</p>`;return;
+    }
+    if(!selected||!reveal&&!territories(selected).length){content.innerHTML='<span class="eyebrow">Discovered territory</span><h2 class="title">Factions</h2>'+(factions.filter(f=>reveal||territories(f.id).length).map(f=>`<button class="faction-row" data-faction="${f.id}">${esc(name(f.id))}<small>${territories(f.id).length} ${reveal?'':'discovered '}regions</small></button>`).join('')||'<p>Explore the map to discover who controls the surrounding land.</p>')+(simulation?[...groups.values()].filter(g=>g.id.startsWith('charted:')).map(g=>`<button class="faction-row" data-faction="${esc(g.id)}">${esc(name(g.id))}<small>Charted / beyond this scenario</small></button>`).join(''):'');return;}
     if(simulation){content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Lizeem world test / Day ${simulation.day}</span><h2 class="title">${esc(name(selected))}</h2><p>${selected==='minora'?'Neutral city-state.':'A league in the East-West War.'}</p><h3>${reveal?'Controlled':'Discovered'} regions</h3><ul>${territories(selected).map(n=>`<li><button class="text-button" data-region="${esc(n)}">${esc(n)}</button></li>`).join('')}</ul>`;return;}
     content.innerHTML=factionHTML(selected,{includeQuests,factions,territories:territories(selected),snapshot,limited:!reveal,knownRegions,relation:publicProfiles[selected]?.ties||'Only publicly established territory is shown here. Further diplomatic information is not yet specified.'});
   }
@@ -57,6 +63,7 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
   }
   function render(){
     if(!svg)return;
+    svg.style.clipPath=regionScope?`path('${originals.filter(p=>regionScope.includes(p.dataset.region)).map(p=>p.getAttribute('d')).join('')}')`:'';
     chartedContent.setAttribute('clip-path',reveal?'none':'url(#atlas-campaign-discovered)');
     clip.replaceChildren();if(!reveal)for(const cell of knownCells){const p=document.createElementNS('http://www.w3.org/2000/svg','polygon');p.setAttribute('points',cell.map(p=>p.join(',')).join(' '));clip.append(p);}
     const political=view==='geopolitical';
@@ -100,7 +107,6 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
       svg.setAttribute('width',data.width);svg.setAttribute('height',data.height);svg.style.width=data.width+'px';svg.style.height=data.height+'px';
       svg.querySelector('#unbuilt-regions')?.remove();svg.querySelector('#ornaments')?.remove();
       const tints=svg.querySelector('#region-tints');originals=[...tints.querySelectorAll('[data-region]')];
-      if(regionScope){const allowed=originals.filter(p=>regionScope.includes(p.dataset.region));svg.style.clipPath=`path('${allowed.map(p=>p.getAttribute('d')).join('')}')`;originals=allowed;}
       tints.setAttribute('opacity','1');
       for(const p of originals){regionCells.set(p.dataset.region,parseCells(p.getAttribute('d')));p.dataset.campaignRegion=p.dataset.region;p.style.pointerEvents='all';}
       countryLayer=document.createElementNS('http://www.w3.org/2000/svg','g');svg.insertBefore(countryLayer,tints);svg.append(tints);
@@ -111,6 +117,7 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
       viewport.insertBefore(svg,viewport.firstChild);buildGroups();render();views.querySelectorAll('button').forEach(b=>b.disabled=false);
     },
     setView,
+    setRegionScope(names){regionScope=names?[...names]:null;if(metadata){buildGroups();render();}},
     setSimulation(value){const changed=simulation?.id!==value?.id;simulation=value?JSON.parse(JSON.stringify(value)):null;factions=simulation?.factions??authoredFactions;if(changed){selected=null;tab='factions';}if(metadata){buildGroups();render();}},
     setChapter(chapter,aftermath){const next=chapterSnapshot(chapter,aftermath);if(next===snapshot)return;snapshot=next;if(metadata){buildGroups();render();}},
     setKnowledge({cells=[],reveal:all=false}){const keys=cells.map(cellKey),stamp=JSON.stringify([!!all,keys]);if(stamp===knowledgeStamp)return;knowledgeStamp=stamp;reveal=!!all;knownCells=cells;knownKeys=new Set(keys);if(metadata){buildGroups();render();}},

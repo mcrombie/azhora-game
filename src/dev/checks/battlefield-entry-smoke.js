@@ -214,7 +214,7 @@ export async function checkAssaultReview(api){
   await api.war.help('west');
   const final=await playCombatUntil(api,s=>!!s.outcome,'the final assault and its hold objective');
   assert(final.hero.hp>0,'Teresod survives the final assault');completion.final=final;
-  assert(document.getElementById('world-skirmish-continue').textContent.includes('battle result'),'Final review offers immediate resolution');
+  assert(document.getElementById('battle-result-dialog').open&&document.getElementById('world-skirmish-continue').textContent.includes('Continue to campaign'),'Centered final result offers an immediate return to the campaign');
   window.dispatchEvent(new Event('blur'));await frame();return {checks:['Final assault review explains immediate resolution'],final};
 }
 export async function checkBattleResolution(api){

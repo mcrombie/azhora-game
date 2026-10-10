@@ -14,7 +14,7 @@ export async function battle(a){
   window.dispatchEvent(new Event('focus'));await prepareWarExterior(a);await prepareRally(a);await a.war.help('west');
   for(let i=0;i<5401&&!a.war.state().encounter.encounter.outcome;i++){driveWorldEncounter(a,a.war.state().encounter.encounter);a.step(1/60);}clearCombatKeys(a);
   assert(a.war.state().encounter.encounter.outcome==='success','Real allied assault reaches victory before Taleth writes');click('world-skirmish-continue');a.war.pause();a.step(.04);
-  assert(a.war.state().letters[0].hero,'First letter recognizes the player’s real battle');assert(document.querySelector('#world-war-report .eyebrow').textContent.includes('PIGEON'),'Pigeon dispatch replaces the ordinary battle report');
+  assert(a.war.state().letters[0].hero,'First letter recognizes the player’s real battle');assert(document.getElementById('world-war-report-source').textContent.includes('PIGEON'),'Pigeon dispatch replaces the ordinary battle report');
   for(let i=0;i<110;i++)a.step(.04);assert(a.war.state().courier.visible,'One visible pigeon delivers the report');
   a.look({yaw:0,pitch:.18,distance:7});return capture(a);
 }
@@ -38,9 +38,9 @@ export async function river(a){
 }
 export async function settled(a){window.dispatchEvent(new Event('focus'));await prepareWarExterior(a);a.war.advance(200);assert(a.war.state().campaign.winner,'Natural simulation supplies a settled war for the visual check');return capture(a);}
 export async function politics(a){window.dispatchEvent(new Event('focus'));click('tower-next');assert(/final assaults|left the fighting to the armies/.test(document.getElementById('tower-words').textContent),'Taleth sums up the recorded player impact');return capture(a);}
-export async function east(a){window.dispatchEvent(new Event('focus'));click('tower-next');assert(document.getElementById('tower-words').textContent.includes('Ambron'),'Taleth turns east toward Ambron');assert(!a.tower.state().concluded,'Finale can be left and resumed before completion');return capture(a);}
+export async function east(a){window.dispatchEvent(new Event('focus'));click('tower-next');assert(a.tower.state().concluded,'Campaign concludes before sightseeing');click('tower-next');assert(document.getElementById('tower-words').textContent.includes('Ambron'),'Taleth turns east toward Ambron');assert(a.tower.state().concluded,'Wider tour is optional after completion');return capture(a);}
 export async function complete(a){
-  window.dispatchEvent(new Event('focus'));click('tower-next');assert(a.tower.state().concluded,'Completing the conversation concludes the scenario');assert(a.store.read().data.tower.concluded&&validateWorldWarSave(a.store.read().data),'Conclusion saves in the isolated campaign slot');
+  window.dispatchEvent(new Event('focus'));for(let i=0;i<10&&a.state().mode==='briefing';i++)click('tower-next');assert(a.tower.state().concluded,'Completing the conversation concludes the scenario');assert(a.store.read().data.tower.concluded&&validateWorldWarSave(a.store.read().data),'Conclusion saves in the isolated campaign slot');
   const campaign=JSON.stringify(a.war.state().campaign);await a.loadSaved();assert(a.tower.state().room==='lookout'&&a.tower.state().concluded,'Continue restores the completed lookout');
   await a.visit({...LOOKOUT_DOOR,z:LOOKOUT_DOOR.z-1});f();await ready(a);assert(a.tower.state().room==='tower','Stair door returns to the chamber');assert(JSON.stringify(a.war.state().campaign)===campaign,'Finale and doorway preserve simulation history');
   assert(!a.state().frameErrors.length,'Pigeons, archive, panorama and Continue have no frame errors');return capture(a);

@@ -39,7 +39,7 @@
 
 #world-war-track{position:fixed;top:155px;right:32px;z-index:2;display:flex;align-items:center;gap:12px;width:360px;max-width:calc(100vw - 64px);padding:12px 14px;background:#183b30ed;border:1px solid #a8b09c88;border-radius:4px;font:12px/1.5 system-ui}
 #world-war-track strong{font-weight:600}#world-war-track p{font:12px/1.5 system-ui;color:#d2d8bd;margin:4px 0 0}#world-war-track button{padding:5px 8px;font-size:11px;margin-left:auto}#world-war-track .war-track-arrow{font:30px system-ui;color:#ffe39b;flex-shrink:0;display:block}
-#world-war-track .war-council-destinations{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}#world-war-track .war-council-destinations button{margin:0;width:auto;flex:1}
+#world-war-track .war-council-destinations{margin-top:8px;font-size:12px}#world-war-track .war-council-destinations summary{cursor:pointer;margin-bottom:6px}#world-war-track .war-council-destinations button{margin:0;width:auto;flex:1}
 
 #exploration-status.on-map{top:auto;bottom:58px;left:52px;max-width:min(680px,80vw)}
 #developer-autoplay{border-top:1px solid #a8b09c55;margin-top:20px;padding-top:8px}#developer-autoplay h2{font:24px Georgia}#developer-autoplay button{width:100%;text-align:left}
@@ -57,9 +57,9 @@
 #world-skirmish-phase{margin:12px 0;padding:10px 0;border-top:1px solid #c3af7c66;border-bottom:1px solid #c3af7c66;font:12px/1.5 system-ui;color:#d8dcc5}#world-skirmish-phase strong,#world-skirmish-phase span{display:block}#world-skirmish-phase strong{color:#f4d99b;margin-bottom:3px}
 .battle-facts{display:grid;grid-template-columns:minmax(95px,.8fr) minmax(0,1.3fr);gap:8px 12px;font:12px/1.45 system-ui;border-block:1px solid #c3af7c66;padding:12px 0}.battle-facts dt{color:#d3caa8}.battle-facts dd{margin:0;color:#fff1cb}#world-skirmish-next,#world-war-report-followup{color:#f1d496!important}.war-report-actions{flex-wrap:wrap}
 #encounter-phase-path{color:#f1d496;font:13px/1.5 system-ui;padding:10px 0;border-block:1px solid #c3af7c66}
-#world-war-report{display:flex;flex-direction:column;overflow:hidden}#world-war-report>[role="status"]{overflow:auto;min-height:0}#world-war-report .war-report-actions{flex-shrink:0;border-top:1px solid #c3af7c66;padding-top:10px}#world-war-report:has(#world-war-report-facts:not([hidden])){width:min(420px,calc(100vw - 64px));max-height:65vh}
+#world-war-report{display:flex;flex-direction:column;overflow:auto}#world-war-report .war-report-actions{flex-shrink:0;margin-top:10px}#world-war-objective-clock{font-size:12px;color:#d8cca5}#world-war-next{background:#f2d89c;color:#193b31;border-color:#f2d89c}#world-war-report-more{border-top:1px solid #c3af7c66;margin-top:12px;padding-top:10px;font:12px/1.5 system-ui}#world-war-report-more summary{cursor:pointer;color:#cdd9cb}#world-war-report-more[open] summary{margin-bottom:12px}#world-war-report .war-report-body{border-left:2px solid #c3af7c66;padding-left:12px}#world-war-report h3{font:19px/1.2 Georgia;margin:8px 0}#world-war-report .war-report-extra-actions{display:flex;flex-wrap:wrap;gap:7px}#world-war-report .war-report-extra-actions button{font-size:12px;padding:8px 10px}#world-war-report:has(#world-war-report-more[open]){max-height:65vh}
 body:has(#world-skirmish:not([hidden])) #exploration-status{top:auto;bottom:22px;left:50%;transform:translateX(-50%);max-width:50vw}
-@media(max-width:760px){#world-war-report:has(#world-war-report-facts:not([hidden])){max-height:50vh;width:min(370px,calc(100vw - 32px))}}
+@media(max-width:760px){#world-war-report:has(#world-war-report-more[open]){max-height:50vh}}
 
 #combat-focus{margin:8px 0 12px;border-top:1px solid #b8d3bf44;padding-top:8px}
 #combat-focus>div{display:flex;gap:8px}
@@ -101,4 +101,16 @@ body:has(#battle-result-dialog[open]) #teresod-sorcery,body:has(#battle-result-d
  #battle-result-dialog h2,#soldier-dialog h2{font-size:25px;margin-bottom:10px}
  #battle-result-dialog .battle-facts{font-size:12px}
  #battle-result-dialog #world-skirmish-result-actions{margin-top:8px;padding-top:8px}
+}
+
+/* The watch control remains reachable over briefings and native result dialogs. */
+#world-autoplay{z-index:45;left:50%;right:auto;transform:translateX(-50%);bottom:12px;max-width:min(700px,90vw);background:#193b35f5;border-color:#dfc47e}
+body:has(#battle-result-dialog[open]) #world-autoplay{visibility:visible}
+
+#battle-result-dialog #world-autoplay,#encounter-dialog #world-autoplay{position:static;transform:none;max-width:100%;width:100%;margin-top:12px;flex:0 0 auto;font-size:12px}
+
+/* Reserve a separate desktop row for the persistent watch control. */
+@media(min-width:961px){
+ body:has(> #world-autoplay:not([hidden])) #exploration-help{bottom:54px}
+ body:has(> #world-autoplay:not([hidden])) :is(#world-war-join,#tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact){bottom:106px}
 }

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { MITHALA_CITY, MITHALA_DISTRICTS, MITHALA_BRIDGES, MITHALA_STREETS, MITHALA_GATES, MITHALA_BARGES, MITHALA_QUAY,
-  MITHALA_GAUGE, mithalaCityGround, mithalaSegmentDistance } from '../src/content/regions/mithala/mithala-city.js';
+import { MITHALA_CITY, MITHALA_CURTAIN, MITHALA_GATES, MITHALA_DISTRICTS, MITHALA_BRIDGES, MITHALA_STREETS, MITHALA_BANK_PASSAGES, MITHALA_BARGES, MITHALA_QUAY,
+  MITHALA_GAUGE, polygonDepth, mithalaCityGround, mithalaSegmentDistance, mithalaCityWaterClearance } from '../src/content/regions/mithala/mithala-city.js';
 import { createWalkSurfaces, colliderOverlapsHeight, WALK_STEP } from '../src/world/collision/walk-surfaces.js';
 import { westWaterSurface, westGroundAt } from '../src/content/regions/western-regions/west-ground.js';
 
@@ -32,8 +32,8 @@ const ids = list => list.map(c => c.id).join(', ');
 
 test('Mithala\'s scenery stays inside its budget, in few merged batches', () => {
   const m = city.metrics;
-  assert.ok(m.sceneryVertices > 0 && m.sceneryVertices < 130000, `${m.sceneryVertices} vertices in the streets, walls, bridges, gates, ford, gauge and quay`);
-  assert.ok(m.vertices < 300000, `${m.vertices} vertices in the whole city`);
+  assert.ok(m.sceneryVertices > 0 && m.sceneryVertices < 270000, `${m.sceneryVertices} vertices in the streets, one outer wall circuit, bridges, gates, ford, gauge and quay`);
+  assert.ok(m.vertices < 460000, `${m.vertices} vertices in the whole city`);
   assert.ok(city.root.children.length < 60, `${city.root.children.length} meshes`);
   for (const mesh of city.root.children) {
     assert.ok(mesh.isMesh, mesh.name);
@@ -41,13 +41,42 @@ test('Mithala\'s scenery stays inside its budget, in few merged batches', () => 
   }
   assert.equal(m.bridges, MITHALA_BRIDGES.length);
   assert.equal(m.barges, MITHALA_BARGES.length);
-  assert.equal(m.earthGates, MITHALA_GATES.filter(g => g.kind === 'earth').length);
-  assert.equal(m.gates, MITHALA_GATES.filter(g => g.kind === 'stone').length);
-  assert.equal(m.thresholds, m.gates);
+  assert.equal(m.earthGates, MITHALA_BANK_PASSAGES.filter(g => g.kind === 'earth').length);
+  assert.equal(m.gates, MITHALA_GATES.length);
+  assert.equal(m.thresholds,0,'Internal gate thresholds have been removed');
   assert.equal(m.quays, 1);
   assert.ok(m.piers >= MITHALA_BRIDGES.length, `${m.piers} piers`);
   assert.ok(m.floodMarks >= 2 * m.piers, `${m.floodMarks} flood marks`);
   assert.ok(m.walkSurfaces === city.walkSurfaces.length || m.walkSurfaces <= city.walkSurfaces.length);
+});
+
+test('one outer perimeter encloses the quarters with open internal bridgeheads and river arches', () => {
+  assert.equal(city.metrics.defenseCircuits,1);
+  assert.equal(city.metrics.gates,3);
+  assert.ok(city.metrics.riverArches>=3);
+  const streets=MITHALA_STREETS.flatMap(s=>s.points.slice(1).map((b,i)=>({a:s.points[i],b,half:s.width/2})));
+  let checked=0,wet=0;
+  for(let i=0;i<MITHALA_CURTAIN.length;i++)along(MITHALA_CURTAIN[i],MITHALA_CURTAIN[(i+1)%MITHALA_CURTAIN.length],.35,(x,z)=>{
+    if(streets.some(s=>mithalaSegmentDistance(x,z,s.a,s.b)<s.half+4))return;
+    const clearance=mithalaCityWaterClearance(x,z);
+    if(clearance<5.8){
+      if(clearance<0){
+        const water=westWaterSurface(x,z)??12;
+        assert.equal(blockers(x,z,water+.3).filter(c=>['mithala-curtain','city-tower','river-arch'].includes(c.kind)).length,0,'The river remains open');wet++;
+      }
+      return;
+    }
+    if(clearance<7)return; // Dry abutment margins beside the arch openings.
+    assert.ok(blockers(x,z,ground(x,z)).some(c=>c.kind==='mithala-curtain'||c.kind==='city-tower'),`Outer wall gap at ${x.toFixed(2)},${z.toFixed(2)}`);checked++;
+  });
+  assert.ok(checked>900);assert.ok(wet>30);
+  for(const c of colliders.filter(c=>c.kind==='mithala-curtain'||c.kind==='city-tower')){
+    assert.ok(Math.abs(polygonDepth(MITHALA_CURTAIN,c.x,c.z))<3,`${c.id} creates an internal fortification`);
+  }
+  for(const bridge of MITHALA_BRIDGES)for(const p of [bridge.a,bridge.b]){
+    assert.ok(polygonDepth(MITHALA_CURTAIN,p.x,p.z)>8,'Bridgehead is inside the shared city wall');
+    assert.equal(colliders.filter(c=>(c.kind==='mithala-curtain'||c.kind==='city-tower')&&Math.hypot(c.x-p.x,c.z-p.z)<8).length,0,'No gate towers divide the quarters');
+  }
 });
 
 test('Every walking surface is valid, and the city\'s own stand on or above their ground', () => {
@@ -79,7 +108,7 @@ test('The steps down Gauge Lane go down from the Water Gate to the gauge without
     if (i) for (const k of ['x', 'y', 'z']) assert.ok(Math.abs(steps[i - 1].b[k] - s.a[k]) < 1e-9, `${steps[i - 1].id} meets ${s.id}`);
   }
   // They begin on the Water Gate's threshold, where the cutting has already taken the lane below the platform.
-  const head = steps[0].a, gate = MITHALA_GATES.find(g => g.name === 'The Water Gate');
+  const head = steps[0].a, gate = MITHALA_BANK_PASSAGES.find(g => g.name === 'The Water Gate');
   assert.ok(head.y - ground(head.x, head.z) >= 0 && head.y - ground(head.x, head.z) < .2, `the top step is ${(head.y - ground(head.x, head.z)).toFixed(2)} m over the threshold`);
   assert.ok(head.y < MITHALA_CITY.platform && Math.hypot(head.x - gate.x, head.z - gate.z) < 3, 'and at the gate');
   const foot = steps.at(-1).b, gauge = colliders.find(c => c.kind === 'mithala-gauge');
@@ -100,7 +129,7 @@ test('Each bridge deck is walkable from end to end, its whole width clear betwee
       assert.equal(support.height, bridge.deck, `${bridge.id} at ${s.toFixed(2)} m`);
       assert.equal(blockers(x, z, bridge.deck).length, 0, `${bridge.id} centre line at ${s.toFixed(2)} m: ${ids(blockers(x, z, bridge.deck))}`);
       // Out of the gates' passages, the deck is clear to its edges.
-      if (MITHALA_GATES.some(g => Math.hypot(x - g.x, z - g.z) < g.width / 2 + 2.5)) return;
+      if (MITHALA_BANK_PASSAGES.some(g => Math.hypot(x - g.x, z - g.z) < g.width / 2 + 2.5)) return;
       for (const side of [-1, 1]) {
         const o = side * (bridge.width / 2 - BODY - .02), px = x - uz * o, pz = z + ux * o;
         assert.equal(blockers(px, pz, bridge.deck).length, 0, `${bridge.id} edge at ${s.toFixed(2)} m: ${ids(blockers(px, pz, bridge.deck))}`);
@@ -144,7 +173,7 @@ test('No collider stands on a street\'s centre line or in a gate\'s passage', ()
       assert.equal(hit.length, 0, `${street.id} at ${x.toFixed(1)},${z.toFixed(1)}: ${ids(hit)}`);
     });
   }
-  for (const gate of MITHALA_GATES) {
+  for (const gate of [...MITHALA_BANK_PASSAGES,...MITHALA_GATES]) {
     const street = MITHALA_STREETS.find(s => s.id === gate.street);
     let best = null;
     for (let i = 1; i < street.points.length; i++) {
@@ -161,12 +190,16 @@ test('No collider stands on a street\'s centre line or in a gate\'s passage', ()
 });
 
 test('Gates stand on the made ground: jambs and gateposts are founded below it and the lintels clear it', () => {
-  const district = id => MITHALA_DISTRICTS.find(d => d.id === id);
+
   for (const gate of MITHALA_GATES) {
-    assert.ok(district(gate.district), gate.id);
+
     const parts = colliders.filter(c => c.id.startsWith(`${gate.id}-`));
     assert.ok(parts.length >= 2, `${gate.name} has its jambs or posts`);
     for (const c of parts) {
+      if(c.kind==='gate-arch'){
+        assert.ok(c.minY > ground(gate.x,gate.z)+4, `${c.id} has pedestrian headroom`);
+        continue;
+      }
       assert.ok(c.minY < ground(c.x, c.z) - .5, `${c.id} is founded below its ground`);
       if (gate.kind === 'earth') assert.ok(c.maxY > ground(gate.x, gate.z) + 4.5, `${c.id} carries its lintel over the passage`);
     }

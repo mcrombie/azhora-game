@@ -6,7 +6,9 @@
 #taleth-letter-dialog{position:fixed;inset:0;z-index:24;display:flex;align-items:center;justify-content:center;padding:20px;background:#102b3377;box-sizing:border-box}
 #taleth-letter-dialog[hidden]{display:none}#taleth-letter-dialog select{max-width:100%;display:block;margin-top:10px;padding:8px;background:#254539;color:#f1e8cb;border:1px solid #9fac94}#taleth-letter-dialog label{font:12px system-ui}
 #tower-briefing[data-lookout="true"]{justify-content:flex-end;padding:18px;background:linear-gradient(90deg,transparent 40%,#091d2544)}
-#tower-briefing[data-lookout="true"] .tower-dialog-card{width:min(440px,94vw);max-height:66vh;padding:18px 22px}
+#tower-briefing[data-lookout="true"] .tower-dialog-card{width:min(440px,94vw);max-height:66vh;padding:18px 22px;display:flex;flex-direction:column;overflow:hidden}
+#tower-briefing[data-lookout="true"] .tower-narration{overflow:auto;min-height:0;padding-right:6px}
+#tower-briefing[data-lookout="true"] .tower-dialog-actions,#tower-briefing[data-lookout="true"] h2,#tower-briefing[data-lookout="true"] h3,#tower-briefing[data-lookout="true"] small{flex-shrink:0}
 #tower-briefing[data-lookout="true"] .tower-dialog-card p{font:14px/1.5 system-ui}#tower-briefing[data-lookout="true"] .tower-dialog-card h2{font-size:24px}
 #tower-briefing[data-lookout="true"] .tower-dialog-actions{gap:8px}#tower-briefing[data-lookout="true"] .tower-dialog-actions button{font-size:12px;padding:9px 12px}
 #tower-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
@@ -30,13 +32,13 @@
 .has-local-map #world-war-track{top:400px}
 @media(max-width:760px){#exploration-minimap{top:115px;right:18px;width:140px}#exploration-minimap canvas{width:140px;height:140px}.has-local-map #world-war-track{top:380px;width:280px;right:18px}#stable-lesson{padding:12px}}
 
-#war-world-pointer{position:fixed;z-index:2;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;pointer-events:none;color:#b8fff0;font:13px/1.4 system-ui;text-shadow:0 1px 4px #071f29,0 1px 2px #071f29;max-width:230px}
+#war-world-pointer{position:fixed;z-index:1;width:max-content;transform:translate(-50%,-50%);display:flex;align-items:center;gap:7px;pointer-events:none;color:#b8fff0;font:13px/1.4 system-ui;text-shadow:0 1px 4px #071f29,0 1px 2px #071f29;max-width:230px}
 #war-world-pointer span:first-child{font-size:24px;display:inline-block;flex:none}#war-world-pointer span:last-child{background:#102d33d9;border:1px solid #8fc5b399;border-radius:4px;padding:4px 7px}
 #world-war-track button{white-space:normal}#world-war-track p{margin:7px 0}#world-war-track div>button{margin-top:5px;width:100%;color:#b8fff0;border-color:#8fc5b3}
 @media(max-width:760px){#war-world-pointer{font-size:11px;max-width:155px}.has-local-map #world-war-track{top:auto;bottom:160px;width:240px}}
 
-#council-interact,#resident-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
-#council-dialog,#resident-dialog{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:28px;background:linear-gradient(transparent 20%,#091d2577);box-sizing:border-box}
+#pigeon-interact,#council-interact,#resident-interact{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:3;background:#183b30f5;border-color:#dac58e;max-width:90vw}
+#pigeon-dialog,#council-dialog,#resident-dialog{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:28px;background:linear-gradient(transparent 20%,#091d2577);box-sizing:border-box}
 #council-close{background:#ead298;color:#25382d}
 
 #war-loading-lore{margin-top:24px;border-top:1px solid #a99766;padding-top:22px;max-width:52ch}#war-loading-lore h2{font:25px Georgia;color:#ecd499;margin:10px 0}#war-loading-lore p{font:16px/1.6 system-ui;color:#e8e5d1}#war-loading-lore button{font-size:12px;padding:6px 10px}
