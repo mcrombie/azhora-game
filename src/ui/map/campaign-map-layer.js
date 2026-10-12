@@ -34,7 +34,9 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
         content.innerHTML=`<span class="eyebrow">Surrounding country</span><h2 class="title">${esc(selected)}</h2><p>Charted from the Guild lookout. This land is shown for reference, outside the five playable regions.</p>`;return;
       }
       const heldBy=owner(selected),[status]=condition(selected);
-      content.innerHTML=`<span class="eyebrow">Region</span><h2 class="title">${esc(selected)}</h2><p>${esc(status)}</p><div class="section"><h3>Territorial control</h3><button class="text-button" data-faction="${heldBy}">${esc(name(heldBy))}</button></div>${includeQuests&&CHAPTER_REGIONS.includes(selected)?'<div class="section"><button class="text-button" data-chapter="overview">Chapter 1 · The Border War →</button></div>':''}`;return;
+      const claimants=!simulation&&heldBy==='disputed'?factions.filter(f=>f.disputedRegions?.includes(selected)):[];
+      const control=claimants.length?`<p>Disputed between ${claimants.map(f=>`<button class="text-button" data-faction="${f.id}">${esc(name(f.id))}</button>`).join(' and ')}. No sole region-wide control.</p>`:`<button class="text-button" data-faction="${heldBy}">${esc(name(heldBy))}</button>`;
+      content.innerHTML=`<span class="eyebrow">Region</span><h2 class="title">${esc(selected)}</h2><p>${esc(status)}</p><div class="section"><h3>Territorial control</h3>${control}</div>${includeQuests&&CHAPTER_REGIONS.includes(selected)?'<div class="section"><button class="text-button" data-chapter="overview">Chapter 1 · The Border War →</button></div>':''}`;return;
     }
     if(selected?.startsWith('charted:')){
       content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Surrounding country</span><h2 class="title">${esc(name(selected))}</h2><p>Charted from the Guild lookout. Taleth can tell you about this country on his tour.</p><p>This land is shown for reference; it is outside the five playable regions of this scenario.</p>`;return;
@@ -96,7 +98,7 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
   viewport.addEventListener('pointerup',e=>{
     if(view==='regions'||!start||Math.hypot(e.clientX-start.x,e.clientY-start.y)>5)return;
     start=null;const region=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-campaign-region]')?.dataset.campaignRegion;if(!region||!knownRegions.has(region))return;
-    if(view==='geopolitical'){tab='factions';selected=owner(region);}else{tab='region';selected=region;}
+    if(view==='geopolitical'&&owner(region)!=='disputed'){tab='factions';selected=owner(region);}else{tab='region';selected=region;}
     renderInfo();
   });
   root.dataset.campaignView=view;

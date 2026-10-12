@@ -51,3 +51,12 @@ test('public country profile does not disclose Thalmagar secret capital',()=>{
   const html=factionHTML('thalmagars-empire',{factions,territories:['Urubond'],snapshot:'opening',relation:'Diplomacy not yet specified.'});
   assert.match(html,/Black Fortress, Cape Thalmagar/);assert.doesNotMatch(html,/Secret true capital|Secret.*Urubond/i);
 });
+
+
+test('disputed claims stay separate from holdings and respect map discovery',()=>{
+  const base={factions,territories:['Gorgiwood','New Gorgiwood'],snapshot:'opening'};
+  const shown=factionHTML('gorgiwood-goblins',base);
+  assert.match(shown,/Disputed territory/);assert.match(shown,/data-region="Noth Hills"/);
+  assert.doesNotMatch(factionHTML('gorgiwood-goblins',{...base,limited:true}),/Noth Hills/);
+  assert.match(factionHTML('gorgiwood-goblins',{...base,limited:true,knownRegions:new Set(['Noth Hills'])}),/Noth Hills/);
+});

@@ -24,26 +24,27 @@ export const OUTER_PROFILES = Object.freeze([
     ]
   },
   {
-    "name": "Noth Hills",
+    "name": "New Gorgiwood",
     "id": 81,
-    "kind": "heath",
-    "cover": 0.12,
+    "kind": "dark",
+    "cover": 0.9,
     "height": 70,
-    "ground": "#8b9266",
-    "stone": "#8c8b7d",
+    "ground": "#425340",
+    "stone": "#677263",
     "trees": [
-      "common-juniper",
-      "silver-birch"
+      "silver-fir",
+      "black-alder",
+      "beech"
     ],
     "fauna": [
-      "upland-hare",
-      "oremindi-snowgoat",
-      "road-fox"
+      "boar",
+      "forest-cat",
+      "red-deer"
     ],
     "features": [
-      "The Heather Saddles",
-      "The Wind Combe",
-      "The Grey Tors"
+      "The Green Saddles",
+      "The Root Combe",
+      "The Mossy Tors"
     ]
   },
   {
@@ -181,26 +182,26 @@ export const OUTER_PROFILES = Object.freeze([
     ]
   },
   {
-    "name": "South Thoth",
+    "name": "Noth Hills",
     "id": 88,
     "kind": "heath",
-    "cover": 0.14,
-    "height": 46,
-    "ground": "#8c986d",
-    "stone": "#999c90",
+    "cover": 0.12,
+    "height": 70,
+    "ground": "#8b9266",
+    "stone": "#8c8b7d",
     "trees": [
-      "silver-birch",
-      "common-juniper"
+      "common-juniper",
+      "silver-birch"
     ],
     "fauna": [
-      "red-deer",
-      "road-fox",
-      "upland-hare"
+      "upland-hare",
+      "oremindi-snowgoat",
+      "road-fox"
     ],
     "features": [
-      "The Birch Steps",
+      "The Heather Steps",
       "The Gravel Gate",
-      "The Moss Shoulders"
+      "The Grey Shoulders"
     ]
   },
   {

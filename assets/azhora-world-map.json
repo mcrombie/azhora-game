@@ -5,7 +5,7 @@
   "height": 4088,
   "hexCount": 18700,
   "regionCount": 132,
-  "riverCount": 572,
+  "riverCount": 581,
   "settlementCount": 0,
   "grid": {
     "width": 110,
@@ -33,16 +33,17 @@
     "drent-forested-peninsula-v1",
     "northern-region-names-v1",
     "mithala-city-quarters-v1",
-    "urubond-island-v1"
+    "urubond-island-v1",
+    "noth-gorgiwood-orsa-v1"
   ],
   "terrainCounts": {
     "ocean": 13601,
     "coast": 1330,
     "mountain": 170,
     "high_mountain": 116,
-    "plains": 1482,
-    "hills": 420,
-    "deep_forest": 313,
+    "plains": 1459,
+    "hills": 417,
+    "deep_forest": 339,
     "highland": 14,
     "forest": 164,
     "wetland": 28,
@@ -701,6 +702,17 @@
       "hexCount": 27
     },
     {
+      "id": "New Gorgiwood",
+      "name": "New Gorgiwood",
+      "x": 1551.918,
+      "y": 1440,
+      "width": 207.846,
+      "height": 176,
+      "centerX": 1649.978,
+      "centerY": 1528,
+      "hexCount": 26
+    },
+    {
       "id": "North Acorwood",
       "name": "North Acorwood",
       "x": 1524.205,
@@ -890,13 +902,13 @@
     {
       "id": "Noth Hills",
       "name": "Noth Hills",
-      "x": 1551.918,
-      "y": 1440,
-      "width": 207.846,
-      "height": 176,
-      "centerX": 1649.978,
-      "centerY": 1528,
-      "hexCount": 26
+      "x": 1565.774,
+      "y": 1368,
+      "width": 180.133,
+      "height": 128,
+      "centerX": 1661.564,
+      "centerY": 1432,
+      "hexCount": 23
     },
     {
       "id": "Nothwood",
@@ -1238,17 +1250,6 @@
       "centerX": 1854.911,
       "centerY": 2865.6,
       "hexCount": 15
-    },
-    {
-      "id": "South Thoth",
-      "name": "South Thoth",
-      "x": 1565.774,
-      "y": 1368,
-      "width": 180.133,
-      "height": 128,
-      "centerX": 1661.564,
-      "centerY": 1432,
-      "hexCount": 23
     },
     {
       "id": "Southern Ascarth",

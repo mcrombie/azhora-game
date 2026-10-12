@@ -86,7 +86,7 @@ All four are mapped as plains with oceanic climate. Lore can inform gentle local
 | Queue | Exact atlas region | Environment direction | State |
 | ---: | --- | --- | --- |
 | 23 | South Lond | Oceanic grassland and plain at the Acorwood edge. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
-| 24 | West Lond | Plain and grassland toward Noth Hills, with a small colder fringe. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
+| 24 | West Lond | Plain and grassland toward New Gorgiwood, with a small colder fringe. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 25 | Central Lond | Broad oceanic grassland core; open horizons and natural water/soil variation. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 26 | North Lond | Plains and grassland beneath Gorgi; colder margins with continuous mountain drainage. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 27 | East Lond | Plain and grassland at the Baldro/Ganun transition; colder edge habitats. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
@@ -105,10 +105,10 @@ All four are mapped as plains with oceanic climate. Lore can inform gentle local
 | Queue | Exact atlas region | Environment direction | State |
 | ---: | --- | --- | --- |
 | 32 | Nothwood | Mostly oceanic forest/deep forest; humid woodland, not automatic permanent snow because it is northern. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
-| 33 | Noth Hills | Cold, dry-winter hill country; rounded exposed relief and sheltered hollows. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
+| 33 | New Gorgiwood | Dense forest over the former Noth Hills; wooded ridges and sheltered hollows. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 34 | South Nonoth | Cold dry-winter plains at Nothwood's margin. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 35 | North Nonoth | Cold plains toward Orsa and Thoth; continuous habitat transitions. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
-| 36 | South Thoth | Cold dry-winter plain beside Noth Hills and Gorgi. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
+| 36 | Noth Hills | Exposed heath and hills in the former South Thoth footprint. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 37 | Central Thoth | Cold plain below northern Gorgi; water and exposure distinguish it from the southern country. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 38 | North Thoth | Colder subarctic plains; weathered open ground and sheltered animal ranges. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |
 | 39 | South Orsa | Cold plains extending west from Nonoth; habitat follows moisture and exposure. | Built in main on 5 October; [environment report and checks](outer-regions-environments.md) |

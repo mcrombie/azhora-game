@@ -56,7 +56,7 @@ export const REGION_LEVELS = Object.freeze({
   // 7 · The mountains keep their dead — the high passes, the cold sea, the jungle ring
   'Anubrul': 7, 'Cudon': 7, 'East Ithzel': 7, 'Haatrul': 7, 'Maanub': 7, 'Maawad': 7, 'North Riesov': 7,
   'Noth Hills': 7, 'Nothwood': 7, 'Nuurat': 7, 'Rihas': 7, 'Riwaad': 7, 'Sabrqad': 7, 'South Riesov': 7,
-  'South Thoth': 7, 'West Ithzel': 7, 'West Oremindi Mountains': 7,
+  'New Gorgiwood': 7, 'West Ithzel': 7, 'West Oremindi Mountains': 7,
   // 8 · The dark lord’s shadow — the cape, and what the cape reaches
   'Barqat': 8, 'Cape Thalmagar': 8, 'Central Thoth': 8, 'East Baldro Mountains': 8, 'North Thoth': 8, 'Qadmar': 8,
   'Saxhan': 8, 'South Orsa': 8,

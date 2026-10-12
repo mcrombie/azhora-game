@@ -551,6 +551,7 @@
   "tests/selamus-harbor.test.js",
   "tests/selamus-integration.test.js",
   "tests/acor-environments.test.js",
+  "tests/noth-orsa-geography.test.js",
   "tests/outer-regions.test.js",
   "tests/outer-regions-integration.test.js",
   "tests/eshtor-plateau.test.js",

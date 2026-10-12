@@ -144,8 +144,8 @@ Pueth, Vastos, Meneth — plus East Izol on the Coalition side.
 | West Oremindi Mountains | Named 7. |
 | Cudon | Named 7 ("Kudan"). |
 | Nothwood | The northern limit of continuous forest; boreal; on the road to the tundra. |
-| Noth Hills | Old worn hills between the forest and the tundra of the Thalmagar approaches. |
-| South Thoth | Cold scrubland, the southern apex of the Thoth triangle, where Lond–Henborth country opens out. |
+| New Gorgiwood | Dense northern forest over the former Noth Hills, south of the relocated hills. |
+| Noth Hills | Cold scrubland, the southern apex of the Thoth triangle, where Lond–Henborth country opens out. |
 | North Riesov, South Riesov | A cliff coast backed by the Skeld range; its people are custodians of a sea that kills the unlearned. |
 | East Inseld, West Inseld | Cold fishing islands off the north coast; the open-shelf crossing is the danger. |
 | Rihas, Riwaad, Maanub, Maawad, Nuurat, Anubrul, Haatrul **~** | The great southern jungle island's outer regions: "7s inside" per the brief. No lore; placed by distance from Scythe. |

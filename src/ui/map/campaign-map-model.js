@@ -19,7 +19,7 @@ export const CHAPTER_PATHS={
 export const CHAPTER_REGIONS=['Moros Plain','West Suval','West Izol','Elagos'];
 export const CHAPTER_FACTIONS=['ambroni-empire','izol','west-suval'];
 export const imperial=new Set(['Elagos','Drent','Amod','Pueth','Luscia','Moros Plain','Vastos','Meneth','Peblos','East Lotharn Mountains','West Lotharn Mountains']);
-export const disputed=new Set(['Acor Wetlands','East Lotharn Mountains','West Lotharn Mountains','Caricas','Nethereum','Ovesos','Nesdor']);
+export const disputed=new Set(['Acor Wetlands','Noth Hills','East Lotharn Mountains','West Lotharn Mountains','Caricas','Nethereum','Ovesos','Nesdor']);
 export const shortNames={'stonefist-lond':'Lond','ambroni-empire':'Ambron','pyrosi-empire':'Pyros','minoran-league':'Minoran League','eshtor-undead':'Undeadland','acorwood-satyrs':'Acreland','north-gorgi-goblins':'North Gorgi','south-gorgi-goblins':'South Gorgi','orgmala-goblins':'Orgmala','gorgiwood-goblins':'Gorgiwood','wilhelm-undead':'Blood Prince','west-baldro-dwarves':'West Dwarfland','east-baldro-dwarves':'East Dwarfland','nylon':'Nylon','henborth-centaurs':'Henborth','yunethre-shared':'Yunethre','disputed':'Disputed','unassigned':'Unassigned'};
 const fixedColors={'stonefist-lond':'#86a9c8','ambroni-empire':'#d3a28c','izol':'#7eabc4','west-suval':'#a5b88a','eshtor-undead':'#ad8ab8','riesov':'#d3bd80','ganun':'#b6c28b','endevor':'#daa984','witherst':'#9abcab','wilhelm-undead':'#bd859e','west-baldro-dwarves':'#a9b7b5','east-baldro-dwarves':'#c2a7a2','disputed':'#c8c1ab','unassigned':'#c4c8b8','yunethre-shared':'#8bb99e'};
 const palette=['#a7b9d2','#ccb88e','#aabd87','#bb9fba','#94bdbb','#d2ac81','#b6aecc','#bfcd9e','#d0a6a2','#9ab2c0','#c6b895','#a3c2a8'];
@@ -37,7 +37,7 @@ export function stability(name,snapshot='opening'){
   if(SNAPSHOTS[snapshot]?.owner&&SNAPSHOTS[snapshot].region===name)return ['Recently conquered','conflict'];
   if(name.includes('Ithzel'))return ['Restoration war','conflict'];
   if(name==='West Suval')return ['Border war','conflict'];
-  if(disputed.has(name))return [name==='Acor Wetlands'?'Disputed':'Open rebellion','conflict'];
+  if(disputed.has(name))return [['Acor Wetlands','Noth Hills'].includes(name)?'Disputed':'Open rebellion','conflict'];
   if(['Elagos','Drent'].includes(name))return ['Stable','stable'];
   if(imperial.has(name)||name==='Isareos')return ['Unstable','unstable'];
   return ['Unassessed','unknown'];

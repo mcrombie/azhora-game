@@ -335,19 +335,20 @@
     "regions": [
       "North Nonoth",
       "South Nonoth",
-      "Nothwood",
-      "Noth Hills"
+      "Nothwood"
     ],
     "capital": "North Nonoth; settlement unspecified",
-    "relationship": "Lower kingdom / vassal of Stonefist"
+    "relationship": "Lower kingdom / vassal of Stonefist",
+    "disputedRegions": [
+      "Noth Hills"
+    ]
   },
   {
     "id": "thoth",
     "name": "Thoth",
     "regions": [
       "North Thoth",
-      "Central Thoth",
-      "South Thoth"
+      "Central Thoth"
     ],
     "capital": "Not specified",
     "relationship": "Lower kingdom / vassal of Stonefist"
@@ -481,7 +482,8 @@
     "id": "gorgiwood-goblins",
     "name": "Gorgiwood goblin faction",
     "regions": [
-      "Gorgiwood"
+      "Gorgiwood",
+      "New Gorgiwood"
     ],
     "capital": "Not specified",
     "relationship": "Independent goblin faction allied with the other three members of the loose Goblinland confederation, with little coordination and no shared command. Mutually at peace with the Eshtor undead polity and both Baldro dwarf states.",
@@ -490,6 +492,9 @@
       "orgmala-goblins",
       "south-gorgi-goblins",
       "north-gorgi-goblins"
+    ],
+    "disputedRegions": [
+      "Noth Hills"
     ]
   },
   {

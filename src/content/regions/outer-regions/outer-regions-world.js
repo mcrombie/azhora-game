@@ -1,6 +1,7 @@
 /** Continuous northern relief and island habitats, bounded by the authored atlas.
  * Region names never act as cliff edges. Ordinary passes and mountain faces share
  * the same heightfield, so walking, climbing and falling see the drawn landscape. */
+import {orsaRiverProfile} from './orsa-river.js';
 import { OUTER_PROFILES, OUTER_NAMES } from './outer-regions-data.js';
 import { OUTER_CLIMATE, OUTER_RIVER_EDGES } from './outer-regions-atlas.js';
 import { REGION_CELLS, REGION_IDS, hexAt, SURVEY, TRANSFORM, landDistance, seamlessTerrainMix, relief } from '../../../world/terrain/region-world.js';
@@ -81,7 +82,14 @@ const makePool=(c,i)=>{
 };
 export const OUTER_LAKES=F([...OUTER_CELLS.filter(c=>c.terrain==='lake'),...[...profiles.values()].filter(p=>['dark','boreal','tundra','highland','jungle','plateau'].includes(p.kind)).map(p=>p.kind==='plateau'?plateauPoolSite(p):p.cells.find(c=>Math.hypot(c.x-p.anchor.x,c.z-p.anchor.z)>105&&landDistance(c.x,c.z)>60)).filter(Boolean)].map(makePool));
 const rawCourses=riverCourses(SURVEY,OUTER_RIVER_EDGES,TRANSFORM,{soften:2});
-export const OUTER_RIVERS=F(rawCourses.map((c,i)=>F({id:'outer-river-'+i,name:'Northern watercourse',width:c.size==='large'?13:c.size==='medium'?8:4,points:F(c.points.map(p=>F({...p,y:Math.max(.5,naturalAt(p.x,p.z)-3)})))})));
+export const OUTER_RIVERS=F(rawCourses.map((c,i)=>{const orsa=orsaRiverProfile(c,p=>Math.max(.5,naturalAt(p.x,p.z)-3));return F({id:'outer-river-'+i,name:orsa?.name??'Northern watercourse',orsa:!!orsa,width:orsa?.width??(c.size==='large'?13:c.size==='medium'?8:4),depth:orsa?.depth??1.8,points:F((orsa?.points??c.points.map(p=>({...p,y:Math.max(.5,naturalAt(p.x,p.z)-3)}))).map(F))});}));
+// Carry the new outlet through the tiny unowned coastal fringe to open sea.
+const orsaMouth=OUTER_RIVERS.find(r=>r.orsa)?.points[0];
+function orsaOutletGround(x,z,base){
+  if(!orsaMouth||Math.abs(x-orsaMouth.x)>28||Math.abs(z-orsaMouth.z)>22)return base;
+  const d=outerSegment(x,z,orsaMouth,{x:orsaMouth.x-20,z:orsaMouth.z-11.55}).distance;
+  return d<7?Math.min(base,-.7+(base+.7)*smooth(2,7,d)):base;
+}
 const waterBuckets=new Map(),bucket=(x,z)=>`${Math.floor(x/80)},${Math.floor(z/80)}`;
 function index(item,b,pad){for(let x=Math.floor((b.minX-pad)/80);x<=Math.floor((b.maxX+pad)/80);x++)for(let z=Math.floor((b.minZ-pad)/80);z<=Math.floor((b.maxZ+pad)/80);z++){const k=`${x},${z}`;if(!waterBuckets.has(k))waterBuckets.set(k,[]);waterBuckets.get(k).push(item);}}
 for(const l of OUTER_LAKES)index({lake:l},l.bounds,28);
@@ -97,10 +105,10 @@ export function outerWaterSample(x,z){
 }
 export const outerWaterAt=(x,z)=>{const s=outerWaterSample(x,z);return s&&s.distance<0?s.surface:null;};
 export function outerGround(x,z,base){
-  if(!outerOwns(x,z))return base;
+  if(!outerOwns(x,z))return orsaOutletGround(x,z,base);
   let h=naturalAt(x,z,base);const w=outerWaterSample(x,z);
-  if(w&&w.distance<26){const bed=w.surface-(w.lake?3.4:1.8),bank=mix(bed,h,smooth(4,26,w.distance));h=Math.min(h,bank);}
-  return h;
+  if(w&&w.distance<26){const bed=w.surface-(w.lake?3.4:w.river.depth),bank=mix(bed,h,smooth(w.river?.orsa ? .4 : 4,26,w.distance));h=Math.min(h,bank);}
+  return orsaOutletGround(x,z,h);
 }
 export function outerFeatures(x,z){
   const c=outerCellAt(x,z);if(!c||c.terrain==='ocean')return null;

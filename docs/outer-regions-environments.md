@@ -6,6 +6,8 @@ Environment implementation - 5 October 2026.
 
 The user requested this 33-region expansion while putting further loading optimization work on hold. Full remains the default launch mode; the experimental Fast behavior is unchanged. These are terrain and wildlife environments, with no new civilian populations or regional quest arcs.
 
+The October 12 atlas revision moves Noth Hills into the former South Thoth footprint, disputed by Nonoth and the Gorgiwood goblins. The old hills become the goblin-held New Gorgiwood forest. A small west-flowing stream follows the North/South Orsa border to the sea.
+
 ## Scope and landscape direction
 
 The 1,018 authored hexes retain their outlines, coastlines and river courses. The game-only corrections rename West Gorgi Mountains to **Gorgiwood**, East Gorgi Mountains to **South Gorgi Mountains**, and West/East Inseld to **West/East Ithzel**. Gorgiwood?s former mountain cells become deep forest. World Builder remains read-only.
@@ -13,14 +15,14 @@ The 1,018 authored hexes retain their outlines, coastlines and river courses. Th
 | Region | Landscape | Plants | Ground wildlife | Natural landmarks |
 | --- | --- | --- | --- | --- |
 | Nothwood | boreal | silver-fir, silver-birch | red-deer, road-fox, upland-hare | The Fir Vault; The Birch Run; The Moss Hollows |
-| Noth Hills | heath | common-juniper, silver-birch | upland-hare, oremindi-snowgoat, road-fox | The Heather Saddles; The Wind Combe; The Grey Tors |
+| New Gorgiwood | dark forest | silver-fir, black-alder, beech | boar, forest-cat, red-deer | The Green Saddles; The Root Combe; The Mossy Tors |
 | South Nonoth | meadow | black-alder, black-willow | red-deer, boar, upland-hare | The Water Meadows; The Willow Margin; The Gravel Backs |
 | North Nonoth | meadow | silver-birch, black-alder | red-deer, road-fox, upland-hare | The Meltwater Terraces; The High Silt; The Birch Fans |
 | South Orsa | heath | common-juniper, silver-birch | upland-hare, oremindi-snowgoat, road-fox | The Storm Hollows; The Grey Reach; The Sheltered Fold |
 | North Orsa | tundra | common-juniper | oremindi-snowgoat, upland-hare | The Wind Teeth; The Snow Combe; The Salt Scar |
 | North Thoth | tundra | common-juniper | thalmagar-palmant, upland-hare | The Lichen Reach; The Frost Hollows; The Stone Tongues |
 | Central Thoth | scrub | common-juniper, silver-birch | thalmagar-long-back, thalmagar-palmant, upland-hare | The Long Grazing; The Grey Scrub; The Shallow Swales |
-| South Thoth | heath | silver-birch, common-juniper | red-deer, road-fox, upland-hare | The Birch Steps; The Gravel Gate; The Moss Shoulders |
+| Noth Hills | heath | common-juniper, silver-birch | upland-hare, oremindi-snowgoat, road-fox | The Heather Steps; The Gravel Gate; The Grey Shoulders |
 | Gorgiwood | dark | silver-fir, black-alder, beech | boar, forest-cat, red-deer | The Black Vault; The Crooked Ravine; The Deadfall Hollow |
 | North Gorgi Mountains | alpine | silver-fir, common-juniper | oremindi-snowgoat, upland-hare | The Ice Crown; The Knife Saddle; The Moraine Bowl |
 | South Gorgi Mountains | alpine | silver-fir, silver-birch | oremindi-snowgoat, red-deer, road-fox | The Split Ridge; The Scree Apron; The Fir Basin |
