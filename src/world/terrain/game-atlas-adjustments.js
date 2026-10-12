@@ -1,9 +1,9 @@
 import { URUBOND_HEXES } from '../../content/regions/urubond/urubond-atlas.js';
-import {ORSA_RIVER_EDGES,riverEdgeKey} from '../../content/regions/outer-regions/orsa-river.js';
+import {ORSA_RIVER_EDGES,ORSA_RETIRED_RIVER_KEYS,ORSA_HEADWATER_HILLS,riverEdgeKey} from '../../content/regions/outer-regions/orsa-river.js';
 /** Game geography corrections, applied to read-only World Builder imports.
  * Keep the journal, developer atlas and built river survey on the same source.
  * The upstream map and its provenance hash remain unchanged. */
-export const GAME_ATLAS_ADJUSTMENTS = Object.freeze(['tidehaven-northeast-bank-v1', 'drent-forested-peninsula-v1', 'northern-region-names-v1', 'mithala-city-quarters-v1', 'urubond-island-v1', 'noth-gorgiwood-orsa-v1']);
+export const GAME_ATLAS_ADJUSTMENTS = Object.freeze(['tidehaven-northeast-bank-v1', 'drent-forested-peninsula-v1', 'northern-region-names-v1', 'mithala-city-quarters-v1', 'urubond-island-v1', 'noth-gorgiwood-orsa-v1', 'orsa-independent-headwaters-v2']);
 export const GAME_REGION_RENAMES=Object.freeze({"West Gorgi Mountains": "Gorgiwood", "East Gorgi Mountains": "South Gorgi Mountains", "West Inseld": "West Ithzel", "East Inseld": "East Ithzel"});
 
 /** The user-drawn headland east of Tidehaven, bending southeast toward Longstone. */
@@ -83,6 +83,12 @@ export function applyGameAtlasAdjustments(source) {
       if(cell.region==='Noth Hills')hexes[key]={...cell,region:'New Gorgiwood',terrain:'deep_forest'};
       else if(cell.region==='South Thoth')hexes[key]={...cell,region:'Noth Hills',terrain:'hills'};
     }
+  }
+  for(const key of ORSA_RETIRED_RIVER_KEYS)delete rivers[key];
+  for(const {q,r,region} of ORSA_HEADWATER_HILLS){
+    const key=`${q},${r}`,cell=hexes[key];if(!cell)continue;
+    if(cell.region!==region)throw new Error('The Orsa headwater hills no longer lie inside Orsa.');
+    hexes[key]={...cell,terrain:'hills'};
   }
   for(const edge of ORSA_RIVER_EDGES){
     const a=hexes[edge.a.join(',')],b=hexes[edge.b.join(',')];

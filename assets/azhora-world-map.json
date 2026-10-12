@@ -5,7 +5,7 @@
   "height": 4088,
   "hexCount": 18700,
   "regionCount": 132,
-  "riverCount": 581,
+  "riverCount": 578,
   "settlementCount": 0,
   "grid": {
     "width": 110,
@@ -34,15 +34,16 @@
     "northern-region-names-v1",
     "mithala-city-quarters-v1",
     "urubond-island-v1",
-    "noth-gorgiwood-orsa-v1"
+    "noth-gorgiwood-orsa-v1",
+    "orsa-independent-headwaters-v2"
   ],
   "terrainCounts": {
     "ocean": 13601,
     "coast": 1330,
     "mountain": 170,
     "high_mountain": 116,
-    "plains": 1459,
-    "hills": 417,
+    "plains": 1444,
+    "hills": 432,
     "deep_forest": 339,
     "highland": 14,
     "forest": 164,

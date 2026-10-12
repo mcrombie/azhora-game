@@ -6,7 +6,7 @@ Environment implementation - 5 October 2026.
 
 The user requested this 33-region expansion while putting further loading optimization work on hold. Full remains the default launch mode; the experimental Fast behavior is unchanged. These are terrain and wildlife environments, with no new civilian populations or regional quest arcs.
 
-The October 12 atlas revision moves Noth Hills into the former South Thoth footprint, disputed by Nonoth and the Gorgiwood goblins. The old hills become the goblin-held New Gorgiwood forest. A small west-flowing stream follows the North/South Orsa border to the sea.
+The October 12 atlas revision moves Noth Hills into the former South Thoth footprint, disputed by Nonoth and the Gorgiwood goblins. The old hills become the goblin-held New Gorgiwood forest. A small, independent stream rises in a belt of eastern Orsa hills and follows part of the North/South Orsa border west to the sea. Dry upland separates its spring from the existing larger river; the two waterways do not connect.
 
 ## Scope and landscape direction
 
