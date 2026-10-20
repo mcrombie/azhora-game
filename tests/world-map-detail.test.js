@@ -14,6 +14,35 @@ import { createCartography, chartShapes, EXPLORED_HEXES } from '../src/ui/map/ca
 import { AMBRON_CENTRE, AMBRON_OUTLINE, inAmbronOutline } from '../src/content/regions/ambron/ambron-city-layout.js';
 import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/world/terrain/game-atlas-adjustments.js';
 import { TESSEN } from '../src/content/regions/pueth/pueth-world.js';
+import { ATLAS_SETTLEMENTS } from '../src/ui/map/atlas-settlements.js';
+import { STONEFIST_OUTLINE } from '../src/content/regions/lond/lond-layout.js';
+
+test('newly built settlements appear once in the chart with ordinary discovery and tracking rules', () => {
+  const ids = ['stonefist', 'lond-town', 'nonth-town', 'thoth-town', 'orsa-town', 'riesov-town', 'witherst-town', 'ganun-town', 'endevor-town'];
+  assert.deepEqual(ATLAS_SETTLEMENTS.map(p => p.id), ids);
+  const marks = atlasPlaceMarks(SUBREGIONS.map(p => ({ id: p.id, name: p.name, kind: 'area', ...TRANSFORM.worldToAtlas(p.x, p.z) })));
+  for (const site of ATLAS_SETTLEMENTS) {
+    const areas = SUBREGIONS.filter(p => p.id === site.id), badges = marks.filter(p => p.id === site.id);
+    assert.equal(areas.length, 1, `${site.name} has only one discovery area`);
+    assert.equal(badges.length, 1, `${site.name} has only one badge`);
+    assert.deepEqual({ x: areas[0].x, z: areas[0].z }, { x: site.x, z: site.z });
+    assert.equal(areas[0].region, site.region);
+    assert.equal(badges[0].kind, 'city');
+    assert.equal(atlasMarkKnown(badges[0], new Set()), false);
+    assert.equal(atlasMarkKnown(badges[0], new Set([atlasCellKey(badges[0])])), true);
+    assert.equal(atlasMarkKnown(badges[0], new Set(), true), true);
+    for (const kind of ['quest', 'tracked']) {
+      const target = { ...badges[0], kind, name: `Travel to ${site.name}` };
+      assert.deepEqual(atlasPlaceMarks(marks, [target]).find(p => p.id === site.id), target);
+    }
+  }
+});
+
+test('Stonefist shares its built rock footprint without drawing a wall around unwalled Lond Town', () => {
+  const outlines = atlasCityBoundaries();
+  assert.deepEqual(outlines.find(p => p.id === 'stonefist').boundary, STONEFIST_OUTLINE.map(p => TRANSFORM.worldToAtlas(p.x, p.z)));
+  assert.equal(outlines.some(p => p.id === 'lond-town'), false);
+});
 
 test('the capital marker and city footprint agree with the relocated city between the four lakes', () => {
   const detail = atlasCityDetail(), center = TRANSFORM.atlasToWorld(detail.marker.x, detail.marker.y);

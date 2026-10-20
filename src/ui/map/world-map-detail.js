@@ -9,10 +9,13 @@ import { MITHALA_CURTAIN } from '../../content/regions/mithala/mithala-city.js';
 import { VARN_CORNERS } from '../../content/regions/varn/varn-world.js';
 import { SEVRON_ENTRANCES } from '../../content/regions/west-oremindi/west-oremindi-world.js';
 import { THALMAGAR_FORTRESS, THALMAGAR_DARK_TOWER } from '../../content/regions/thalmagar/thalmagar-fortress-site.js';
+import { STONEFIST_OUTLINE } from '../../content/regions/lond/lond-layout.js';
+import { ATLAS_SETTLEMENTS } from './atlas-settlements.js';
 
 // Only built cities (including identifiable ruins) have this designation.
 // Stable discovery/save IDs deliberately retain the former spelling of Minora.
 export const ATLAS_CITY_DESIGNATIONS = Object.freeze({
+  ...Object.fromEntries(ATLAS_SETTLEMENTS.map(({ id, name, subtitle }) => [id, Object.freeze({ name, subtitle })])),
   'thalmagar-black-fortress': Object.freeze({ name: "Thalmagar's Fortress", subtitle: THALMAGAR_DARK_TOWER.name }),
   menora: Object.freeze({ name: 'Minora', subtitle: 'Holy city' }),
   varn: Object.freeze({ name: 'Varn', subtitle: 'Fortress city' }),
@@ -21,6 +24,7 @@ export const ATLAS_CITY_DESIGNATIONS = Object.freeze({
   selamus: Object.freeze({ name: 'Selemis', subtitle: 'Maritime city' }),
   aevis: Object.freeze({ name: 'Aevis', subtitle: 'Bronze city' }),
   mithala: Object.freeze({ name: 'Mithala', subtitle: 'Royal seat' }),
+  pyra: Object.freeze({ name: 'Pyra', subtitle: 'Imperial twin city' }),
   elod: Object.freeze({ name: 'Elod', subtitle: 'City-state' }),
   'west-baldro-gate': Object.freeze({ name: 'West Hold', subtitle: 'Dwarven city' }),
   'east-baldro-gate': Object.freeze({ name: 'East Hold', subtitle: 'Dwarven city' }),
@@ -52,6 +56,7 @@ export function atlasCityBoundaries() {
     { id: 'nylon', boundary: NYLON_OUTLINE.map(point) },
     { id: 'aevis', boundary: AEVIS_OUTLINE.map(point) },
     { id: 'varn', boundary: VARN_CORNERS.map(point) },
+    { id: 'stonefist', boundary: STONEFIST_OUTLINE.map(point) },
     { id: 'mithala', city: 'mithala', boundary: MITHALA_CURTAIN.map(point) }];
 }
 

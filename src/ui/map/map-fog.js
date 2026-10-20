@@ -1,6 +1,7 @@
 import {URUBOND_LANDMARKS} from '../../content/regions/urubond/urubond-world.js';
 import { OUTER_LANDMARKS } from '../../content/regions/outer-regions/outer-regions-world.js';
 import { ACOR_LANDMARKS } from '../../content/regions/acor/acor-world.js';
+import { ATLAS_SETTLEMENTS } from './atlas-settlements.js';
 /**
  * What the traveler has charted. The world chart starts blank: a hex of the
  * authored atlas is uncovered only when the traveler has walked into it, and the country between them is named by subregions — small
@@ -51,8 +52,10 @@ const area = (id, name, region, x, z, radius, note) => Object.freeze({ id, name,
 /** The named ground of Azhora, as the traveler's own chart records it. */
 export const SUBREGIONS = Object.freeze([
   ...NORTHERN_LANDMARKS.map(l=>area(l.id,l.name,l.region,l.x,l.z,35,l.description)),
-  ...[...ACOR_LANDMARKS,...URUBOND_LANDMARKS].map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
-  ...OUTER_LANDMARKS.map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
+  // A streamed region may also advertise its settlement. Keep one discovery ID
+  // and one location, including when the public atlas loads without that scenery.
+  ...[...new Map([...ACOR_LANDMARKS,...URUBOND_LANDMARKS,...OUTER_LANDMARKS,...ATLAS_SETTLEMENTS]
+    .map(l=>[l.id,l])).values()].map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
   ...BALDRO_KINGDOMS.flatMap(k => {
     const side = k.id === 'west-baldro' ? 'Western' : 'Eastern';
     const points = BALDRO_PATHS.find(p => p.id === 'baldro-saddle-traverse').points.filter(p => baldroRegionAt(p.x, p.z) === k.region);
