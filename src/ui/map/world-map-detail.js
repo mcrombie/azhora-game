@@ -8,10 +8,12 @@ import { AEVIS_OUTLINE } from '../../content/regions/aevis/aevis-city.js';
 import { MITHALA_CURTAIN } from '../../content/regions/mithala/mithala-city.js';
 import { VARN_CORNERS } from '../../content/regions/varn/varn-world.js';
 import { SEVRON_ENTRANCES } from '../../content/regions/west-oremindi/west-oremindi-world.js';
+import { THALMAGAR_FORTRESS, THALMAGAR_DARK_TOWER } from '../../content/regions/thalmagar/thalmagar-fortress-site.js';
 
 // Only built cities (including identifiable ruins) have this designation.
 // Stable discovery/save IDs deliberately retain the former spelling of Minora.
 export const ATLAS_CITY_DESIGNATIONS = Object.freeze({
+  'thalmagar-black-fortress': Object.freeze({ name: "Thalmagar's Fortress", subtitle: THALMAGAR_DARK_TOWER.name }),
   menora: Object.freeze({ name: 'Minora', subtitle: 'Holy city' }),
   varn: Object.freeze({ name: 'Varn', subtitle: 'Fortress city' }),
   solis: Object.freeze({ name: 'Solis', subtitle: 'City' }),
@@ -68,7 +70,7 @@ export function atlasPlaceMarks(places = [], local = []) {
   return [...new Map([...entries, capital].map(mark => {
     const designation = ATLAS_CITY_DESIGNATIONS[mark.id];
     return [mark.id, designation && !['quest', 'tracked'].includes(mark.kind)
-      ? { ...mark, ...designation, kind: 'city' } : { ...mark }];
+      ? { ...mark, ...designation, kind: 'city', ...(mark.id === 'thalmagar-black-fortress' ? point(THALMAGAR_FORTRESS) : {}) } : { ...mark }];
   })).values()];
 }
 

@@ -3,16 +3,18 @@
 //
 // The atlas is drawn in the manner of a hand-inked fantasy chart: parchment,
 // inked coastlines, hatched seas, mountain and forest glyphs, calligraphic
-// names. Every shape still comes from the authored hexes: the land outline is
+// names. Geography comes from the authored hexes: the land outline is
 // the union of land hexes, the province borders are the authored region edges,
 // rivers follow the authored river edges. Only the rendering is stylized.
-// No reference photograph, generated geography, or game-specific location pins.
+// Local relief and fortress plans use the same terrain and layout as the game;
+// interactive location labels are added separately by the map UI.
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PLAYABLE_REGIONS } from '../src/world/terrain/region-layout.js';
 import { applyGameAtlasAdjustments, GAME_ATLAS_ADJUSTMENTS } from '../src/world/terrain/game-atlas-adjustments.js';
+import { thalmagarChartSvg } from './atlas-thalmagar.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const builder = path.resolve(root, '../world-builder');
@@ -430,6 +432,7 @@ const svg = [
   }),
   '</g>',
   `<g id="coast" fill="none" stroke="${INK}" stroke-width="2.1" stroke-linejoin="round"><path d="${landPath}"/></g>`,
+  thalmagarChartSvg(hexes.filter(hex => hex.region && map.regions[hex.region].name === 'Cape Thalmagar' && isLand(hex)).map(polygon).join('')),
   `<g id="region-labels" text-anchor="middle" dominant-baseline="central" font-family="${serifFont}" font-weight="600" fill="${INK}" stroke="${PARCHMENT}" stroke-width="4.2" stroke-linejoin="round" paint-order="stroke fill">`,
   ...labels,
   '</g>',
@@ -463,6 +466,7 @@ const metadata = {
   focus: { name: home.name, x: home.x, y: home.y, width: home.width, height: home.height },
   style: 'inked parchment chart', uncharted: [],
   gameAdjustments: GAME_ATLAS_ADJUSTMENTS,
+  authoredDetails: ['cape-thalmagar-relief', 'thalmagar-fortress', 'thalmagar-dark-wizard-tower'],
   terrainCounts,
   regions: regionMetadata,
 };

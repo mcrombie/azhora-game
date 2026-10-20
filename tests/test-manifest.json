@@ -1,4 +1,5 @@
 [
+  "tests/thalmagar-chart.test.js",
   "tests/campaign-guidance.test.js",
   "tests/resident-population.test.js",
   "tests/lookout-chart.test.js",

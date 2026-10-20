@@ -1,11 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
-
-const source = (await readFile(new URL('../src/content/regions/thalmagar/thalmagar-world.js', import.meta.url), 'utf8'))
-  .replace("'three'", `'${new URL('../vendor/three.module.js', import.meta.url).href}'`);
-const { createThalmagarWorld } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+import { createThalmagarWorld } from '../src/content/regions/thalmagar/thalmagar-world.js';
 
 test('Thalmagar is a separate developer scene with a high, readable fortress and finite flight area', () => {
   const scene = new THREE.Scene(), existing = new THREE.Group(); existing.name = 'Existing playable world'; scene.add(existing);

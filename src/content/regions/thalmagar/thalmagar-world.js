@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { THALMAGAR_CURTAIN_LOCAL, THALMAGAR_DARK_TOWER } from './thalmagar-fortress-site.js';
 
 const TAU = Math.PI * 2;
 const clamp = (v, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, v));
@@ -141,9 +142,7 @@ export function createThalmagarWorld(scene, { fortressOnly = false } = {}) {
       b.shape('box', '#526056', x, base + height + 1.45, z, thickness + .45, 2.9, 2.0, [0, angle, 0]);
     }
   }
-  const corners = Array.from({ length: 10 }, (_, i) => {
-    const angle = (i + .5) / 10 * TAU; return [Math.sin(angle) * 67, fortress.z + Math.cos(angle) * 58];
-  });
+  const corners = THALMAGAR_CURTAIN_LOCAL;
   for (let i = 0; i < corners.length; i++) {
     const a = corners[i], c = corners[(i + 1) % corners.length];
     if (i === 9) {
@@ -192,13 +191,28 @@ export function createThalmagarWorld(scene, { fortressOnly = false } = {}) {
   const keep = builder('The high keep and needle crown');
   keep.shape('column', '#313c37', 0, 72, fortress.z, 42, 16, 36);
   keep.shape('taper', '#394541', 0, 110, fortress.z, 24, 86, 24);
-  for (const level of [82, 105, 127]) {
+  // Repeated chamber courses and an arcaded lookout echo the guild tower.
+  // Everything remains in the existing stone/window batches, with no new lights.
+  for (const level of [82, 94, 106, 118, 130]) {
     const radius = 24 * (1 - .28 * ((level - 67) / 86)) + .24;
     keep.shape('column', '#6c7970', 0, level, fortress.z, radius, .88, radius);
   }
-  keep.shape('column', '#4e5b51', 0, 143, fortress.z, 18.8, 5, 18.8);
-  keep.shape('taper', '#293631', 0, 158, fortress.z, 14.7, 31, 14.7);
-  keep.shape('column', '#536054', 0, 171.5, fortress.z, 10.8, 2, 10.8);
+  keep.shape('column', '#4e5b51', 0, 143, fortress.z, 21, 5, 21);
+  keep.shape('column', '#637168', 0, 149, fortress.z, 22, 2.4, 22);
+  keep.shape('column', '#293631', 0, 158, fortress.z, 8, 16, 8);
+  keep.shape('column', '#536054', 0, 171.5, fortress.z, 19.5, 2, 19.5);
+  for (let i = 0; i < 8; i++) {
+    const a = (i + .5) / 8 * TAU, x = Math.sin(a) * 17, z = fortress.z + Math.cos(a) * 17;
+    keep.shape('column', '#485850', x, 160, z, 1.35, 22, 1.35);
+    keep.shape('column', '#778176', x, 169.6, z, 2.2, 1.5, 2.2);
+    const b = (i + 1.5) / 8 * TAU, mid = (a + b) / 2;
+    const peak = [Math.sin(mid) * 17, 171, fortress.z + Math.cos(mid) * 17];
+    keep.beam('#617267', [x, 166, z], peak, 1, 'column');
+    keep.beam('#617267', [Math.sin(b) * 17, 166, fortress.z + Math.cos(b) * 17], peak, 1, 'column');
+    const edge = (a + b) / 2;
+    keep.shape('box', '#48564e', Math.sin(edge) * 20, 151.4, fortress.z + Math.cos(edge) * 20,
+      14, 2.4, 1, [0, edge, 0]);
+  }
   keep.shape('spike', '#1f2d29', 0, 195, fortress.z, 12.2, 49, 12.2);
   for (let i = 0; i < 8; i++) {
     const angle = i / 8 * TAU, dx = Math.sin(angle), dz = Math.cos(angle);
@@ -219,7 +233,9 @@ export function createThalmagarWorld(scene, { fortressOnly = false } = {}) {
     keep.shape('box', side < 0 ? '#455148' : '#344239', side * 31, 79.5, -157 + side * 9, 15, 29, 36);
     keep.shape('spike', '#26332d', side * 31, 99.5, -157 + side * 9, 12, 15, 26, [0, Math.PI / 4, 0]);
   }
-  keep.finish(); windows.finish({ castShadow: false });
+  const keepMesh = keep.finish();
+  keepMesh.userData.darkWizardTower = THALMAGAR_DARK_TOWER;
+  windows.finish({ castShadow: false });
   if (fortressOnly) {
     root.name = 'The Black Fortress';
     for (const geometry of Object.values(shapes)) geometry.dispose();

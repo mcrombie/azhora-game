@@ -76,6 +76,9 @@
 .atlas-place.capital span,.atlas-place.city span{font:600 15px Adventure,Georgia,serif;letter-spacing:.04em;color:#342619;background:#f4e2b8f2;border:1px solid #8b6b39;border-radius:3px;padding:3px 8px;text-shadow:none;line-height:18px}
 .atlas-place.capital small,.atlas-place.city small{display:block;font:9px 'Segoe UI',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6a512e;line-height:12px}
 
+.atlas-place[data-place-id="thalmagar-black-fortress"] i{background:#444c48;border-color:#303a35}
+.atlas-place[data-place-id="thalmagar-black-fortress"] i::before{background:#eadbb4;inset:1px 2px 2px;clip-path:polygon(0 100%,0 45%,18% 25%,35% 45%,35% 30%,50% 0,65% 30%,65% 45%,82% 25%,100% 45%,100% 100%)}
+.atlas-place[data-place-id="thalmagar-black-fortress"] span{background:#e0dbc7f5;border-color:#657064;color:#293b33}
 #world-map:not([data-campaign-view=regions]) #atlas-viewport{background:#0b1620}
 
 #atlas-battlefields{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}#atlas-battlefields .atlas-battlefield{position:absolute;pointer-events:auto;transform:translate(-50%,calc(-100% - 64px));white-space:nowrap;background:#382c20ed;color:#ffe8b0;border:1px solid #d2a768;border-radius:4px;font:12px system-ui;padding:6px 9px;cursor:pointer}

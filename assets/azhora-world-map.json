@@ -37,6 +37,11 @@
     "noth-gorgiwood-orsa-v1",
     "orsa-independent-headwaters-v2"
   ],
+  "authoredDetails": [
+    "cape-thalmagar-relief",
+    "thalmagar-fortress",
+    "thalmagar-dark-wizard-tower"
+  ],
   "terrainCounts": {
     "ocean": 13601,
     "coast": 1330,
