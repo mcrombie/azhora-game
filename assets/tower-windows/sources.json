@@ -1,0 +1,38 @@
+{
+  "purpose": "Live 3D regional windows with viewer-relative perspective",
+  "regenerate": "node scripts/build-snero-windows.mjs",
+  "sources": [
+    {
+      "id": "cold-stones",
+      "region": 108,
+      "place": "Cold Stones",
+      "geometry": "cold-stones/landscape.json",
+      "bytes": 1755348,
+      "triangles": 522154
+    },
+    {
+      "id": "azhor-stones",
+      "region": 110,
+      "place": "Azhor Stones",
+      "geometry": "azhor-stones/landscape.json",
+      "bytes": 736586,
+      "triangles": 451494
+    },
+    {
+      "id": "drent",
+      "region": 1,
+      "place": "Drent",
+      "geometry": "drent/landscape.json",
+      "bytes": 7882720,
+      "triangles": 984018
+    },
+    {
+      "id": "west-oremindi",
+      "region": 56,
+      "place": "West Oremindi Mountains",
+      "geometry": "west-oremindi/landscape.json",
+      "bytes": 2446534,
+      "triangles": 524582
+    }
+  ]
+}

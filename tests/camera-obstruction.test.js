@@ -19,6 +19,17 @@ test('camera reads duplicate grid shapes once and preserves the minimum follow d
   assert.equal(clip({x:0,y:1,z:0},{x:0,y:1,z:8}),.12);assert.equal(heights,1);
 });
 
+test('conversation framing clears its own speaker but still stops before scenery',()=>{
+  const speaker={id:'senro',x:0,z:0,r:.52,minY:0,maxY:2.3,kind:'guild-wizard'};
+  const wall={x:0,z:2,hx:3,hz:.2,minY:0,maxY:8,kind:'tower-wall'};
+  const shapes=[speaker,wall],clip=createCameraObstruction({nearColliders:()=>shapes,heightAt:()=>0});
+  const focus={x:0,y:.7,z:0},desired={x:0,y:1.25,z:3};
+  assert.equal(clip(focus,desired),.12,'an ordinary follow camera still avoids the wizard');
+  const clear=clip(focus,desired,{ignoreCollider:c=>c===speaker});
+  assert(clear>.4&&clear<.7,'portrait leaves the wizard body without passing through the wall');
+  shapes.pop();assert.equal(clip(focus,desired,{ignoreCollider:c=>c===speaker}),1);
+});
+
 test('conservative camera query never misses round or box colliders across grid boundaries',()=>{
   let seed=17;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/2**32;};
   const shapes=Array.from({length:80},(_,i)=>({x:random()*120-60,z:random()*120-60,minY:0,maxY:2+random()*12,...i%2?{r:1+random()*8}:{hx:1+random()*6,hz:1+random()*8}}));

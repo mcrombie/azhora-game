@@ -5,6 +5,34 @@ import { sourceModule } from './module-loader.js';
 
 const { createHorse } = await sourceModule('../src/content/characters/characters.js');
 
+test('a jumping horse folds its legs, reaches for landing, then releases the jump pose',()=>{
+  const horse=createHorse({saddled:true}),body=horse.group.getObjectByName('Weight and hips');
+  const fore=horse.group.getObjectByName('Left Fore Knee'),hind=horse.group.getObjectByName('Left Hind Knee');
+  const feet=()=>{horse.group.updateMatrixWorld(true);return [fore,hind].map(joint=>joint.localToWorld(new THREE.Vector3(0,-.47,.02)).y);};
+  let time=0;
+  const animate=(frames,grounded,pose)=>{let result;for(let i=0;i<frames;i++){time+=1/60;result=horse.animate(time,0,grounded,pose);}return result;};
+  animate(60,true,{grazing:false});const restingFeet=feet();
+  const takeoff=animate(24,false,{jump:{verticalSpeed:4}}),tuckedFeet=feet();
+  assert(takeoff.jumpPitch<-.04,'The forequarters rise slightly at takeoff');
+  assert(tuckedFeet.every((height,i)=>height>restingFeet[i]+.12),'Fore and hind hooves lift clear of their resting height');
+  animate(24,false,{jump:{verticalSpeed:-5}});const reachingFeet=feet();
+  assert(reachingFeet.every((height,i)=>height<tuckedFeet[i]-.09),'The hooves extend toward the ground on descent');
+  assert(body.rotation.x>0,'The body follows the descending trajectory');
+  animate(10,true,{jump:{landing:1},grazing:false});
+  assert(body.position.y<-.025,'Landing briefly compresses the stance');
+  animate(120,true,{grazing:false});
+  assert(Math.abs(body.rotation.x)<.001,'The walking body no longer retains a jump pitch');
+  assert(Math.abs(fore.rotation.x)<.05,'The front legs return to their ordinary resting position');
+  assert(feet().every((height,i)=>Math.abs(height-restingFeet[i])<.08),'Resting hoof height is restored');
+});
+
+test('a swimming horse ignores stale jump presentation',()=>{
+  const horse=createHorse({saddled:true});let result;
+  for(let i=0;i<60;i++)result=horse.animate(i/30,0,false,{swimming:true,jump:{verticalSpeed:8,landing:1}});
+  assert.equal(result.jumpPitch,0);
+  assert(horse.group.getObjectByName('Neck').rotation.x<-.2,'Swimming keeps the muzzle clear');
+});
+
 test('swimming horses hold their muzzle clear, paddle at rest and return to the land stance',()=>{
   const horse=createHorse({saddled:true}),neck=horse.group.getObjectByName('Neck');
   const fore=horse.group.getObjectByName('Left Fore Hip'),knee=horse.group.getObjectByName('Left Fore Knee');

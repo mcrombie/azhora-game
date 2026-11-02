@@ -44,7 +44,6 @@ const boundaryDistance = (x, z) => Math.min(...NYLON_OUTLINE.map((a, i) => nylon
 
 export const NYLON_GATES = freeze([
   freeze({ id: 'nylon-north-gate', name: 'The Gate of Inquiry', edge: 0, x: -1308, z: 1066, width: 12 }),
-  freeze({ id: 'nylon-river-gate', name: 'The Lizeem Gate', edge: 4, x: -1350.5, z: 1147.5, width: 11 }),
 ]);
 const path = (id, width, coordinates) => freeze({ id, width, points: freeze(coordinates.map(([x, z]) => point(x, z))) });
 export const NYLON_PATHS = freeze([
@@ -84,9 +83,9 @@ export const NYLON_HARBOR = freeze({
 export const NYLON_QUAYS = freeze([
   freeze({id:'nylon-estuary-quay',name:'The Estuary Provision Quay',x:-1296,z:1191,width:64,depth:10,elevation:NYLON_HARBOR.deckHeight}),
 ]);
-/** The city's curtain is also the harbor's landward defense. Each mole starts
- * at an existing corner bastion, without a second wall behind the quays.
- * The river gate opens onto the protected provision approach; the original
+/** The harbor moles continue the outer city defense. The old landward curtain
+ * has been removed, leaving the town and provision approach open to the quays.
+ * Each mole starts at an existing corner bastion; the original
  * Lizeem channel and the 36m gap between the sea tower centres stay open. */
 export const NYLON_HARBOR_WALLS = freeze([
   freeze({id:'nylon-harbor-west',height:27,thickness:4,bastionIndex:4,points:freeze([
@@ -97,11 +96,16 @@ export const NYLON_HARBOR_WALLS = freeze([
     NYLON_OUTLINE[2],point(-1242,1245),point(-1246,1288),point(-1270,1300),
   ])}),
 ]);
-export const NYLON_COLOSSUS = freeze({
-  id:'nylon-colossus',name:'The Beacon of Inquiry',
+export const NYLON_SEA_LIONS = freeze({
+  id:'nylon-sea-lions',name:'The Sea Lions of Nylon',
   x:NYLON_HARBOR.entrance.x,z:NYLON_HARBOR.entrance.z,
   towerHeight:35,plinthHeight:1.6,baseY:NYLON_HARBOR.deckHeight+35+1.6,
-  feet:freeze(NYLON_HARBOR_WALLS.map(wall=>wall.points.at(-1))),
+  // Seated bronze guardians on the two existing tower plinths, facing +Z / sea.
+  figures:freeze(NYLON_HARBOR_WALLS.map((wall,i)=>freeze({
+    id:i===0?'nylon-sea-lion':'nylon-sea-lioness',
+    name:i===0?'The Seated Lion':'The Seated Lioness',
+    form:i===0?'lion':'lioness',...wall.points.at(-1),
+  }))),
 });
 const deck=(id,name,kind,a,b,width)=>freeze({id,name,kind,a:freeze({x:a[0],y:a[1],z:a[2]}),b:freeze({x:b[0],y:b[1],z:b[2]}),width});
 export const NYLON_HARBOR_DECKS=freeze([

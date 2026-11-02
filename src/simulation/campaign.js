@@ -1,9 +1,18 @@
 // One step is one campaign day. State and seeded randomness stay independent of UI time.
+export {createAuthoredCampaign} from './authored-campaign.js';
+import {encounterDamageBudget} from './encounter-damage.js';
 import {availableBattleStage,rallyGuardCount,removeRallyGuards,continueInterception} from './battle-stages.js';
+import {attachCommander,fieldCommanders,recordCommander,recoverCommanders,shiftBattleMorale,validateCommanderReport} from './army-commanders.js';
+import {canOfferChampionDuel,finishChampionDuel} from './champion-duel.js';
+import {canEnterFieldBattle,beginFieldBattle,fieldBattleFormation} from './field-battle.js';
 import {createRoutes} from './routes.js';
 import {offensiveRecoveryUntil} from './offensive-recovery.js';
 import {isAlive,isMoving,stationed,defendingStrength,inflictLosses} from './forces.js';
 import {reserveReinforcements,interceptReinforcements} from './reinforcements.js';
+import {createFoodSystem,foodCombatFactor} from './food.js';
+import {initializeHousing} from './housing.js';
+import {assessSupplyOrder,chooseSupplyOrder,supplyOrderReason} from './supply-planning.js';
+import {createRoadsideInterception} from './roadside-interception.js';
 const copy=value=>JSON.parse(JSON.stringify(value));
 export function normalizeSeed(value){
   if(typeof value!=='number'&&(typeof value!=='string'||!/^\d+$/.test(value.trim())))throw new Error('Enter a whole-number seed.');
@@ -27,7 +36,11 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   for(const key of ['garrisonCap','decisionEvery','armyRecoveryDays','maxRaisedArmies'])if(!Number.isInteger(rules[key])||rules[key]<1)throw Error('Invalid rule: '+key);
   for(const key of ['reserve','recoveryDays'])if(!Number.isInteger(rules[key])||rules[key]<0)throw Error('Invalid rule: '+key);
   if(!Number.isFinite(rules.defenseBonus)||rules.defenseBonus<=0)throw Error('Invalid defense bonus.');
+  if(rules.autonomousOrders!==undefined&&typeof rules.autonomousOrders!=='boolean')throw Error('Invalid autonomous orders rule.');
+  if(rules.localBattleTiming!==undefined&&!['immediate','scheduled'].includes(rules.localBattleTiming))throw Error('Invalid local battle timing.');
+  if(rules.supplyPlanning!==undefined&&(rules.supplyPlanning!=='endurance-v1'||!scenario.food))throw Error('Supply planning requires food and a supported planning version.');
   if(rules.assaultSupportGap!==undefined&&(!Number.isInteger(rules.assaultSupportGap)||rules.assaultSupportGap<0||rules.assaultSupportGap>3))throw Error('Invalid assault support gap.');
+  if(rules.encounterSoldierHealth!==undefined&&(!Number.isSafeInteger(rules.encounterSoldierHealth)||rules.encounterSoldierHealth<=0))throw Error('Invalid encounter soldier health.');
   if(rules.reattackDelayDays!==undefined&&(!Number.isInteger(rules.reattackDelayDays)||rules.reattackDelayDays<0))throw Error('Invalid reattack delay.');
   const battleDays=rules.battleDays??0;
   if(!Number.isInteger(battleDays)||battleDays<0)throw Error('Invalid battle duration.');
@@ -41,6 +54,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   if(new Set((scenario.openingOrders??[]).map(o=>o.faction)).size!==(scenario.openingOrders??[]).length)throw Error('Only one opening order per faction is allowed.');
   const travel=createRoutes(scenario);
   const state={version:3,scenario:scenario.id,seed,rng:seed,day:0,winner:null,nextArmy:1,nextEvent:1,
+    ...(rules.localBattleTiming?{localBattleTiming:rules.localBattleTiming}:{}),
     hero:{...scenario.hero,journey:null,watching:false,readyOn:0},pending:null,arrivals:[],engagements:[],
     regions:Object.fromEntries(scenario.regions.map(r=>[r.id,{owner:r.owner,garrison:r.garrison,recovery:0,lastBattle:null}])),armies:[],events:[],commands:[]};
   const atWar=(a,b)=>scenario.wars.some(w=>w.includes(a)&&w.includes(b)&&a!==b);
@@ -51,18 +65,25 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     return ((t^(t>>>14))>>>0)/4294967296;
   }
   function emit(type,fields={}){const event={...fields,id:state.nextEvent++,day:state.day,type};state.events.push(event);return event;}
+  const food=createFoodSystem(scenario,state,emit);
+  const roadside=createRoadsideInterception({state,scenario,emit,destroy,victory});
+  initializeHousing(scenario,state);
+  if(food)state.version=4;
+  const effectiveDefense=region=>state.regions[region].garrison*foodCombatFactor(state.regions[region].food)+
+    stationed(state,region,state.regions[region].owner).reduce((n,a)=>n+a.strength*foodCombatFactor(a.supply),0);
   const activeBattle=region=>state.engagements.find(e=>e.region===region&&e.status==='active');
   function raise(owner,region,strength,guard=false){
     const id=state.nextArmy++,army={id,name:`${factionName(owner)} ${guard?regions.get(region).name+' Guard':'Army'} ${id}`,owner,origin:region,
       strength,region,from:region,to:region,status:'ready',kind:'hold',departed:null,arrives:null,readyOn:null,route:null,reason:'Holding friendly territory.',battles:0};
-    state.armies.push(army);return army;
+    attachCommander(state,army,scenario.commanders);food?.armyInit(army,region);state.armies.push(army);return army;
   }
-  function destroy(army,reason){Object.assign(army,{strength:0,status:'destroyed',region:null,arrives:null,readyOn:null,reason});}
+  function destroy(army,reason){if(army.commander&&!['slain','captured'].includes(army.commander.status))army.commander.status='captured';Object.assign(army,{strength:0,status:'destroyed',region:null,arrives:null,readyOn:null,reason});}
   function settle(army,region,recover=false){
     Object.assign(army,{region,status:recover?'recovering':'ready',arrives:null,readyOn:recover?state.day+rules.armyRecoveryDays:null});
     army.reason=recover?'Regrouping after battle. Cannot march until recovery ends.':'Holding friendly territory; available for another order.';
   }
   function march(army,from,to,kind,reason,marchDays=null){
+    food?.pack(army,from);
     const route=travel(from,to);if(marchDays!==null)Object.assign(route,{days:marchDays,distanceDays:marchDays,terrainDays:0,crossingDays:0,authoredOpening:true,name:'Prepared opening approach to '+regions.get(to).name});Object.assign(army,{from,to,region:null,kind,status:kind==='retreat'?'retreating':'marching',departed:state.day,arrives:state.day+route.days,readyOn:null,route,reason});
     emit(kind==='retreat'?'retreat':'march',{army:copy(army),reason});
   }
@@ -74,7 +95,12 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     if(!to){const strength=army.strength;emit('surrender',{armyId:army.id,name:army.name,faction:army.owner,region:from,strength,reason:'No adjacent friendly territory remains; neutral borders are closed.'});destroy(army,'Surrendered: no friendly retreat route.');return null;}
     march(army,from,to,'retreat','Withdrawing to friendly territory to regroup.');return {armyId:army.id,name:army.name,strength:army.strength,from,to,arrives:army.arrives};
   }
+  let completingBattleUntil=null;
   function victory(){
+    // Tactical casualties are already recorded, but their battle is not over
+    // strategically until its deadline. Do not declare victory halfway through
+    // that interval if the player routed the last remaining enemy force.
+    if(completingBattleUntil!==null&&state.day<completingBattleUntil)return;
     for(const faction of scenario.wars[0]){
       const enemy=scenario.wars[0].find(id=>id!==faction);
       if(!Object.values(state.regions).some(r=>r.owner===enemy)&&!state.armies.some(a=>a.owner===enemy&&isAlive(a))){state.winner=faction;emit('victory',{faction});return;}
@@ -84,16 +110,18 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     const attackingArmies=engagement?engagement.attackingIds.map(id=>state.armies.find(a=>a.id===id)):[army];
     const region=army.to,attackOrigin=army.from,target=state.regions[region],defender=target.owner,defenders=defendingStrength(state,region),attackers=attackingArmies.reduce((n,a)=>n+a.strength,0);
     const defendingArmies=stationed(state,region,defender),defendingIds=defendingArmies.map(a=>a.id),garrison={strength:target.garrison};
-    const baseChance=attackers/(attackers+defenders*rules.defenseBonus);
+    const attackPower=food?attackingArmies.reduce((n,a)=>n+a.strength*foodCombatFactor(a.supply),0):attackers;
+    const defensePower=food?effectiveDefense(region):defenders;
+    const baseChance=attackPower+defensePower?attackPower/(attackPower+defensePower*rules.defenseBonus):0;
     const blocked=hero?.objective?.blocked??0;
-    const withoutAttackers=attackers+(hero?.objective?.targetFaction===army.owner?blocked:0),withoutDefenders=defenders+(hero?.objective?.targetFaction===defender?blocked:0);
-    const unassistedChance=withoutAttackers/(withoutAttackers+withoutDefenders*rules.defenseBonus);
+    const withoutAttackers=attackPower+(hero?.objective?.targetFaction===army.owner?blocked*(attackers?attackPower/attackers:1):0),withoutDefenders=defensePower+(hero?.objective?.targetFaction===defender?blocked*(defenders?defensePower/defenders:1):0);
+    const unassistedChance=withoutAttackers+withoutDefenders?withoutAttackers/(withoutAttackers+withoutDefenders*rules.defenseBonus):0;
     const shift=hero?.objective?0:hero?.outcome==='success'?.20:hero?.outcome==='defeat'?-.10:0;
-    const delta=shift*(hero?.faction===army.owner?1:-1);
+    const delta=shift*(hero?.faction===army.owner?1:-1)+((engagement?.morale?.[army.owner]??0)-(engagement?.morale?.[defender]??0))/200;
     // Caps cannot reverse the benefit when an overwhelming force already has
     // odds outside the 5-95% band. An empty defense is still captured normally.
     const chance=delta>0?Math.max(baseChance,Math.min(.95,baseChance+delta)):delta<0?Math.min(baseChance,Math.max(.05,baseChance+delta)):baseChance;
-    const roll=random(),decisive=engagement?.rally?.outcome==='success',captured=decisive?engagement.rally.faction===army.owner:defenders===0||roll<chance;
+    const roll=random(),decisive=engagement?.rally?.outcome==='success',captured=attackers>0&&(decisive?engagement.rally.faction===army.owner:defenders===0||roll<chance);
     const attackLoss=captured?Math.min(Math.max(0,attackers-1),Math.ceil(defenders*(.25+random()*.25))):Math.ceil(attackers*(.4+random()*.2));
     const defenseLoss=captured?Math.ceil(defenders*(.45+random()*.2)):Math.min(Math.max(0,defenders-1),Math.ceil(attackers*(.3+random()*.3)));
     inflictLosses(attackingArmies,attackLoss);for(const a of attackingArmies)a.battles++;
@@ -105,18 +133,26 @@ export function createCampaign(definition,seed=definition.defaultSeed){
       for(const a of defendingArmies){const record=retreat(a,region);if(record)retreats.push(record);}
       if(garrison.strength){const guard=raise(defender,region,garrison.strength,true);guard.battles=1;defendingIds.push(guard.id);const record=retreat(guard,region);if(record)retreats.push(record);}
       for(const a of attackingArmies)if(a.strength)settle(a,region,true);else destroy(a,'Lost in battle.');
+      if(food){target.food.readiness=1;target.food.shortageDays=0;target.food.recruitCredit=0;}
     }else{
       for(const a of defendingArmies)if(a.strength)settle(a,region,true);else destroy(a,'Lost defending '+regions.get(region).name+'.');
       for(const a of attackingArmies){const record=retreat(a,region,a.from);if(record)retreats.push(record);}
     }
+    if(engagement?.commanders){
+      for(const [side,c] of Object.entries(engagement.commanders))if(c.status!=='slain'){
+        const host=state.armies.find(a=>a.id===c.armyId);
+        if(!host.strength||host.status==='destroyed'){c.status='captured';host.commander.status='captured';}
+        else if(c.status==='active'&&host.status==='retreating')recordCommander(state,engagement,side,{hp:c.hp,outcome:'routed'});
+      }
+    }
     target.lastBattle=state.day;
     const surrendered=state.events.slice(surrenderStart).filter(e=>e.type==='surrender').map(e=>({armyId:e.armyId,strength:e.strength,faction:e.faction}));
-    return emit('battle',{region,from:attackOrigin,armyId:army.id,armyName:army.name,attackingIds:attackingArmies.map(a=>a.id),engagementId:engagement?.id??null,defendingIds,attacker:army.owner,defender,attackers,defenders,chance,roll,captured,
-      attackLoss,defenseLoss,retreats,surrendered,...(rules.reattackDelayDays?{reattackOn:state.day+rules.reattackDelayDays}:{}),survivors:defendingStrength(state,region),defenseBonus:rules.defenseBonus,baseChance,unassistedChance,hero,...(decisive?{resolution:'rally-rout',rally:copy(engagement.rally)}:{})});
+    return emit('battle',{region,from:attackOrigin,armyId:army.id,armyName:army.name,attackingIds:attackingArmies.map(a=>a.id),engagementId:engagement?.id??null,defendingIds,attacker:army.owner,defender,attackers,defenders,chance,roll,captured,...(food?{attackPower,defensePower}:{}),
+      attackLoss,defenseLoss,retreats,surrendered,...(engagement?.commanders?{commanders:copy(engagement.commanders),morale:copy(engagement.morale??{})}:{}),...(rules.reattackDelayDays?{reattackOn:state.day+rules.reattackDelayDays}:{}),survivors:defendingStrength(state,region),defenseBonus:rules.defenseBonus,baseChance,unassistedChance,hero,...(decisive?{resolution:'rally-rout',rally:copy(engagement.rally)}:{})});
   }
   function arrive(army){
     const region=army.to,target=state.regions[region];
-    if(target.owner===army.owner){const recovering=army.kind==='retreat';settle(army,region,recovering);if(activeBattle(region)){army.status='engaged';army.readyOn=null;army.reason='Defending the ongoing battle.';}emit('arrive',{army:copy(army),region});return;}
+    if(target.owner===army.owner){const recovering=army.kind==='retreat';settle(army,region,recovering);if(activeBattle(region)){army.status='engaged';army.readyOn=null;army.reason='Defending the ongoing battle.';const b=activeBattle(region);roadside.applyMorale(army,b);if(scenario.commanders)b.commanders={...fieldCommanders(state,b),...b.commanders};}emit('arrive',{army:copy(army),region});return;}
     if(army.kind==='retreat'){retreat(army,region);return;}
     if(!atWar(army.owner,target.owner))throw Error('An army reached neutral territory.');
     if(battleDays){
@@ -129,6 +165,8 @@ export function createCampaign(definition,seed=definition.defaultSeed){
         for(const a of stationed(state,region,target.owner)){a.status='engaged';a.readyOn=null;a.reason='Defending the ongoing battle.';}
       }else emit('battle-reinforced',{battleId:engagement.id,armyId:army.id,strength:army.strength,region});
       engagement.attackingIds.push(army.id);army.status='engaged';army.region=null;army.arrives=null;army.reason=`Fighting in ${regions.get(region).name} until day ${engagement.endsOn}.`;
+      roadside.applyMorale(army,engagement);
+      if(scenario.commanders)engagement.commanders={...fieldCommanders(state,engagement),...engagement.commanders};
       if(starting&&regions.get(region).interceptionStrength)engagement.reinforcements=reserveReinforcements(state,engagement,regions.get(region).interceptionStrength);
       if(starting)emit('battle-start',{engagement:copy(engagement)});return;
     }
@@ -140,39 +178,60 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   }
   function available(region,faction){
     const home=state.regions[region];if(home.owner!==faction||home.recovery||activeBattle(region))return null;
-    const local=stationed(state,region,faction),army=local.filter(a=>a.status==='ready').sort((a,b)=>b.strength-a.strength||a.id-b.id)[0];
+    const local=stationed(state,region,faction).filter(a=>!a.openingGuard||state.day>=a.readyOn),army=local.filter(a=>a.status==='ready').sort((a,b)=>b.strength-a.strength||a.id-b.id)[0];
     if(!army&&(local.length||state.armies.filter(a=>isAlive(a)&&a.owner===faction).length>=rules.maxRaisedArmies))return null;
     const levy=Math.max(0,Math.floor((home.garrison-rules.reserve)*.8)),strength=(army?.strength??0)+levy;
     return strength>=20?{owner:faction,from:region,armyId:army?.id??null,levy,strength}:null;
   }
   function plan(faction){
     const opening=state.day===1?scenario.openingOrders?.find(o=>o.faction===faction):null;
-    if(opening){const ready=available(opening.from,faction);if(ready)return {...ready,to:opening.to,kind:'attack',marchDays:opening.marchDays,reason:'A prepared vanguard advances on '+regions.get(opening.to).name+'; the opening march reaches the frontier in '+opening.marchDays+' days.'};}
+    if(opening){const ready=available(opening.from,faction);if(ready){
+      const order={...ready,to:opening.to,kind:'attack',marchDays:opening.marchDays,reason:'A prepared vanguard advances on '+regions.get(opening.to).name+'; the opening march reaches the frontier in '+opening.marchDays+' days.'};
+      if(rules.supplyPlanning){
+        const assessed=assessSupplyOrder(scenario,state,{...order,score:1},travel(order.from,order.to));
+        // Authored opening orders remain explicit scenario commitments.
+        assessed.wait=false;assessed.waitExhausted=false;assessed.supplyPlan={day:state.day,action:'attack',target:order.to,forecast:assessed.supplyPlan.forecast};
+        assessed.reason='Prepared opening order. '+supplyOrderReason(assessed,regions.get(order.to).name);return assessed;
+      }
+      return order;
+    }}
     const options=[];
     for(const r of scenario.regions){
       const ready=available(r.id,faction);if(!ready)continue;
       for(const to of r.neighbors){
         if(!atWar(faction,state.regions[to].owner)||state.day<offensiveRecoveryUntil(state,to,faction))continue;
         const defenders=defendingStrength(state,to),inbound=state.armies.filter(a=>(isMoving(a)||a.status==='engaged')&&a.to===to&&a.owner===faction).reduce((n,a)=>n+a.strength,0);
-        const ratio=ready.strength/(defenders*rules.defenseBonus+inbound+1),route=travel(r.id,to);
+        const existing=state.armies.find(a=>a.id===ready.armyId);
+        const power=food?(existing?.strength??0)*foodCombatFactor(existing?.supply)+ready.levy*foodCombatFactor(state.regions[r.id].food):ready.strength;
+        const ratio=power/((food?effectiveDefense(to):defenders)*rules.defenseBonus+inbound+1),route=travel(r.id,to);
         if(ratio>=.72)options.push({...ready,to,kind:'attack',score:ratio/(1+route.days*.12),reason:`Exposed frontier: ${ready.strength} attacking vs ${defenders} defending; ${route.days}-day route. Shorter routes rank higher.`});
       }
+    }
+    if(rules.supplyPlanning&&options.length){
+      const order=chooseSupplyOrder(scenario,state,options,travel);order.reason=supplyOrderReason(order,regions.get(order.to).name);return order;
     }
     options.sort((a,b)=>b.score-a.score||a.from.localeCompare(b.from)||a.to.localeCompare(b.to));if(options.length)return options[0];
     for(const r of scenario.regions){
       const ready=available(r.id,faction);if(!ready||ready.strength<30||r.neighbors.some(n=>atWar(faction,state.regions[n].owner)))continue;
       const to=r.neighbors.filter(n=>state.regions[n].owner===faction&&regions.get(n).neighbors.some(id=>atWar(faction,state.regions[id].owner)))
         .sort((a,b)=>defendingStrength(state,a)-defendingStrength(state,b)||travel(r.id,a).days-travel(r.id,b).days||a.localeCompare(b))[0];
-      if(to)return {...ready,to,kind:'transfer',reason:'Reinforce the weakest adjacent friendly frontier from the rear.'};
+      if(to){
+        const order={...ready,to,kind:'transfer',reason:'Reinforce the weakest adjacent friendly frontier from the rear.'};
+        if(rules.supplyPlanning){const assessed=assessSupplyOrder(scenario,state,{...order,score:1},travel(r.id,to));assessed.reason=supplyOrderReason(assessed,regions.get(to).name);return assessed;}
+        return order;
+      }
     }
     return null;
   }
   function step(days=1){
     if(!Number.isInteger(days)||days<1||days>10000)throw Error('Advance between 1 and 10000 whole days.');
     for(let i=0;i<days&&!state.winner&&!state.pending;i++){
-      state.day++;
+      state.day++;recoverCommanders(state);
+      food?.tick();
+      if(food)for(const army of state.armies)if(!army.strength&&army.status!=='destroyed')destroy(army,'Lost to prolonged supply shortages.');
       if(state.hero.journey?.arrives<=state.day){state.hero.region=state.hero.journey.to;state.hero.journey=null;emit('hero-arrive',{region:state.hero.region});}
-      for(const r of scenario.regions){const current=state.regions[r.id];if(activeBattle(r.id))continue;if(current.recovery){current.recovery--;continue;}if(current.garrison<rules.garrisonCap)current.garrison=Math.min(rules.garrisonCap,current.garrison+r.recruits);}
+      for(const r of scenario.regions){const current=state.regions[r.id];if(activeBattle(r.id))continue;if(current.recovery){current.recovery--;continue;}if(current.garrison<rules.garrisonCap)current.garrison=Math.min(rules.garrisonCap,current.garrison+(food?food.recruits(r.id,r.recruits):r.recruits));}
+      if(food)for(const army of state.armies)if(isAlive(army)&&!isMoving(army)&&army.region)food.pack(army,army.region);
       for(const a of state.armies)if(a.status==='recovering'&&a.readyOn<=state.day){a.status='ready';a.readyOn=null;a.reason='Recovered and available for orders.';emit('recovered',{armyId:a.id,name:a.name,region:a.region});}
       for(const engagement of state.engagements.filter(e=>e.status==='active'&&e.endsOn<=state.day)){
         if(engagement.reinforcements)for(const squad of Object.values(engagement.reinforcements))if(['approaching','partially-intercepted'].includes(squad.status))squad.status='joined';
@@ -181,7 +240,7 @@ export function createCampaign(definition,seed=definition.defaultSeed){
       }
       const due=state.armies.filter(a=>isMoving(a)&&a.arrives<=state.day);
       for(let n=due.length-1;n>0;n--){const j=Math.floor(random()*(n+1));[due[n],due[j]]=[due[j],due[n]];}
-      state.arrivals=due.map(a=>a.id);finishDay();
+      state.arrivals=due.map(a=>a.id);finishDay();food?.closeDay();
     }
     return snapshot();
   }
@@ -189,16 +248,23 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   function finishDay(){
       while(state.arrivals.length&&!state.pending){const id=state.arrivals.shift(),army=state.armies.find(a=>a.id===id);if(isMoving(army)&&army.arrives<=state.day)arrive(army);}
       if(state.pending)return;
-      victory();if(state.winner)return;
-      if((state.day-1)%rules.decisionEvery===0){
+      victory();if(state.winner){food?.closeDay();return;}
+      if(rules.autonomousOrders!==false&&(state.day-1)%rules.decisionEvery===0){
         // Both factions plan before either order mutates the state.
         const orders=scenario.wars[0].map(plan).filter(Boolean);
         for(const order of orders){
           state.regions[order.from].garrison-=order.levy;
           const army=order.armyId?state.armies.find(a=>a.id===order.armyId):raise(order.owner,order.from,0);
-          army.strength+=order.levy;march(army,order.from,order.to,order.kind,order.reason,order.marchDays??null);
+          food?.muster(army,order.from,army.strength,order.levy);
+          army.strength+=order.levy;
+          if(order.supplyPlan)army.supplyPlan=copy(order.supplyPlan);
+          if(order.wait){
+            food.pack(army,order.from);army.reason=order.reason;
+            emit('army-hold',{armyId:army.id,name:army.name,region:order.from,reason:order.reason,action:order.supplyPlan.action});
+          }else march(army,order.from,order.to,order.kind,order.reason,order.marchDays??null);
         }
       }
+      food?.closeDay();
   }
   function heroTravel(to){
     if(scenario.heroTracking==='world')return {ok:false,reason:'Hero travel is controlled by movement in the world.'};
@@ -211,6 +277,14 @@ export function createCampaign(definition,seed=definition.defaultSeed){
   function watchBattles(enabled){
     if(typeof enabled!=='boolean'||state.pending||state.winner)return {ok:false,reason:'Cannot change encounter settings now.'};
     state.hero.watching=enabled;state.commands.push({type:'hero-watch',day:state.day,enabled});return {ok:true};
+  }
+  // Opt old elapsed-clock saves into the corrected rule without rewriting the
+  // outcomes of earlier battles in their command replay. This is one-way and
+  // may also be chosen while a saved local encounter is pending.
+  function setBattleTiming(timing){
+    if(timing!=='scheduled'||!['immediate','scheduled'].includes(state.localBattleTiming))return {ok:false,reason:'Only an elapsed campaign can adopt scheduled battle completion.'};
+    if(state.localBattleTiming===timing)return {ok:true};
+    state.localBattleTiming=timing;state.commands.push({type:'battle-timing',day:state.day,timing});return {ok:true};
   }
   // The exploration adapter reports region crossings. This entry point is only
   // enabled for world-driven scenarios; it cannot move a map-only hero for free.
@@ -227,13 +301,35 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     if(state.pending||!stage||engagement.endsOn<=state.day||state.hero.readyOn>state.day||state.hero.region!==engagement.region||
       !Number.isFinite(position?.x)||!Number.isFinite(position?.z)||Math.hypot(position.x-engagement.location.x,position.z-engagement.location.z)>(engagement.entryRadius??(stage==='rally'?45:24)))
       return {ok:false,reason:'Reach the active battlefield before it ends, while ready to help.'};
-    state.pending={id:stage==='rally'?engagement.id+':rally':engagement.id,battleId:engagement.id,...(engagement.rally||engagement.participation?{stage}:{}),...(engagement.participation?{entryRadius:engagement.entryRadius,participation:{faction:engagement.participation.faction,...engagement.participation.intercept,guards:Math.max(0,engagement.participation.intercept.totalGuards-engagement.participation.intercept.stopped-engagement.participation.intercept.escaped)}}:{}),...(stage==='rally'?{rally:{faction:engagement.rally.faction,guards:rallyGuardCount(engagement),blocked:engagement.heroResult.objective.blocked,...(rules.assaultSupportGap!==undefined?{supportAllies:Math.min(3,Math.max(0,rallyGuardCount(engagement)-rules.assaultSupportGap))}:{}),...(engagement.participation?{stopped:engagement.rally.stopped??0,totalGuards:engagement.rally.totalGuards,...(engagement.rally.style?{style:engagement.rally.style}:{}),...(engagement.rally.allied?{allied:copy(engagement.rally.allied)}:{})}: {})}}:{}),day:state.day,region:engagement.region,armyId:engagement.attackingIds[0],attacker:engagement.attacker,defender:engagement.defender,
+    state.pending={id:stage==='rally'?engagement.id+':rally':engagement.id,battleId:engagement.id,...(engagement.rally||engagement.participation?{stage}:{}),...(engagement.participation?{entryRadius:engagement.entryRadius,participation:{faction:engagement.participation.faction,...engagement.participation.intercept,guards:Math.max(0,engagement.participation.intercept.totalGuards-engagement.participation.intercept.stopped-engagement.participation.intercept.escaped)}}:{}),...(stage==='rally'?{rally:{faction:engagement.rally.faction,guards:rallyGuardCount(engagement),blocked:engagement.heroResult?.objective?.blocked??0,...(rules.assaultSupportGap!==undefined?{supportAllies:Math.min(3,Math.max(0,rallyGuardCount(engagement)+(engagement.duel?.moraleGuards??0)-rules.assaultSupportGap))}:{}),...(engagement.participation?{stopped:engagement.rally.stopped??0,totalGuards:engagement.rally.totalGuards,...(engagement.rally.style?{style:engagement.rally.style}:{}),...(engagement.rally.allied?{allied:copy(engagement.rally.allied)}:{})}: {})}}:{}),day:state.day,region:engagement.region,armyId:engagement.attackingIds[0],attacker:engagement.attacker,defender:engagement.defender,
       attackers:engagement.attackingIds.reduce((n,id)=>n+state.armies.find(a=>a.id===id).strength,0),defenders:defendingStrength(state,engagement.region),endsOn:engagement.endsOn,...(engagement.reinforcements?{reinforcements:copy(engagement.reinforcements)}:{})};
+    if(scenario.commanders){engagement.commanders={...fieldCommanders(state,engagement),...engagement.commanders};state.pending.commanders=copy(engagement.commanders);state.pending.morale=copy(engagement.morale??{});}
+    if(stage==='rally'&&engagement.rally.direct)Object.assign(state.pending.rally,{direct:true,supportAllies:engagement.rally.supportAllies});
+    if(canEnterFieldBattle(engagement))state.pending.fieldBattleAvailable=true;
+    if(stage==='intercept'&&canOfferChampionDuel(state,engagement,rules.championDuel))state.pending.duelAvailable=true;
+    if(engagement.duel)state.pending.duel=copy(engagement.duel);
     state.commands.push({type:'join-battle',day:state.day,id,position:{x:position.x,z:position.z}});emit('encounter',state.pending);return {ok:true};
+  }
+  function chooseFieldBattle(id,faction){
+    const p=state.pending,b=p&&state.engagements.find(e=>e.id===p.battleId);
+    if(p?.id!==id||!canEnterFieldBattle(b)||![p.attacker,p.defender].includes(faction))return {ok:false,reason:'Join the current battlefield before committing to another opening.'};
+    beginFieldBattle(b,p,faction);
+    state.commands.push({type:'field-battle',day:state.day,id,faction});return {ok:true};
+  }
+  function chooseDuel(id,faction,fieldBattle=false){
+    const p=state.pending,b=p&&state.engagements.find(e=>e.id===p.battleId);
+    if(p?.id!==id||!b||p.stage!=='intercept'||![p.attacker,p.defender].includes(faction))return {ok:false,reason:'Choose a side at the current battlefield.'};
+    if(b.duel)return b.duel.status==='accepted'&&b.duel.faction===faction?{ok:true}:{ok:false,reason:'This challenge has already been spent.'};
+    if(b.commanders&&b.commanders[faction===b.attacker?b.defender:b.attacker]?.status!=='active')return {ok:false,reason:'The opposing army has no active commander to challenge.'};
+    if(!canOfferChampionDuel(state,b,rules.championDuel))return {ok:false,reason:'No champion challenge is available here.'};
+    if(typeof fieldBattle!=='boolean'||fieldBattle&&!canEnterFieldBattle(b))return {ok:false,reason:'This field battle has already begun.'};
+    b.duel={status:'accepted',faction,enemy:faction===b.attacker?b.defender:b.attacker,...(fieldBattle?{fieldBattle:fieldBattleFormation(p,faction)}:{}),...(b.commanders?{armyCommander:true}:{})};p.duel=copy(b.duel);
+    b.participation.faction=p.participation.faction=faction;
+    state.commands.push({type:'champion-duel',day:state.day,id,faction,...(fieldBattle?{fieldBattle:true}:{})});return {ok:true};
   }
   function chooseAssault(id,style){
     const p=state.pending,b=p&&state.engagements.find(e=>e.id===p.battleId&&e.status==='active');
-    if(p?.id!==id||!p.participation||!p.rally||!b||!['solo','allied'].includes(style))return {ok:false,reason:'Choose a style for the current final assault.'};
+    if(p?.id!==id||!p.participation||!p.rally||!b||!['solo','allied'].includes(style)||b.commanders&&style!=='allied')return {ok:false,reason:'Choose a style for the current final assault.'};
     if(b.rally.style)return b.rally.style===style?{ok:true}:{ok:false,reason:'Resume this assault in its original style.'};
     if((b.rally.stopped??0)>0&&style!=='solo')return {ok:false,reason:'An existing solo assault must resume without replacement allies.'};
     b.rally.style=p.rally.style=style;
@@ -241,7 +337,17 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     state.commands.push({type:'assault-style',day:state.day,id,style});return {ok:true};
   }
   function resolveEncounter(id,faction,outcome,reason=null,stopped=null,progress=null){
+    const result=resolveEncounterMutation(id,faction,outcome,reason,stopped,progress);
+    // Immediate battles may destroy a supplied army or provision a retreat.
+    // Reconcile that stock without producing food or spending another minute.
+    // Earlier food scenarios retain their original scheduled accounting.
+    if(result.ok&&state.localBattleTiming)food?.closeDay();
+    return result;
+  }
+  function resolveEncounterMutation(id,faction,outcome,reason,stopped,progress){
     const pending=state.pending;
+    if(pending?.kind==='roadside')return roadside.resolve(id,faction,outcome,reason,stopped,progress);
+    if(pending?.id===id&&pending.duel?.status==='accepted')return resolveDuel(pending,faction,outcome,reason,stopped,progress);
     if(pending?.id===id&&pending.participation)return resolveParticipation(pending,faction,outcome,reason,stopped,progress);
     if(pending?.id===id&&pending.stage==='rally')return resolveRally(pending,faction,outcome,reason,stopped);
     if(!pending||pending.id!==id||!['success','defeat','withdraw'].includes(outcome)||
@@ -262,6 +368,17 @@ export function createCampaign(definition,seed=definition.defaultSeed){
       return {ok:true};}
     battle(state.armies.find(a=>a.id===pending.armyId),outcome==='withdraw'?null:{faction,outcome});finishDay();return {ok:true};
   }
+  function resolveDuel(pending,faction,outcome,reason,stopped,progress){
+    const b=state.engagements.find(e=>e.id===pending.battleId&&e.status==='active');
+    if(!b||stopped!==0||progress!==null&&(typeof progress!=='object'||Array.isArray(progress)||Object.keys(progress).some(k=>k!=='escaped')||(progress.escaped??0)!==0))return {ok:false,reason:'A duel cannot award soldier casualties.'};
+    const result=finishChampionDuel(state,b,faction,outcome,reason);if(!result.ok)return result;
+    if(b.commanders){if(outcome==='success')recordCommander(state,b,b.duel.enemy,{hp:1,outcome:'routed'});else shiftBattleMorale(b,faction,10);}
+    const command={type:'hero-result',day:state.day,id:pending.id,faction,outcome,reason,stopped:0};
+    state.commands.push(command);state.pending=null;state.hero.readyOn=state.day;
+    emit('hero-result',{...command,region:b.region,battleId:b.id,objective:result.objective,phaseComplete:true});
+    if(outcome!=='withdraw')advancePhase(b,false);
+    return {ok:true};
+  }
   // v6 battlefield visits are resumable. Legacy scenario commands above retain
   // their original one-shot meaning so existing saves replay unchanged.
   function resolveParticipation(pending,faction,outcome,reason,stopped,progress){
@@ -270,12 +387,12 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     const escaped=progress?.escaped??0,rally=pending.stage==='rally',remaining=rally?pending.rally.guards:pending.participation.guards;
     const count=stopped??(outcome==='success'?remaining:0);
     const allied=rally&&pending.rally.style==='allied',lost=progress?.alliesLost??0,routed=progress?.routed??0,damage=progress?.allyDamage??0;
-    if(progress!==null&&(typeof progress!=='object'||Array.isArray(progress)||Object.keys(progress).some(k=>!(allied?['escaped','alliesLost','routed','allyDamage']:['escaped']).includes(k)))||
-      !Number.isInteger(lost)||lost<0||lost>(allied?pending.rally.allied.totalAllies-pending.rally.allied.lost:0)||!Number.isInteger(routed)||routed<0||routed>count||!Number.isFinite(damage)||damage<0||damage>remaining*50||
+    if(progress!==null&&(typeof progress!=='object'||Array.isArray(progress)||Object.keys(progress).some(k=>![...(allied?['escaped','alliesLost','routed','allyDamage']:['escaped']),...(rally&&engagement.commanders?['commanders']:[])].includes(k)))||
+      !Number.isInteger(lost)||lost<0||lost>(allied?pending.rally.allied.totalAllies-pending.rally.allied.lost:0)||!Number.isInteger(routed)||routed<0||routed>count||!Number.isFinite(damage)||damage<0||damage>encounterDamageBudget(rules,remaining,engagement.commanders,faction)||
       !Number.isInteger(escaped)||escaped<0||!Number.isInteger(count)||count<0||count+escaped>remaining||rally&&escaped)
       return {ok:false,reason:'Invalid remaining-soldier count.'};
     if(reason==='declined'){
-      if(outcome!=='withdraw'||faction!==null||count||escaped||lost||routed||damage)return {ok:false,reason:'Invalid battlefield refusal.'};
+      if(outcome!=='withdraw'||faction!==null||count||escaped||lost||routed||damage||progress?.commanders)return {ok:false,reason:'Invalid battlefield refusal.'};
       state.commands.push({type:'hero-result',day:state.day,id:pending.id,faction:null,outcome:'withdraw',reason:'declined',stopped:0});
       state.pending=null;return {ok:true};
     }
@@ -285,12 +402,14 @@ export function createCampaign(definition,seed=definition.defaultSeed){
       ![pending.attacker,pending.defender].includes(faction)||
       engagement.participation.faction&&engagement.participation.faction!==faction||
       outcome==='success'&&(count!==remaining||escaped))return {ok:false,reason:'Invalid or already resolved battlefield phase.'};
+    if(rally&&engagement.commanders&&!validateCommanderReport(engagement,progress?.commanders,faction,outcome))return {ok:false,reason:'Face the army commander and record their fate before claiming this battle.'};
     const enemy=faction===pending.attacker?pending.defender:pending.attacker;
     if(!rally&&engagement.reinforcements&&!engagement.reinforcements[enemy]?.strength)return {ok:false,reason:'No enemy reinforcement squad is available.'};
-    const command={type:'hero-result',day:state.day,id:pending.id,faction,outcome,...(reason?{reason}:{}),stopped:count,...(progress!==null?{progress:{escaped,...(allied?{alliesLost:lost,routed,allyDamage:damage}:{})}}:{})};
+    const command={type:'hero-result',day:state.day,id:pending.id,faction,outcome,...(reason?{reason}:{}),stopped:count,...(progress!==null?{progress:{escaped,...(allied?{alliesLost:lost,routed,allyDamage:damage}:{}),...(rally&&engagement.commanders?{commanders:copy(progress.commanders??{})}:{})}}:{})};
     state.commands.push(command);state.pending=null;state.hero.readyOn=state.day;
     engagement.participation.faction=faction;
     if(rally){
+      for(const [side,report] of Object.entries(progress?.commanders??{}))recordCommander(state,engagement,side,report);
       const result=removeRallyGuards(state,engagement,faction,count-routed);
       let alliesRemoved=0;
       if(allied){
@@ -322,6 +441,24 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     return {ok:true};
   }
   function advancePhase(engagement,final){
+    if(state.localBattleTiming==='scheduled'){
+      if(!final)return;
+      // Preserve the recorded tactical result while ordinary campaign steps
+      // carry every other army, battle and food ledger to this battle's end.
+      completingBattleUntil=engagement.endsOn;
+      try{if(engagement.endsOn>state.day)step(engagement.endsOn-state.day);}
+      finally{completingBattleUntil=null;}
+      return;
+    }
+    if(state.localBattleTiming==='immediate'){
+      if(!final)return;
+      // An elapsed-time rehearsal records this field at the current instant.
+      // Never run daily recruitment, unrelated marches or new army orders here.
+      if(engagement.reinforcements)for(const squad of Object.values(engagement.reinforcements))if(['approaching','partially-intercepted'].includes(squad.status))squad.status='joined';
+      const result=battle(state.armies.find(a=>a.id===engagement.attackingIds[0]),engagement.heroResult?.outcome==='withdraw'&&!engagement.heroResult.objective?.blocked?null:engagement.heroResult,engagement);
+      Object.assign(engagement,{status:'resolved',resolvedOn:state.day,resultId:result.id,captured:result.captured});
+      victory();return;
+    }
     const target=final?engagement.endsOn:Math.min(engagement.endsOn-1,engagement.started+Math.max(1,Math.floor(battleDays/2)));
     if(target>state.day)step(target-state.day);
   }
@@ -353,7 +490,37 @@ export function createCampaign(definition,seed=definition.defaultSeed){
     target.garrison+=amount;const command={day:state.day,type:'reinforce',region,amount,faction:target.owner};state.commands.push(command);emit('intervention',command);return {ok:true};
   }
   function snapshot(){return copy(state);}
-  emit('opening',{factions:[...scenario.wars[0]]});return {step,reinforce,heroTravel,locateHero,joinBattle,watchBattles,chooseAssault,resolveEncounter,snapshot};
+  // Developer/encounter integration seam. No scenery or caller can edit stock
+  // directly. Conditions, blockades and policies go through validated replay.
+  function foodAction(action){
+    if(!food||state.pending||state.winner)return {ok:false,reason:'Food actions need an active food scenario without a pending encounter.'};
+    const result=food.command(action);if(!result.ok)return result;
+    const command={type:'food-action',day:state.day,action:copy(action)};
+    state.commands.push(command);emit('food-action',{action:copy(action)});return result;
+  }
+  for(const initial of scenario.initialArmies??[]){
+    const r=state.regions[initial.region];
+    if(!r||r.owner!==initial.faction||!Number.isInteger(initial.strength)||initial.strength<1||initial.strength>r.garrison||!Number.isInteger(initial.readyOn)||initial.readyOn<0)throw Error('Invalid initial army.');
+    r.garrison-=initial.strength;const a=raise(initial.faction,initial.region,initial.strength);
+    if(initial.readyOn>0)Object.assign(a,{status:'recovering',readyOn:initial.readyOn,openingGuard:true,reason:'Holding the opening frontier.'});
+  }
+  // Authored battles already at their frontier when this scenario opens. They
+  // use real garrison troops, packed provisions and the ordinary battle stages.
+  // A new scenario ID keeps old command replays on their original opening.
+  for(const opening of scenario.openingBattles??[]){
+    const home=state.regions[opening.from],target=state.regions[opening.to];
+    const startsOn=opening.startsOn??0;
+    if(!Number.isInteger(startsOn)||startsOn<0)throw Error('Invalid opening battle time.');
+    if(!battleDays||!home||!target||home.owner!==opening.faction||!atWar(home.owner,target.owner)||!regions.get(opening.from).neighbors.includes(opening.to)||activeBattle(opening.to)||!Number.isInteger(opening.strength)||opening.strength<1||opening.strength>home.garrison-rules.reserve)throw Error('Invalid opening battle.');
+    home.garrison-=opening.strength;
+    const army=raise(opening.faction,opening.from,opening.strength);food?.pack(army,opening.from);
+    // Later opening fronts use real marching troops, with ordinary supply,
+    // interception and arrival handling. No extra army spawns at the deadline.
+    if(startsOn){march(army,opening.from,opening.to,'attack','Advancing to the opening frontier.',startsOn);continue;}
+    Object.assign(army,{from:opening.from,to:opening.to,region:null,kind:'attack',departed:0,arrives:0,route:travel(opening.from,opening.to)});
+    arrive(army);
+  }
+  emit('opening',{factions:[...scenario.wars[0]]});return {step,reinforce,heroTravel,locateHero,joinBattle,interceptArmy:roadside.interceptArmy,watchBattles,setBattleTiming,chooseFieldBattle,chooseAssault,chooseDuel,resolveEncounter,foodAction,snapshot};
 }
 
 // A saved experiment is a seed + ordered commands + final day. Replaying goes
@@ -363,10 +530,10 @@ export function replayCampaign(scenario,{seed,day,commands=[],scenario:scenarioI
   if(!Number.isInteger(day)||day<0||day>10000)throw new Error('Invalid replay day.');
   const campaign=createCampaign(scenario,seed);let previous=0;
   for(const command of commands){
-    if(!['reinforce','hero-travel','hero-watch','hero-result','hero-location','join-battle','assault-style'].includes(command.type)||!Number.isInteger(command.day)||command.day<previous||command.day>day)throw new Error('Invalid replay command.');
+    if(!['reinforce','hero-travel','hero-watch','hero-result','hero-location','join-battle','intercept-army','assault-style','champion-duel','field-battle','food-action','battle-timing'].includes(command.type)||!Number.isInteger(command.day)||command.day<previous||command.day>day)throw new Error('Invalid replay command.');
     if(command.day>campaign.snapshot().day)campaign.step(command.day-campaign.snapshot().day);
     if(campaign.snapshot().day!==command.day)throw new Error('Command occurs after the war ended.');
-    const result=command.type==='reinforce'?campaign.reinforce(command.region,command.amount):command.type==='hero-travel'?campaign.heroTravel(command.to):command.type==='hero-location'?campaign.locateHero(command.region):command.type==='hero-watch'?campaign.watchBattles(command.enabled):command.type==='join-battle'?campaign.joinBattle(command.id,command.position):command.type==='assault-style'?campaign.chooseAssault(command.id,command.style):campaign.resolveEncounter(command.id,command.faction,command.outcome,command.reason,command.stopped,command.progress);
+    const result=command.type==='battle-timing'?campaign.setBattleTiming(command.timing):command.type==='food-action'?campaign.foodAction(command.action):command.type==='reinforce'?campaign.reinforce(command.region,command.amount):command.type==='hero-travel'?campaign.heroTravel(command.to):command.type==='hero-location'?campaign.locateHero(command.region):command.type==='hero-watch'?campaign.watchBattles(command.enabled):command.type==='join-battle'?campaign.joinBattle(command.id,command.position):command.type==='intercept-army'?campaign.interceptArmy(command.id,command.faction,command.contact):command.type==='field-battle'?campaign.chooseFieldBattle(command.id,command.faction):command.type==='champion-duel'?campaign.chooseDuel(command.id,command.faction,command.fieldBattle??false):command.type==='assault-style'?campaign.chooseAssault(command.id,command.style):campaign.resolveEncounter(command.id,command.faction,command.outcome,command.reason,command.stopped,command.progress);
     if(!result.ok)throw new Error(result.reason);previous=command.day;
   }
   if(day>campaign.snapshot().day)campaign.step(day-campaign.snapshot().day);

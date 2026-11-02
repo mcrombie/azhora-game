@@ -1,8 +1,8 @@
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
-import { registerWorldTree } from '../../../world/scenery/tree-registry.js';
-import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
+import { createSpeciesTreesSteps, createSpeciesTreeLibrary, SPECIES_TREE_PROFILES } from '../../../world/scenery/species-trees.js';
+import { treeSpecies } from '../../../world/life/tree-species.js';
 import { IBENWOOD_NAMES, IBENWOOD_GROVES, IBENWOOD_ARRIVALS, IBENWOOD_PATHS, IBENWOOD_PROTECTION, ibenwoodForestTreesSteps, ibenwoodFeatureClear, ibenwoodWaterClear } from './ibenwood-environment.js';
 
 const CHUNK=125;
@@ -11,15 +11,7 @@ const fern=new THREE.BufferGeometry();
 fern.setAttribute('position',new THREE.Float32BufferAttribute([-.9,0,0,0,.85,0,.9,0,0,0,0,-.9,0,.85,0,0,0,.9,-.6,0,-.6,0,.7,0,.6,0,.6],3));fern.computeVertexNormals();geometries.fern=fern;
 const material=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.96,flatShading:true});
 const fernMaterial=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:1,flatShading:true,side:THREE.DoubleSide});
-const tones={
-  'grey-vault':['#696653','#446446'],'pale-witness':['#bdb99f','#798963'],bloodoak:['#70432e','#617644'],
-  'midnight-elm':['#514a3c','#2c5048'],ridgeback:['#82715a','#537348'],deeproot:['#645743','#3b6650'],
-  'silver-birch':['#b2b3a0','#718554'],'silver-fir':['#645a4a','#36594c'],'red-cedar':['#73553e','#4c6550'],
-  'stone-pine':['#786448','#6a7447'],'holm-oak':['#766951','#667147'],'black-alder':['#675b4c','#446847'],
-  'black-willow':['#706449','#537c54'],'bald-cypress':['#796c55','#647b4d'],sycamore:['#a5a18a','#67844e'],
-  beech:['#898776','#58734a'],'white-oak':['#80735c','#5e794c'],'sweet-chestnut':['#77624a','#62844c'],'black-walnut':['#66543e','#496d46'],
-};
-const conifer=new Set(['silver-fir','red-cedar','stone-pine']);
+
 
 export function createIbenwoodRegionalScenery(...args) { return finishBuild(createIbenwoodRegionalScenerySteps(...args)); }
 export function* createIbenwoodRegionalScenerySteps({parent,heightAt,colliders,renderedGroundHeight=heightAt,waterClear=ibenwoodWaterClear}) {
@@ -36,25 +28,16 @@ export function* createIbenwoodRegionalScenerySteps({parent,heightAt,colliders,r
     const p={matrix:dummy.matrix.clone(),tint};batches.get(k).parts.push(p);return p;
   }
   function tree(t) {
-    const y=renderedGroundHeight(t.x,t.z),[bark,leaf]=tones[t.species],h=t.height,r=t.radius,pieces=[];
-    const bole=h*(t.species==='pale-witness'?.9:.76);
-    const trunk=part('trunk',bark,t.x,y+bole/2,t.z,r,bole,r);
-    const offset=treeGroundingOffset(trunk.matrix,renderedGroundHeight,{radius:1,segments:7,embed:.07});
-    trunk.matrix.elements[13]+=offset;pieces.push(trunk);
-    const spread=t.species==='grey-vault'?.35:t.species==='pale-witness'?.23:.29;
-    for(let j=0;j<(conifer.has(t.species)?3:2);j++) {
-      const a=j*Math.PI+t.x*.03,dx=conifer.has(t.species)?0:Math.sin(a)*h*.09,dz=conifer.has(t.species)?0:Math.cos(a)*h*.09;
-      pieces.push(part(conifer.has(t.species)?'fir':t.age==='veteran'&&t.harvestable===false?'veteran':'crown',leaf,
-        t.x+dx,y+offset+h*(conifer.has(t.species)?.48+j*.17:.76+j*.08),t.z+dz,
-        h*spread*(conifer.has(t.species)?1-j*.23:1),h*(conifer.has(t.species)?.45:.19),h*spread*(conifer.has(t.species)?1-j*.23:1),0,a,0));
-    }
+    const y=renderedGroundHeight(t.x,t.z),bark=SPECIES_TREE_PROFILES[treeSpecies(t.species).id].bark,r=t.radius,pieces=[];
+    // Keep the ground-draped veteran roots and all canopy-building supports.
+    // Species geometry changes the standing bole and branching crown only.
     if(t.age==='veteran'&&!t.harvestable)for(let j=0;j<4;j++) {
       const a=j*Math.PI/2+.4;
       pieces.push(part('trunk',bark,t.x+Math.sin(a)*r,y+r*.6,t.z+Math.cos(a)*r,r*.4,r*2.3,r*.4,.45*Math.cos(a),0,-.45*Math.sin(a)));
     }
-    const collider={x:t.x,z:t.z,r,kind:'tree'};colliders.push(collider);
-    descriptors.push({tree:{...t,y,base:{x:t.x,y,z:t.z}},pieces,collider});
+    descriptors.push({tree:{...t,y,trunkRadius:r,crownRadius:Math.min(SPECIES_TREE_PROFILES[treeSpecies(t.species).id].radius,.4)*t.height,trunkHeight:t.height*(t.species==='pale-witness'?.9:.76),rotation:t.x*.03},pieces});
   }
+
   const forest=yield* ibenwoodForestTreesSteps({waterClear});for (const [buildIndex, buildItem] of forest.entries()) { if ((++buildWork & 31) === 0) yield;  tree(buildItem, buildIndex); }
   // Sparse fallen giants and fern mosaics, all kept off useful lanes.
   for (const [i, t] of forest.entries()) { if ((++buildWork & 31) === 0) yield;
@@ -189,11 +172,14 @@ export function* createIbenwoodRegionalScenerySteps({parent,heightAt,colliders,r
     for (const [index, p] of batch.parts.entries()) { if ((++buildWork & 31) === 0) yield; mesh.setMatrixAt(index,p.matrix);mesh.setColorAt(index,new THREE.Color(p.tint));p.handle={mesh,index};}
     mesh.computeBoundingBox();mesh.computeBoundingSphere();root.add(mesh);
   }
-  const trees=[];for(const d of descriptors) { if ((++buildWork & 31) === 0) yield; trees.push(registerWorldTree(colliders,d.tree,d.pieces.map(p=>p.handle),d.collider)); }
+  const treeLibrary=createSpeciesTreeLibrary({detail:'forest'});
+  const woodland=yield* createSpeciesTreesSteps({parent:root,colliders,trees:descriptors.map(d=>({...d.tree,additionalHandles:d.pieces.map(p=>p.handle)})),
+    heightAt:renderedGroundHeight,library:treeLibrary,chunkSize:CHUNK,name:'Ibenwood species trees'});
+  const trees=woodland.trees;
   for(const s of builders.values()){ if ((++buildWork & 31) === 0) yield; s.finish(root); }
   let triangles=0,meshes=0;root.traverse(m=>{if(m.isMesh){meshes++;triangles+=(m.geometry.index?.count??m.geometry.attributes.position.count)/3*(m.isInstancedMesh?m.count:1);}});
   const perRegion=Object.fromEntries(IBENWOOD_NAMES.map(n=>[n,trees.filter(t=>t.region===n).length]));
   const groveArea=IBENWOOD_GROVES.reduce((a,g)=>a+Math.PI*g.radius*g.radius,0);
   const wildArea=159*8660.254-groveArea-Math.PI*87*87;
-  return {root,trees,groves,arrivals:IBENWOOD_ARRIVALS,walkSurfaces,walkRoutes,walkLandings:walkLandings.map(({piece,...t})=>({...t,handle:piece.handle})),walkTreads:walkTreads.map(({piece,...t})=>({...t,handle:piece.handle})),metrics:{trees:trees.length,perRegion,treeBatches:batches.size,staticMeshes:builders.size,meshes,triangles,chunkSize:CHUNK,wildTrees:forest.length,groveTrees:trees.length-forest.length,wildTreesPerHectare:forest.length/wildArea*10000,groveTreesPerHectare:(trees.length-forest.length)/groveArea*10000}};
+  return {root,trees,groves,arrivals:IBENWOOD_ARRIVALS,walkSurfaces,walkRoutes,walkLandings:walkLandings.map(({piece,...t})=>({...t,handle:piece.handle})),walkTreads:walkTreads.map(({piece,...t})=>({...t,handle:piece.handle})),metrics:{trees:trees.length,perRegion,treeBatches:batches.size+woodland.batches,staticMeshes:builders.size,meshes,triangles,chunkSize:CHUNK,wildTrees:forest.length,groveTrees:trees.length-forest.length,wildTreesPerHectare:forest.length/wildArea*10000,groveTreesPerHectare:(trees.length-forest.length)/groveArea*10000}};
 }

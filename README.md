@@ -1,8 +1,8 @@
 ﻿# Azhora: An Adventure Game
 
-**Current development menu:** The public homepage, `npm start`, `electron .`, and **Play Azhora.cmd** offer Explore the World, Combat Testing, the Lizeemi War Scenario, and a Feradom-only Hearthfall integration workspace. The three persistent modes have separate saves; combat exercises do not save. See the [Hearthfall handoff](docs/architecture/hearthfall-sandbox.md). The settlement port is pending; no cloud service is enabled. Use `npm run start:adventure` (or `adventure.html` in the web build) for the original adventure described below.
+**Current development menu:** The public homepage, `npm start`, `electron .`, and **Play Azhora.cmd** offer one column of three choices: Explore, Combat Testing, and Lizeem War Scenario. Explore offers Full loading by default, preparing the world before entry, or Fast loading, preparing nearby regions as you travel. New Lizeemi campaigns combine reviewed countryside, regional food and army supplies with the adventure clock. Earlier campaign rehearsals and the separate food world test remain under a folded menu; existing saves keep their original rules. Combat exercises do not save. The Feradom-only Hearthfall workspace is hidden from the launcher while its systems and saves remain available for development; see the [Hearthfall handoff](docs/architecture/hearthfall-sandbox.md). Use `npm run start:adventure` (or `adventure.html` in the web build) for the original adventure described below.
 
-**Render:** `npm run build:web` publishes the same menu at `public/index.html`. Deploys remain manual in Render; pushing alone does not update the live site. `npm run test:web:desktop` tests the built site without a desktop save bridge, including all combat exercises, impact/audio feedback, menu returns, save isolation, and Hearthfall Continue. Browser saves stay in that browser/site; they are separate from desktop saves.
+**Render:** `npm run build:web` publishes the same menu at `public/index.html`. Deploys remain manual in Render; pushing alone does not update the live site. `npm run test:web:desktop` tests the built site without a desktop save bridge, including the three-option menu, all combat exercises, impact/audio feedback, menu returns, save isolation, and hidden Hearthfall save restoration through an explicit test URL. Browser saves stay in that browser/site; they are separate from desktop saves.
 
 **Testing combat:** Choose **Combat Testing** on the homepage, then pick an exercise. The 3D world loads only after you choose an exercise. **WASD** moves and faces, **X** strikes the gold-ring target, **Space + direction** dodges, **R** retries, and **Esc** returns to exercise selection. **H / Help** pauses the encounter to show the full controls and sound toggle. Press **H** or **Esc** to resume; Esc outside Help returns to exercise selection. The active display keeps health, dodge readiness and one changing instruction. The first exercise prepares a bounded Minora camp with its existing tents and city backdrop; it skips the global world builder and campaign atlas. Subsequent exercises reuse it. `npm run start:combat` opens this selector directly. For the Ovesos ride, armies and geopolitical outcomes, use **Lizeemi War Scenario** and its F8 computer demonstrations.
 
@@ -33,6 +33,33 @@ Canerd now stands directly on the flat plain in North Celder. Follow the direct 
 Use **F8 → Go anywhere → Canerd** to visit, or approach across North Celder. The castle and fairground appear on the traveler's chart as you explore. `npm run test:canerd` checks terrain, scenery and actual traveler movement; `npm run review:canerd` runs the native build and captures four views. See [the Canerd build record](docs/canerd.md).
 
 ## Play
+
+For the five-region agriculture review, run `npm run review:farmland`
+and use **Region** to compare them. Open a region directly with
+`npm run review:farmland -- --region=isareos` for Minora, or use `--region=caricas`, `--region=ovesos` or `--region=nesdor`. Inspect the fields and river towns
+from above or walk through them as Teresod. **Food production** tests their
+regional capacities through one shared campaign clock.
+Nesdor has more woodland and fewer cultivated clearings; disrupting its farms
+shows food arriving from Caricas and the resulting reduction in Minora's imports.
+Isareos keeps Minora's existing city and adds fresh surrounding farms. Close its
+two import routes under **Food production** to test its fourteen-day reserves.
+**Population & housing** shows actual population separately from accommodation.
+This is a separate review scene; see the [farmland walkthrough](docs/architecture/lizeem-simulation.md#nethereum-farmland-review).
+
+To play the war in these reviewed landscapes, choose **Begin Lizeemi War**.
+Speak with Taleth, choose your side inside his tower, then leave at dawn and
+explore the five regions. **M → Food and housing** shows regional stores,
+deliveries, rations, stability, army supplies and housing capacity. Supplies update
+once per completed adventure minute. Tower visits, reading, training and local
+battles hold that clock; rest on quiet ground to preview a wait to the next event.
+**F8** provides mounts, region travel and reveal controls; **F5** saves your campaign.
+Earlier saves retain their original countryside and economy; start a new campaign
+to use the combined version. See the [unified campaign](docs/architecture/lizeem-simulation.md#unified-playable-lizeemi-war).
+Fields now reflect regional production condition, battle disruption and unrest.
+In the earlier **Food world test**, **F8 → Nesdor shortage and recovery** runs a temporary supply exercise at
+20x with map explanations, Pause/Next controls and **Return to my game** (or Esc)
+to restore your current session. Army movements are held in this exercise;
+food still uses `campaign.js`. Farm protection/repair encounters are not yet implemented.
 
 For the new simulation prototype, run `npm run start:lizeem-world` or double-click **Test Lizeem World.cmd**. Begin at Minora, use **M** to run the five-region war, and approach a discovered battlefield before its deadline to join with **F**. See the [world-test walkthrough](docs/architecture/lizeem-simulation.md#explore-inside-the-five-region-war). `npm run start:lizeem` opens the faster map-only experiment; `npm run start:exploration` opens ordinary exploration.
 

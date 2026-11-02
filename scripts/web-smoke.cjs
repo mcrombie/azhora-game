@@ -28,11 +28,12 @@ app.whenReady().then(async()=>{
   win.webContents.session.webRequest.onBeforeRequest((details,callback)=>{requests.push(details.url);callback({});});
   const run=code=>win.webContents.executeJavaScript(code);
   const wait=condition=>run(`new Promise((resolve,reject)=>{const end=Date.now()+180000;const poll=()=>{if(window.__EXPLORATION_ERROR__)return reject(Error(window.__EXPLORATION_ERROR__));if(${condition})return resolve(true);if(Date.now()>end)return reject(Error('Timed out: '+${JSON.stringify(condition)}));setTimeout(poll,100);};poll();})`);
-  const menu=async()=>{await wait(`document.querySelector('[data-continue-mode="hearthfall"]')?.onclick`);return run(`({visible:!document.getElementById('start-screen').hidden,starts:[...document.querySelectorAll('[data-start-mode]')].map(b=>({mode:b.dataset.startMode,ready:!!b.onclick,visible:b.getBoundingClientRect().width>0})),continues:[...document.querySelectorAll('[data-continue-mode]')].map(b=>({mode:b.dataset.continueMode,enabled:!b.disabled})),bridge:!!window.azhoraExplorationStorage,legacy:!!window.__AZHORA__})`);};
+  const menu=async()=>{await wait(`document.querySelector('[data-continue-mode="explore"]')?.onclick&&document.querySelector('[data-continue-mode="war"]')?.onclick&&document.querySelector('[data-continue-mode="food-world"]')?.onclick`);return run(`({visible:!document.getElementById('start-screen').hidden,starts:[...document.querySelectorAll('.launch-options>article>.menu-actions>[data-start-mode]')].map(b=>({mode:b.dataset.startMode,ready:!!b.onclick,visible:b.getBoundingClientRect().width>0})),titles:[...document.querySelectorAll('.launch-options>article>h2')].map(h=>h.textContent),hearthfallHidden:!document.querySelector('[data-start-mode="hearthfall"],[data-continue-mode="hearthfall"]'),continues:[...document.querySelectorAll('[data-continue-mode]')].map(b=>({mode:b.dataset.continueMode,enabled:!b.disabled})),bridge:!!window.azhoraExplorationStorage,legacy:!!window.__AZHORA__})`);};
   fs.mkdirSync(artifacts,{recursive:true});
   await win.loadURL(origin+'/?test=1&menu=1');
   const initial=await menu();
-  check(initial.visible&&initial.starts.length===4&&initial.starts.every(b=>b.ready&&b.visible),'Public root opens four working mode buttons');
+  check(initial.visible&&initial.starts.map(b=>b.mode).join(',')==='explore,combat,war'&&initial.starts.every(b=>b.ready&&b.visible)&&initial.titles.join(',')==='Explore,Combat Testing,Lizeem War Scenario','Public root opens exactly three working top-level options in Explore, Combat Testing, Lizeem War Scenario order');
+  check(initial.hearthfallHidden,'Hearthfall remains absent from the public launcher');
   check(initial.continues.every(b=>!b.enabled)&&!initial.bridge&&!initial.legacy,'Fresh browser has no saves or legacy/Electron host');
   fs.writeFileSync(path.join(artifacts,'web-main-menu.png'),(await win.webContents.capturePage()).toPNG());
   await win.loadURL(origin+'/exploration.html?test=1&menu=1#menu');await menu();
@@ -65,7 +66,8 @@ app.whenReady().then(async()=>{
   const combatReturn=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
   await run(`document.getElementById('combat-testing-back').click()`);await combatReturn;await menu();
   check((await menu()).visible,'Combat exercise menu can return to the main menu after playing');
-  await run(`document.getElementById('new-hearthfall').click()`);await wait('window.__EXPLORATION__');
+  const hearthfallURL=origin+'/?test=1&mode=hearthfall&load=fast';
+  await win.loadURL(hearthfallURL);await wait('window.__EXPLORATION__');
   const saved=await run(`(()=>{const h=window.__EXPLORATION__,s=h.state();if(s.launch!=='hearthfall'||s.region!==21||s.enabledRegions.join()!=='21'||h.war)throw Error('Wrong sandbox mode');if(!h.save().ok)throw Error('Browser save failed');return h.store.read().data;})()`);
   check(saved.format==='azhora-hearthfall-v1','Built browser game starts Feradom and saves to its own localStorage slot');
   check(await run(`document.getElementById('location-name').textContent==='Feradom'`),'Arrival heading shows Feradom before the player moves');
@@ -75,10 +77,10 @@ app.whenReady().then(async()=>{
   const returned=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
   await run(`window.__EXPLORATION__.pause();document.getElementById('return-start').click()`);await returned;
   const after=await menu();
-  check(after.visible&&after.continues.every(b=>b.enabled===(b.mode==='hearthfall')),'Exit returns to menu with only the correct Continue enabled');
-  await run(`document.querySelector('[data-continue-mode="hearthfall"]').click()`);await wait('window.__EXPLORATION__');
+  check(after.visible&&after.hearthfallHidden&&after.continues.every(b=>!b.enabled),'Hidden Hearthfall save leaves public Continue options disabled after exit');
+  await win.loadURL(hearthfallURL);await wait('window.__EXPLORATION__');
   const restored=await run(`window.__EXPLORATION__.store.read().data`);
-  check(JSON.stringify(restored)===JSON.stringify(saved),'Continue restores browser save in a fresh renderer');
+  check(JSON.stringify(restored)===JSON.stringify(saved),'Explicit Hearthfall test entry restores its browser save in a fresh renderer');
   if(process.argv.includes('--war-release-checks'))await require('./war-web-checks.cjs')({win,run,wait,menu,check,artifacts});
   check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
   check(!errors.length,'No browser console errors');

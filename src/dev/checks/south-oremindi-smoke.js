@@ -8,7 +8,8 @@ import { SOUTH_OREMINDI_WILDLIFE_ZONES } from '../../content/regions/south-oremi
 /** Real renderer/world smoke. Required hooks: world, life, player, travel(at),
  * open(), saved(), state(), frames(n), startFlight(), flight, stopFlight().
  * Mesh lists may be passed explicitly as terrainMeshes and
- * waterMeshes, or exposed by world.southOremindi. The accelerated traversal uses ordinary collision/slope
+ * waterMeshes, or exposed by world.southOremindi and world.sharedWaterMeshes.
+ * The accelerated traversal uses ordinary collision/slope
  * controllers against the actual populated world, without moving its player.
  */
 export async function runSouthOremindiChecks(h) {
@@ -39,7 +40,7 @@ export async function runSouthOremindiChecks(h) {
   phase = 'visible-surfaces';
   const scenery = world.southOremindi;
   const terrainMeshes = meshList(h.terrainMeshes ?? scenery?.terrainMeshes ?? scenery?.terrainRoot);
-  const waterMeshes = meshList(h.waterMeshes ?? scenery?.waterMeshes ?? scenery?.waterRoot);
+  const waterMeshes = meshList(h.waterMeshes ?? [scenery?.waterMeshes ?? scenery?.waterRoot, world.sharedWaterMeshes]);
   check(terrainMeshes.length > 0 && waterMeshes.length > 0, 'The real scene contains mountain ground and lake water meshes');
   const visibleGround = surfaceSampler(terrainMeshes), visibleWater = surfaceSampler(waterMeshes);
   const probes = [SOUTH_OREMINDI_ARRIVAL, ...PEAKS,

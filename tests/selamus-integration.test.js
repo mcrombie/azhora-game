@@ -4,11 +4,14 @@ import * as THREE from '../vendor/three.module.js';
 import { scopedWorld } from './scoped-world.js';
 import { sourceModule } from './module-loader.js';
 import { SELAMUS_BUILDINGS, SELAMUS_ARRIVAL, SELAMUS_BRIDGES, selamusPoint, selamusCanalAt } from '../src/content/regions/selamus/selamus-city.js';
-import { canStand, canSwim } from '../src/gameplay/movement/game-state.js';
+import { canStand, canSwim, moveCharacter } from '../src/gameplay/movement/game-state.js';
+import { bodyWorld, BODY } from '../src/gameplay/combat/bodies.js';
+import { COASTAL_HOMES, COASTAL_VILLAGES } from '../src/content/regions/ascarth/coastal-villages.js';
 import { restoreWalkPosition } from '../src/world/collision/walk-surfaces.js';
 const scene=new THREE.Scene(),world=await scopedWorld(scene,[24]);
 const {runSelamusChecks}=await sourceModule('../src/dev/checks/selamus-checks.js');
 const {SELAMUS_PIERS}=await sourceModule('../src/content/regions/selamus/selamus-harbor.js');
+const {groundWithRiver}=await sourceModule('../src/world/terrain/world-terrain.js');
 async function loadIsland(){
   const frame=globalThis.requestAnimationFrame,cancel=globalThis.cancelAnimationFrame;
   globalThis.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),0);globalThis.cancelAnimationFrame=clearTimeout;
@@ -91,5 +94,48 @@ test('pier-end saves resolve real deck support while unknown saved surfaces rema
     const bogus=restoreWalkPosition({x,z,y:100,surfaceId:'selamus-nonexistent-deck'},world);
     assert.equal(bogus.surfaceId,undefined);assert.equal(bogus.y,world.heightAt(x,z));
     assert.ok(bogus.y<0,'unknown surface must not create footing over the harbor');
+  }
+});
+
+test('mainland households have clear walkable approaches and visible porch floors',()=>{
+  scene.updateMatrixWorld(true);
+  const root=scene.getObjectByName('Ascarth villages facing Selemis');assert.ok(root);
+  const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0);
+  assert.equal(COASTAL_HOMES.length,18);
+  for(const home of COASTAL_HOMES){
+    assert.ok(world.mapBuildings.some(b=>b.id===home.id),`${home.id} missing from chart`);
+    const ramp=world.walkSurfaces.find(s=>s.id===`${home.id}:approach`),porch=world.walkSurfaces.find(s=>s.id===`${home.id}:porch`);
+    assert.ok(ramp&&porch,`${home.id} missing its walking floors`);
+    const village=COASTAL_VILLAGES.find(v=>v.id===home.village);
+    const pos={x:ramp.a.x,z:village.z,y:world.heightAt(ramp.a.x,village.z)};
+    const moving=bodyWorld(world).moving(pos,BODY.traveler);
+    const dx=ramp.b.x-ramp.a.x,dz=ramp.b.z-ramp.a.z,length=Math.hypot(dx,dz);
+    assert.ok(Math.abs(ramp.b.y-ramp.a.y)/length<.3,`${home.id} approach too steep`);
+    for(const target of [ramp.a,ramp.b,{x:ramp.b.x+dx/length*.85,z:ramp.b.z+dz/length*.85}]){
+      for(let step=0;Math.hypot(target.x-pos.x,target.z-pos.z)>.03;step++){
+        assert.ok(step<150,`${home.id} cannot reach its porch from the lane`);
+        const d=Math.hypot(target.x-pos.x,target.z-pos.z),amount=Math.min(.15,d),before=pos.y;
+        moveCharacter(pos,(target.x-pos.x)/d*amount,(target.z-pos.z)/d*amount,moving,BODY.traveler);
+        pos.y=moving.heightAt(pos.x,pos.z);
+        assert.ok(Math.abs(pos.y-before)<.35,`${home.id} has an abrupt approach step`);
+      }
+    }
+    assert.ok(Math.abs(pos.y-porch.a.y)<.015,`${home.id} porch support does not match its floor`);
+    ray.set(new THREE.Vector3(pos.x,pos.y+.2,pos.z),down);
+    const hit=ray.intersectObject(root,true)[0];assert.ok(hit);
+    assert.ok(Math.abs(hit.point.y-pos.y)<.015,`${home.id} visible porch disagrees with feet`);
+    const saved=restoreWalkPosition({...pos,surfaceId:porch.id},world);
+    assert.equal(saved.y,porch.a.y);
+  }
+});
+
+test('the mainland headland has no sunken strip at the edge of the city terrain',()=>{
+  const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0);
+  for(const x of [-724,-714,-704,-694,-684])for(let z=2278;z<=2296;z+=2){
+    const y=world.heightAt(x,z),expected=groundWithRiver(x,z);
+    assert.ok(Math.abs(y-expected)<.22,`artificial ditch at ${x},${z}: ${y} versus ${expected}`);
+    ray.set(new THREE.Vector3(x,y+.2,z),down);
+    const hit=ray.intersectObjects(world.selamusGround.patches,false)[0];assert.ok(hit);
+    assert.ok(Math.abs(hit.point.y-y)<.015,`headland footing disagrees with rendering at ${x},${z}`);
   }
 });

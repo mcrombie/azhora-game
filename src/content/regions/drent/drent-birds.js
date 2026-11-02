@@ -16,6 +16,7 @@ import * as THREE from 'three';
 import { canStand } from '../../../gameplay/movement/game-state.js';
 import { villageToWorld, REGION_CELLS } from '../../../world/terrain/region-world.js';
 import { BIRD_SPECIES } from '../../../gameplay/skills/birding/birding.js';
+import {birdScale} from './bird-scale.js';
 
 const TAU = Math.PI * 2;
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -23,8 +24,8 @@ const flat = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 const smoothstep = t => t * t * (3 - 2 * t);
 
 // ---------------------------------------------------------------------------
-// Shapes: every part is drawn once at the bird's display size (a little larger
-// than life so they read at a distance), facing +z, feet on y = 0.
+// Shapes are authored in rig units; BIRD_FORMS scales them to adult species
+// dimensions. Facing +z, feet on y = 0. No enlargement at a distance.
 // ---------------------------------------------------------------------------
 function mergedGeometry(pieces) {
   const vertices = [], normals = [], colors = [], m = new THREE.Matrix4(), nm = new THREE.Matrix3();
@@ -53,7 +54,7 @@ const HALF_PI = Math.PI / 2;
  * on, the shoulder the right wing hangs from (the left mirrors it), how far the
  * folded wing droops, and the wing's span for flight.
  */
-export const BIRD_FORMS = Object.freeze({
+const RIG_FORMS = {
   'cardinal-male': Object.freeze({ neck: [0, .165, .07], shoulder: [.05, .145, .04], droop: .38, flap: 30, gait: 'hop', scale: 1 }),
   'cardinal-female': Object.freeze({ neck: [0, .165, .07], shoulder: [.05, .145, .04], droop: .38, flap: 30, gait: 'hop', scale: 1 }),
   wren: Object.freeze({ neck: [0, .14, .05], shoulder: [.042, .125, .03], droop: .3, flap: 34, gait: 'hop', scale: 1 }),
@@ -66,7 +67,7 @@ export const BIRD_FORMS = Object.freeze({
     robin: [1.05, 'hop', 28], chickadee: [.72, 'hop', 40], mockingbird: [1.1, 'hop', 26],
     'mourning-dove': [1.12, 'walk', 22], 'blue-jay': [1.25, 'hop', 22], goldfinch: [.78, 'hop', 38],
     catbird: [1, 'hop', 28], 'downy-woodpecker': [.8, 'hop', 34], 'red-bellied-woodpecker': [1.05, 'hop', 26],
-    'pileated-woodpecker': [1.55, 'hop', 17], nuthatch: [.78, 'hop', 36], 'wood-thrush': [1.05, 'hop', 27],
+    'pileated-woodpecker': [1.55, 'hop', 17], nuthatch: [.78, 'hop', 36], 'wood-thrush': [.92, 'hop', 27],
     bluebird: [.9, 'hop', 32], 'red-winged-blackbird': [1, 'hop', 27], kingfisher: [1.1, 'hop', 25],
   }).map(([id, [size, gait, flap]]) => [id, Object.freeze({
     neck: [0, .165 * size, .07 * size], shoulder: [.05 * size, .145 * size, .04 * size], droop: .36, flap, gait, scale: 1,
@@ -78,7 +79,9 @@ export const BIRD_FORMS = Object.freeze({
   'mallard-duck': Object.freeze({ neck: [0, .185, .055], shoulder: [.068, .14, -.01], droop: .3, flap: 18, gait: 'walk', scale: 1 }),
   gull: Object.freeze({ neck: [0, .235, .045], shoulder: [.07, .19, -.005], droop: .3, flap: 15, gait: 'walk', scale: 1 }),
   'turkey-vulture': Object.freeze({ neck: [0, .4, .055], shoulder: [.115, .3, 0], droop: .24, flap: 8, gait: 'walk', scale: 1 }),
-});
+};
+export const BIRD_FORMS=Object.freeze(Object.fromEntries(Object.entries(RIG_FORMS).map(([id,form])=>
+  [id,Object.freeze({...form,...birdScale(id)})])));
 
 function birdShapes() {
   const round = new THREE.IcosahedronGeometry(1, 1), cone = new THREE.ConeGeometry(1, 1, 7), cyl = new THREE.CylinderGeometry(1, 1, 1, 6), cube = new THREE.BoxGeometry(1, 1, 1);
@@ -407,6 +410,8 @@ export function birdPartMatrices(bird, form, { index = 0, shown = true } = {}, o
   const flap = hover ? Math.sin(bird.clock * form.flap) * .95 : .15 + Math.sin(bird.clock * form.flap) * .9;
   [1, -1].forEach((side, k) => {
     wingBasis(part, side, flying, flap, form.droop).setPosition(side * form.shoulder[0], form.shoulder[1], form.shoulder[2]);
+    // Open the primaries in flight; folded feathers remain tucked along the body.
+    if(flying)part.scale(v.set(form.flightWingScale??1,1,1));
     out.wings[k].copy(out.body).multiply(part);
   });
   return out;

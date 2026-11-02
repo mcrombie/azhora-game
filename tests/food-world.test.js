@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createWorldWar,FOOD_WORLD_SCENARIO,WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
+import {FOOD_WORLD_ID,FOOD_WORLD_KEY} from '../src/app/food-world/scenario.js';
+import {validateWorldWarSave,worldWarStore,WORLD_WAR_KEY} from '../src/app/exploration/war-checkpoint.js';
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
+const create=()=>createWorldWar(null,FOOD_WORLD_SCENARIO);
+const exploration={version:1,character:'teresod',position:{x:-2308,y:20,z:60},camera:{yaw:0,pitch:.3,distance:8},heading:0,elapsed:0,cells:[]};
+test('food world retains hero war mechanics and applies reviewed food and housing targets',()=>{
+  const w=create(),s=w.snapshot();
+  assert.equal(s.scenario,FOOD_WORLD_ID);assert.equal(createWorldWar().snapshot().food,undefined);
+  assert.deepEqual(FOOD_WORLD_SCENARIO.commanders,WORLD_WAR_SCENARIO.commanders);
+  assert.deepEqual(FOOD_WORLD_SCENARIO.openingOrders,WORLD_WAR_SCENARIO.openingOrders);
+  assert.equal(FOOD_WORLD_SCENARIO.rules.championDuel,true);
+  assert.equal(s.regions.nethereum.food.production,220);
+  assert.equal(s.regions.isareos.food.store,2380);
+  w.advance(3);assert.equal(w.snapshot().day,3);assert(w.snapshot().food.last);
+  assert(w.snapshot().engagements.some(b=>b.region==='caricas'));
+  assert(w.snapshot().armies.some(a=>a.supply));
+});
+test('economic actions, commanders and army supplies replay exactly with the hero clock',()=>{
+  const w=create();w.campaign.foodAction({type:'production',region:'nesdor',condition:.25});
+  w.advance(7);w.setSpeed(20);w.resetPhase(4.25);
+  const restored=createWorldWar(w.checkpoint());
+  assert.deepEqual(restored.snapshot(),w.snapshot());assert.deepEqual(restored.clock(),w.clock());
+  w.advance(3);restored.advance(3);assert.deepEqual(restored.snapshot(),w.snapshot());
+});
+test('normal war and food world saves cannot overwrite or masquerade as each other',()=>{
+  const data={version:1,format:FOOD_WORLD_KEY,exploration,...create().checkpoint()};
+  const ordinary={...data,format:WORLD_WAR_KEY,...createWorldWar().checkpoint()};
+  assert(validateWorldWarSave(data,FOOD_WORLD_KEY));assert(!validateWorldWarSave(data));
+  assert(validateWorldWarSave(ordinary));assert(!validateWorldWarSave(ordinary,FOOD_WORLD_KEY));
+  assert(!validateWorldWarSave({...data,format:WORLD_WAR_KEY}));
+  const values=new Map(),storage={getItem:k=>values.get(k),setItem:(k,v)=>values.set(k,v)};
+  const normal=worldWarStore(storage),food=worldWarStore(storage,FOOD_WORLD_KEY);
+  assert(normal.save(ordinary).ok);assert(food.save(data).ok);assert(!food.save(ordinary).ok);
+  assert.deepEqual(normal.read().data,ordinary);assert.deepEqual(food.read().data,data);
+});
+test('hero victory advances the same food ledger, changes ownership and replays once',()=>{
+  const w=create(),c=w.campaign;w.advance(3);w.syncRegion('Caricas');
+  const b=w.snapshot().engagements.find(b=>b.region==='caricas'&&b.status==='active');
+  assert(c.joinBattle(b.id,b.location).ok);
+  const guards=c.snapshot().pending.participation.guards;
+  assert(c.resolveEncounter(b.id,'west','success','vanguard-broken',guards,{escaped:0}).ok);
+  assert.equal(c.snapshot().day,4);assert.equal(c.snapshot().regions.caricas.food.last.exports,0,'Active battle closes exports');
+  assert(c.joinBattle(b.id,b.location).ok);const p=c.snapshot().pending;
+  assert(c.resolveEncounter(p.id,'west','success','rally-secured',p.rally.guards,commanderOutcome(c,'west',true)).ok);
+  const won=c.snapshot();assert.equal(won.day,b.endsOn);assert.equal(won.regions.caricas.owner,'west');
+  assert(!c.resolveEncounter(p.id,'west','success','rally-secured',p.rally.guards).ok);
+  assert.deepEqual(createWorldWar(w.checkpoint()).snapshot(),won);
+  assert.equal(won.regions.isareos.food.production,100);
+  assert(won.regions.isareos.food.store<2380,'Interrupted Caricas exports affect neutral Minora');
+});

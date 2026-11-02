@@ -4,6 +4,15 @@ const frame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationF
 const click=id=>{const button=document.getElementById(id);assert(button&&!button.hidden,'Button missing: '+id);button.click();};
 const f=()=>document.dispatchEvent(new KeyboardEvent('keydown',{code:'KeyF',bubbles:true}));
 
+// Shared fixtures enter through Taleth's real allegiance choice. Historical
+// test launches that already carry a side keep that explicit commitment.
+export function confirmTowerCampaign(api,side='west'){
+  if(!api.tower.state().briefed&&!api.war.state().campaignSide){
+    click('tower-allegiance-'+side);
+  }
+  click('tower-next');
+}
+
 export async function checkTowerOpening(api){
   const initial=api.state();assert(api.tower.state().inside&&!api.tower.state().briefed,'Starts inside an unbriefed tower');
   assert(!api.tower.state().exteriorLoaded,'Exterior must not be built before the opening');
@@ -23,7 +32,7 @@ export async function checkTowerOpening(api){
 }
 export async function beginTowerCampaign(api){
   click('tower-close');assert(!api.tower.state().briefed,'Declining keeps the briefing unfinished');f();
-  click('tower-next');
+  confirmTowerCampaign(api);
   assert(api.tower.state().briefed&&api.war.state().clock.running,'Confirmation starts the campaign');
   for(let i=0;i<20;i++)api.step(.04);
   const fraction=api.war.state().clock.fraction;
@@ -66,7 +75,7 @@ export async function returnToTower(api){
 export async function prepareWarExterior(api){
   if(!api.tower.state().inside)return;
   await api.visit({x:TALETH_SPOT.x,z:TALETH_SPOT.z+2});f();
-  click('tower-next');
+  confirmTowerCampaign(api);
   await api.visit({...TOWER_DOOR,z:TOWER_DOOR.z-1});f();
   await new Promise((resolve,reject)=>{const end=Date.now()+300000;const poll=()=>api.state().mode==='playing'?resolve():Date.now()>end?reject(Error('Tower exit timed out')):setTimeout(poll,100);poll();});
   assert(!api.tower.state().inside,'War check must be outside');

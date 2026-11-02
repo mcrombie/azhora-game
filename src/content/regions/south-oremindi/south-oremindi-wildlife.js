@@ -5,6 +5,7 @@
  */
 import { SOUTH_OREMINDI, SOUTH_OREMINDI_CELLS, southOremindiCellAt,
   southOremindiFeatures, southOremindiOwns, southOremindiWaterAt } from './south-oremindi-world.js';
+import {southOremindiExpeditionReserved,SOUTH_OREMINDI_EXPEDITION} from './south-oremindi-expedition.js';
 
 const freeze = Object.freeze, TAU = Math.PI * 2;
 export const SOUTH_OREMINDI_HABITATS = freeze({
@@ -20,6 +21,7 @@ const zone = (cell, species, sites, traits = {}) => freeze({
   sourceCell: freeze([cell.q, cell.r]),
   minX: cell.x - 74, maxX: cell.x + 74, minZ: cell.z - 74, maxZ: cell.z + 74,
   ...SOUTH_OREMINDI_HABITATS[species],
+  exclusions:freeze(Object.values(SOUTH_OREMINDI_EXPEDITION).map(p=>freeze({minX:p.x-p.reserve,maxX:p.x+p.reserve,minZ:p.z-p.reserve,maxZ:p.z+p.reserve}))),
   sites: freeze(sites.map(p => freeze([p.x, p.z]))), ...traits,
 });
 
@@ -36,7 +38,7 @@ function candidates(cell) {
     const owner = southOremindiCellAt(x, z);
     if (owner?.q !== cell.q || owner?.r !== cell.r) continue;
     const f = southOremindiFeatures(x, z);
-    if (f.water !== null || f.pathDistance < 5 || f.snow > .72) continue;
+    if (f.water !== null || f.pathDistance < 5 || f.snow > .72 || southOremindiExpeditionReserved(x,z,2)) continue;
     result.push({ x, z, ...f });
   }
   return result;

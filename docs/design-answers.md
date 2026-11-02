@@ -1709,6 +1709,16 @@ The user's correction supersedes the implementation described above: the in-game
 
 Chapter 1 must retain the post-battle conquest of Solis. Winning the field does not give Ambron West Suval; the player follows up with the army, assaults Solis, and actually takes it. The existing Solis and Coalition Moros-outpost aftermath encounters are reconnected between the commander report and final city report. Territorial control follows their cleared assault record. Old saves that reached the final report without this capture resume the unfinished conquest rather than grandfathering an unearned territorial gain.
 
+### 2026-10-19 Eshtor's ancient barrows
+
+The user establishes **very ancient barrows on Eshtor Plateau from past undead outbreaks**. These are remnants of earlier crises, predating the current duke's occupation. The builders, cultures, exact ages, occupants and present activity are still open. The [regional record](eshtor-plateau.md#ancient-barrows) distinguishes this confirmed history from possible sealed-tomb scenery and encounters, which are not yet implemented.
+
+### 2026-10-19 Acor Wetlands and Dark Goblin wraiths
+
+The user establishes **Dark Goblin wraith influence over Acor Wetlands**. In the previously established undead lore, these are High Goblin followers of Thalmagar who have lost their bodies but remain spiritually bound to this world. This does not make the living High Goblin descendants of Narcosh undead or loyal to Thalmagar.
+
+The existing territorial claims of Acreland, Endevor and Thalmagar remain disputed. Influence is established; exclusive political control, named wraith leaders, individual powers and particular encounters are not. See the [Acor wraith lore](thalmagar-crisis-design.md#dark-goblin-wraith-influence). This records the design decision without adding runtime enemies or changing map ownership.
+
 ### 2026-10-06 The Farmlands of the Lizeem integration
 
 The user requested integration of Claude's latest work before committing. The delivered branch is `lizeem-farmlands` at `7ecba1a`; its [design record](lizeem-farmlands-design.md), section 0, records the user's October 5 decisions and the October 5 and 6 implementation go-aheads. These decisions are carried into this shared record:

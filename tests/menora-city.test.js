@@ -100,7 +100,8 @@ test('The frontier chart distinguishes Imperial Minora and Caricas from independ
   assert.equal(describeRegion('Yunethre').control,'yunethre');
   assert.equal(describeRegion('Isareos').settlements[0].name,'Minora');
   assert.ok(describeRegion('Isareos').threats.some(t=>t.id==='centaur-raider'));
-  for(const id of ['menora','menora-army-muster','caricas-garrison-town','yunethre-free-town','yunethre-centaur-camp'])
+  assert.ok(!SUBREGIONS.some(s=>s.id==='menora-army-muster'));
+  for(const id of ['menora','caricas-garrison-town','yunethre-free-town','yunethre-centaur-camp'])
     assert.equal(SUBREGIONS.filter(s=>s.id===id).length,1,id);
 });
 
@@ -110,8 +111,15 @@ test('Rendered gates, bridge approaches and character anchors have real collisio
   const parent=new THREE.Group(),colliders=[];
   const scene=createMenoraScenery({parent,colliders,heightAt:(x,z)=>menoraGround(x,z,21.3)});
   assert.equal(scene.metrics.buildings,MENORA_BUILDINGS.length);
-  assert.equal(scene.metrics.bridges,5);assert.equal(scene.metrics.tents,6);assert.equal(scene.metrics.stalls,LIZEEM_MARKET_STANDS.length);
-  assert.ok(scene.metrics.batches<65);assert.ok(scene.metrics.vertices<250000);
+  assert.equal(scene.metrics.bridges,5);assert.equal(scene.metrics.tents,0);assert.equal(scene.metrics.stalls,LIZEEM_MARKET_STANDS.length);
+  assert.equal(scene.root.getObjectByName('The Blood Prince’s field army muster'),undefined);
+  assert.ok(!colliders.some(c=>c.id?.startsWith('blood-prince-tent-')));
+  // Civic frontage adds one merged prop mesh and one shared lettering atlas.
+  // Botanical tree crowns add five static instance batches; keep both the city
+  // and the civic frontage within explicit geometry/draw budgets.
+  assert.ok(scene.metrics.batches-scene.metrics.civic.staticBatches<=70);
+  assert.ok(scene.metrics.vertices-scene.metrics.civic.vertices<280000);
+  assert.equal(scene.metrics.civic.staticBatches,2);assert.ok(scene.metrics.civic.vertices<18000);
   const blocked=(x,z)=>colliders.find(c=>c.minY<=22.9&&c.maxY>=21.3&&(c.r!==undefined
     ?Math.hypot(x-c.x,z-c.z)<c.r+.55:Math.abs(x-c.x)<c.hx+.55&&Math.abs(z-c.z)<c.hz+.55));
   for(const point of [MENORA.arrival,...MENORA_GATES,MENORA_NPC_ANCHORS.cedric,MENORA_NPC_ANCHORS.wilhelm,...MENORA_NPC_ANCHORS.army,...MENORA_NPC_ANCHORS.guards,...LIZEEM_MARKET_STANDS])

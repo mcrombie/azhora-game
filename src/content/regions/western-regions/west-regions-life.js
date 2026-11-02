@@ -13,6 +13,7 @@ import { SOUTH_IBENAL_WILDLIFE_ZONES } from '../south-ibenal/south-ibenal-wildli
 import { NORTH_IBENAL_WILDLIFE_ZONES } from '../north-ibenal/north-ibenal-wildlife.js';
 import { HENBORTH_WILDLIFE_ZONES } from '../henborth/henborth-wildlife.js';
 import * as THREE from 'three';
+import {regionalBirdSize} from '../../../world/life/bird-dimensions.js';
 import { createDeveloperWildlifeDamage } from '../../../dev/tools/developer-wildlife-damage.js';
 import {WEST_OREMINDI_WILDLIFE_ZONES} from '../west-oremindi/west-oremindi-wildlife.js';
 import {BALDRO_WILDLIFE_ZONES} from '../baldro/baldro-wildlife.js';
@@ -120,7 +121,7 @@ function wader(t) {
   };
 }
 
-function modelFactories() {
+export function modelFactories() {
   const dark = 0x241f1a;
   return {
     // A heavy island apex reptile, modelled at its own eight-metre scale. It is
@@ -1590,7 +1591,7 @@ const BIRD_RIG = Object.freeze({
 });
 
 /** Ambient creatures only: they cannot be attacked, collected or block a quest. */
-export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
+export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES, seaLevel = SEA_LEVEL } = {}) {
   if(world.enabledRegions)zones=zones.filter(zone=>world.enabledRegions.includes(REGION_IDS[zone.region]));
   const factories = modelFactories(), shapes = new Map(), flocks = [], creatures = [];
   const dummy = new THREE.Object3D(), rootMatrix = new THREE.Matrix4(), resultMatrix = new THREE.Matrix4();
@@ -1658,7 +1659,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     return water === null ? ground : Math.max(ground, water - .04);
   };
   const renderedFootingRegions = new Set(['Alezhor', 'South Ibenal', 'North Ibenal', 'Henborth', 'East Izol', 'East Pyros', 'Nether Desert', 'Legemum', 'Babon', 'South Celder', 'North Celder',
-    'Drent', 'Luscia', 'Moros Plain', 'West Suval',
+    'Drent', 'Luscia', 'Moros Plain', 'West Suval', 'Yunethre',
     'Navarth', 'West Pyros', 'Ganesh Desert', 'Ganesh Plain',
     'North Meroshe Desert', 'West Meroshe Desert', 'Central Meroshe Desert', 'South Meroshe Desert',
     'Cape Heth', 'Dinelv Highlands', 'Hama', 'Marosh', 'Trogo',
@@ -1726,7 +1727,7 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
       const scale = zone.scale ?? 1;
       animals.push({
         id: `${zone.id}-${i + 1}`, species: zone.species, region: zone.region, zone, index: i, scale,
-        ...home, y: zone.sea ? SEA_LEVEL : footingY(home.x, home.z, zone) + (zone.air ?? 0), home: { ...home },
+        ...home, y: zone.sea ? seaLevel : footingY(home.x, home.z, zone) + (zone.air ?? 0), home: { ...home },
         yaw: (i * 1.83 + .5) % TAU, action: zone.air ? 'soar' : zone.sea ? 'swim' : 'graze', timer: 1.4 + i * .71,
         clock: i * .43, speed: 0, lift: 0, watching: 0, detour: 0, blocked: 0, flight: 0, hidden: false, landing: null, homing: false, cornered: 0, breakYaw: 0, slip: 0, slipFrom: 0, slipTo: null, shutFor: 0,
       });
@@ -1756,6 +1757,10 @@ export function createWestLife(scene, world, { zones = WEST_LIFE_ZONES } = {}) {
     const { zone, group, animals } = flock;
     let shape = shapes.get(zone.species);
     if (!shape) { shape = factories[zone.species](); shapes.set(zone.species, shape); }
+    if(shape.wing){
+      shape.wing.computeBoundingBox();
+      flock.birdSize=regionalBirdSize(zone.species,shape.wing.boundingBox.max.x,BIRD_RIG[zone.species]?.out??.06);
+    }
     const meshes = { body: instances(group, `${zone.species} bodies`, shape.body, animals.length) };
     // Hornless deer use the alternate head from the same shared species rig.
     const headShape = zone.hornless && shape.hornless ? shape.hornless : shape.head;
@@ -2476,7 +2481,7 @@ const RETURN = {
     }
     animal.x = x; animal.z = z;
     animal.speed = SWIM.pace;
-    animal.y = SEA_LEVEL - SWIM.sink;
+    animal.y = seaLevel - SWIM.sink;
     // One breath every few seconds: the arc is the top of a sine and nothing else.
     const phase = Math.sin(animal.clock / SWIM.period * TAU + animal.index * 2.4);
     animal.lift = Math.max(0, phase) * (SWIM.sink + SWIM.rise);
@@ -2517,21 +2522,21 @@ const RETURN = {
     animal.action = 'soar';
     if (plunge) {
       // Its height is over the sea's surface, not over the sea floor under it.
-      const aloft = Math.max(under, SEA_LEVEL) + zone.air + Math.sin(animal.clock * .21) * (zone.bob ?? 3);
+      const aloft = Math.max(under, seaLevel) + zone.air + Math.sin(animal.clock * .21) * (zone.bob ?? 3);
       const p = zone.plunge;
       animal.pitch = 0; animal.fold = 0; animal.hidden = false; animal.y = aloft;
       if (plunge.stage === 'plunge') {
         // Folded, head down, and falling faster all the way to the water.
         const t = plunge.t / p.fall;
-        animal.y = aloft + (SEA_LEVEL - aloft) * t * t;
+        animal.y = aloft + (seaLevel - aloft) * t * t;
         animal.pitch = .35 + 1.15 * Math.min(1, t * 2.5); animal.fold = Math.min(1, t * 3);
         animal.speed = 0; animal.action = 'plunge';
       } else if (plunge.stage === 'under') {
-        animal.y = SEA_LEVEL - .6; animal.hidden = true; animal.speed = 0; animal.action = 'under';
+        animal.y = seaLevel - .6; animal.hidden = true; animal.speed = 0; animal.action = 'under';
       } else if (plunge.stage === 'climb') {
         // Off the water and back up, nose raised, beating: straight up over the place it went in.
         const t = plunge.t / p.climb, ease = t * t * (3 - 2 * t);
-        animal.y = SEA_LEVEL + .15 + (aloft - SEA_LEVEL - .15) * ease;
+        animal.y = seaLevel + .15 + (aloft - seaLevel - .15) * ease;
         animal.pitch = -.4 * (1 - ease); animal.action = 'climb';
       }
     }
@@ -2574,7 +2579,7 @@ const RETURN = {
         const right = h(animal.x+sz*1.1,animal.z-sx*1.1)-h(animal.x-sz*1.1,animal.z+sx*1.1);
         rotation.setFromEuler(new THREE.Euler(-Math.atan2(forward,5),animal.yaw,Math.atan2(right,2.2),'YXZ'));
       }
-      unit.setScalar(damageState.dead(animal.id) ? 0 : animal.hidden ? 1e-4 : animal.scale);   // an otter under the water is not drawn
+      unit.setScalar(damageState.dead(animal.id) ? 0 : animal.hidden ? 1e-4 : animal.scale*(flock.birdSize?.scale??1));   // an otter under the water is not drawn
       rootMatrix.compose(new THREE.Vector3(animal.x, visualFootingY(animal), animal.z), rotation, unit);
       const walking = animal.speed > .05, phase = animal.clock * (animal.action === 'flee' ? 13 : 7);
       const breath = Math.sin(animal.clock * 2.1) * .012;
@@ -2606,7 +2611,7 @@ const RETURN = {
           : species === 'babon-canopy-hornbill' && Math.sin(animal.clock*.7) > -.15 ? Math.sin(animal.clock*8)*.36 : 0;
         for (let side = 0; side < 2; side++) place(flock.meshes.wings, i * 2 + side,
           side ? -.06 : .06, .01, -.01, 0, side ? Math.PI - fold * 1.3 : fold * 1.3,
-          (side ? -1 : 1) * ((dihedral + tilt) * (1 - fold) + beat + fold * .2));
+          (side ? -1 : 1) * ((dihedral + tilt) * (1 - fold) + beat + fold * .2),flock.birdSize?.wingScale??1);
         return;
       }
       if(species === 'thalmagar-hul') {
@@ -2677,7 +2682,7 @@ const RETURN = {
           place(flock.meshes.wings, i * 2 + side, sign * rig.out, rig.shoulder, -.02, 0,
             (side ? Math.PI : 0) + (flying ? 0 : sign * rig.sweep),
             sign * (flying ? rig.beat + Math.sin(animal.clock * 9) * .42 : rig.fold),
-            flying ? 1 : rig.tuck, 1, 1);
+            flying ? flock.birdSize?.wingScale??1 : rig.tuck, 1, 1);
           if (!flock.meshes.legs) continue;
           place(flock.meshes.legs, i * 2 + side, side ? rig.apart : -rig.apart, rig.hip, .02,
             flying ? 1.15 : walking ? Math.sin(phase + side * Math.PI) * rig.swing : 0);

@@ -1969,9 +1969,9 @@ test('every ground tint in the game reaches the screen, which is the guard two j
   // Selemis is the fifth family and the first to arrive as a row (2026-10-01, docs/selemis-report.md):
   // its line here is its line there, which is the arrangement this guard was written to force.
   // Telemonia is the sixth (2026-10-02, docs/telemonia-stage1-report.md), the same way.
-  assert.deepEqual([...GROUND_TINT_FAMILIES], ['gala', 'oves', 'mithala', 'southwest', 'selemis', 'telemonia', 'east-pyros', 'nether-desert', 'legemum', 'babon', 'south-celder', 'north-celder', 'east-izol', 'alezhor', 'south-ibenal', 'north-ibenal', 'henborth'],
+  assert.deepEqual([...GROUND_TINT_FAMILIES], ['gala', 'uplands', 'oves', 'mithala', 'southwest', 'selemis', 'telemonia', 'east-pyros', 'nether-desert', 'legemum', 'babon', 'south-celder', 'north-celder', 'east-izol', 'alezhor', 'south-ibenal', 'north-ibenal', 'henborth'],
     'a family was added to groundTint without a line here');
-  const probes = { gala: ['Gala'], oves: ['Ovesos', 'Oves Desert'],
+  const probes = { gala: ['Gala'], uplands: ['Meneth','Vastos'], oves: ['Ovesos', 'Oves Desert'],
     mithala: ['South Mithala', 'West Mithala', 'East Mithala', 'North Mithala'],
     southwest: [...BLOCK], selemis: ['Selemi'], telemonia: ['Telemonia'], 'east-pyros': ['East Pyros'], 'nether-desert': ['Nether Desert'], legemum: ['Legemum'], babon: ['Babon'],
     'south-celder': ['South Celder'], 'north-celder': ['North Celder'], 'east-izol': ['East Izol'], alezhor: ['Alezhor'],

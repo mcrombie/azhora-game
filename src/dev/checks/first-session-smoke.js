@@ -1,5 +1,5 @@
+import {confirmTowerCampaign} from './tower-smoke.js';
 import {TALETH_SPOT,TOWER_DOOR,TOWER_EXIT} from '../../app/exploration/tower-state.js';
-import {MINORA_STABLE as STABLE} from '../../content/regions/minora-frontier/minora-stable.js';
 import {driveWorldEncounter,clearCombatKeys} from './encounter-controls.js';
 const assert=(v,m)=>{if(!v)throw Error(m);};
 const frames=()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
@@ -20,17 +20,19 @@ export async function travel(a,target,{entry=false,reach=1}={}){
   }throw Error('Travel exceeded 96 active seconds');}finally{a.hold('KeyW',false);a.hold('ShiftLeft',false);}
 }
 let rideSeconds=0,arrivalDay=0;
-export async function departure(a){
+export async function departure(a,side='west'){
   window.dispatchEvent(new Event('focus'));
   await travel(a,{x:TALETH_SPOT.x,z:TALETH_SPOT.z+2},{reach:1.5});key('KeyF');
-  assert(a.state().mode==='briefing','Ordinary walking reaches Taleth');document.getElementById('tower-next').click();
+  assert(a.state().mode==='briefing','Ordinary walking reaches Taleth');confirmTowerCampaign(a,side);
   await travel(a,{x:TOWER_DOOR.x,z:TOWER_DOOR.z-1.5});key('KeyF');await loaded(a);
   assert(!a.tower.state().inside,'Real tower door reaches Minora');
-  await travel(a,{x:STABLE.bear.x+1,z:STABLE.bear.z-2},{reach:1.2});key('KeyF');
-  assert(a.state().mode==='briefing','Ordinary walking reaches Bear');for(let i=0;i<3;i++)document.getElementById('stable-next').click();
-  await travel(a,{x:STABLE.horse.x+1.3,z:STABLE.horse.z},{reach:.8});key('KeyG');
+  for(let i=0;i<375&&!a.stable.state().offerOpen;i++){a.step(.04);if(i%50===49)await frames();}
+  assert(a.state().mode==='briefing'&&a.stable.state().offerOpen,'Bear approaches and talks automatically at the tower exit');
+  document.getElementById('stable-next').click();
+  assert(a.stable.owned&&!a.stable.mounted,'One Continue grants the horse without forcing a ride');
+  key('KeyG');
   assert(a.stable.mounted,'Bear’s horse mounts through G');a.war.trackRoute();
-  return {checks:['Walk to Taleth, accept briefing, leave through actual door','Walk to Bear, receive horse and mount with normal controls']};
+  return {checks:['Walk to Taleth, accept briefing, leave through actual door','Bear approaches automatically; one Continue receives the horse and G mounts without another walk']};
 }
 export async function ride(a){
   // Test driver follows existing streets, not player-facing route checkpoints.

@@ -9,6 +9,7 @@ tests/.electron-profiles/
 public/
 # Throwaway measuring scripts: probes for road distances, fight difficulty and the like.
 .tmpchk/
+/.tmp/
 
 # Confidential author reference: never source or distribution content.
 /reference-private/

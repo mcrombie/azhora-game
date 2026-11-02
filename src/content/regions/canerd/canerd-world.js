@@ -18,6 +18,16 @@ export const CANERD = freeze({ id: 'canerd', name: 'Canerd', region: REGION_IDS[
 });
 export const CANERD_FAIR = freeze({ id: 'canerd-horse-fair', region: REGION_IDS['South Celder'], ...point(120, 90), width: 50, depth: 36, height: arrival.y });
 
+/** Shared physical anchors for scenery, the household's walks and conversation.
+ * The garden leaves the central gate route, hall door and stable approach open. */
+export const CANERD_GARDEN = freeze({
+  id:'canerd-sacred-garden',name:'The sacred oak garden',
+  oak:freeze({id:'canerd-sacred-oak',species:'english-oak',...point(10.5,14.5),height:24,trunkRadius:2.25,yaw:-Math.PI/2}),
+  entry:point(4.2,14.5),approach:point(6.2,14.5),gardenerWork:point(13.7,22),gardenerRest:point(15.5,9),
+  bounds:freeze({minX:cx+4.2,maxX:cx+17.8,minZ:cz+5.5,maxZ:cz+25.5}),
+  gardenerRoute:freeze([[6.2,14.5],[6.5,20.8],[13.7,22],[16.2,20],[16.2,9],[15.5,9]].map(([x,z])=>point(x,z))),
+});
+
 // A direct approach crosses the flat forecourt and enters the south gate.
 // Keep the existing route id for review tools and map consumers.
 const approachAnchors = [arrival, point(80, 60, baseHeight), point(0, 60, baseHeight), CANERD.courtyard];
@@ -51,6 +61,8 @@ export const CANERD_VIEWS = freeze({
   'canerd-ascent': view({ x: cx + 130, z: cz + 80, y: baseHeight + 17 }, { x: cx - 12, z: cz, y: summitHeight + 26 }),
   'canerd-court': view({ x: cx + 8, z: cz + 28, y: summitHeight + 2.4 }, { x: cx - 5, z: cz - 8, y: summitHeight + 5.4 }),
   'canerd-hall': view({ x: cx - 5, z: cz - 4, y: summitHeight + 1.7 }, { x: cx - 5, z: cz - 20, y: summitHeight + 3.5 }),
+  'canerd-garden': view({ x: cx - 7, z: cz + 29, y: summitHeight + 12 }, { x: cx + 10.5, z: cz + 14.5, y: summitHeight + 10.5 }),
+  'canerd-oak': view({ x: cx + 3.1, z: cz + 14.5, y: summitHeight + 4.0 }, { x: cx + 10.5, z: cz + 14.5, y: summitHeight + 4.1 }),
   'canerd-lookout': view({ x: cx, z: cz + 33, y: summitHeight + 11.3 }, { x: cx + 200, z: cz + 130, y: baseHeight + 7 }),
   'canerd-high-tower': view({ x: cx - 82, z: cz - 105, y: summitHeight + 74 }, { x: cx - 10, z: cz - 10, y: summitHeight + 35 }),
 });

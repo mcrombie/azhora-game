@@ -1,7 +1,7 @@
 /**
  * Alezhor: terrain, climate and water only. `src/content/regions/alezhor/alezhor-scenery.js` and `src/content/regions/alezhor/alezhor-wildlife.js` carry what grows
- * and what lives here. Nothing here belongs to anybody: no city, harbour, quay, gold working, farm or road. The
- * river-mouth flats where the coastal cities would stand are kept level and open, and nothing is built on them.
+ * and what lives here. This module remains the natural terrain layer. Alezhor Town now occupies the gold
+ * estuary's west-bank flat; its walls, streets and quays live separately in `alezhor-town-scenery.js`.
  *
  * Pure: no three, no DOM. `src/world/terrain/world-terrain.js` lays the ground (`alezhorGround`) and colours it (`alezhorTint`,
  * `alezhorShoreTint`); the scenery draws the water's ribbons and lays its colliders (`alezhorWaterRibbons`,
@@ -1246,7 +1246,8 @@ export const ALEZHOR_TRAILS = freeze([
   // Up the middle fold from the bay's head to the tree line.
   trail('alezhor-to-the-trees', 3, [[-4200, 900], [-4214, 868], [-4214, 832], [-4208, 790]]),
   // From the gold river's flat up beside the gorge to the rim over its head pool, where the forest's river comes out.
-  trail('alezhor-falls-rim', 3, [[-3990, 900], [-3984, 890], [-3978, 878], [-3972, 870]]),
+  // The new town's east gate leads around the curtain, then rejoins the old rim.
+  trail('alezhor-falls-rim', 3, [[-3990, 900], [-3977, 902], [-3970, 902], [-3970, 880], [-3972, 870]]),
   // Along the Alezhor Water's bank from the south's north-eastern corner to the head of the gulf.
   trail('alezhor-water-bank', 3, [[-3514, 966], [-3517, 1002], [-3537, 1024], [-3557, 1047], [-3562, 1079], [-3578, 1102], [-3604, 1127], [-3613, 1160],
     [-3628, 1182], [-3650, 1192], [-3680, 1182], [-3712, 1176], [-3730, 1160]]),

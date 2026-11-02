@@ -1,3 +1,4 @@
+import {confirmTowerCampaign} from './tower-smoke.js';
 const assert=(v,m)=>{if(!v)throw Error(m);};
 export async function ready(a){
   window.dispatchEvent(new Event('focus'));
@@ -19,6 +20,13 @@ export function verify(a){
   window.dispatchEvent(new Event('focus'));for(let i=0;i<300;i++)a.step(.04);
   assert(!a.campaignAutoplay.state().active&&a.war.state().campaign.day===day,'Takeover does not restart or advance the campaign');
   document.getElementById('tower-close').click();
+  assert(a.campaignAutoplay.resume(),'Resume accepts a manually closed Taleth dialogue');a.step(.04);
+  assert(a.state().mode==='briefing'&&a.campaignAutoplay.state().stage==='intro','Resume reopens the unfinished introduction');
+  a.campaignAutoplay.stop();confirmTowerCampaign(a,a.campaignAutoplay.state().side);
+  assert(a.tower.state().briefed,'Manual Start campaign completes the introduction');
+  const started=JSON.stringify(a.war.state().campaign);
+  assert(a.campaignAutoplay.resume()&&a.campaignAutoplay.state().stage==='travel','Resume leaves the chamber after manual Start');
+  assert(JSON.stringify(a.war.state().campaign)===started,'Resume does not begin the campaign twice');a.campaignAutoplay.stop();
   assert(a.save().ok&&a.store.rehearsal&&a.store.read().data,'Taking control can save only to the rehearsal store');
   assert(!document.getElementById('world-autoplay').hidden&&document.getElementById('world-autoplay').textContent.includes('Resume autoplay'),'Takeover leaves an explicit resume control');
   return {driver:a.campaignAutoplay.state(),rehearsal:a.store.rehearsal,errors:a.state().frameErrors};

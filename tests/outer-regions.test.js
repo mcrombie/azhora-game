@@ -45,7 +45,7 @@ test('game naming corrections are read-only, idempotent, and unbuilt jungles sta
 });
 
 test('new map locations are distinct, legible and located in their own regions',()=>{
-  const locations=SUBREGIONS.filter(a=>OUTER_NAMES.includes(a.region));assert.equal(locations.length,102);
+  const locations=SUBREGIONS.filter(a=>OUTER_NAMES.includes(a.region));assert.equal(locations.length,107);
   for(const a of locations){assert.ok(insideRegion(a.region,a.x,a.z),a.id);assert.ok(a.note.length>30,a.id);
     for(const b of locations.filter(b=>b!==a))assert.ok(Math.hypot(a.x-b.x,a.z-b.z)>Math.max(a.radius,b.radius)*.6,a.id+' / '+b.id);
   }

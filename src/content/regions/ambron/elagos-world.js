@@ -349,7 +349,7 @@ export const LINK_BRIDGE = (() => {
 
 /** Out of the Lake Gate, north along Ela's eastern shore, over the Link, to the shrine. */
 export const LAKE_ROAD = freeze([
-  ambronPoint(-15,-150),ambronPoint(-60,-145),ambronPoint(-95,-145),point(-1255,-155),point(-1255,-213),cityGatePoint('lake-gate'),point(-1255,-248),point(-1290,-255),point(-1295,-220),
+  ambronPoint(-15,-150),ambronPoint(-60,-145),ambronPoint(-95,-145),ambronPoint(-86,-166),cityGatePoint('lake-gate'),point(-1249,-196),point(-1290,-255),point(-1295,-220),
   point(-1320,-145),point(-1340,-100),point(-1350,-30),point(-1332,4),
 ]);
 

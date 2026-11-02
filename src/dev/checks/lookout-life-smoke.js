@@ -52,13 +52,16 @@ export async function flight(a){
 export async function archive(a){
   step(a,260);const bird=a.tower.birds().find(b=>b.id===birdId);
   assert(!bird.flying&&Math.abs(bird.position[2]-4.02)<.01,'Released pigeon returns to its own perch');
-  assert(a.tower.pigeonInteract(),'Returned pigeon remains interactable');click('pigeon-letters');
-  assert(!document.getElementById('taleth-letter-dialog').hidden,'Pigeon opens existing dispatch archive');
-  assert(document.getElementById('taleth-letter-select').options.length>0,'Actual campaign letters are available');
+  assert(a.tower.pigeonInteract(),'Returned pigeon remains interactable');
+  assert(!document.getElementById('pigeon-letters'),'Ordinary loft birds have no campaign archive action');
+  click('pigeon-close');assert(!a.tower.pigeonState().selected,'Leaving the bird ends observation');
+  a.openMap();click('taleth-letters');
+  assert(!document.getElementById('taleth-letter-dialog').hidden&&a.war.state().courier.telepathic,'The map opens Taleth\'s message archive independently of the birds');
+  assert(document.getElementById('taleth-letter-select').options.length>0,'Actual campaign messages remain available after the war');
   unchanged(a);await frame();return {dispatches:document.getElementById('taleth-letter-select').options.length};
 }
 export async function descent(a){
-  click('taleth-letter-close');await a.visit({...LOOKOUT_DOOR,z:LOOKOUT_DOOR.z-1});await door(a);
+  click('taleth-letter-close');assert(a.state().mode==='map','Closing the archive returns to its map');a.resume();await a.visit({...LOOKOUT_DOOR,z:LOOKOUT_DOOR.z-1});await door(a);
   assert(a.tower.state().room==='tower','Lookout stair returns to guild chamber');
   await a.visit({x:-2414,z:42});assert(a.tower.interact(),'Taleth can be revisited in his chamber');
   assert(document.getElementById('tower-page').textContent.includes('Campaign complete'),'Returning to the chamber does not repeat an unfinished assignment');
@@ -69,19 +72,19 @@ export async function descent(a){
   return {inside:false,birdsDormant:true};
 }
 export async function bear(a){
-  await a.visit({x:-2417,z:65});step(a,12);assert(a.stable.interact(),'Bear is reachable');
-  for(let i=0;i<3;i++)click('stable-next');assert(a.stable.owned,'Existing lesson grants the horse');
+  await a.visit({x:-2417,z:65});step(a,12);assert(a.stable.state().offerOpen||a.stable.interact(),'Bear is reachable or has already offered the horse');
+  click('stable-next');assert(a.stable.owned,'Existing lesson grants the horse');
   const horse=JSON.stringify(a.stable.snapshot());assert(a.stable.interact(),'Bear can be revisited');
   assert(document.getElementById('stable-topic').textContent==='Home after the war','Bear greets the returning rider');
   assert(document.getElementById('stable-words').textContent.includes('Lizeemi League'),'Bear knows peace has come');
-  click('stable-next');click('stable-next');click('stable-next');
+  click('stable-next');
   assert(!document.getElementById('stable-words').textContent.includes('day 3'),'Postwar riding reminder omits obsolete battle instructions');
-  click('stable-close');assert(JSON.stringify(a.stable.snapshot())===horse,'Riding reminder leaves owned horse unchanged');a.stable.interact();
+  click('stable-next');assert(JSON.stringify(a.stable.snapshot())===horse,'Riding reminder leaves owned horse unchanged');a.stable.interact();
   unchanged(a);await frame();return {topic:document.getElementById('stable-topic').textContent,horse:a.stable.snapshot()};
 }
 async function council(a,id){
   const c=MINORA_COUNCIL[id];await a.visit(c.exit);await door(a);assert(a.tower.state().room===id,'Enter '+c.room);
-  const p=councilPerson(id);await a.visit({x:p.x+1.7,z:p.z+2});press('KeyF');
+  const p=councilPerson(id);await a.visit({x:p.x+1.7,y:p.y,z:p.z+2});press('KeyF');
   assert(a.council.state().speaking===id,'Speak to '+c.name);click('council-peace');
   assert(document.getElementById('council-words').textContent===postwarPlans(id,a.war.state().campaign),'Postwar intentions match winner');
   click('council-memory');assert(document.getElementById('council-words').textContent.includes('let the armies decide'),'No invented participation');

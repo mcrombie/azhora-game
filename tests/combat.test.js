@@ -544,7 +544,7 @@ test('on an arena that runs east and west, defenders set out far along it still 
   assert.ok(events.some(e => e.type === 'windup'), 'the last defender swings at a traveler 11 m along');
 });
 
-test('soldiers fight like soldiers: a shield on guard, mail, no flinching once the swing has begun, and two swinging at once', () => {
+test('ordinary human militia stop frontal hits with shields and commit to attacks together', () => {
   const world = { bounds: { minX: -300, maxX: 300, minZ: -300, maxZ: 300 }, colliders: [], heightAt: () => 1.5 };
   const start = enemies => {
     const position = { x: 0, y: 1.5, z: 13 }, events = [], combat = createCombat({ world, position, onEvent: e => events.push(e) });
@@ -559,7 +559,7 @@ test('soldiers fight like soldiers: a shield on guard, mail, no flinching once t
     combat.update(.2);
     assert.equal(combat.attack(Math.PI), true); combat.update(.25);
     assert.ok(events.some(e => e.type === 'blocked'), 'the shield takes it');
-    assert.ok(soldier.hp >= 93 && soldier.hp < 100, `a little gets through (${soldier.hp} left)`);
+    assert.equal(soldier.hp,100,'an ordinary shield fully stops a guarded frontal hit');
     assert.notEqual(soldier.action, 'hurt');
     // He swings and hits hard, then covers his recovery with the same shield.
     advanceUntil(combat, () => soldier.action === 'attack', 5);
@@ -570,7 +570,7 @@ test('soldiers fight like soldiers: a shield on guard, mail, no flinching once t
     const before = soldier.hp;
     position.x = soldier.x; position.z = soldier.z + 1.6;
     assert.equal(combat.attack(Math.PI), true); combat.update(.25);
-    assert.ok(before - soldier.hp > 0 && before - soldier.hp <= 7, `the shield covers recovery (${before - soldier.hp})`);
+    assert.equal(before-soldier.hp,0,'the raised shield covers recovery');
     assert.notEqual(soldier.action, 'hurt');
   }
   // Struck while he winds up, he keeps coming: the swing is not stopped.

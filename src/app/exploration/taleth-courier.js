@@ -1,47 +1,91 @@
-import {createCourierPigeon} from '../../content/regions/minora-frontier/courier-pigeon.js';
+import {createCorrisState} from './corris-state.js';
+import {TALETH_VOICE_INTRO,talethMessageNext,talethMessageStamp,talethFollowAvailable} from './taleth-correspondence.js';
+import {openingTimelineText} from '../../experiments/day-night/opening-presentation.js';
+import {writeHud} from './hud-write.js';
 
-export function createTalethCourier({scene,world,position,getMode,setMode,letters,opportunity=()=>null,onFollow=()=>{}}){
-  const bird=createCourierPigeon(scene);bird.root.visible=false;
-  const seen=new Set();let elapsed=0,delivery=null,returnMode='playing',previousFocus=null;
-  const archive=document.createElement('button');archive.id='taleth-letters';archive.textContent='Letters from Taleth';document.getElementById('world-war-controls').append(archive);
-  const read=document.createElement('button');read.id='taleth-read-letter';read.textContent='Read full letter';read.hidden=true;document.querySelector('.war-report-extra-actions').prepend(read);
-  const next=document.createElement('button');next.id='world-war-next';document.querySelector('.war-report-actions').prepend(next);
-  const mapNext=document.createElement('button');mapNext.id='world-war-map-next';document.getElementById('world-war-controls').append(mapNext);
-  const other=document.createElement('button');other.id='world-war-alternative';document.querySelector('.war-report-extra-actions').append(other);
-  const mapOther=document.createElement('button');mapOther.id='world-war-map-alternative';document.getElementById('world-war-controls').append(mapOther);
+// The old courier receipt schema and DOM IDs remain readable by existing saves
+// and autoplay. Delivery is now a voice: no actor, landing or distance checks.
+export function createTalethCourier({getMode,setMode,letters,opportunity=()=>null,clock=()=>null,onFollow=()=>{},saved,onDirty=()=>{},onTalk=()=>{}}){
+  let receipts=createCorrisState(saved),returnMode='playing',previousFocus=null,conversation=false;
+  const words=text=>openingTimelineText(text,clock());
+  const button=(id,text,parent)=>{const b=document.createElement('button');b.id=id;b.textContent=text;parent.append(b);return b;};
+  const controls=document.getElementById('world-war-controls'),extra=document.querySelector('.war-report-extra-actions');
+  const archive=button('taleth-letters','Taleth / Messages',controls);
+  const read=button('taleth-read-letter',"Review Taleth's message",extra);read.hidden=true;
+  const next=button('world-war-next','',document.querySelector('.war-report-actions'));
+  const mapNext=button('world-war-map-next','',controls);
+  const other=button('world-war-alternative','',extra),mapOther=button('world-war-map-alternative','',controls);
   const nextDetail=document.createElement('p');nextDetail.id='world-war-next-detail';document.getElementById('world-war-report-clock').before(nextDetail);
+  const notice=document.createElement('aside');notice.id='corris-arrival';notice.hidden=true;
+  notice.innerHTML='<span role="status" id="corris-arrival-words"></span><button id="corris-call">Listen to Taleth (V)</button>';
   const dialog=document.createElement('section');dialog.id='taleth-letter-dialog';dialog.hidden=true;dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','taleth-letter-title');
-  dialog.innerHTML='<div class="tower-dialog-card"><header><span class="eyebrow">WIZARD GUILD / PIGEON POST</span><h2 id="taleth-letter-title">Letters from Taleth</h2><label>Dispatch <select id="taleth-letter-select"></select></label></header><div class="taleth-letter-body"><p id="taleth-campaign-now"></p><p id="taleth-letter-words"></p><p id="taleth-letter-note"></p><small>Carried by the guild’s rock doves: slate wings, two dark bars, a green neck and a tiny message tube. Watch for the green flash of the neck as the bird turns toward home.</small></div><div class="tower-dialog-actions"><button id="taleth-letter-follow"></button><button id="taleth-letter-alternative" hidden></button><button id="taleth-letter-close">Close letter</button></div></div>';
-  document.body.append(dialog);const $=id=>dialog.querySelector('#'+id);
-  function paint(){const letter=letters().find(l=>String(l.id)===$('taleth-letter-select').value);$('taleth-letter-title').textContent=letter?.title??'Letters from Taleth';$('taleth-letter-words').textContent=letter?.detail??'No pigeons have arrived yet. Taleth will write when the fighting changes the situation.';$('taleth-letter-note').textContent=letter?.note??'';paintOpportunity();dialog.querySelector('.taleth-letter-body').scrollTop=0;}
-  function paintOpportunity(){
-    const current=opportunity(),disabled=!current||current.kind==='briefing';
-    for(const button of [next,mapNext,$('taleth-letter-follow')]){const label=current?.label??'Next opportunity';if(button.textContent!==label)button.textContent=label;button.disabled=disabled;button.title=current?.detail??'';}
-    for(const button of [other,mapOther,$('taleth-letter-alternative')]){const alt=current?.alternative;button.hidden=!alt;button.disabled=!alt;if(button.textContent!==(alt?.label??''))button.textContent=alt?.label??'';button.title=alt?.detail??'';}
-    const detail=current?'Campaign now: '+current.detail+(current.tradeoff?' '+current.tradeoff:''):'';
-    if(nextDetail.textContent!==detail)nextDetail.textContent=detail;
-    $('taleth-campaign-now').textContent=detail;
+  dialog.innerHTML=`<div class="tower-dialog-card"><header><span class="eyebrow" id="corris-office">TALETH / TELEPATHIC MESSAGE</span><h2 id="taleth-letter-title">Taleth's voice</h2></header>
+    <div class="taleth-letter-body"><p id="corris-summary"></p><p id="taleth-campaign-now"></p>
+    <details id="corris-strategy"><summary>Explain your reasoning.</summary><p id="corris-live-strategy"></p><strong id="corris-report-date"></strong><p id="taleth-letter-words"></p><p id="taleth-letter-note"></p><small>This message records what we knew then. The next step above reflects the situation now.</small></details>
+    <details id="corris-about"><summary>How can I hear you?</summary><p>${TALETH_VOICE_INTRO}</p><p>You can listen now or return to my messages later. Your surroundings wait while you read.</p></details>
+    <details id="corris-reports"><summary>Earlier messages</summary><label>Message <select id="taleth-letter-select"></select></label></details></div>
+    <div class="tower-dialog-actions"><button id="corris-understood">Understood</button><button id="taleth-letter-follow"></button><button id="taleth-letter-alternative" hidden></button><button id="taleth-letter-close">Listen later (Esc)</button></div></div>`;
+  document.getElementById('world-war-report-more').before(notice);document.body.append(dialog);const $=id=>document.getElementById(id);
+  const selected=()=>letters().find(l=>String(l.id)===$('taleth-letter-select').value);
+  function paint(){
+    const report=selected();
+    $('taleth-letter-title').textContent=conversation?"Taleth's voice":'Taleth / Messages';
+    $('corris-office').textContent=conversation?'TELEPATHIC MESSAGE':'CAMPAIGN RECORD / TALETH';
+    $('corris-summary').textContent=report?words(`${conversation&&!receipts.snapshot().introduced?'Teresod, it is Taleth. Listen when you are ready. ':''}${report.summaryText??report.title}`):TALETH_VOICE_INTRO;
+    $('taleth-letter-words').textContent=report?words(report.detail):"We must end this war swiftly, before greater troubles spend the people's strength.";
+    $('taleth-letter-note').textContent=words(report?.note??'');
+    $('corris-report-date').textContent=report?`Message / ${talethMessageStamp(report,clock())}`:'';
+    $('corris-reports').hidden=!letters().length;
+    $('corris-understood').hidden=!conversation;
+    $('taleth-letter-close').textContent=conversation?'Listen later (Esc)':'Close messages (Esc)';
+    paintOpportunity();dialog.querySelector('.taleth-letter-body').scrollTop=0;
   }
-  next.onclick=mapNext.onclick=()=>onFollow();$('taleth-letter-follow').onclick=()=>{close();onFollow();};
-  other.onclick=mapOther.onclick=()=>onFollow(true);$('taleth-letter-alternative').onclick=()=>{close();onFollow(true);};
-  function open(id){previousFocus=document.activeElement;returnMode=getMode();setMode('briefing');dialog.hidden=false;const select=$('taleth-letter-select');select.replaceChildren();for(const l of letters()){const o=document.createElement('option');o.value=l.id;o.textContent=`Day ${l.day} / ${l.title}`;select.append(o);}select.value=String(id??letters().at(-1)?.id??'');paint();$('taleth-letter-close').focus();}
-  function close(){dialog.hidden=true;setMode(returnMode);if(previousFocus?.isConnected)previousFocus.focus();}
-  archive.onclick=()=>open();read.onclick=()=>open(Number(read.dataset.letter));$('taleth-letter-select').onchange=paint;$('taleth-letter-close').onclick=close;
+  function paintOpportunity(){
+    const current=opportunity(),time=clock(),complete=!!time?.complete,available=talethFollowAvailable(current,time);
+    for(const b of [next,mapNext,$('taleth-letter-follow')]){writeHud(b,'textContent',time?.fullCampaign&&current?.kind==='regroup'?'Wait for next front':words(current?.label??'Next opportunity'));writeHud(b,'disabled',!available);writeHud(b,'hidden',!available);b.title=words(current?.detail??'');}
+    for(const b of [other,mapOther,$('taleth-letter-alternative')]){const alt=complete?null:current?.alternative;writeHud(b,'hidden',!alt);writeHud(b,'disabled',!alt);writeHud(b,'textContent',words(alt?.label??''));b.title=words(alt?.detail??'');}
+    writeHud(nextDetail,'textContent',complete?talethMessageNext(current,clock()):current?words('Campaign now: '+current.detail+(current.tradeoff?' '+current.tradeoff:'')):'');
+    writeHud($('taleth-campaign-now'),'textContent',talethMessageNext(current,clock()));
+    writeHud($('corris-strategy'),'hidden',!selected()&&!current?.tradeoff);
+    writeHud($('corris-live-strategy'),'hidden',complete||!current?.tradeoff);
+    writeHud($('corris-live-strategy'),'textContent',current?.tradeoff?words('Current front: '+current.tradeoff):'');
+  }
+  function open(id,{talk=false}={}){
+    if(!dialog.hidden||!['playing','tower','map'].includes(getMode()))return false;
+    previousFocus=document.activeElement;returnMode=getMode()==='tower'?'playing':getMode();conversation=talk;
+    setMode('briefing');onTalk(null);dialog.hidden=false;dialog.dataset.conversation=String(talk);notice.hidden=true;
+    const select=$('taleth-letter-select');select.replaceChildren();
+    for(const l of letters()){const o=document.createElement('option');o.value=l.id;o.textContent=`${talethMessageStamp(l,clock())} / ${l.title.replace('Taleth / ','')}`;select.append(o);}
+    select.value=String(id??letters().at(-1)?.id??'');$('corris-strategy').open=false;$('corris-about').open=false;$('corris-reports').open=!talk;paint();
+    $(talk?'corris-understood':'taleth-letter-close').focus();return true;
+  }
+  function acknowledge(){if(conversation){receipts.acknowledge(selected()?.id);onDirty();}}
+  function close(){onTalk(null);dialog.hidden=true;setMode(returnMode);conversation=false;if(previousFocus?.isConnected)previousFocus.focus();}
+  function interact(){const pending=receipts.pending(letters());return !!pending&&open(pending.id,{talk:true});}
+  next.onclick=mapNext.onclick=()=>onFollow();other.onclick=mapOther.onclick=()=>onFollow(true);
+  $('taleth-letter-follow').onclick=()=>{acknowledge();close();onFollow();};
+  $('taleth-letter-alternative').onclick=()=>{acknowledge();close();onFollow(true);};
+  $('corris-understood').onclick=()=>{acknowledge();close();};
+  archive.onclick=()=>open();read.onclick=()=>open(Number(read.dataset.letter));
+  $('taleth-letter-select').onchange=paint;$('taleth-letter-close').onclick=close;$('corris-call').onclick=interact;
   return {
+    interact,people:()=>[],
     present(report){paintOpportunity();read.hidden=!report?.taleth;if(report?.taleth)read.dataset.letter=report.id;},
-    update(report,dt,enabled){
-      if(enabled&&report?.taleth&&!seen.has(report.id)){
-        seen.add(report.id);elapsed=0;const x=position.x+2.6,z=position.z-1.5;
-        delivery={id:report.id,x,y:Math.max(world.heightAt(x,z),world.waterAt(x,z))+.12,z};
-      }
-      bird.root.visible=!!delivery&&enabled&&elapsed<14;
-      if(!bird.root.visible)return;elapsed+=dt;const incoming=Math.max(0,1-elapsed/4),outgoing=Math.max(0,(elapsed-10)/4),fly=Math.max(incoming,outgoing);
-      bird.root.position.set(delivery.x+incoming*12-outgoing*12,delivery.y+fly*7,delivery.z-incoming*9-outgoing*9);
-      bird.root.rotation.y=elapsed<4?-2.2:elapsed>10?-.9:Math.atan2(position.x-delivery.x,position.z-delivery.z);bird.flap(elapsed,fly>0);
+    // The quest updates directly. Messages remain optional, without a repeated
+    // summons that looks like another required post-battle conversation.
+    update(){writeHud(notice,'hidden',true);},
+    keydown(e){
+      if(dialog.hidden){if(e.code==='KeyV'&&!e.repeat&&['playing','tower','map'].includes(getMode())&&interact()){e.preventDefault();return true;}return false;}
+      if(e.code==='Escape'){e.preventDefault();close();}
+      else if(e.code==='Tab'){
+        e.preventDefault();const items=[...dialog.querySelectorAll('button,select,summary')].filter(b=>!b.disabled&&b.getClientRects().length);
+        const i=items.indexOf(document.activeElement);items[(i+(e.shiftKey?-1:1)+items.length)%items.length]?.focus();
+      }else if(!['Enter','Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
+      return true;
     },
-    keydown(e){if(dialog.hidden)return false;if(e.code==='Escape'){e.preventDefault();close();}if(e.code==='F5')e.preventDefault();if(e.code==='Tab'){e.preventDefault();const controls=[$('taleth-letter-select'),$('taleth-letter-follow'),$('taleth-letter-alternative'),$('taleth-letter-close')].filter(b=>!b.disabled&&!b.hidden),i=controls.indexOf(document.activeElement);controls[(i+(e.shiftKey?-1:1)+controls.length)%controls.length].focus();}return true;},
-    reset(){seen.clear();delivery=null;bird.root.visible=false;dialog.hidden=true;},
-    state:()=>({delivery:delivery?.id??null,visible:bird.root.visible,elapsed,archiveOpen:!dialog.hidden}),
-    dispose(){bird.dispose();archive.remove();read.remove();next.remove();mapNext.remove();other.remove();mapOther.remove();nextDetail.remove();dialog.remove();},
+    reset(saved){onTalk(null);receipts=createCorrisState(saved);dialog.hidden=notice.hidden=true;conversation=false;},
+    snapshot:()=>receipts.snapshot(),
+    state:()=>({...receipts.snapshot(),telepathic:true,visible:false,landed:false,destination:null,people:[],delivery:receipts.pending(letters())?.id??null,archiveOpen:!dialog.hidden,conversation}),
+    dispose(){for(const e of [archive,read,next,mapNext,other,mapOther,nextDetail,notice,dialog])e.remove();},
   };
 }

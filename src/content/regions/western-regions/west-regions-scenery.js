@@ -1,8 +1,10 @@
 import { forEachBuild } from '../../../world/loading/build-each.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
+import {createWestWaterMaterial} from './west-water-material.js';
 import { yunethreReserved } from '../minora-frontier/yunethre-world.js';
 import { menoraReserved } from '../minora-frontier/menora-city.js';
+import {lizeemCrossingReserved} from '../minora-frontier/lizeem-crossings.js';
 import { caricasSettlementReserved } from '../minora-frontier/caricas-settlement.js';
 import { regionalFarmlandClear } from '../../../world/scenery/regional-farmland.js';
 import { nethereumFarmReserved } from '../nethereum/nethereum-farm.js';
@@ -11,13 +13,14 @@ import { isareosHamletReserved } from '../minora-frontier/isareos-hamlet.js';
 // Haethom, its levee, meadow and weir (src/content/regions/nethereum/nethereum-farm.js), and Ninehands, the hazel wood, the inn and the Way
 // (src/content/regions/nesdor/nesdor-farm.js), 6 October 2026, keep the scatter off as the towns do; so do Amalthea's hamlet and its track in the
 // Isareos hills (src/content/regions/minora-frontier/isareos-hamlet.js, Build 5, the same day).
-const frontierReserved=(x,z)=>menoraReserved(x,z,2)||caricasSettlementReserved(x,z,2)||regionalFarmlandClear(x,z,2)||yunethreReserved(x,z,1)||nethereumFarmReserved(x,z,1)||nesdorFarmReserved(x,z,1)||isareosHamletReserved(x,z,1);
-import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-registry.js';
+const frontierReserved=(x,z)=>lizeemCrossingReserved(x,z,4)||menoraReserved(x,z,2)||caricasSettlementReserved(x,z,2)||regionalFarmlandClear(x,z,2)||yunethreReserved(x,z,1)||nethereumFarmReserved(x,z,1)||nesdorFarmReserved(x,z,3)||isareosHamletReserved(x,z,1);
+import { worldTreeId } from '../../../world/scenery/tree-registry.js';
+import { createSpeciesTreesSteps, createSpeciesTreeLibrary } from '../../../world/scenery/species-trees.js';
 import { hexOwnerAt, REGION_CELLS, SURVEY, hexAt, hexCentre, METRES_PER_HEX, landDistance } from '../../../world/terrain/region-world.js';
 import { WORLD_SCALE } from '../../../world/terrain/world-scale.js';
 import {
   VASTOS_RIVER, VASTOS_BECK, VASTOS_BRAID, VASTOS_PANS, VASTOS_BASINS, VASTOS_SINTER,
-  MENETH_BECKS, LIZEEM, CARICA, CARICA_CORRIDOR, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_POOLS,
+  MENETH_BECKS, LIZEEM, LIZEEM_HEAD, CARICA, CARICA_CORRIDOR, ELA_SOUTH_REACH, NESDOR_BECK, WEST_BRAIDS, WEST_POOLS,
   LIZEEM_REACH, EER_CHANNELS, ISAREOS_RIVER, ISAREOS_BECKS, ISAMOUTH_GROUND,
   NETH, NETH_HEAD, NETHEREUM_OUTLET, NETHEREUM_STREAMS, NETHEREUM_HOLLOW,
   westBareGround, courseDistance, caricaCorridorDistance,
@@ -58,11 +61,7 @@ export function* createWestScenerySteps(kit) {
    * Upland water: colder and greyer than the Caloss, because it comes off snow
    * and runs over gravel rather than through a wooded lowland valley.
    */
-  const waterMaterial = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 } }, side: THREE.DoubleSide,
-    vertexShader: 'varying vec3 p; void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'uniform float time; varying vec3 p; void main(){float w=sin(p.x*.42-time*1.5+p.z*1.1)*sin(p.x*.17+p.z*1.3);vec3 c=vec3(.22,.35,.38)+vec3(.13,.16,.15)*pow(max(w,0.),8.);gl_FragColor=vec4(c,1.);}',
-  });
+  const waterMaterial=createWestWaterMaterial();
 
   // -------------------------------------------------------------------------
   // Water surfaces
@@ -339,9 +338,7 @@ export function* createWestScenerySteps(kit) {
    *    range's edge, [it produces] the intermediate sizes". So: close-grown,
    *    straight, and none of it enormous.
    */
-  const trunkGeometry = new THREE.CylinderGeometry(.19, .32, 1, 6);
-  const crownGeometry = new THREE.IcosahedronGeometry(1, 0);
-  const barkMaterial = material('#6d573d'), leafMaterial = material('#ffffff', { flatShading: true });
+  const treeLibrary = createSpeciesTreeLibrary();
   const tuftGeometry = (() => {
     const positions = [], normals = [];
     for (let blade = 0; blade < 4; blade++) {
@@ -360,50 +357,27 @@ export function* createWestScenerySteps(kit) {
   const BLOCK = Math.max(1, Math.round(6 / (WORLD_SCALE * WORLD_SCALE)));
   const tuftsPerHex = Math.round(27 * WORLD_SCALE * WORLD_SCALE);
 
-  /**
-   * One block's trees, as two instanced batches: a trunk each and three crown
-   * lobes each. `tint` says what colour a crown is, which is how one region's
-   * woodland is told from another's; `kind` is the collider tag, so a test can
-   * ask where a region's trees actually stand.
-   */
+  /** Named woodland retains its original sampling stream and stable positions;
+   * species now select bark, branching and crown shape as well as identity. */
   function* woodBatch(trees, parent, tint, kind) {
     if (!trees.length) return;
-    const trunks = new THREE.InstancedMesh(trunkGeometry, barkMaterial, trees.length);
-    const crowns = new THREE.InstancedMesh(crownGeometry, leafMaterial, trees.length * 3);
-    let crownIndex = 0;
+    const descriptors=[];
     yield* forEachBuild(trees, function* (tree, index) {
-      const y = groundHeight(tree.x, tree.z), height = tree.h * tree.s;
-      dummy.position.set(tree.x, y + height * .38, tree.z); dummy.rotation.set(0, tree.rot, 0);
-      dummy.scale.set(tree.s, height * .76, tree.s); dummy.updateMatrix();
-      trunks.setMatrixAt(index, dummy.matrix);
-      const parts = [{mesh:trunks,index}], collider = { x: tree.x, z: tree.z, r: .48 * tree.s, kind }; colliders.push(collider);
-      for (let lobe = 0; lobe < 3; lobe++) { if (++buildWork % 32 === 0) yield;
-        const a = tree.rot + lobe * 2.1, spread = lobe === 2 ? 0 : height * (tree.wide ? .17 : .11);
-        dummy.position.set(tree.x + Math.sin(a) * spread, y + height * (lobe === 2 ? .92 : .74), tree.z + Math.cos(a) * spread);
-        dummy.rotation.set(range(-.18, .18), a, range(-.16, .16));
-        const spreadWide = tree.wide ? .36 : .25;
-        dummy.scale.set(height * spreadWide, height * (tree.wide ? .26 : .30), height * spreadWide); dummy.updateMatrix();
-        crowns.setMatrixAt(crownIndex, dummy.matrix);
-        parts.push({mesh:crowns,index:crownIndex});
-        crowns.setColorAt(crownIndex++, tint(tree));
-      }
+      // The old three lobes consumed two angles and the tint's random draws.
+      // Keep that stream so later forest blocks, grass and rocks do not move.
+      for(let lobe=0;lobe<3;lobe++){range(-.18,.18);range(-.16,.16);tint(tree);}
       const species = kind==='meneth-tree' ? (tree.wide?(index%2?'black-walnut':'sweet-chestnut'):'white-oak')
         :kind==='nesdor-tree'?(tree.oak?'white-oak':'common-hazel')
         :kind==='eer-tree'?('holm' in tree?(tree.holm?'holm-oak':'olive'):tree.scrubby?'tamarisk':index%2?'black-willow':'black-alder')
         :kind==='isareos-tree'?(tree.hazel?'common-hazel':index%2?'black-willow':'black-alder')
         :kind==='nethereum-tree'?(tree.willow?'black-willow':'black-alder')
         :index%2?'beech':'white-oak';
-      if(frontierReserved(tree.x,tree.z)){
-        const at=colliders.indexOf(collider);if(at>=0)colliders.splice(at,1);
-        dummy.scale.setScalar(0);dummy.updateMatrix();for(const part of parts){ if (++buildWork % 32 === 0) yield; part.mesh.setMatrixAt(part.index,dummy.matrix); }
-        return;
-      }
-      registerWorldTree(colliders,{id:worldTreeId(kind,tree.x,tree.z),x:tree.x,z:tree.z,y,height,species},parts,collider);
+      if(frontierReserved(tree.x,tree.z))return;
+      descriptors.push({id:worldTreeId(kind,tree.x,tree.z),x:tree.x,z:tree.z,height:tree.h*tree.s,species,
+        rotation:tree.rot,trunkRadius:.32*tree.s,collisionRadius:.48*tree.s,colliderKind:kind});
     });
-    for (const batch of [trunks, crowns]) { if (++buildWork % 32 === 0) yield;
-      batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); parent.add(batch);
-    }
-    metrics.trees += trees.length;
+    yield* createSpeciesTreesSteps({parent,colliders,trees:descriptors,heightAt:groundHeight,library:treeLibrary,name:kind+' woodland'});
+    metrics.trees += descriptors.length;
   }
 
   /** Loose stone, lying the way weather left it. */
@@ -483,7 +457,7 @@ export function* createWestScenerySteps(kit) {
   // Caricas: two rivers, and a corridor of woodland nobody has ever cleared
   // -------------------------------------------------------------------------
   const caricas = district('Caricas');
-  for (const course of [LIZEEM, CARICA]) { if (++buildWork % 32 === 0) yield; (yield* ribbon(WEST_PROFILES.get(course.id), caricas, course.name)); }
+  for (const course of [LIZEEM, LIZEEM_HEAD, CARICA]) { if (++buildWork % 32 === 0) yield; (yield* ribbon(WEST_PROFILES.get(course.id), caricas, course.name)); }
 
   /**
    * The Carica's upper section is "quick, cold, running over rock and gravel":

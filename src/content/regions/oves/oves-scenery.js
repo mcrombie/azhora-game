@@ -11,6 +11,7 @@ import {
   OVES_CHANNELS, OVES_DAMP, OVETH_WALL, channelPlace, onChannelFloor,
   onSorten, ovesClear, ovesLie, onRim, dampReach, ovesosShare, ovesosBelt,
 } from './oves-world.js';
+import {countrysideReserved} from '../minora-frontier/lizeem-countryside.js';
 import { ovesosFarmReserved } from './ovesos-farm.js';
 import { OVES_WILDLIFE_ZONES } from './oves-wildlife.js';
 
@@ -79,7 +80,7 @@ export function* createOvesScenerySteps(kit) {
   /** Ground something may grow on: one of these two countries' hexes, out of the water and off a channel floor. */
   const plantable = (x, z, margin) => own(x, z) && !westBareGround(x, z, margin) && westWaterSurface(x, z) === null && !ovesClear(x, z, margin);
   /** Velsorten's ground: its houses, plots, canal, ways and camp (src/content/regions/oves/ovesos-farm.js), which nothing wild grows on. */
-  const reserved = (x, z, margin = 0) => ovesosFarmReserved(x, z, margin);
+  const reserved = (x, z, margin = 0) => ovesosFarmReserved(x, z, margin)||countrysideReserved(x,z,margin);
   /** A fixed number for a place, 0 to 1, for thinning the old scatter without drawing on its stream. */
   const spot = (x, z) => { const v = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453; return v - Math.floor(v); };
 

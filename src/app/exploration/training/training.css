@@ -1,0 +1,48 @@
+/* The Stillroom keeps the field open; lesson selection appears only on pause. */
+#tower-training{position:fixed;inset:0;z-index:45;pointer-events:none;color:#edf1e5;font-family:system-ui,sans-serif}
+#tower-training [hidden]{display:none!important}
+#tower-training h1,#tower-training h2{font-family:Georgia,serif;font-weight:500}
+.training-header{position:absolute;top:28px;left:30px;color:#243f40;text-shadow:0 1px 3px #ffffff88}
+.training-header h1{font-size:32px;margin:6px 0}
+.training-header .eyebrow{font-size:10px;letter-spacing:.18em;color:#466363}
+#training-status{font-size:12px;margin:0}
+.training-toolbar{position:absolute;right:26px;top:28px;display:flex;gap:8px;pointer-events:auto}
+.training-toolbar button{background:#203e43ed;color:#eef1de;border-color:#6d8b8c}
+.training-panel,#training-lessons{position:absolute;pointer-events:auto;padding:22px;background:#19363deb;border:1px solid #718b8999;border-radius:8px;box-shadow:0 8px 30px #29454e20;overflow:auto;scrollbar-width:thin}
+.training-panel{left:28px;bottom:74px;width:332px;max-height:calc(100dvh - 220px)}
+.training-panel .eyebrow{font-size:10px;letter-spacing:.14em;color:#c4d5c7}
+#tower-training h2{font-size:25px;margin:10px 0 12px;line-height:1.15;color:#f1dda6}
+#training-coach{font-size:14px;line-height:1.6;margin:0 0 14px}
+#training-progress{color:#f4d999;font-size:13px;line-height:1.5}
+#training-vitals{font-size:12px;color:#d4e3df;font-variant-numeric:tabular-nums;margin-bottom:12px}
+.training-actions{display:flex;flex-wrap:wrap;gap:7px}
+#tower-training button{font-size:12px;min-height:36px}
+#training-next{background:#edcf8f;color:#253d3a;border-color:#edcf8f}
+#training-lessons{right:26px;top:100px;width:342px;max-height:calc(100dvh - 155px)}
+#training-lessons h2{margin-top:0}
+#training-lessons>p{font-size:13px;line-height:1.5;color:#d0ddce}
+.training-lesson-list{display:grid;gap:9px;margin:18px 0}
+.training-lesson-list button{text-align:left;padding:12px 14px;background:#4862624d}
+.training-lesson-list strong{display:block;font-size:14px;color:#f1dda6;margin-bottom:5px}
+.training-lesson-list small{display:block;font-size:12px;line-height:1.45;color:#d5e0d7}
+#training-resume{width:100%}
+#training-controls,#training-portal{position:absolute;left:50%;transform:translateX(-50%);padding:11px 17px;border-radius:4px;background:#254246dd;font-size:12px;text-align:center;width:max-content;max-width:calc(100% - 48px)}
+#training-controls{bottom:22px}
+#training-portal{bottom:74px;color:#f4dda6;border:1px solid #d1bf87}
+.in-tower-training #world-war-report,.in-tower-training #world-war-track,.in-tower-training #world-war-pointer,.in-tower-training #world-autoplay,.in-tower-training #corris-arrival,.in-tower-training #opening-clock-hud{display:none!important}
+@media(max-width:900px){
+  .training-header{top:16px;left:18px}.training-header h1{font-size:25px}
+  .training-toolbar{top:16px;right:18px;max-width:50%;flex-wrap:wrap;justify-content:flex-end}
+  .training-panel{left:16px;bottom:60px;width:280px;padding:17px;max-height:calc(100dvh - 185px)}
+  #training-lessons{right:16px;top:110px;width:300px;max-height:calc(100dvh - 140px);padding:18px}
+  #training-controls{bottom:10px;font-size:10px;padding:8px}
+  #training-coach{font-size:13px}
+}
+@media(max-width:650px){
+  .training-header h1{font-size:22px}.training-header .eyebrow{font-size:8px}#training-status{max-width:160px;font-size:10px}
+  .training-toolbar{gap:4px}.training-toolbar button{padding:7px;font-size:10px!important;min-height:30px!important}
+  .training-panel{width:min(300px,calc(100% - 32px));max-height:42dvh;padding:14px}
+  #training-lessons{top:110px;left:16px;right:16px;width:auto;max-height:calc(100dvh - 130px);z-index:2;background:#19363dfc}
+  #tower-training:has(#training-lessons:not([hidden])) .training-panel{display:none}
+  #training-controls{max-width:90%;width:90%;line-height:1.4}
+}

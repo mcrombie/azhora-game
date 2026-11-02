@@ -8,12 +8,13 @@ const UNIT_BOX = new THREE.BoxGeometry(1, 1, 1);
 const UNIT_SPHERE = new THREE.SphereGeometry(1, 8, 6);
 const UNIT_CYLINDER = new THREE.CylinderGeometry(1, 1, 1, 8);
 const UNIT_HAIR_LOCK = new THREE.IcosahedronGeometry(1, 0);
+const UNIT_HAIR_CROWN = new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, 1.14);
 const UP = new THREE.Vector3(0, 1, 0);
 const BATCH_MATERIALS = new Map();
 // Temporary encounters own their rig geometry but borrow these primitives and
 // the rigid-batch material cache. Release only resources owned by this figure.
 export function disposeCharacter(actor) {
-  const sharedGeometry = new Set([UNIT_BOX, UNIT_SPHERE, UNIT_CYLINDER, UNIT_HAIR_LOCK, SHADOW_DISC]);
+  const sharedGeometry = new Set([UNIT_BOX, UNIT_SPHERE, UNIT_CYLINDER, UNIT_HAIR_LOCK, UNIT_HAIR_CROWN, SHADOW_DISC]);
   const sharedMaterials = new Set(BATCH_MATERIALS.values()), geometry = new Set(), materials = new Set();
   actor.group.traverse(mesh => {
     if (mesh.geometry && !sharedGeometry.has(mesh.geometry)) geometry.add(mesh.geometry);
@@ -155,7 +156,7 @@ function lookGroup(parent, kind, value) {
 // Keep every animated joint, but bake its cloth/skin/wood colors into vertices.
 // The added articulation then costs one ordinary draw per joint rather than a
 // draw for every cuff, toe and lock of hair. Metallic badges stay separate.
-function batchRigidParts(root, pivots) {
+export function batchRigidParts(root, pivots) {
   root.updateMatrixWorld(true);
   const animatedPivots = new Set(pivots);
   const position = new THREE.Vector3();
@@ -741,6 +742,10 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         arm[1]=winding?-.6-.35*pull:-.95-.35*drive;elbow[1]=winding?-.7-.8*pull:-1.5+1.4*drive;
         armOut[1]=.06;chestY=winding?-.12*pull:-.12+.18*drive;chestX+=winding?-.08*pull:.25*drive;
         hip[0]=-.25;hip[1]=.2;stance=.07;
+      }else if(pose.attackStyle==='overhead'){
+        const chop=winding?0:THREE.MathUtils.smoothstep(progress,.1,.65);
+        arm[1]=winding?-1.1-1.7*pull:-2.8+2.35*chop;elbow[1]=-.35;armOut[1]=.12;
+        chestX=winding?-.1*pull:.3*chop;chestY=0;hip[0]=-.2;hip[1]=.15;stance=.08;
       }else{
         const turn=winding?-.65*pull:samplePose(progress,[[0,-.65],[.2,-.5],[.76,.9],[1,.1]]);
         arm[1]=-1.1;elbow[1]=winding?-.65:-.2;armOut[1]=winding?.3+.8*pull:1.1-1.35*THREE.MathUtils.smoothstep(progress,.15,.8);
@@ -1244,10 +1249,18 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
         chestY = .16; chestX = .05; headY = -.06;
       }
     }
+    if (pose.weaponGuard && !climbing && !['windup','attack','dead'].includes(action)) {
+      arm[1] = -.82; elbow[1] = -1.08; armOut[1] = -.35;
+      arm[0] = -.18; elbow[0] = -.3; chestY = -.12;
+    }
+    if (pose.staffGuard && !climbing && !focusCasting && !['attack','dodge','dead'].includes(action)) {
+      arm[1] = -1.0; elbow[1] = -.65; armOut[1] = -.2;
+      arm[0] = -.75; elbow[0] = -.85; armOut[0] = .2;
+    }
     // Encounter-only impact accents preserve the attack's timing and heading.
     if (pose.blockImpact && action !== 'dead') {
       const impact = Math.sin(Math.min(1, pose.blockImpact) * Math.PI / 2);
-      arm[0] += impact * .18; elbow[0] -= impact * .2; chestX -= impact * .1;
+      const guardArm = pose.weaponGuard || pose.staffGuard ? 1 : 0; arm[guardArm] += impact * .18; elbow[guardArm] -= impact * .2; chestX -= impact * .1;
       if (buckler) buckler.rotation.y += impact * .24;
     }
     if (pose.hitImpact && action !== 'hurt' && action !== 'dead') {
@@ -1294,7 +1307,9 @@ function makeAnimator({ body, chest, head, arms, elbows, wrists, legs, knees, an
       body.updateWorldMatrix(true, true);
       fallenBounds.setFromObject(body);
       body.parent.getWorldPosition(actorOrigin);
-      body.position.y += actorOrigin.y - fallenBounds.min.y;
+      // Bounds are in world units; body.position is in the scaled parent frame.
+      const parentY = body.parent.matrixWorld.elements[5];
+      if (Math.abs(parentY) > 1e-6) body.position.y += (actorOrigin.y - fallenBounds.min.y) / parentY;
     }
   }
   return { animate, setArmed, setShield };
@@ -1368,6 +1383,7 @@ function createBlankSlate() {
 
 export function createCharacter({ role = 'traveler', tunic = tunicForRole(role), skin = skinForRole(role), hat = HATTED.includes(role), armed = false, look = null, wields = null } = {}) {
   if (look?.blankSlate === true) return createBlankSlate();
+  if (role === 'militiaman' || role === 'soldier') { role = 'mercenary'; hat = false; look = { weapon:'sword-shield', headgear:'bare', hairStyle:'short', garment:'jerkin', build:'ordinary', ...look }; }
   // Any of the eleven mercenaries can be the player (src/content/characters/player-characters.js). Given a roster
   // look, the traveler is built as that hired sword — build, hair, garment, marks, weapon —
   // and keeps only what is his alone: the satchel, the full weapon swap and the fishing grip.
@@ -1625,7 +1641,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   body.add(head);
   // A shaved head keeps the skull, and a shaved side keeps the temple, in the
   // half-tone between skin and hair rather than going bare or going hairy.
-  const crownMat = isMercenary && hairStyle === 'none' ? stubbleMat : hairMat;
+  const crownMat = hairStyle === 'bald' ? skinMat : isMercenary && hairStyle === 'none' ? stubbleMat : hairMat;
   const templeMat = isMercenary && ['none', 'shaved-sides', 'topknot'].includes(hairStyle) ? stubbleMat : hairMat;
   part(head, UNIT_CYLINDER, skinMat, [0, -0.035, 0], [0.069, 0.14, 0.069]);
   round(head, hairColors.length ? skinMat : crownMat, [0, 0.202, -0.045], [0.224, 0.227, 0.183]);
@@ -1745,13 +1761,20 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
       swept.rotation.z = -0.13;
     };
     const nape = () => round(crop, hairMat, [0, 0.096, -0.188], [0.152, 0.108, 0.094]);
+    // A fringe and rear locks do not cover the face mesh's upper scalp.
+    // Full hairstyles need a continuous crown, including under tied hair and
+    // curls. Preserve deliberately bald, receding and shaved authored styles.
+    if (!hairColors.length && (['long-tied','curls','mane','lank','braid','ponytail','long-loose'].includes(hairStyle)
+      || hairStyle === 'long' && !isSkepKeeper && !look?.straightHair)) {
+      part(crop, UNIT_HAIR_CROWN, hairMat, [0, .181, .005], [.218, .25, .202]);
+    }
     // **Bald.** Not the same thing as having no `hairStyle`: that falls through to the role's own
     // hair. This draws nothing, on purpose, and is Ben's (src/content/quests/spider/spider-quest.js).
     if (hairStyle === 'bald') { /* nothing on top, which is the whole of it */ }
     else if (hairStyle === 'cropped' || hairStyle === 'short-cropped') {
       // Cover the face mesh's crown as well as the rear skull; a fringe alone
       // leaves a bare patch between them when no headwear is present.
-      part(crop, new THREE.SphereGeometry(1, 12, 6, 0, Math.PI * 2, 0, 1.14),
+      part(crop, UNIT_HAIR_CROWN,
         hairMat, [0, .181, .005], [.218, .25, .202]);
       fringe(0.328, 0.194);
       // The short crop follows the skull; no rounded tuft extends from its nape.
@@ -3523,7 +3546,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     'hunting-bow': () => (heldBow = makeHeldBow(bowHand ??= makeWeaponMount(wrists[0], 'Traveler bow grip'))),
   };
   function setWeapon(id) {
-    if (isPlayer && weapon && LATE_WEAPONS[id] && !weapons[id]) weapons[id] = LATE_WEAPONS[id](weapon);
+    if ((isPlayer || id === 'ash-spear' || id === 'war-pike') && weapon && LATE_WEAPONS[id] && !weapons[id]) weapons[id] = LATE_WEAPONS[id](weapon);
     if (weapon && !weapons[id] && VILLAGER_WEAPONS[id]) {
       const held = weapons[id] = VILLAGER_WEAPONS[id](weapon);
       batchRigidParts(held, [held]);
@@ -3549,11 +3572,24 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     if (staff && (isSoldier || isTelemonMan)) staff.visible = !fishing && selectedWeapon === null;
     return true;
   }
+  let staffGuardPose = null;
   function animate(time, speed = 0, grounded = true, pose = {}) {
     if (typeof pose.fishing === 'boolean') setFishing(pose.fishing);
     const hasFocus = selectedWeapon === 'wand' || selectedWeapon === 'oak-staff';
     animatePose(time, speed, grounded, { ...pose, fishing, spellCast: !fishing && (hasFocus || pose.handCast) ? pose.spellCast : null });
     // The ball never stops turning, and bobs to a beat only she can hear.
+    const guardStaff = weapons['oak-staff'];
+    if (guardStaff) {
+      guardStaff.quaternion.identity();
+      if (pose.staffGuard && pose.action !== 'dead') {
+        // Align the staff through both posed hands, including body/parent turns.
+        staffGuardPose ??= {axis:new THREE.Vector3(0,1,0),from:new THREE.Vector3(),to:new THREE.Vector3(),rotation:new THREE.Quaternion()};
+        const {axis,from,to,rotation}=staffGuardPose;
+        guardStaff.getWorldPosition(from);wrists[0].getWorldPosition(to);
+        to.sub(from).normalize().applyQuaternion(guardStaff.parent.getWorldQuaternion(rotation).invert());
+        guardStaff.quaternion.setFromUnitVectors(axis,to);
+      }
+    }
     if (discoBall) {
       discoBall.rotation.y = time * 1.7;
       discoBall.rotation.z = Math.sin(time * 3.4) * .06;
@@ -3896,7 +3932,7 @@ export function createWolf({ variant = 0, dog = false } = {}) {
  * shoulder against the rain. The beam with the terrace stone lashed to the end leans where
  * he can reach it and is not in his hands, because he is not expecting to need it.
  */
-export function createOgre({ scale = 1.8 } = {}) {
+export function createOgre({ scale = 1.8, tollKeeper = true } = {}) {
   const group = new THREE.Group();
   group.name = 'ogre';
   const figure = new THREE.Group();
@@ -3951,11 +3987,13 @@ export function createOgre({ scale = 1.8 } = {}) {
   // Sacking over the right shoulder; the tally board and the bowl on the left of the belt.
   ribbon(chest, patch, [0.08, 0.3, 0.06], [0.28, -0.04, 0.09], 0.16, 0.05);
   // A group, not a mesh: hanging the tick marks off a scaled board would scale them with it.
+  if (tollKeeper) {
   const tally = new THREE.Group(); tally.name = 'Mallec’s tally';
   tally.position.set(-0.24, 0.74, 0.14); tally.rotation.z = 0.2; body.add(tally);
   box(tally, patch, [0, 0, 0], [0.14, 0.2, 0.03]);
   for (const mark of [-0.04, 0, 0.04]) box(tally, dark, [mark, 0.01, 0.02], [0.012, 0.13, 0.01]);
   part(body, new THREE.CylinderGeometry(0.1, 0.085, 0.08, 8), grime, [0.24, 0.76, 0.12]);
+  }
 
   // Arms: thick, but they stop at the thigh.
   for (const side of [-1, 1]) {
@@ -4263,7 +4301,7 @@ function makeWolfAnimator({ body, spine, neck, head, jaw, tail, legs, knees, off
 /**
  * A riding horse for the army's lines and the road: bay, chestnut or grey,
  * saddled or bare. Hooves rest at y=0, forward is +Z, the withers at 1.5 m.
- * It idles and walks; riding is a later mechanic, so there is no rider seat yet.
+ * The caller supplies movement height; its rig idles, walks, swims and jumps.
  */
 /**
  * The coats a horse can wear. The first three are the country's, picked by `variant`;
@@ -4397,13 +4435,21 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
     lastTime = seconds;
     const pace = Math.max(0, Number.isFinite(speed) ? speed : 0);
     const damping = 1 - Math.exp(-9 * dt);
+    // Jumping is an explicit movement pose: a horse briefly losing its footing
+    // must not suddenly curl its legs up. Physics owns height and landing time.
+    const jumping = !!pose.jump && !grounded && !pose.swimming;
+    const landing = !pose.swimming && grounded ? THREE.MathUtils.clamp(Number(pose.jump?.landing) || 0, 0, 1) : 0;
+    const verticalSpeed = Number.isFinite(pose.jump?.verticalSpeed) ? pose.jump.verticalSpeed : 0;
+    const reach = THREE.MathUtils.clamp(-verticalSpeed / 5, 0, 1);
+    const tuck = 1 - reach * .9;
+    const jumpPitch = jumping ? -.11 * THREE.MathUtils.clamp(verticalSpeed / 6, -1, 1) : landing * .025;
     swimBlend=lerp(swimBlend,pose.swimming?1:0,damping);
     movementBlend = lerp(movementBlend, grounded ? THREE.MathUtils.clamp(pace / 1.2, 0, 1) : 0, 1 - Math.exp(-8 * dt));
     // Above a fast trot the gait gathers into a canter: hind pair and fore pair nearly together, a longer reach, a rocking back.
     const canter = THREE.MathUtils.clamp((pace - 8.5) / 3, 0, 1)*(1-swimBlend);
     stridePhase += dt * (3.4 + Math.min(pace, 6) * 1.1 + canter * 2.6);
     const idle = 1 - movementBlend, breath = Math.sin(seconds * 1.3 + offset);
-    const graze = pose.grazing === true ? 1 : pose.grazing === false ? 0 : Math.pow(Math.max(0, Math.sin(seconds * .17 + offset)), 12) * idle;
+    const graze = jumping || landing ? 0 : pose.grazing === true ? 1 : pose.grazing === false ? 0 : Math.pow(Math.max(0, Math.sin(seconds * .17 + offset)), 12) * idle;
     const shift = Math.sin(seconds * .21 + offset) * idle;
     const hip = [], knee = [];
     for (let i = 0; i < 4; i++) {
@@ -4424,18 +4470,23 @@ function makeHorseAnimator({ body, spine, neck, head, tail, legs, knees, offset 
       object.rotation.z = lerp(object.rotation.z, z, damping);
     };
     // Keep the muzzle clear and paddle even at rest: swimming is not a submerged canter.
-    rotate(spine, lerp(spineX,-.035,swimBlend), 0, spineZ*(1-swimBlend));
-    rotate(neck, lerp(neckX,-.24,swimBlend), 0, -spineZ*(1-swimBlend));
-    rotate(head, lerp(headX,-.04,swimBlend), headY*(1-swimBlend), 0);
+    rotate(spine, jumping ? 0 : lerp(spineX,-.035,swimBlend), 0, jumping ? 0 : spineZ*(1-swimBlend));
+    rotate(neck, jumping ? -.16 : lerp(neckX,-.24,swimBlend), 0, jumping ? 0 : -spineZ*(1-swimBlend));
+    rotate(head, jumping ? .04 : lerp(headX,-.04,swimBlend), jumping ? 0 : headY*(1-swimBlend), 0);
     rotate(tail, tailX, tailY, 0);
     for (let i = 0; i < 4; i++) {
       const paddle=seconds*4.2+offset+(i%2?Math.PI:0)+(i>1?Math.PI/2:0);
-      rotate(legs[i],lerp(hip[i],-.12+Math.sin(paddle)*.34,swimBlend),0,0);
-      rotate(knees[i],lerp(knee[i],.28+Math.max(0,Math.cos(paddle))*.42,swimBlend),0,0);
+      const fore = i < 2;
+      const airborneHip = fore ? -.95 * tuck - .13 * reach : .72 * tuck;
+      const airborneKnee = fore ? 1.75 * tuck : -1.3 * tuck;
+      const landingHip = fore ? -.22 : .28, landingKnee = fore ? .48 : -.58;
+      rotate(legs[i],jumping ? airborneHip : lerp(lerp(hip[i],landingHip,landing),-.12+Math.sin(paddle)*.34,swimBlend),0,0);
+      rotate(knees[i],jumping ? airborneKnee : lerp(lerp(knee[i],landingKnee,landing),.28+Math.max(0,Math.cos(paddle))*.42,swimBlend),0,0);
     }
-    rotate(body, 0, Math.sin(stridePhase) * 0.012 * movementBlend, 0);
-    body.position.y = lerp(body.position.y, breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend * (1 - canter) + Math.max(0, Math.sin(stridePhase + 0.4)) * 0.09 * canter, 1 - Math.exp(-20 * dt));
-    return {phase:stridePhase};
+    rotate(body, jumpPitch, jumping ? 0 : Math.sin(stridePhase) * 0.012 * movementBlend, 0);
+    const gaitBob = breath * 0.006 * idle + Math.abs(Math.cos(stridePhase * 2)) * 0.02 * movementBlend * (1 - canter) + Math.max(0, Math.sin(stridePhase + 0.4)) * 0.09 * canter;
+    body.position.y = lerp(body.position.y, jumping ? 0 : lerp(gaitBob,-.055,landing), 1 - Math.exp(-20 * dt));
+    return {phase:stridePhase,jumpPitch:body.rotation.x};
   }
   return { animate };
 }

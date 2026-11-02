@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createAtlasScope,scopeMinimumZoom,clampScopeOffset} from '../src/ui/map/atlas-scope.js';
+import {createAtlasScope,scopeMinimumZoom,clampScopeOffset,atlasObjectiveFrame} from '../src/ui/map/atlas-scope.js';
+import {CHAPTER_LOCATIONS} from '../src/content/chapters/yunethre/locations.js';
+import {TRANSFORM} from '../src/world/terrain/region-world.js';
 import {MODES} from '../src/app/exploration/modes.js';
 import {createWorldWar,WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
 import {worldWarArmies} from '../src/app/exploration/war-armies.js';
@@ -19,6 +21,27 @@ test('scenario map clips the actual five regions and leaves the unrestricted atl
   const a=clampScopeOffset(scope,{width:900,height:600,scale:.2*zoom,x:-1e9,y:1e9});
   const b=clampScopeOffset(scope,{width:900,height:600,scale:.2*zoom,x:1e9,y:-1e9});
   assert.deepEqual(a,b,'Fit view cannot be panned out to the rest of the continent');
+});
+
+test('Chapter 2 map frames the departure and Laketown together before surveying either destination',()=>{
+  const svg=readFileSync(new URL('../assets/azhora-world-map.svg',import.meta.url),'utf8');
+  const tints=svg.match(/<g id="region-tints"[^>]*>([\s\S]*?)<\/g>/)[1];
+  const paths=new Map([...tints.matchAll(/<path data-region="([^"]+)"[^>]* d="([^"]+)"/g)].map(m=>[m[1],m[2]]));
+  const scope=createAtlasScope(['Yunethre','Isareos','Nethereum','Ovesos','Caricas','Nesdor','North Celder','South Celder'],paths);
+  const at=place=>TRANSFORM.worldToAtlas(place.x,place.z),traveler=at(CHAPTER_LOCATIONS.departure),goal=at(CHAPTER_LOCATIONS.town);
+  for(const [width,height]of [[1500,850],[900,600],[390,600]]){
+    const fitScale=.2,localZoom=Math.min(width,height)/100/fitScale;
+    const frame=atlasObjectiveFrame(traveler,goal,{width,height,fitScale,localZoom,minimumZoom:scopeMinimumZoom(scope,width,height,fitScale)});
+    const scale=fitScale*frame.zoom,offset=clampScopeOffset(scope,{width,height,scale,x:frame.x,y:frame.y});
+    assert.ok(frame.zoom<localZoom,'the distant destination needs a wider opening view');
+    for(const point of [traveler,goal]){
+      const x=offset.x+point.x*scale,y=offset.y+point.y*scale;
+      assert.ok(x>=20&&x<=width-20&&y>=20&&y<=height-20,`visible in ${width}x${height}: ${x},${y}`);
+    }
+    const nearby=atlasObjectiveFrame(goal,{x:goal.x+1,y:goal.y+1},{width,height,fitScale,localZoom});
+    assert.equal(nearby.zoom,localZoom,'nearby speakers retain street-level detail');
+  }
+  assert.equal(atlasObjectiveFrame(traveler,null,{width:900,height:600,fitScale:.2,localZoom:20}),null,'completed/no-objective maps fall back to normal traveler framing');
 });
 test('minimap shows discovered marches and active battles, retires ended events, and cannot reveal hidden intelligence',()=>{
   const war=createWorldWar();war.advance(3);const s=war.snapshot(),before=JSON.stringify(s);

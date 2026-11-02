@@ -3,10 +3,10 @@
 const freeze = Object.freeze;
 export const AMBRON_CENTRE = freeze({ x: -1130, z: 10 });
 export const AMBRON_OUTLINE = freeze([
-  [-1270,-230],[-1165,-220],[-1100,-205],[-1060,-180],[-1025,-140],
+  [-1202,-218],[-1165,-220],[-1100,-205],[-1060,-180],[-1025,-140],
   [-995,-95],[-980,-45],[-984,35],[-975,110],[-1000,160],[-1080,210],
   [-1160,238],[-1220,235],[-1275,202],[-1320,153],[-1340,110],
-  [-1328,65],[-1300,12],[-1280,-40],[-1265,-102],[-1265,-180],
+  [-1328,65],[-1300,12],[-1280,-40],[-1265,-102],[-1234,-163],
 ].map(([x,z]) => freeze({x,z})));
 export function inAmbronOutline(x,z) {
   let inside=false;
@@ -18,7 +18,7 @@ export function inAmbronOutline(x,z) {
 }
 const gate = (id,name,edge,at,face) => freeze({id,name,edge,at,face,kind:'gate'});
 export const CITY_GATES=freeze([
-  gate('lake-gate','The Lake Gate',0,15,'north'),
+  gate('lake-gate','The Lake Gate',20,18,'north-west'),
   gate('crown-gate','The Crown Gate',2,24,'north-east'),
   gate('thelas-gate','The Thelas Gate',17,25,'west'),
   gate('brul-gate','The Brul Gate',5,27,'north-east'),
@@ -31,10 +31,16 @@ export function cityGatePoint(id) {
   const t=g.at/Math.hypot(b.x-a.x,b.z-a.z);
   return {x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t};
 }
+export function cityGateOutside(id,reach=20){
+  const g=CITY_GATES.find(g=>g.id===id),a=AMBRON_OUTLINE[g.edge],b=AMBRON_OUTLINE[(g.edge+1)%AMBRON_OUTLINE.length],p=cityGatePoint(id);
+  const length=Math.hypot(b.x-a.x,b.z-a.z);
+  return {x:p.x+(b.z-a.z)/length*reach,z:p.z-(b.x-a.x)/length*reach};
+}
 const street=(id,width,layer,points)=>freeze({id,width,layer,points:freeze(points.map(([a,b])=>freeze({a,b})))});
 const gateLocal=id=>{const p=cityGatePoint(id);return [p.x-AMBRON_CENTRE.x,p.z-AMBRON_CENTRE.z];};
 export const CITY_STREETS=freeze([
-  street('ela-street',8,'imperial',[gateLocal('lake-gate'),[-125,-223],[-125,-165],[-95,-145],[-60,-145],[-15,-150],[6,-141],[6,-95],[-5,-95],[-5,-70],[-5,-35],[-5,0],[-5,35],[-20,80],[-20,120],[-20,142],[-45,152],[-45,180],[-30,200],gateLocal('plain-gate')]),
+  street('lake-gate-approach',7,'lake-stone',[(p=>[p.x-AMBRON_CENTRE.x,p.z-AMBRON_CENTRE.z])(cityGateOutside('lake-gate')),gateLocal('lake-gate')]),
+  street('ela-street',8,'imperial',[gateLocal('lake-gate'),[-86,-166],[-95,-145],[-60,-145],[-15,-150],[6,-141],[6,-95],[-5,-95],[-5,-70],[-5,-35],[-5,0],[-5,35],[-20,80],[-20,120],[-20,142],[-45,152],[-45,180],[-30,200],gateLocal('plain-gate')]),
   street('royal-court',8,'imperial',[[-95,-95],[-55,-95],[-5,-95],[40,-95],[80,-85]]),
   street('north-ring',6,'new',[[-95,-145],[-60,-145],[-15,-150],[8,-143],[8,-100]]),
   street('upper-lane',6,'new',[[-5,-74],[30,-80],[64,-74],[64,-10],[30,-10],[-5,-10]]),
@@ -113,8 +119,8 @@ export const CITY_BUILDING_PLOTS=freeze({
   'toll-house':[-40,30,18,20,10], 'chain-house':[-54,58,12,14,6],
   'warehouse-1':[-55,-130,16,20,9], 'warehouse-2':[-44,-74,18,18,8],
   'harbour-inn':[26,25,20,20,10], 'warehouse-3':[20,77,18,18,8],
-  'record-house':[25,-122,20,26,12], 'house-ne':[-112,-216,12,18,8],
-  'lake-temple':[-84,-118,20,30,15], 'clerks-house':[-92,-173,12,18,7.5],
+  'record-house':[25,-122,20,26,12], 'house-ne':[-69,-177,12,18,8],
+  'lake-temple':[-84,-118,20,30,15], 'clerks-house':[-76,-157,12,18,7.5],
   'legate-seat':[-20,-121,32,30,18], 'lake-granary':[-4,145,24,20,12],
   'house-se':[60,140,14,18,8], 'raft-shed':[-75,30,14,16,6],
   'sawpit-shed':[-75,61,14,16,6], 'salt-house':[-70,110,14,14,7],

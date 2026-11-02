@@ -1,6 +1,7 @@
 import {URUBOND_LANDMARKS} from '../../content/regions/urubond/urubond-world.js';
 import { OUTER_LANDMARKS } from '../../content/regions/outer-regions/outer-regions-world.js';
 import { ACOR_LANDMARKS } from '../../content/regions/acor/acor-world.js';
+import { ATLAS_SETTLEMENTS } from './atlas-settlements.js';
 /**
  * What the traveler has charted. The world chart starts blank: a hex of the
  * authored atlas is uncovered only when the traveler has walked into it, and the country between them is named by subregions — small
@@ -51,8 +52,10 @@ const area = (id, name, region, x, z, radius, note) => Object.freeze({ id, name,
 /** The named ground of Azhora, as the traveler's own chart records it. */
 export const SUBREGIONS = Object.freeze([
   ...NORTHERN_LANDMARKS.map(l=>area(l.id,l.name,l.region,l.x,l.z,35,l.description)),
-  ...[...ACOR_LANDMARKS,...URUBOND_LANDMARKS].map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
-  ...OUTER_LANDMARKS.map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
+  // A streamed region may also advertise its settlement. Keep one discovery ID
+  // and one location, including when the public atlas loads without that scenery.
+  ...[...new Map([...ACOR_LANDMARKS,...URUBOND_LANDMARKS,...OUTER_LANDMARKS,...ATLAS_SETTLEMENTS]
+    .map(l=>[l.id,l])).values()].map(l=>area(l.id,l.name,l.region,l.x,l.z,30,l.description)),
   ...BALDRO_KINGDOMS.flatMap(k => {
     const side = k.id === 'west-baldro' ? 'Western' : 'Eastern';
     const points = BALDRO_PATHS.find(p => p.id === 'baldro-saddle-traverse').points.filter(p => baldroRegionAt(p.x, p.z) === k.region);
@@ -180,7 +183,6 @@ export const SUBREGIONS = Object.freeze([
   area(CARICAS_TOWN.id, CARICAS_TOWN.name, 'Caricas', CARICAS_TOWN.x, CARICAS_TOWN.z, CARICAS_TOWN.radius, 'An Imperial garrison holds the town, with worked farms on the dry shelf and the old wooded river corridor nearby.'),
   area('caricas-farms', 'The Caricas Fields', 'Caricas', -2000, 240, 65, 'Cultivated fields outside the occupied town; the civil war has not ended simply because the army holds its roads.'),
   area('menora', 'Minora', 'Isareos', -2345, 120, 112, 'The fortified holy city at the Isa-Lizeem fork. Tall white walls enclose a great temple, the Sorcerers’ Guild tower, gardens and stone streets.'),
-  area('menora-army-muster', 'The Blood Prince’s Army', 'Isareos', -2474, 83, 48, 'Prince Wilhelm and his army camp outside Minora’s western gate. Their role in the later main story is still to unfold.'),
   area('yunethre-free-town', 'Lakeside Free Town', 'Yunethre', -3000.0019279391277, -317.41016151377545, 50, 'Independent neutral ground beside the lake below South Oremindi. Humans, elves and centaurs share this town, respected by the neighboring powers.'),
   area('yunethre-centaur-camp', 'Bane’s Camp', 'Yunethre', -2700.0019279391277, -317.41016151377545, 62, 'A nomadic centaur camp in the mountain pass. The clans defend their dwindling plains against encroachment from the north and south, with trade and support from Elfland.'),
   // Isareos: the fortified holy city and the exposed grass-hill frontier.
@@ -404,6 +406,8 @@ export const SUBREGIONS = Object.freeze([
 
 export const SUBREGION_IDS = Object.freeze(SUBREGIONS.map(item => item.id));
 const byId = new Map(SUBREGIONS.map(item => [item.id, item]));
+// Retired places remain valid in older saves, but are omitted when restored.
+const retiredSubregions = new Set(['menora-army-muster']);
 export const subregion = id => byId.get(id) ?? null;
 
 /** The named areas a point stands in, nearest first. */
@@ -418,7 +422,7 @@ export function validateMapFogSnapshot(data, { allowMissing = true } = {}) {
   if (!data || typeof data !== 'object' || Array.isArray(data) || data.version !== MAP_FOG_VERSION) return false;
   if (!Array.isArray(data.cells) || data.cells.length > 20000 || !Array.isArray(data.subregions)) return false;
   if (!data.cells.every(key => typeof key === 'string' && /^-?\d{1,4},-?\d{1,4}$/.test(key))) return false;
-  return data.subregions.every(id => byId.has(id));
+  return data.subregions.every(id => byId.has(id) || retiredSubregions.has(id));
 }
 
 export function createMapFog({ onEvent = () => {} } = {}) {
@@ -474,7 +478,7 @@ export function createMapFog({ onEvent = () => {} } = {}) {
     // Glimpses are derived, never saved or counted as walking. Every old saved cell remains
     // confirmed, including a deliberate developer reveal; nothing migrates into extra visits.
     for (const key of cells) glimpseAround(...key.split(',').map(Number));
-    for (const id of data.subregions) found.push(id);
+    for (const id of data.subregions) if (byId.has(id)) found.push(id);
     return true;
   }
 

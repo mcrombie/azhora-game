@@ -17,7 +17,7 @@ export function trackedWarTarget(target,state,scenario,armies,known,atlasToWorld
   const battle=state.engagements.find(b=>b.id===target.id);
   if(!battle||!known(battle.location))return unavailable;
   const label=`Battle at ${region(battle.region)}`;
-  if(battle.status!=='active')return {target,label,detail:'Battle ended. Open M for the outcome.',location:null};
+  if(battle.status!=='active')return {target,label,detail:'Battle ended. Open M for the outcome.',location:null,finished:true};
   if(battle.participation)return {target,label,detail:`${availableBattleStage(battle)==='rally'?'Final assault available. ':battle.participation.faction?'Rejoin your side. ':''}Enter the marked battlefield on foot or horseback before day ${battle.endsOn}. You can decline and return.`,location:{...battle.location}};
   if(battle.rally?.status==='available')return {target,label:'Ovesos / rally assault',detail:`Your interception counts. Fight for a decisive victory before day ${battle.endsOn}.`,location:{...battle.location}};
   if(battle.heroResult)return {target,label,detail:`Your part is finished. Regional battle ends day ${battle.endsOn}.`,location:null};

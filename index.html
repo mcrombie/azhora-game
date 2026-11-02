@@ -2,35 +2,61 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'">
 <title>Azhora</title>
-<link rel="stylesheet" href="./src/ui/map/world-map.css"><link rel="stylesheet" href="./src/app/exploration/exploration.css">
-<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script><link rel="stylesheet" href="./src/app/lizeem/encounter.css"><link rel="stylesheet" href="./src/app/exploration/tower.css"><link rel="stylesheet" href="./src/app/exploration/afterlife.css"><link rel="stylesheet" href="./src/app/exploration/chronicle.css"><link rel="stylesheet" href="./src/ui/input/touch-controls.css"><link rel="stylesheet" href="./src/app/exploration/exploration-phone.css"></head>
+<link rel="stylesheet" href="./src/app/exploration/training/training.css">
+<link rel="stylesheet" href="./src/content/chapters/yunethre/journal.css">
+<link rel="stylesheet" href="./src/ui/map/world-map.css"><link rel="stylesheet" href="./src/app/exploration/exploration.css"><link rel="stylesheet" href="./src/app/exploration/campaign-allegiance.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script><link rel="stylesheet" href="./src/app/lizeem/encounter.css"><link rel="stylesheet" href="./src/app/exploration/tower.css"><link rel="stylesheet" href="./src/app/exploration/afterlife.css"><link rel="stylesheet" href="./src/app/exploration/chronicle.css"><link rel="stylesheet" href="./src/ui/input/touch-controls.css"><link rel="stylesheet" href="./src/app/exploration/exploration-phone.css"><link rel="stylesheet" href="./src/app/exploration/campaign-hud.css"></head>
 <body>
+<link rel="stylesheet" href="./src/content/chapters/yunethre/chapter.css">
 <canvas id="exploration-canvas" tabindex="0" aria-label="Explore Azhora"></canvas>
 <section id="start-screen" class="veil"><div class="start-card launch-card">
-<span class="eyebrow">AZHORA</span><h1>Choose your journey.</h1><p>Explore, test combat, or develop a living world. Saved journeys stay separate.</p>
+<span class="eyebrow">AZHORA</span><h1>Choose your journey.</h1><p>Explore the world, practice combat, or take part in the Lizeemi War.</p>
 <div class="launch-options">
-<article><h2>Explore the World</h2><p>Begin as Teresod in Minora with the full atlas revealed. Explore freely with the developer mounts.</p><div class="menu-actions"><button id="new-exploration" data-start-mode="explore">Explore the World</button><button id="continue-exploration" data-continue-mode="explore" disabled>Continue exploration</button></div><small data-save-note="explore">Free exploration &middot; No active war or settlement simulation</small></article>
-<article><h2>Combat Testing</h2><p>Choose a Minora camp exercise and jump straight into combat. Retry or switch exercises without starting a war.</p><div class="menu-actions"><button id="new-combat-testing" data-start-mode="combat">Choose combat exercise</button></div><small>Five exercises &middot; No campaign or saved progress</small></article>
-<article><h2>Lizeemi War Scenario</h2><p>Enter the current five-region conflict. Follow the armies and test how Teresod's interventions affect the campaign.</p><div class="menu-actions"><button id="new-world-war" data-start-mode="war">Lizeemi War Scenario</button><button data-continue-mode="war" disabled>Continue war scenario</button></div><div class="menu-actions"><button data-watch-war="west">Watch campaign / Support West Lizeem</button><button data-watch-war="east">Watch campaign / Support East Lizeem</button></div><small>Computer rehearsal &middot; P pauses/resumes &middot; Saves untouched</small><div class="menu-actions"><button data-lookout-preview>Preview / Unattended war &rarr; Taleth's lookout</button></div><small data-save-note="war">The existing East-West War &middot; Separate hero and campaign save</small></article>
-<article><h2>Hearthfall Integration</h2><p>A Feradom-only workspace for developing living settlements on the current game foundation.</p><div class="menu-actions"><button id="new-hearthfall" data-start-mode="hearthfall">Hearthfall Integration</button><button data-continue-mode="hearthfall" disabled>Continue Hearthfall</button></div><small data-save-note="hearthfall">Sandbox foundation ready &middot; Settlement port pending &middot; Local only</small></article>
+<article><h2>Chapter 2: Yunethre</h2><p>Meet Taleth at the Sky Lookout, then seek Laketown's allegiance and broker peace between the centaurs and Celder—or fight beside one of them.</p><div class="menu-actions"><button data-start-mode="yunethre">Begin Chapter 2</button><button data-continue-mode="yunethre" disabled>Continue Chapter 2</button></div><small data-save-note="yunethre">Start after the default Lizeemi War unfolds without Teresod. All five Lizeem regions remain accessible. Separate save; diplomacy, mounted battle and neutral outcomes.</small></article>
+<article><h2>Chapter 3: The Mountain Alliance</h2><p>Find the relocated Wizards' Tower, earn the North Ibenwood Rangers' trust and face an orc chief together in the occupied mountains.</p><div class="menu-actions"><button data-start-mode="oremindi">Begin Chapter 3</button><button data-continue-mode="oremindi" disabled>Continue Chapter 3</button></div><small data-save-note="oremindi">Direct starts use unattended earlier chapters. Continue from Chapter 2 in-game to retain your actual decisions. Separate Chapter 3 save.</small></article>
+<article><h2>Explore</h2><p>Begin as Teresod in Minora with the atlas revealed and mounts for free travel. Choose Full or Fast loading before you enter.</p><div class="menu-actions"><button id="new-exploration" data-start-mode="explore">Explore the world</button><button id="continue-exploration" data-continue-mode="explore" disabled>Continue exploration</button></div><small data-save-note="explore">Free exploration &middot; No active campaign</small></article>
+<article><h2>Combat Testing</h2><p>Face fifteen one-on-one trials, from a bramble goblin to an undead knight. Retry or switch exercises without starting a war.</p><div class="menu-actions"><button id="new-combat-testing" data-start-mode="combat">Choose combat exercise</button></div><small>Fifteen-round trial &amp; guard exercises &middot; No saved progress</small></article>
+<article><h2>Chapter 1: Lizeemi War</h2><p>Begin with Taleth in the Spirit and Time Realm. Prepare for your assignment, then enter the tower in Minora, choose your allegiance, and set out at dawn.</p><div class="menu-actions"><button id="new-world-war" data-start-mode="war">Begin Lizeemi War</button><button data-continue-mode="war" disabled>Continue war scenario</button></div><small data-save-note="war">Four preparation trials &middot; Tutorial skip available &middot; Farms, supplies and marching armies</small>
+<details><summary>Earlier campaign rehearsals</summary><div class="menu-actions"><button data-watch-war="west">Watch campaign / Support West Lizeem</button><button data-watch-war="east">Watch campaign / Support East Lizeem</button></div><small>Earlier campaign timing &middot; P pauses/resumes &middot; Saves untouched</small><div class="menu-actions"><button data-lookout-preview>Preview / Unattended war &rarr; Taleth's lookout</button><button data-opening-clock>Try adventure-clock opening / 00:00</button></div><small>Opening rehearsal: Caricas at 03:00 &middot; First battle only</small>
+<h3>Earlier food world test</h3><p>The day-based food experiment remains available with its separate saves.</p><div class="menu-actions"><button data-start-mode="food-world">Start food world test</button><button data-continue-mode="food-world" disabled>Continue food world test</button></div><small data-save-note="food-world">Five regions &middot; Separate save &middot; M opens food reports</small></details></article>
 </div><p id="start-note" role="status">New runs use this mode's save slot. Choose Continue to keep your saved journey. Save before returning to the main menu.</p>
+</div></section>
+<section id="campaign-allegiance-menu" class="veil" role="dialog" aria-modal="true" aria-labelledby="campaign-allegiance-heading" hidden><div class="start-card campaign-allegiance-card">
+<span class="eyebrow">LIZEEMI WAR / YOUR ALLEGIANCE</span><h1 id="campaign-allegiance-heading">Which league will you support?</h1>
+<p>Help your chosen side unite the river country. Taleth will guide you as the war changes.</p>
+<fieldset id="campaign-allegiance-options"><legend>Choose your side</legend></fieldset>
+<p id="campaign-allegiance-note"></p>
+<div class="menu-actions"><button id="campaign-allegiance-begin" disabled>Begin campaign</button><button id="campaign-allegiance-back">Back to main menu</button></div>
 </div></section>
 <section id="combat-testing-menu" class="veil" aria-labelledby="combat-testing-heading" hidden><div class="start-card combat-testing-card">
 <span class="eyebrow">AZHORA / COMBAT TESTING</span><h1 id="combat-testing-heading">Choose an exercise.</h1>
-<p>Train as Teresod in the Minora camp. Each exercise starts fresh, with no campaign running and no changes to your saves.</p>
+<p>Train as Teresod in Taleth&#8217;s Stillroom, where time stands still. The earlier guard exercises remain at Minora&#8217;s camp. Each exercise starts fresh, with no campaign running and no changes to your saves.</p>
+<div id="combat-trial-exercises" class="combat-exercises combat-trial-exercises"></div>
+<details id="combat-guard-exercises"><summary>Earlier guard exercises and speed experiment</summary>
+<label class="combat-tempo" for="combat-tempo">Guard tempo
+<select id="combat-tempo" aria-describedby="combat-tempo-note"><option value="matched" selected>Matched swing speed · experiment</option><option value="classic">Previous slower tempo · comparison</option></select></label>
+<p id="combat-tempo-note" class="combat-testing-help">Soldiers and allies swing as quickly as Teresod. Warnings are brief, with a short recovery opening to counter. Start with one soldier.</p>
 <div id="combat-exercises" class="combat-exercises"></div>
-<p class="combat-testing-help">WASD move and face &middot; X strike &middot; Space dodge<br>R retries the exercise &middot; Esc returns here</p>
-<p class="combat-testing-help">For the ride from Minora to Caricas, army losses, and changing borders, use <strong>Lizeemi War Scenario</strong> from the main menu.</p>
+</details>
+<p class="combat-testing-help">WASD move and face &middot; X strike &middot; Hold F to block &middot; Q fireball &middot; Space dodge<br>R retries the exercise &middot; Esc returns here</p>
+<p class="combat-testing-help">For the ride from Minora to Caricas, army losses, and changing borders, use <strong>Lizeem War Scenario</strong> from the main menu.</p>
 <button id="combat-testing-back">Back to main menu</button>
 </div></section>
-<section id="loading-screen" class="veil" hidden><div class="start-card"><span class="eyebrow">AZHORA</span><h1>Opening the world.</h1><p id="loading-message" role="status">Preparing Minora...</p><div class="loading-line"></div><small>The country is prepared as you explore.</small></div></section>
+<section id="loading-screen" class="veil" hidden><div class="start-card"><span class="eyebrow">AZHORA</span><h1>Opening the world.</h1>
+<section id="loading-choice" hidden role="dialog" aria-modal="true" aria-labelledby="loading-choice-title" aria-describedby="loading-countdown">
+<h2 id="loading-choice-title">Choose how to explore.</h2>
+<button id="loading-full" type="button"><strong>Full <span>Default</span></strong><span class="loading-description">Prepare the whole world before you begin. A longer initial wait, with more memory used.</span></button>
+<button id="loading-fast" type="button"><strong>Fast</strong><span class="loading-description">Prepare your starting region, then load nearby places as you travel. Distant regions wait until you approach.</span></button>
+<p id="loading-countdown" role="timer" aria-live="off">Full mode starts automatically in 10 seconds.</p>
+</section>
+<p id="loading-message" role="status">Preparing Minora...</p><div class="loading-line"></div><small id="loading-help">The country is prepared as you explore.</small></div></section>
 <button id="world-war-join" hidden></button>
 <section id="world-skirmish" hidden aria-label="Field skirmish">
 <span class="eyebrow">INTERCEPT REINFORCEMENTS</span><div id="world-skirmish-vitals"><span id="world-skirmish-health"></span><meter id="world-skirmish-health-meter" min="0" max="100" value="100" aria-label="Health"></meter></div>
 <div id="world-skirmish-phase" hidden><strong></strong><span></span></div>
 <p id="world-skirmish-objective" role="status" aria-live="polite"></p>
 <div id="world-skirmish-result" role="status" hidden><h2 id="world-skirmish-result-title"></h2><div id="world-skirmish-result-copy"><p id="world-skirmish-result-detail"></p><dl id="world-skirmish-facts" class="battle-facts" hidden></dl><p id="world-skirmish-next" hidden></p><p id="world-skirmish-review">Encounter ended. Review the result before continuing.</p></div><div id="world-skirmish-result-actions"><button id="world-skirmish-continue">Continue to exploration (Enter)</button><button id="world-skirmish-leave" hidden>Leave / keep the interception</button></div></div>
-<div id="world-skirmish-actions"><button id="world-skirmish-strike">Strike (X / click)</button><button id="world-skirmish-dodge">Dodge ready (Space)</button></div>
+<div id="world-skirmish-actions"><button id="world-skirmish-strike">Strike (X / click)</button><button id="world-skirmish-block" aria-pressed="false">Hold to block (F)</button><button id="world-skirmish-dodge">Dodge ready (Space)</button></div>
 <button id="world-skirmish-help" aria-expanded="false" aria-controls="world-skirmish-controls">Help / pause (H)</button>
 <div id="world-skirmish-controls" hidden>
 <p><strong>Paused while you read.</strong></p>
@@ -38,11 +64,13 @@
 <dt>Move &amp; face</dt><dd>WASD / arrows. Right-drag to look; scroll to zoom.</dd>
 <dt>Target focus</dt><dd>T locks / releases the opponent nearest your view; E cycles visible opponents. Strafe while facing your target. Cyan diamond = focus; gold ring = strike range. Right-drag temporarily overrides the follow camera.</dd>
 <dt>Strike</dt><dd>X / left click. Face the soldier with the gold ring.</dd>
+<dt>Staff block</dt><dd>Hold F, or hold the Block button, and face the attacker. Reduces frontal damage by 55%; slows movement. Release to strike or cast. Attacks from behind and ground stomps bypass your guard.</dd>
+<dt>Fireball</dt><dd>Q casts from your staff. Costs 20 mana; mana recovers after 4 seconds without casting. T focus helps aim. You cannot cast during a swing, dodge or block.</dd>
 <dt>Dodge</dt><dd>Hold a direction and tap Space. Space alone backsteps. Release before dodging again.</dd>
 <dt>Thrust</dt><dd>Narrow orange warning: sidestep across the attack.</dd>
 <dt>Sweep</dt><dd>Wide pink warning: retreat beyond the blade.</dd>
 <dt>Counter</dt><dd>After a dodge, the soldier lowers their weapon. The green ring and draining bar show the opening: close in and strike before it disappears.</dd>
-<dt>Taking a hit</dt><dd>Each soldier hit costs 20 health. A brief pale ring marks protection from another hit: you can still move or dodge to clear the danger.</dd>
+<dt>Taking a hit</dt><dd>Damage depends on the enemy and weapon. A brief pale ring marks protection from another hit: you can still move or dodge to clear the danger.</dd>
 </dl>
 <p id="world-skirmish-context"></p>
 <div id="world-skirmish-settings"></div>
@@ -68,6 +96,7 @@
 <p class="developer-hint">Arrive on foot. New scenery may take a moment to load. Atlas-only regions are listed but have no 3D destination yet.</p>
 <label class="developer-reveal"><input id="developer-reveal" type="checkbox"> Reveal all map</label>
 <p class="developer-hint">All map views. Turn off to return to your discoveries. Mounts and reveal are temporary; land before saving.</p>
+<div><button data-opening-clock>Test adventure-clock opening / New rehearsal</button></div>
 <div id="developer-autoplay" hidden>
 <label class="developer-reveal"><input id="developer-residents" type="checkbox" checked> Local civilians: Minora and Caricas (18 people; 12 loaded at most)</label>
 <h2>Combat practice</h2>
@@ -80,14 +109,16 @@
 <h2>Watch the Lizeemi War</h2>
 <button data-watch-war="west" data-autoplay-control>Autoplay / Support West Lizeem</button>
 <button data-watch-war="east" data-autoplay-control>Autoplay / Support East Lizeem</button>
-<p class="developer-hint">Starts a fresh, separate rehearsal from Taleth's chamber. Watch the briefing, horse ride, battles with allies, letters and lookout finale. Combat runs at normal speed; quiet campaign days pass faster. P pauses or resumes autoplay; a movement key or clicking a game control hands play back to you. A Resume button remains available when stopped. Your saved campaign stays untouched, including after takeover. Return to the main menu to Continue it. Save this current run first if you want to keep unsaved progress.</p>
+<p class="developer-hint">Starts a fresh, separate rehearsal from Taleth's chamber. Watch the briefing, horse ride, battles with allies, messages from Taleth and lookout finale. Combat runs at normal speed; quiet campaign days pass faster. P pauses or resumes autoplay; a movement key or clicking a game control hands play back to you. A Resume button remains available when stopped. Your saved campaign stays untouched, including after takeover. Return to the main menu to Continue it. Save this current run first if you want to keep unsaved progress.</p>
 <button data-lookout-preview>Unattended war &rarr; Taleth's lookout</button>
 <p class="developer-hint">Skip to the natural outcome of the default war with no intervention. Review the river campaign, then tour Ambron and six neighboring regions with Taleth. Separate temporary preview; your saved campaign is untouched.</p>
 <button id="autoplay-ovesos" hidden></button><button id="autoplay-caricas" hidden></button>
 </div>
 <div class="developer-actions"><button id="developer-map">Open map</button><button id="close-developer">Back to exploring <kbd>F8 / Esc</kbd></button></div>
 </div></section>
-<section id="map-screen" role="dialog" aria-modal="true" aria-label="World map" hidden><header><span class="eyebrow">THE CHART OF AZHORA</span><button id="close-map">Back <kbd>M / Esc</kbd></button></header><div id="world-war-controls" hidden><strong id="world-war-day">Day 0</strong><button id="world-war-run">Run campaign</button><button id="world-war-step">+1 day</button><label>Speed <select id="world-war-speed"><option value="1">1x</option><option value="4">4x</option><option value="20">20x</option></select></label><span id="world-war-status"></span><div id="world-war-battles" aria-label="Discovered battles" hidden></div><p id="world-demo-caption" hidden></p><p id="world-war-result" hidden></p></div><div id="world-map">
+<section id="map-screen" role="dialog" aria-modal="true" aria-label="World map" hidden><header><span class="eyebrow">THE CHART OF AZHORA</span><button id="close-map">Back <kbd>M / Esc</kbd></button></header><div id="world-war-controls" hidden><strong id="world-war-day">Day 0</strong>
+<div id="world-war-map-time" role="group" aria-label="Campaign time on the map" hidden><span>Campaign speed</span><button data-speed="0" aria-pressed="true">Pause</button><button data-speed="1" aria-pressed="false" aria-label="Run campaign at normal speed">1×</button><button data-speed="4" aria-pressed="false" aria-label="Run campaign at four times speed">4×</button><button data-speed="20" aria-pressed="false" aria-label="Run campaign at twenty times speed">20×</button></div>
+<button id="world-war-run">Run campaign</button><button id="world-war-step">+1 day</button><label>Speed <select id="world-war-speed"><option value="1">1x</option><option value="4">4x</option><option value="20">20x</option></select></label><span id="world-war-status"></span><div id="world-war-battles" aria-label="Discovered battles" hidden></div><p id="world-demo-caption" hidden></p><p id="world-war-result" hidden></p></div><div id="world-map">
 <div class="atlas-toolbar"><button id="atlas-fit" disabled>Whole map</button><button id="atlas-izol" hidden disabled>Drent</button><button id="atlas-traveler-button" disabled>Where I am</button><span class="atlas-spacer"></span><label><input id="reveal-all" type="checkbox"> Developer reveal all</label><button id="atlas-out" class="atlas-zoom-button" aria-label="Zoom out" disabled>&minus;</button><output id="atlas-zoom">100%</output><button id="atlas-in" class="atlas-zoom-button" aria-label="Zoom in" disabled>+</button></div>
 <div id="atlas-viewport" tabindex="0" role="region" aria-label="Azhora map. Drag to pan and scroll to zoom."><img id="atlas-image" data-src="./assets/azhora-world-map.svg" alt="The existing Azhora world map" draggable="false"><div id="atlas-traveler" hidden><b hidden></b><i></i><span>You are here</span></div><div id="atlas-loading" role="status">Opening the atlas...</div></div>
 <p class="atlas-help">Walk to discover the map &middot; Scroll to zoom &middot; Drag to pan &middot; Political information shows the existing opening setup</p></div></section>

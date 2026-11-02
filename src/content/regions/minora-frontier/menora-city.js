@@ -1,3 +1,4 @@
+import {minoraHarborHeight} from './minora-harbor.js';
 /** Minora occupies the dry Isareos bank of the atlas's Isa–Lizeem confluence.
  * Nothing in this layout straightens, relocates, or fills the rivers. */
 import { ISAREOS_RIVER, LIZEEM, ISAREOS_BECKS, courseDistance, coursePosition, courseHalfAt } from '../western-regions/west-regions.js';
@@ -46,14 +47,14 @@ export const MENORA_BRIDGES=freeze([
   freeze({id:'menora-isa-bridge',name:'The Pilgrims’ Bridge',axis:'z',x:-2308,z:245,start:204,end:286,width:10,deck:21.3,river:ISAREOS_RIVER.id}),
   freeze({id:'menora-guild-footbridge',name:'The Guild Footbridge',axis:'x',x:-2371,z:70,start:-2391,end:-2351,width:8,deck:21.3,river:'isareos-beck-east'}),
   freeze({id:'menora-garden-footbridge',name:'The Garden Footbridge',axis:'x',x:-2385,z:148,start:-2407,end:-2362,width:10,deck:21.3,railInsetStart:9,river:'isareos-beck-east'}),
-  freeze({id:'menora-south-footbridge',name:'The South Footbridge',axis:'x',x:-2390,z:184,start:-2413,end:-2370,width:9,deck:21.3,railInsetStart:15,river:'isareos-beck-east'}),
+  freeze({id:'menora-south-footbridge',name:'The South Footbridge',axis:'x',x:-2390,z:184,start:-2416,end:-2370,width:9,deck:21.3,railInsetStart:18,river:'isareos-beck-east'}),
 ]);
 export function menoraBridgeAt(x,z,margin=0) {
   return MENORA_BRIDGES.find(b=>b.axis==='x'
     ? x>=b.start-margin&&x<=b.end+margin&&Math.abs(z-b.z)<=b.width/2+margin
     : z>=b.start-margin&&z<=b.end+margin&&Math.abs(x-b.x)<=b.width/2+margin)??null;
 }
-export function menoraDeckHeight(x,z) {return menoraBridgeAt(x,z)?.deck??null;}
+export function menoraDeckHeight(x,z) {return menoraBridgeAt(x,z)?.deck??minoraHarborHeight(x,z);}
 export const onMenoraBridge=(x,z)=>Boolean(menoraBridgeAt(x,z));
 
 const building=(id,name,x,z,width,depth,height,kind='house',roof='#547078')=>freeze({id,name,x,z,width,depth,height,kind,roof});
@@ -95,9 +96,10 @@ export const MENORA_GARDENS=freeze([
   freeze({x:-2350,z:78,width:22,depth:7}),freeze({x:-2414,z:139,width:23,depth:5}),
   freeze({x:-2292,z:47,width:8,depth:25}),freeze({x:-2355,z:154,width:14,depth:6}),
 ]);
-export const MENORA_CAMP=freeze({x:-2474,z:83,width:67,depth:95,
-  tents:freeze([[-2500,47],[-2483,43],[-2464,43],[-2500,111],[-2483,114],[-2464,114]].map(([x,z],i)=>freeze({id:`blood-prince-tent-${i}`,x,z,width:i===2?10:8,depth:10,height:i===2?7:5}))),
-});
+// The former army camp is now open ground. Retain its level, clear field for
+// outdoor combat practice and existing starting/saved coordinates.
+export const MENORA_PRACTICE_FIELD=freeze({x:-2474,z:83,width:67,depth:95,tents:freeze([])});
+export const MENORA_CAMP=MENORA_PRACTICE_FIELD; // Compatibility for existing practice hosts.
 
 const localRivers=[ISAREOS_RIVER,LIZEEM,...ISAREOS_BECKS];
 /** Signed distance from visible water, using the actual varying channel width. */

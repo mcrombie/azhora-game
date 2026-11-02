@@ -1,11 +1,20 @@
+import {roadsideBrief} from './roadside-presentation.js';
+import {championFor} from '../../content/scenarios/lizeem-champions.js';
 import {encounterInstruction} from '../../gameplay/combat/encounter-lesson.js';
 import {battleProgress} from './battle-progress.js';
 import {writeHud} from './hud-write.js';
 
 // One active instruction; reference controls are available without advancing combat.
-export function createSkirmishHud({practice,reinforcements,pending,site,onPauseChange}){
+export function createSkirmishHud({practice,reinforcements,pending,site,onPauseChange,onGuardChange=()=>{},trial=null}){
   const $=id=>document.getElementById('world-skirmish-'+id);
   const objective=$('objective'),help=$('controls'),toggle=$('help'),health=$('health'),dodge=$('dodge');
+  const guard=$('block'),abort=new AbortController();
+  const hold=value=>{if(!guard.disabled)onGuardChange(value);};
+  guard.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();guard.setPointerCapture(e.pointerId);hold(true);},{signal:abort.signal});
+  for(const name of ['pointerup','pointercancel','lostpointercapture'])guard.addEventListener(name,()=>onGuardChange(false),{signal:abort.signal});
+  guard.addEventListener('keydown',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();e.stopPropagation();hold(true);}},{signal:abort.signal});
+  guard.addEventListener('keyup',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();onGuardChange(false);}},{signal:abort.signal});
+  guard.addEventListener('blur',()=>onGuardChange(false),{signal:abort.signal});
   const phase=$('phase');phase.hidden=!!practice;
   const guide=document.createElement('div');guide.id='world-skirmish-rally-guide';guide.hidden=true;
   const destination=document.createElement('strong'),progress=document.createElement('progress');progress.max=1;progress.setAttribute('aria-label','Securing victory');guide.append(destination,progress);objective.after(guide);
@@ -18,6 +27,8 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
     ?pending.rally?`Break the remaining ${pending.rally.guards} guards. Victory follows automatically once the enemy line breaks. Continue to advance to day ${pending.endsOn} and the battle result. Withdraw during combat to preserve casualties and return while it remains active.`
     :`Intercept the remaining ${pending.participation.guards} soldiers. Earlier casualties and escapes are preserved. Completing this phase advances campaign time and opens the final assault. Esc withdraws; you may return to this battlefield while active.`
     :context;
+  if(pending.kind==='roadside')$('context').textContent=roadsideBrief(pending);
+  if(pending.duel?.status==='accepted')$('context').textContent=`${championFor(pending).name}: ${championFor(pending).words} Defeat the champion within two minutes to make two rally guards fall back. Esc yields and forfeits this challenge; the final assault remains available.`;
   for(const name of ['objective','health','vitals','actions','help'])$(name).hidden=false;
   help.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.textContent='Help / pause (H)';
   function setHelp(value){
@@ -26,7 +37,7 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
     $('withdraw').textContent=value?withdrawLabel.replace(' (Esc)',''):withdrawLabel;
     helpOpen=value;help.hidden=!value;objective.hidden=value;if(value)guide.hidden=true;
     toggle.setAttribute('aria-expanded',String(value));toggle.textContent=value?'Resume (H / Esc)':'Help / pause (H)';
-    $('strike').disabled=dodge.disabled=value;
+    $('strike').disabled=dodge.disabled=guard.disabled=value;
     onPauseChange();
     (value?toggle:document.getElementById('exploration-canvas')).focus();
   }
@@ -37,6 +48,8 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
       if(!ended&&(event.code==='KeyH'||(helpOpen||securing)&&event.code==='Escape')){
         event.preventDefault();if(!event.repeat)setHelp(!helpOpen);return true;
       }
+      // Paused audio sliders retain their native keyboard controls.
+      if(helpOpen&&event.target?.matches?.('input[type="range"]')&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.code))return true;
       if(helpOpen&&event.code!=='KeyR'){
         // Preserve native Tab navigation and button activation while reading Help.
         if(!['Tab','Enter','Space'].includes(event.code))event.preventDefault();
@@ -57,20 +70,25 @@ export function createSkirmishHud({practice,reinforcements,pending,site,onPauseC
         for(const name of ['objective','vitals','actions','help','controls'])writeHud($(name),'hidden',true);
         return;
       }
-      writeHud(health,'textContent',`Health ${state.hero.hp} / 100`);
+      const maxHp=state.hero.maxHp??100;
+      writeHud(health,'textContent',`Health ${state.hero.hp} / ${maxHp}`);
       writeHud($('actions'),'hidden',securing);writeHud($('withdraw'),'hidden',securing);
-      writeHud(health.dataset,'hurt',String(state.hero.hp<=25));
+      writeHud(health.dataset,'hurt',String(state.hero.hp<=maxHp*.25));
+      writeHud($('health-meter'),'max',maxHp);
       writeHud($('health-meter'),'value',state.hero.hp);
-      writeHud($('strike'),'disabled',helpOpen);
+      writeHud($('strike'),'disabled',helpOpen||state.hero.blocking||state.hero.casting>0);
+      writeHud(guard,'disabled',helpOpen||state.hero.swing>0||state.hero.dodge>0||state.hero.casting>0);
+      guard.setAttribute('aria-pressed',String(!!state.hero.blocking));
+      writeHud(guard,'textContent',state.hero.blocking?'Staff guard (F held)':'Hold to block (F)');
       writeHud(dodge,'disabled',helpOpen||!!state.hero.dodgeCooldown);
       writeHud(dodge,'textContent',state.hero.dodgeCooldown?`Dodge: ${state.hero.dodgeCooldown.toFixed(1)}s`:'Dodge ready (Space)');
-      let instruction=encounterInstruction(state,practice);
+      let instruction=state.tutorial?{kind:'tutorial',text:state.tutorial.instruction+' '+state.tutorial.goals.map(g=>`${g.label}: ${g.value}/${g.required}`).join(' · ')+(state.tutorial.reformed?' · The apparition reforms until you demonstrate the technique.':'')}:trial?{kind:'trial',text:trial.instruction}:encounterInstruction(state,practice);
       if(!helpOpen)writeHud(toggle,'textContent',inactive?'Paused / Help (H)':'Help / pause (H)');
-      if(introRemaining>0)instruction={kind:'prepare',text:`Get ready. The ${pending.rally?'rally assault':'interception'} begins in ${Math.ceil(introRemaining)}s.`};
+      if(introRemaining>0)instruction={kind:'prepare',text:`Get ready. The ${pending.duel?.status==='accepted'?'duel':pending.rally?'rally assault':'interception'} begins in ${Math.ceil(introRemaining)}s.`};
       writeHud(objective.dataset,'kind',instruction.kind);
       const text=(watching&&!inactive&&!introRemaining?'Watching / P takes control. ':'')+instruction.text;
       if(objective.textContent!==text)objective.textContent=text;
     },
-    dispose(){guide.remove();toggle.onclick=null;help.hidden=true;phase.hidden=true;toggle.setAttribute('aria-expanded','false');}
+    dispose(){abort.abort();onGuardChange(false);guide.remove();toggle.onclick=null;help.hidden=true;phase.hidden=true;toggle.setAttribute('aria-expanded','false');}
   };
 }

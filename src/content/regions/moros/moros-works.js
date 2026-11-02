@@ -1,15 +1,14 @@
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
-import { drawCircuit, TIMBER } from '../../../world/scenery/fortworks.js';
+import { drawCircuit } from '../../../world/scenery/fortworks.js';
 import {
   OUTPOST_CIRCUIT, OUTPOST_LAYOUT, OUTPOST_ROAD, OUTPOST_BENCH, OUTPOST_FIRE, campPoint, gateRoadPoint,
-  STOCKADE_CIRCUIT, STOCKADE_LAYOUT,
 } from '../drent/outpost.js';
 import { MOROS_WAYSIDE, MOROS_MILESTONES } from '../../quests/roadside/wayside.js';
 
 /**
  * The Moros Plain's built places: the Ambroni outpost (the army's timber fort),
- * the forward stockade on the border, and the wayside between Nothom and the
- * outpost. Layout lives in `outpost.js` and `wayside.js`; this
+ * and the wayside between Nothom and the outpost.
+ * Layout lives in `outpost.js` and `wayside.js`; this
  * module draws it and adds the colliders the circuits do not already carry.
  */
 const CANVAS = '#cdbf96', CANVAS_DARK = '#b3a47c', CANVAS_SHADE = '#9d8f6b', ROPE = '#b8a77c', IRON = '#4d4b47', EMBER = '#9c4a26';
@@ -190,27 +189,6 @@ export function buildMorosWorks({ parent, heightAt, colliders, signs, movingGrou
     };
     flag('empire', LEGION_RED, GOLD, 'The Marshal’s standard');
     flag('coalition', REPUBLIC_BLUE, WHITE, 'The Republic’s flag over the outpost');
-  }
-
-  // -------------------------------------------------------------------------
-  // The forward stockade on the border
-  // -------------------------------------------------------------------------
-  drawCircuit(STOCKADE_CIRCUIT, { parent, heightAt, colliders, style: 'timber', name: 'The border stockade' });
-  colliders.push(...STOCKADE_CIRCUIT.colliders);
-  {
-    const s = createSceneryBuilder('The border stockade interior');
-    const t = STOCKADE_LAYOUT.truce, ty = y(t.x, t.z);
-    s.cylinder('#6d5439', t.x, ty, t.z, .11, 9.0);
-    s.cylinder('#7d7a70', t.x, ty, t.z, .5, .35);
-    s.sheet(WHITE, [t.x, ty + 8.9, t.z], [t.x + 1.7, ty + 8.8, t.z + .1], [t.x + 1.6, ty + 7.6, t.z + .12], [t.x, ty + 7.7, t.z]);
-    circle(t.x, t.z, .55, 'truce-pole');
-    const h = STOCKADE_LAYOUT.shelter, hy = y(h.x, h.z);
-    for (const sx of [-1, 1]) for (const sz of [-1, 1]) s.beam('#6d5439', [h.x + sx * 1.6, hy, h.z + sz * 1.1], [h.x + sx * 1.6, hy + (sz < 0 ? 2.4 : 1.9), h.z + sz * 1.1], .1);
-    s.sheet('#a39570', [h.x - 1.9, hy + 2.45, h.z - 1.35], [h.x + 1.9, hy + 2.45, h.z - 1.35], [h.x + 1.9, hy + 1.85, h.z + 1.35], [h.x - 1.9, hy + 1.85, h.z + 1.35]);
-    s.block('#9c7a52', h.x - .8, hy, h.z - .4, .8, .8, .8); s.cylinder('#8c6a47', h.x + .7, hy, h.z - .3, .36, .9);
-    circle(h.x, h.z, 1.9, 'stockade-shelter');
-    s.finish(parent);
-    signs.notice({ x: STOCKADE_LAYOUT.notice.x, z: STOCKADE_LAYOUT.notice.z, label: 'Truce', facing: Math.PI / 2, parent });
   }
 
   // -------------------------------------------------------------------------

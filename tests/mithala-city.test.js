@@ -20,11 +20,11 @@ test('each district stands on its own hex, in its own Mithala country', () => {
   }
 });
 
-test('the platforms stand above the flood line and back from all three channels', () => {
+test('the platforms stand above the flood line and yield to the enlarged main channel', () => {
   assert.ok(MITHALA_CITY.platform > MITHALA_CITY.floodLine + .5);
   for (const d of MITHALA_DISTRICTS) for (const [a, b] of ring(d.outline)) for (const p of along(a, b, 12))
-    assert.ok(mithalaCityWaterClearance(p.x, p.z) >= MITHALA_CITY.platformClearance,
-      `${d.name} edge at ${p.x.toFixed(1)},${p.z.toFixed(1)}: ${mithalaCityWaterClearance(p.x, p.z).toFixed(2)} m from water`);
+    if(mithalaCityWaterClearance(p.x,p.z)<=MITHALA_CITY.waterKeep)
+      assert.equal(mithalaCityGround(p.x,p.z,9),9,`${d.name}: the wider river must not be filled by a platform`);
 });
 
 test('the made ground: platform level inside, the river left alone, banks up and cut at the gates', () => {

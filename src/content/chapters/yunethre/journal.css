@@ -1,0 +1,76 @@
+/* The Chapter 2 card keeps the shared quest pointer's measured obstacle bounds. */
+#tower-main-quest.yunethre-quest-card{left:24px;bottom:100px;width:350px;max-width:calc(100vw - 48px);max-height:calc(100dvh - 255px);padding:17px 18px 12px;overflow:auto;scrollbar-width:thin;pointer-events:auto;background:#163a30f2;border-color:#c5b17480;box-shadow:0 6px 26px #13251e24;font:13px/1.45 system-ui}
+#tower-main-quest.yunethre-quest-card h3{font:26px/1.13 Georgia,serif;margin:9px 0 10px;color:#f5e9c6}
+#tower-main-quest.yunethre-quest-card p{font:13px/1.5 system-ui;margin:0}
+#tower-main-quest.yunethre-quest-card small{font:10px/1.4 system-ui;letter-spacing:.1em;color:#d7cb9c;text-transform:uppercase}
+#tower-main-quest.yunethre-quest-card .yunethre-quest-purpose{color:#d7dfcf;margin-bottom:12px}
+.yunethre-quest-checklist,.yunethre-journal-entries{list-style:none;padding:0;margin:0}
+.yunethre-journal-entry{display:grid;grid-template-columns:17px 1fr;gap:9px;align-items:start}
+#tower-main-quest.yunethre-quest-card .yunethre-quest-symbol,.yunethre-journal .yunethre-quest-symbol{font:15px/1.35 system-ui;color:#adbca8;text-align:center}
+.yunethre-quest-checklist .yunethre-journal-entry{padding:4px 0}
+.yunethre-entry-words{min-width:0}
+.yunethre-entry-words>strong{display:block;font-weight:500}
+#tower-main-quest.yunethre-quest-card .yunethre-entry-detail{font-size:12px;line-height:1.4;color:#c8d2c4;margin-top:2px}
+.yunethre-journal-entry[data-status=completed]>.yunethre-entry-words{color:#a9c2aa}
+#tower-main-quest.yunethre-quest-card .yunethre-journal-entry[data-status=current] .yunethre-quest-symbol,.yunethre-journal .yunethre-journal-entry[data-status=current] .yunethre-quest-symbol{color:#edce83}
+.yunethre-journal-entry[data-status=current]>.yunethre-entry-words>strong{color:#f7e5b0}
+.yunethre-quest-next{border-top:1px solid #b7a66d35;padding-top:10px;margin-top:10px}
+#tower-main-quest.yunethre-quest-card .yunethre-quest-next>small{display:block;margin-bottom:4px;color:#e6cb89}
+#tower-main-quest.yunethre-quest-card .yunethre-quest-destination{color:#b9ccbd;font-size:12px;margin-top:6px}
+#tower-main-quest.yunethre-quest-card .yunethre-quest-deadline{color:#e6cb89;font-size:12px;line-height:1.45;margin-top:10px;padding-left:9px;border-left:2px solid #bca260}
+#tower-main-quest.yunethre-quest-card .yunethre-quest-deadline[data-urgent=true]{color:#ffcd9f;border-color:#d88b57}
+.yunethre-quest-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:13px;padding-top:6px;position:sticky;bottom:0;background:#163a30}
+#tower-main-quest .yunethre-open-journal{font:12px/1.3 system-ui;padding:8px 10px;background:#2d4b3e;border-color:#b7a66d66}
+#tower-main-quest .yunethre-open-journal kbd{color:#efe1b7;opacity:.9;margin-left:10px}
+#tower-main-quest.yunethre-quest-card .yunethre-autoplay-hint{font-size:10px;letter-spacing:0;text-transform:none;color:#aebfaf}
+.yunethre-sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+.yunethre-journal{padding:0;width:min(840px,calc(100vw - 48px));max-width:none;height:min(790px,calc(100dvh - 48px));max-height:calc(100dvh - 48px);margin:auto;color:#f0ead4;background:#17392ffb;border:1px solid #c3ad75;border-radius:7px;box-shadow:0 16px 80px #06181088;font:14px/1.5 system-ui;overflow:hidden}
+.yunethre-journal[open]{display:flex;flex-direction:column}
+.yunethre-journal::backdrop{background:#071c19b8;backdrop-filter:blur(3px)}
+.yunethre-journal-heading{display:flex;justify-content:space-between;align-items:start;gap:20px;padding:24px 28px 10px;flex:none}
+.yunethre-journal-heading h2{font:34px/1.15 Georgia,serif;font-weight:400;margin:8px 0 0;color:#f3e6be}
+.yunethre-journal-close{padding:9px 12px;font-size:12px;white-space:nowrap}
+.yunethre-journal-intro{margin:0;padding:0 28px 18px;color:#c1d0c0;font:13px/1.5 system-ui;flex:none}
+.yunethre-journal-tabs{display:flex;gap:8px;padding:0 28px;border-bottom:1px solid #b7a66d66;flex:none}
+.yunethre-journal-tabs>button{font:13px/1.35 system-ui;border:1px solid transparent;border-radius:4px 4px 0 0;padding:11px 15px;background:transparent;color:#bdcbb8;margin-bottom:-1px}
+.yunethre-journal-tabs>button[aria-selected=true]{background:#24473b;border-color:#b7a66d66;border-bottom-color:#24473b;color:#f4dfaa}
+.yunethre-journal-panel{padding:24px 28px 30px;overflow:auto;min-height:0;flex:1;scrollbar-width:thin;background:linear-gradient(#24473b50,transparent 110px)}
+.yunethre-journal-panel:focus-visible{outline:1px solid #d9c085;outline-offset:-5px}
+.yunethre-chapter-heading h3{font:24px/1.2 Georgia,serif;font-weight:400;margin:0 0 8px;color:#f1e4bd}
+.yunethre-chapter-heading p{font:14px/1.6 system-ui;color:#cad5c5;margin:0 0 12px}
+.yunethre-chapter-heading .yunethre-journal-provenance{font-size:12px;color:#c8c5a7;background:#0e2d255c;border-left:2px solid #9e945c;padding:9px 12px;margin-bottom:22px}
+.yunethre-journal-task{padding:15px 17px;background:#294b3c;border:1px solid #b7a66d44;border-radius:3px}
+.yunethre-journal-task>small{font:10px/1.4 system-ui;text-transform:uppercase;letter-spacing:.1em;color:#d4c590}
+.yunethre-journal-task h4{font:20px/1.25 Georgia,serif;font-weight:400;margin:6px 0;color:#f0dfac}
+.yunethre-journal-task p{font:13px/1.6 system-ui;color:#d3ddca;margin:7px 0 0}
+.yunethre-journal-clock{padding-top:10px;margin-top:12px;border-top:1px solid #b7a66d44}
+.yunethre-journal-clock>strong{font-size:12px;font-weight:500;color:#e4cd8e}
+.yunethre-journal-clock p{font-size:12px;color:#becfba}
+.yunethre-journal-section{margin-top:24px}
+.yunethre-journal-section h4{font:11px/1.4 system-ui;text-transform:uppercase;letter-spacing:.12em;color:#d9c68d;border-bottom:1px solid #a4b19a33;padding-bottom:9px;margin:0 0 7px}
+.yunethre-journal .yunethre-journal-entry{padding:13px 3px;border-bottom:1px solid #a4b19a18;gap:12px}
+.yunethre-journal .yunethre-entry-words>strong{font-size:15px;font-weight:600}
+.yunethre-entry-status{display:block;font:11px/1.5 system-ui;color:#c6c099;margin-top:3px}
+.yunethre-journal .yunethre-entry-detail{font:13px/1.6 system-ui;color:#c9d2c4;margin:6px 0 0;max-width:72ch}
+.yunethre-journal .yunethre-journal-entry[data-status=information]>.yunethre-entry-words>strong{color:#ced7c8}
+.yunethre-journal-foot{padding:11px 28px;border-top:1px solid #a4b19a33;font:11px/1.45 system-ui;color:#abbda9;flex:none}
+.yunethre-journal-empty{font:14px/1.6 system-ui;color:#b9c8b5}
+@media(max-height:760px){
+  #tower-main-quest.yunethre-quest-card{width:322px;left:18px;bottom:100px;padding:13px 15px 10px;max-height:calc(100dvh - 250px)}
+  #tower-main-quest.yunethre-quest-card h3{font-size:23px;margin:7px 0 8px}
+  #tower-main-quest.yunethre-quest-card p{font-size:12px;line-height:1.45}
+  #tower-main-quest.yunethre-quest-card .yunethre-quest-purpose{margin-bottom:7px}
+  .yunethre-quest-checklist .yunethre-journal-entry{padding:3px 0;font-size:12px}
+  .yunethre-quest-next{padding-top:7px;margin-top:7px}
+  .yunethre-quest-footer{margin-top:9px}
+  .yunethre-journal-heading{padding-top:18px}.yunethre-journal-heading h2{font-size:29px}
+}
+@media(max-width:760px){
+  #tower-main-quest.yunethre-quest-card{left:12px;width:290px;max-width:calc(100vw - 24px);max-height:calc(100dvh - 255px)}
+  .yunethre-journal{width:calc(100vw - 20px);height:calc(100dvh - 20px);max-height:calc(100dvh - 20px)}
+  .yunethre-journal-heading{padding:18px 16px 10px;gap:12px}.yunethre-journal-heading h2{font-size:27px}
+  .yunethre-journal-intro,.yunethre-journal-tabs{padding-left:16px;padding-right:16px}
+  .yunethre-journal-tabs>button{padding:10px 8px;font-size:12px;flex:1}
+  .yunethre-journal-panel{padding:18px 16px 24px}.yunethre-journal-foot{padding:10px 16px}
+}

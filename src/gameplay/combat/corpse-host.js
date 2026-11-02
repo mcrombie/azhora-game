@@ -5,9 +5,11 @@ import { createCorpseView } from './corpse-view.js';
 export const CORPSE_VIEW_REACH = 150;
 
 const label = body => body.status === 'unconscious' ? `${body.name} · unconscious` : `${body.name} · ${body.phase === 'fresh' ? 'body' : body.phase}`;
+const defaultRole=(person,ally)=>person.kind==='officer'?'legion-officer':
+  person.kind==='soldier'?(person.look==='legion'?'legion-soldier':'militiaman'):
+  person.kind==='rebel'?'forest-woodcutter':ally?(person.kind==='legionary'?'legion-soldier':'militiaman'):'traveler';
 const appearance = (person, ally = false) => ({
-  role: person.role ?? (person.kind === 'officer' ? 'legion-officer' : person.kind === 'soldier' ? person.look === 'legion' ? 'legion-soldier' : 'suvali-guard'
-    : person.kind === 'rebel' ? 'forest-woodcutter' : ally ? person.kind === 'officer' ? 'legion-officer' : 'legion-soldier' : 'traveler'),
+  role: person.role ?? defaultRole(person,ally),
   ...(person.model ?? {}), armed: person.armed !== false,
 });
 

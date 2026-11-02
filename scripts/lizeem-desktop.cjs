@@ -1,7 +1,7 @@
 const {app,BrowserWindow}=require('electron');
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {isPublicFile}=require('./public-file.cjs');
-const root=path.resolve(__dirname,'..'),test=process.argv.includes('--smoke-test');
+const root=path.resolve(__dirname,'..'),test=process.argv.includes('--smoke-test'),foodWar=process.argv.includes('--food-war'),food=process.argv.includes('--food')||foodWar;
 const profile=process.env.AZHORA_TEST_PROFILE??path.join(app.getPath('appData'),'Azhora Lizeem');
 app.setPath('userData',profile);app.setPath('sessionData',profile);
 let server;
@@ -23,11 +23,40 @@ app.whenReady().then(async()=>{
   win.webContents.setWindowOpenHandler(()=>({action:'deny'}));
   const errors=[];win.webContents.on('console-message',(_e,level,message)=>{if(level>=3)errors.push(message);if(test&&message.startsWith('LIZEEM_'))console.log(message);});
   win.webContents.on('before-input-event',(_event,input)=>{if(input.type==='keyDown'&&(input.key==='F11'||input.alt&&input.key==='Enter'))win.setFullScreen(!win.isFullScreen());});
-  await win.loadURL(`http://127.0.0.1:${server.address().port}/lizeem.html${test?'?test=1':''}`);
+  const query=new URLSearchParams();if(test)query.set('test','1');if(food)query.set('scenario',foodWar?'food-war':'food');
+  if(foodWar&&process.argv.includes('--legacy-planning'))query.set('planning','legacy');
+  await win.loadURL(`http://127.0.0.1:${server.address().port}/lizeem.html?${query}`);
   if(test){
     const dir=path.join(root,'tests','artifacts');fs.mkdirSync(dir,{recursive:true});
     try{
       await win.webContents.executeJavaScript(`new Promise((resolve,reject)=>{const end=Date.now()+30000;const poll=()=>window.__LIZEEM__?resolve():window.__LIZEEM_ERROR__?reject(Error(window.__LIZEEM_ERROR__)):Date.now()>end?reject(Error('Scenario failed to start')):setTimeout(poll,50);poll();})`);
+      if(foodWar){const report=await require('./food-war-checks.cjs')(win,dir,errors);console.log(JSON.stringify(report,null,2));app.exit(errors.length?1:0);return;}
+      if(food){
+        const capture=async name=>{await new Promise(resolve=>setTimeout(resolve,200));fs.writeFileSync(path.join(dir,`food-${name}.png`),(await win.webContents.capturePage()).toPNG());};
+        await capture('opening');
+        const report=await win.webContents.executeJavaScript(`import('./src/dev/checks/food-smoke.js').then(m=>m.checkFood(window.__LIZEEM__))`);
+        await capture('shortage');
+        await win.webContents.executeJavaScript(`document.getElementById('restore-imports').click();window.__LIZEEM__.advance(8);`);await capture('recovery');
+        win.setContentSize(390,844);
+        await new Promise(resolve=>setTimeout(resolve,200));
+        const mobile=await win.webContents.executeJavaScript(`({overflow:document.documentElement.scrollWidth>innerWidth+1,mapHeight:document.getElementById('scenario-map').getBoundingClientRect().height})`);
+        if(mobile.overflow||mobile.mapHeight<160)throw Error('Food mobile layout is clipped: '+JSON.stringify(mobile));
+        await capture('mobile-map');
+        await win.webContents.executeJavaScript(`document.getElementById('food-controls').scrollIntoView({block:'end'});`);await capture('mobile-controls');
+        report.checks.push('390px mobile layout keeps the map and controls without horizontal overflow');
+        for(const mode of ['war','food','food-war']){
+          const loaded=new Promise((resolve,reject)=>{
+            const timeout=setTimeout(()=>reject(Error('Scenario selector did not navigate')),10000);
+            win.webContents.once('did-finish-load',()=>{clearTimeout(timeout);resolve();});
+          });
+          await win.webContents.executeJavaScript(`setTimeout(()=>{const choice=document.getElementById('scenario-choice');choice.value='${mode}';choice.dispatchEvent(new Event('change'));},50);true;`);
+          await loaded;
+          const switched=await win.webContents.executeJavaScript(`new Promise((resolve,reject)=>{const end=Date.now()+10000;const poll=()=>window.__LIZEEM__?resolve({day:window.__LIZEEM__.state().campaign.day,food:!!window.__LIZEEM__.state().campaign.food,heroHidden:document.getElementById('hero-panel').hidden}):window.__LIZEEM_ERROR__?reject(Error(window.__LIZEEM_ERROR__)):Date.now()>end?reject(Error('Switched scenario did not initialize')):setTimeout(poll,50);poll();})`);
+          if(switched.day!==0||switched.food!==(mode!=='war')||switched.heroHidden!==(mode!=='war'))throw Error('Wrong scenario after switch: '+JSON.stringify(switched));
+          report.checks.push(`Scenario selector opens a fresh ${mode} run with the matching controls`);
+        }
+        const result={...report,mobile,errors};fs.writeFileSync(path.join(dir,'food-checks.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result,null,2));app.exit(errors.length?1:0);return;
+      }
       await new Promise(resolve=>setTimeout(resolve,300));fs.writeFileSync(path.join(dir,'lizeem-opening.png'),(await win.webContents.capturePage()).toPNG());
       const report=await win.webContents.executeJavaScript(`import('./src/dev/checks/lizeem-smoke.js').then(m=>m.checkLizeem(window.__LIZEEM__))`);
       await new Promise(resolve=>setTimeout(resolve,300));fs.writeFileSync(path.join(dir,'lizeem-intervention.png'),(await win.webContents.capturePage()).toPNG());

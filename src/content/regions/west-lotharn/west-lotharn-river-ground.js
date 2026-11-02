@@ -9,8 +9,11 @@ const distance = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 /** Distance beyond the largest wetted half-width; negative inside the water. */
 export function westLotharnRiverBankDistance(x, z, limit = Infinity) {
+  return courseBankDistance(WEST_LOTHARN_WATERS,x,z,limit);
+}
+export function courseBankDistance(courses,x,z,limit=Infinity) {
   let best = Infinity;
-  for (const course of WEST_LOTHARN_WATERS) {
+  for (const course of courses) {
     const b = course.bounds, reach = course.maxHalf + limit;
     if (x < b.minX - reach || x > b.maxX + reach || z < b.minZ - reach || z > b.maxZ + reach) continue;
     best = Math.min(best, courseDistance(course, x, z) - course.maxHalf);
@@ -25,24 +28,26 @@ export function westLotharnRiverBankDistance(x, z, limit = Infinity) {
  * The returned sampler reads the actual Float32 replacement triangles.
  */
 export function refineWestLotharnRiverGround(...args) { return finishBuild(refineWestLotharnRiverGroundSteps(...args)); }
-export function* refineWestLotharnRiverGroundSteps({ THREE, terrainRoot, mountainRoot, heightAt, coarseHeightAt }) {
+export function* refineWestLotharnRiverGroundSteps({ THREE, terrainRoot, mountainRoot, heightAt, coarseHeightAt,
+  courses=WEST_LOTHARN_WATERS, spacing=WEST_LOTHARN_RIVER_GROUND.spacing, tag='westLotharnRiver', label='West Lotharn beck' }) {
   const started = performance.now();
   let work = 0;
-  const { bank, feather, spacing } = WEST_LOTHARN_RIVER_GROUND, reach = bank + feather;
+  const { bank, feather } = WEST_LOTHARN_RIVER_GROUND, reach = bank + feather;
+  const bankDistance=(x,z,limit)=>courseBankDistance(courses,x,z,limit);
   const patches = [], boundaries = [], layers = [], heights = new Map();
   const physical = (x, z) => { const k = `${x},${z}`; if (!heights.has(k)) heights.set(k, heightAt(x, z)); return heights.get(k); };
   for (const [root, mountain] of [[terrainRoot, false], [mountainRoot, true]]) {
     if (!root) continue;
     const sources = []; root.traverse(mesh => {
       if (mesh.isMesh && (!mountain || mesh.name === 'West Lotharn summits ground')
-        && !mesh.userData.westLotharnRiverGround && !mesh.userData.westLotharnRiverRefined) sources.push(mesh);
+        && !mesh.userData[tag+'Ground'] && !mesh.userData[tag+'Refined']) sources.push(mesh);
     });
     const tiles = [], retained = [], edges = new Map(); let longest = 0;
     for (const mesh of sources) { if ((++work & 31) === 0) yield;
       const geometry = mesh.geometry, position = geometry.attributes.position, index = geometry.index;
       if (!position || !index) continue;
       const box = geometry.boundingBox ?? (geometry.computeBoundingBox(), geometry.boundingBox);
-      const overlaps = margin => WEST_LOTHARN_WATERS.some(c => box.max.x >= c.bounds.minX - c.maxHalf - margin
+      const overlaps = margin => courses.some(c => box.max.x >= c.bounds.minX - c.maxHalf - margin
         && box.min.x <= c.bounds.maxX + c.maxHalf + margin && box.max.z >= c.bounds.minZ - c.maxHalf - margin
         && box.min.z <= c.bounds.maxZ + c.maxHalf + margin);
       if (!overlaps(12)) continue;
@@ -54,7 +59,7 @@ export function* refineWestLotharnRiverGroundSteps({ THREE, terrainRoot, mountai
         const p = ids.map(id => ({ x: position.getX(id), y: position.getY(id), z: position.getZ(id) }));
         const x = (p[0].x + p[1].x + p[2].x) / 3, z = (p[0].z + p[1].z + p[2].z) / 3;
         const radius = Math.max(...p.map(v => Math.hypot(v.x - x, v.z - z)));
-        if (westLotharnRiverBankDistance(x, z, reach + radius) > reach + radius) { keep.push(...ids); continue; }
+        if (bankDistance(x, z, reach + radius) > reach + radius) { keep.push(...ids); continue; }
         faces.push({ ids, p });
         for (let i = 0; i < 3; i++) {
           const a = p[i], b = p[(i + 1) % 3], key = edgeKey(a, b), edge = edges.get(key);
@@ -85,7 +90,7 @@ export function* refineWestLotharnRiverGroundSteps({ THREE, terrainRoot, mountai
               const bu = ((x - a.x) * (c.z - a.z) - (z - a.z) * (c.x - a.x)) / determinant;
               const cv = ((b.x - a.x) * (z - a.z) - (b.z - a.z) * (x - a.x)) / determinant, aw = 1 - bu - cv;
               const plane = a.y * aw + b.y * bu + c.y * cv;
-              const strength = (1 - smooth(bank, reach, westLotharnRiverBankDistance(x, z, reach)))
+              const strength = (1 - smooth(bank, reach, bankDistance(x, z, reach)))
                 * smooth(0, feather, boundaryAt(x, z));
               const target = strength ? physical(x, z) - (mountain ? 0 : westLotharnTerrainSink(x, z)) : plane;
               id = positions.length / 3; vertices.set(key, id); positions.push(x, plane + (target - plane) * strength, z);
@@ -106,9 +111,9 @@ export function* refineWestLotharnRiverGroundSteps({ THREE, terrainRoot, mountai
       if (colors.length) fine.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
       fine.setIndex(indices); fine.computeVertexNormals(); fine.computeBoundingBox(); fine.computeBoundingSphere();
       const patch = new THREE.Mesh(fine, mesh.material);
-      patch.name = `West Lotharn beck ground: ${mesh.name}`; patch.receiveShadow = mesh.receiveShadow; patch.castShadow = mesh.castShadow;
-      patch.userData.westLotharnRiverGround = true; patch.userData.mountain = mountain;
-      geometry.setIndex(keep); mesh.userData.westLotharnRiverRefined = true; mesh.parent.add(patch);
+      patch.name = `${label} ground: ${mesh.name}`; patch.receiveShadow = mesh.receiveShadow; patch.castShadow = mesh.castShadow;
+      patch.userData[tag+'Ground'] = true; patch.userData.mountain = mountain;
+      geometry.setIndex(keep); mesh.userData[tag+'Refined'] = true; mesh.parent.add(patch);
       patches.push(patch); removedTriangles += faces.length;
     }
   }
@@ -117,7 +122,7 @@ export function* refineWestLotharnRiverGroundSteps({ THREE, terrainRoot, mountai
   // highest actually drawn surface, not whichever layer was sampled last.
   const surfaces = [...patches.map(mesh => ({ mesh, mountain: mesh.userData.mountain })),
     ...layers.flatMap(layer => layer.retained.map(mesh => ({ mesh, mountain: layer.mountain })))];
-  const sample = yield* triangleSamplerSteps(surfaces, coarseHeightAt);
+  const sample = yield* triangleSamplerSteps(surfaces, coarseHeightAt,bankDistance,tag);
   return { patches, boundaries, heightAt: sample,
     metrics: { patches: patches.length, removedTriangles, vertices: patches.reduce((n, p) => n + p.geometry.attributes.position.count, 0),
       triangles: patches.reduce((n, p) => n + p.geometry.index.count / 3, 0), sampledHeights: heights.size,
@@ -140,16 +145,16 @@ function boundaryDistance(edges, reach) {
   };
 }
 
-function* triangleSamplerSteps(surfaces, fallback) {
+function* triangleSamplerSteps(surfaces, fallback,bankDistance,tag) {
   const size = WEST_LOTHARN_RIVER_GROUND.bucket, buckets = new Map(); let work = 0;
   for (const { mesh } of surfaces) {
     const p = mesh.geometry.attributes.position.array, indices = mesh.geometry.index.array;
     for (let offset = 0; offset < indices.length; offset += 3) { if ((++work & 255) === 0) yield;
       const a = indices[offset] * 3, b = indices[offset + 1] * 3, c = indices[offset + 2] * 3, triangle = { p, a, b, c };
-      if (!mesh.userData.westLotharnRiverGround) {
+      if (!mesh.userData[tag+'Ground']) {
         const x = (p[a] + p[b] + p[c]) / 3, z = (p[a + 2] + p[b + 2] + p[c + 2]) / 3;
         const radius = Math.max(...[a, b, c].map(i => Math.hypot(p[i] - x, p[i + 2] - z)));
-        if (westLotharnRiverBankDistance(x, z, 12 + radius) > 12 + radius) continue;
+        if (bankDistance(x, z, 12 + radius) > 12 + radius) continue;
       }
       for (let x = Math.floor(Math.min(p[a], p[b], p[c]) / size); x <= Math.floor(Math.max(p[a], p[b], p[c]) / size); x++)
         for (let z = Math.floor(Math.min(p[a + 2], p[b + 2], p[c + 2]) / size); z <= Math.floor(Math.max(p[a + 2], p[b + 2], p[c + 2]) / size); z++) {
@@ -158,7 +163,7 @@ function* triangleSamplerSteps(surfaces, fallback) {
     }
   }
   return (x, z) => {
-    if (westLotharnRiverBankDistance(x, z, 12) > 12) return fallback(x, z);
+    if (bankDistance(x, z, 12) > 12) return fallback(x, z);
     let result = -Infinity;
     for (const { p, a, b, c } of buckets.get(`${Math.floor(x / size)},${Math.floor(z / size)}`) ?? []) {
       const dx = x - p[a], dz = z - p[a + 2], bx = p[b] - p[a], bz = p[b + 2] - p[a + 2], cx = p[c] - p[a], cz = p[c + 2] - p[a + 2];

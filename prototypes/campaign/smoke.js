@@ -64,7 +64,7 @@ export async function runChecks(){
   view('geopolitical');
   showSample('opening');check(ui.getTerritory('stonefist-lond').regions.length===5&&ui.getTerritory('eshtor-undead').regions.length===1,'Opening snapshot restores original boundaries');
   check(ui.ownerOf('Moros Plain')==='ambroni-empire'&&ui.ownerOf('West Suval')==='west-suval'&&ui.getTerritory('izol').regions.length===2,'Opening restores both Chapter 1 territories');
-  check(['Cudon','Lesser Oremindi Mountains'].every(n=>ui.ownerOf(n)==='thalmagars-empire'),'Thalmagar owns both newly assigned opening regions');
+  check(ui.ownerOf('Cudon')==='kudan'&&ui.ownerOf('Lesser Oremindi Mountains')==='narcosh','Kudan and Narcosh hold their independent opening territories');
   check(!Object.keys(localStorage).length,'No game storage is written');
   return checks;
 }

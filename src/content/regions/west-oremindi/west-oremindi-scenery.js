@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import {createSceneryBuilder} from '../../../world/scenery/scenery-builder.js';
 import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-registry.js';
 import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
+import {frontierReserved} from '../oremindi-frontier/oremindi-frontier-layout.js';
 import { SEVRON_ENTRANCES, WEST_OREMINDI, WEST_OREMINDI_BOUNDS, WEST_OREMINDI_LAKES,
   westOremindiOwns, westOremindiFeatures, westOremindiWaterAt } from './west-oremindi-world.js';
 
@@ -26,7 +27,7 @@ const tones = {
  * the visible heightfield supplies all ridges, passes and climbing surfaces. */
 export function createWestOremindiScenery(...args) { return finishBuild(createWestOremindiScenerySteps(...args)); }
 
-export function* createWestOremindiScenerySteps({ parent, heightAt, renderedGroundHeight = heightAt, colliders, terrainRoot, isReserved = (x,z,r=0) => SEVRON_ENTRANCES.some(e=>Math.hypot(x-e.x,z-e.z)<10+r) }) {
+export function* createWestOremindiScenerySteps({ parent, heightAt, renderedGroundHeight = heightAt, colliders, terrainRoot, isReserved = (x,z,r=0) => frontierReserved(x,z,r)||SEVRON_ENTRANCES.some(e=>Math.hypot(x-e.x,z-e.z)<10+r) }) {
   let buildWork = 0;
   const root = new THREE.Group(); root.name = 'West Oremindi alpine country'; parent.add(root);
   const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .98, flatShading: true });

@@ -78,13 +78,26 @@ test('The southern lookout has continuous support from the court and height-boun
   assert.ok(above.height>summit+9,'The same gate position can be walked through or above.');
 });
 
+test('The raised garden entrance leaves the sleeping face visible from an ordinary approach camera',()=>{
+  scene.root.updateMatrixWorld(true);
+  const target=scene.sacredOak.eyes[0].socket.getWorldPosition(new THREE.Vector3());
+  const eye=new THREE.Vector3(CANERD.x-1,summit+3,target.z);
+  const hit=new THREE.Raycaster(eye,target.clone().sub(eye).normalize()).intersectObject(scene.root,true)[0];
+  assert.equal(hit?.object.userData.liveTree,true,'The roof must not hide the face along the approach');
+  const roof=colliders.find(c=>c.kind==='canerd-garden-roof');
+  assert.ok(roof.minY>summit+4.5&&roof.maxY<summit+5.6,'Only the raised roof volume blocks overhead cameras');
+  assert.ok(canStand(CANERD.x+4.2,CANERD.z+14.5,world,.65,summit),'The audience path remains open underneath');
+});
+
 test('Canerd keeps detailed masonry in a small cooperative set of finite, vertex-coloured meshes',()=>{
   assert.ok(yields>100,'Large scenery creation must yield to loading.');
-  assert.ok(scene.metrics.batches<=20);
+  // The living oak adds a merged body and nine independently posed face parts.
+  assert.ok(scene.metrics.batches<=30);
   assert.ok(scene.metrics.vertices>50000&&scene.metrics.vertices<200000);
-  assert.equal(scene.root.children.length,scene.metrics.batches);
+  const meshes=[];scene.root.traverse(mesh=>{if(mesh.isMesh)meshes.push(mesh);});
+  assert.equal(meshes.length,scene.metrics.batches);
   const materials=new Set();
-  for(const mesh of scene.root.children) {
+  for(const mesh of meshes) {
     assert.equal(mesh.isMesh,true);
     materials.add(mesh.material);
     const positions=mesh.geometry.attributes.position,normals=mesh.geometry.attributes.normal;

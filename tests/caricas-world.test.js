@@ -53,7 +53,7 @@ test('The Lizeem is one river from head to mouth, growing as it goes, and never 
   assert.ok(profile.length > 200, 'the atlas draws it right across the west');
   for (let i = 1; i < profile.length; i++)
     assert.ok(profile[i].surface < profile[i - 1].surface, `the Lizeem climbs at sample ${i}`);
-  assert.ok(profile[0].half < 6 && profile.at(-1).half > 13,
+  assert.ok(profile[0].half >= 16 && profile.at(-1).half >= 36,
     'the map marks its head medium and the rest of it large, and it is built that way');
   assert.ok(profile[0].surface - profile.at(-1).surface > 6, 'and it falls the length of the world');
   // Nobody wades it. Every metre of it is blocked.

@@ -394,7 +394,8 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
   function birdPose() {
     birds.forEach((bird, i) => {
       quaternion.setFromEuler(new THREE.Euler(0, bird.yaw, 0)); position.set(bird.x, bird.y + bird.lift, bird.z);
-      unit.setScalar(bird.visible ? .84 : .0001); rootMatrix.compose(position, quaternion, unit);
+      // A wood thrush is ~20 cm long, not the old enlarged 65 cm display bird.
+      unit.setScalar(bird.visible ? .255 : .0001); rootMatrix.compose(position, quaternion, unit);
       const flying = bird.action === 'flight', peck = bird.action === 'peck' ? Math.max(0, Math.sin(bird.clock * 5.5)) : 0;
       place(birdFlock.meshes.body, i, 0, 0, 0, flying ? .13 : 0);
       place(birdFlock.meshes.head, i, 0, .35 - peck * .11, .15, peck * .87 + (flying ? .10 : 0),
@@ -403,7 +404,7 @@ export function createForestEcology(scene, world, { exclusionSites = [] } = {}) 
       // Both Z angles match so both wings rise and fall together.
       const flap = flying ? .20 + Math.sin(bird.clock * 22) * .92 : -1.18;
       for (let side = 0; side < 2; side++) place(birdFlock.meshes.wings, i * 2 + side,
-        side ? -.085 : .085, .265, -.015, 0, side ? Math.PI : 0, flap, flying ? 1 : .45, 1, flying ? 1 : .75);
+        side ? -.085 : .085, .265, -.015, 0, side ? Math.PI : 0, flap, flying ? 1.13 : .45, 1, flying ? 1 : .75);
     });
     for (const mesh of Object.values(birdFlock.meshes)) mesh.instanceMatrix.needsUpdate = true;
   }

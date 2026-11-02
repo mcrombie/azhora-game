@@ -2,7 +2,7 @@ import {deathReport} from '../src/app/exploration/afterlife-state.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCampaign,replayCampaign} from '../src/simulation/campaign.js';
-import {createWorldWar,WORLD_WAR_SCENARIO as CURRENT_WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO as WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,BATTLEFIELD_ENTRY_RADIUS} from '../src/app/exploration/world-war.js';
+import {createWorldWar,DUEL_WORLD_WAR_SCENARIO as CURRENT_WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO as WORLD_WAR_SCENARIO,INTERCEPTION_WORLD_WAR_SCENARIO,BATTLEFIELD_ENTRY_RADIUS} from '../src/app/exploration/world-war.js';
 import {availableBattleStage,rallyGuardCount} from '../src/simulation/battle-stages.js';
 import {worldWarReports} from '../src/app/exploration/war-reports.js';
 import {createLizeemEncounter} from '../src/gameplay/combat/lizeem-encounter.js';
@@ -148,7 +148,7 @@ test('withdrawal and re-entry preserve casualties and escaped soldiers without d
     s=c.snapshot();const resolved=s.engagements.find(e=>e.id===b.id);
     assert.equal(s.day,6);assert.equal(resolved.status,'resolved');assert.equal(s.regions.caricas.owner,side);
     assert.equal(resolved.rally.stopped,4);assert.equal(resolved.rally.removed,4);assert.equal(resolved.heroResult.objective.blocked,8);
-    assert.match(deathReport(s,b.id,CURRENT_WORLD_WAR_SCENARIO),/interception removed 8 enemy strength; your rally assault removed 4 more/);
+    assert.match(deathReport(s,b.id,CURRENT_WORLD_WAR_SCENARIO),/interception removed 8 enemy strength[\s\S]*rally assault removed 4 enemy strength/);
     assert.match(worldWarReports(s,CURRENT_WORLD_WAR_SCENARIO,()=>true).find(r=>r.battleId===b.id).detail,/rally assault removed 4 more/);
     assert.equal(s.events.filter(e=>e.type==='reinforcements-intercepted'&&e.battleId===b.id).reduce((n,e)=>n+e.strength,0),8);
     assert(!c.joinBattle(b.id,b.location).ok);replayV6(c);

@@ -1,3 +1,4 @@
+import {confirmTowerCampaign} from './tower-smoke.js';
 import {TOWER_DOOR,TALETH_SPOT} from '../../app/exploration/tower-state.js';
 import {LIZEEM_PRELUDE} from '../../content/scenarios/lizeem-prelude.js';
 
@@ -48,7 +49,7 @@ export async function checkChronicleOpening(api){
   assert(api.tower.state().inside&&!api.tower.state().briefed,'Tower exit is locked before the briefing');
   await api.visit({x:TALETH_SPOT.x,z:TALETH_SPOT.z+2});assert(api.save().ok,'Pre-briefing save is available');
   key('KeyF');assert(api.state().mode==='briefing','Taleth conversation opens');
-  assert(document.getElementById('tower-next').textContent==='Start campaign','Start campaign is the first briefing action');
+  assert(document.getElementById('tower-next').disabled&&!document.getElementById('tower-allegiance-west').hidden,'Taleth asks for allegiance before the campaign begins');
   assert(!document.getElementById('tower-background').hidden,'Background is available as the optional second action');
   records.set(api,record(api));click('tower-background');await ready(api);click('chronicle-play');
   assert(api.state().mode==='chronicle'&&state(api).day===1&&!state(api).playing,'History opens on day one and can be paused');
@@ -63,7 +64,7 @@ export async function checkChronicleOpening(api){
   assert(document.activeElement===document.querySelector('#chronicle-timeline button:last-child'),'Reverse Tab stays within the projection');
   key('Tab');assert(document.activeElement===document.getElementById('chronicle-start'),'Tab wraps to the primary action');
   unchanged(api);await settled();checkLayout();
-  return {checks:['Unbriefed door remains locked','Start is primary; background is optional','Five atlas boundaries and Minora marker','Day one has five imperial provinces','Pause and keyboard focus trap','F5 reload suppressed','Live campaign, clock and save unchanged'],state:state(api)};
+  return {checks:['Unbriefed door remains locked','Allegiance is chosen with Taleth; background is optional','Five atlas boundaries and Minora marker','Day one has five imperial provinces','Pause and keyboard focus trap','F5 reload suppressed','Live campaign, clock and save unchanged'],state:state(api)};
 }
 
 /** Advance through successive declarations, then pause at the western league. */
@@ -110,7 +111,9 @@ export async function finishChronicle(api){
   assert(!api.tower.state().briefed,'Viewing history is not consent to begin');click('tower-close');
   await api.visit({...TOWER_DOOR,z:TOWER_DOOR.z-1});key('KeyF');assert(api.tower.state().inside&&!api.tower.state().briefed,'The door stays locked after merely viewing history');
   await api.visit({x:TALETH_SPOT.x,z:TALETH_SPOT.z+2});key('KeyF');click('tower-background');await ready(api);click('chronicle-start');
-  assert(api.tower.state().briefed&&api.state().mode==='playing'&&api.war.state().clock.running,'Explicit projection action begins the campaign');
+  assert(!api.tower.state().briefed&&api.state().mode==='briefing'&&!api.war.state().campaignSide,'Projection returns to Taleth without bypassing allegiance');
+  confirmTowerCampaign(api);
+  assert(api.tower.state().briefed&&api.state().mode==='playing'&&api.war.state().clock.running,'Explicit choice and confirmation with Taleth begin the campaign');
   api.war.pause();api.war.advance(2);const begun=record(api);
   key('KeyF');click('tower-background');await ready(api);
   assert(document.getElementById('chronicle-start').textContent==='Return to the chamber','Later visits offer return, not another campaign start');
@@ -121,5 +124,5 @@ export async function finishChronicle(api){
   key('KeyF');click('tower-next');unchanged(api,begun);
   assert(!api.tower.state().exteriorLoaded,'History never loads exterior regions');assert(!api.state().frameErrors.length,'No renderer errors');
   await frames();
-  return {checks:['Replay only rewinds the projection','Escape returns to Taleth without starting','Watching history does not unlock the tower exit','Explicit Start begins the live campaign once','Later projection and briefing preserve existing day, events, paused clock and save','No exterior loads or renderer errors'],campaign:api.war.state().campaign};
+  return {checks:['Replay only rewinds the projection','Escape returns to Taleth without starting','Watching history does not unlock the tower exit','History cannot bypass allegiance; Taleth confirmation begins the campaign once','Later projection and briefing preserve existing day, events, paused clock and save','No exterior loads or renderer errors'],campaign:api.war.state().campaign};
 }

@@ -1,5 +1,6 @@
 import {MINORA_RESIDENTS} from './minora-residents.js';
 import {LIZEEM_MARKET_STANDS} from './menora-city.js';
+import {MINORA_CIVIC_RESIDENTS,MINORA_RESIDENT_HOMES} from './minora-civic-residents.js';
 
 // Appearance-only adaptations of the existing farmland cast. No imports from
 // the old quest/merchant modules. Melka and Nera are new local civilians.
@@ -32,5 +33,6 @@ export const CORRIDOR_RESIDENTS=Object.freeze([
     look:{slight:true,dress:true,hair:0x30251c,hairStyle:'braid'}},
 ].map(d=>Object.freeze(d)));
 export const LIZEEM_RESIDENTS=Object.freeze([
-  ...MINORA_RESIDENTS.map(d=>Object.freeze({...d,place:'Minora',region:'isareos'})),...CORRIDOR_RESIDENTS,
+  ...MINORA_RESIDENTS.map(d=>Object.freeze({...d,home:MINORA_RESIDENT_HOMES[d.id]??null,place:'Minora',region:'isareos'})),
+  ...CORRIDOR_RESIDENTS.map(d=>Object.freeze({...d,home:MINORA_RESIDENT_HOMES[d.id]??null})),...MINORA_CIVIC_RESIDENTS,
 ]);

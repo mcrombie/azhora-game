@@ -8,7 +8,7 @@ export async function settled(a){
 }
 export async function river(a){
   const result=await story.river(a),s=a.state(),p=a.tower.state().panorama;
-  assert(s.panoramic&&!s.heroVisible&&s.cameraFov===66,'River dialogue uses unobstructed first-person framing');
+  assert(s.panoramic&&!s.heroVisible&&s.cameraFov===44,'River dialogue uses a tighter first-person view of the valley');
   assert(s.enabledRegions.length===5,'The panorama does not unlock more playable regions');
   assert(p.prepared&&p.regions.some(r=>r.name==='Elagos')&&p.regions.some(r=>r.name==='East Pyros'),'Distant scenery stays within its static mesh budget');
   buildMs=p.buildMs;

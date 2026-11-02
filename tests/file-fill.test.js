@@ -81,7 +81,7 @@ test('they are ordinary soldiers of the side he signed with, trained a little', 
   // Whichever army he signed with fills his file, and they do not look alike.
   assert.notEqual(FILL_LOOK.empire.model.role, FILL_LOOK.coalition.model.role);
   assert.notEqual(FILL_LOOK.empire.name, FILL_LOOK.coalition.name);
-  assert.deepEqual(fillFor({ side: 'nowhere', walking: 0 })[0].model, { ...FILL_LOOK.empire.model }, 'and an unsigned traveler gets the Emperor’s');
+  assert.deepEqual(fillFor({ side: 'nowhere', walking: 0 })[0].model, { ...FILL_LOOK.coalition.model }, 'unknown human factions default to militia');
 });
 
 /**

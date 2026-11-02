@@ -1,6 +1,8 @@
 import {createSceneryBuilder} from '../../../world/scenery/scenery-builder.js';
 import {AMBRON_FIELDS,AMBRON_CROPS,AMBRON_FARMSTEADS,farmPoint} from './ambron-farmland.js';
 import {ambronCultivatedField} from './elagos-world.js';
+import {createSpeciesTreesSteps} from '../../../world/scenery/species-trees.js';
+import {worldTreeId} from '../../../world/scenery/tree-registry.js';
 
 const WOOD='#66513b',DARK='#403a2d',STONE='#9b947c';
 function grain(b,x,y,z,tint,seed){
@@ -10,12 +12,6 @@ function grain(b,x,y,z,tint,seed){
     b.sheet(tint,[px+.01,y+h-.12,pz],[px+.22,y+h-.12,pz],[px+.2,y+h+.22,pz],[px+.06,y+h+.27,pz]);
     b.sheet(tint,[px+.1,y+h-.12,pz-.12],[px+.1,y+h-.12,pz+.12],[px+.1,y+h+.2,pz+.09],[px+.1,y+h+.27,pz-.04]);
   }
-}
-function orchardTree(b,x,y,z,index){
-  b.cylinder(WOOD,x,y,z,.25,2.9,0,4);
-  b.beam(WOOD,[x,y+1.4,z],[x+1.2,y+3.1,z+.2],.19);
-  for(const [dx,dz,up] of [[0,0,0],[-1.1,.3,-.4],[.9,.4,-.1]])b.rock(index%3?'#668146':'#829152',x+dx,y+3.7+up,z+dz,2,1.65,1.8,index*.63);
-  for(const side of [-1,1])b.rock(index%2?'#a45e39':'#c0a15c',x+side*1.25,y+3.35,z+1,.16,.18,.16);
 }
 function farmBuilding(b,x,z,w,d,h,barn,heightAt,colliders,id){
   const levels=[[-1,-1],[1,-1],[1,1],[-1,1],[0,0]].map(([dx,dz])=>heightAt(x+dx*w/2,z+dz*d/2));
@@ -37,6 +33,7 @@ function farmBuilding(b,x,z,w,d,h,barn,heightAt,colliders,id){
 /** Batches by field: many crops, few meshes, with no individual crop colliders. */
 export function* createAmbronFarmlandSteps({parent,heightAt,colliders}){
   let vertices=0,orchardTrees=0,cropClumps=0;
+  const trees=[];
   for(const [index,field] of AMBRON_FIELDS.entries()){
     const b=createSceneryBuilder(`Ambron farmland / ${field.id}`),palette=AMBRON_CROPS[field.crop];
     const spacing=field.crop==='orchard'?8:3.4;
@@ -46,9 +43,12 @@ export function* createAmbronFarmlandSteps({parent,heightAt,colliders}){
         const y=heightAt(p.x,p.z);
         if(field.crop==='orchard'){
           // The crown, as well as its trunk, stays clear of roads and water.
-          if([[-2,0],[2,0],[0,-2],[0,2]].some(([dx,dz])=>ambronCultivatedField(p.x+dx,p.z+dz)?.id!==field.id))continue;
-          orchardTree(b,p.x,y,p.z,orchardTrees++);
-          colliders.push({...p,r:.3,kind:'ambron-orchard-tree'});
+          const crownRadius=2.6;
+          if(Array.from({length:12},(_,i)=>i*Math.PI/6).some(a=>ambronCultivatedField(p.x+Math.sin(a)*crownRadius,p.z+Math.cos(a)*crownRadius)?.id!==field.id))continue;
+          trees.push({id:worldTreeId(field.id+'-apple',p.x,p.z),...p,y,species:'apple',height:5.3,crownRadius,trunkRadius:.25,collisionRadius:.3,rotation:orchardTrees*.63,
+            colliderKind:'ambron-orchard-tree',region:'Elagos',habitat:'orchard',locationName:'Ambron farmland',fieldId:field.id,harvestable:false,
+            reason:'This cultivated apple tree is kept for its orchard fruit.'});
+          orchardTrees++;
         }else if(field.crop==='vegetables'){
           for(const dx of [-.55,.55])b.rock(palette.leaf,p.x+dx,y+.3,p.z,.5,.32,.48,index+u);
           cropClumps++;
@@ -76,5 +76,6 @@ export function* createAmbronFarmlandSteps({parent,heightAt,colliders}){
     for(const side of [-1,1])b.block('#98825e',f.x+side*1.3,heightAt(f.x,f.z+9)+.75,f.z+9,.15,.6,3.2);
     vertices+=b.vertexCount;yield* b.finishSteps(parent);
   }
+  const treeView=yield* createSpeciesTreesSteps({parent,colliders,trees,heightAt,name:'Ambron / identified orchard trees'});vertices+=treeView.vertices;
   return {fields:AMBRON_FIELDS.length,farmsteads:AMBRON_FARMSTEADS.length,orchardTrees,cropClumps,vertices};
 }

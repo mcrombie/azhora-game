@@ -42,7 +42,7 @@ test('walking beyond the player leash does not dissolve a live independent clash
 test('actual ally death or a spared wound releases the observed encounter and preserves casualty data',()=>{
   for(const spared of [false,true]){
     const {combat,events}=fixture();
-    assert.ok(combat.startEncounter({...encounter,enemies:[{id:'rebel',kind:'goblin',x:-1,z:0,hp:400}],
+    assert.ok(combat.startEncounter({...encounter,enemies:[{id:'rebel',kind:'soldier',look:'legion',x:-1,z:0,hp:400}],
       allies:[{id:'frail',kind:'legionary',x:1,z:0,hp:1,spared}]}));
     until(combat,()=>events.some(event=>event.type==='retreat'));
     assert.ok(events.some(event=>event.type===(spared?'ally-wounded':'ally-down')&&event.id==='frail'));

@@ -282,7 +282,9 @@ test('every piece of Nethereum water is the atlas’s or the ground’s, holds w
       assert.ok(profile[i].surface < profile[i - 1].surface, `${course.id} climbs at sample ${i}`);
     // Water the whole way: a river with a hole in it is worse than no river.
     for (const sample of profile) {
-      if (sample.strength <= .05) continue;
+      // The seasonal threads now lose bed depth as well as width on the meadow.
+      // Their terminal fade has its own continuity test in west-rivers.test.js.
+      if (sample.strength <= .05 || (course.fadeBed && sample.along > .65)) continue;
       assert.notEqual(westWaterSurface(sample.x, sample.z), null,
         `${course.id} has no water at (${sample.x.toFixed(0)}, ${sample.z.toFixed(0)})`);
       assert.ok(westGroundAt(sample.x, sample.z) <= sample.surface + .01, `${course.id} floats at ${sample.x.toFixed(0)}`);

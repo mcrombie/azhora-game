@@ -8,7 +8,7 @@ import {createColliderGrid} from '../../world/collision/collider-grid.js';
 import {createRegionLoading} from '../../world/loading/region-loading.js';
 import {createStartup} from '../startup/startup.js';
 
-// A bounded view of the real Minora camp, using its authored scenery, terrain
+// A bounded view of Minora's open practice field, using its authored scenery, terrain
 // queries and collision. No global world assembly or regional fine-ground job.
 export const CAMP_RADIUS=60;
 export const campGroundHeight=groundWithRiver;
@@ -42,9 +42,9 @@ export async function loadCombatCampWorld(scene,onProgress){
   root.name='Combat Testing: Minora camp';scene.add(root);
   let grid=createColliderGrid(colliders);
   const loading=createRegionLoading({initialRegions:[16],regionAt,nearbyOnly:true});loading.setTravelBudget(16);
-  loading.register({id:'minora-camp-ground',regions:[16],steps:function*(){startup.stage('Preparing Minora camp ground');return yield* buildCampGround(root);}});
+  loading.register({id:'minora-camp-ground',regions:[16],steps:function*(){startup.stage('Preparing Minora practice field');return yield* buildCampGround(root);}});
   loading.register({id:'minora-camp-scenery',regions:[16],dependencies:['minora-camp-ground'],steps:function*(){
-    startup.stage('Preparing Minora tents and city walls');
+    startup.stage('Preparing the nearby city walls');
     const scenery=yield* createMenoraScenerySteps({parent:root,heightAt:campGroundHeight,colliders});
     grid=createColliderGrid(colliders);return scenery;
   }});

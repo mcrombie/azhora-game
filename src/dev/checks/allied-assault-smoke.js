@@ -123,7 +123,7 @@ export async function reaper(a){
   assert(createWorldWar(a.afterlife.snapshot().death.before).snapshot().pending.rally.style==='allied','Death checkpoint retains the allied choice');
   assert(a.save().ok&&validateWorldWarSave(a.store.read().data),'Allied death and rewind history validate in the isolated save');
   assert(await a.afterlife.choose('retry'),'Reaper can retry the allied assault');
-  assert(a.state().mode==='skirmish'&&warFight(a).allies.length===3&&warFight(a).allies.every(a=>a.hp===50),'Retry restores the original three allies at full health');
+  assert(a.state().mode==='skirmish'&&warFight(a).allies.filter(a=>!a.commanderId).length===3&&warFight(a).allies.every(a=>a.hp===(a.maxHp??50)),'Retry restores the original three allies at full health');
   assert(a.war.state().campaign.day===4&&!a.war.state().campaign.events.some(e=>e.type==='rally-result'),'Retry removes failed-attempt casualties and restores the preceding day');
   assert(a.war.state().campaign.engagements[0].heroResult.objective.blocked===8,'Retry preserves the earlier interception');
   assert(!a.state().frameErrors.length,'Allied death and retry have no frame errors');

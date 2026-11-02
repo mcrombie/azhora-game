@@ -15,18 +15,19 @@ export async function meetBear(api){
   assert(api.state().mode==='briefing'&&!document.getElementById('stable-lesson').hidden,'F speaks with Bear');
   const before=JSON.stringify({campaign:api.war.state().campaign,clock:api.war.state().clock});for(let i=0;i<100;i++)api.step(.04);
   assert(JSON.stringify({campaign:api.war.state().campaign,clock:api.war.state().clock})===before,'Riding explanation does not spend campaign time');
-  click('stable-close');assert(!api.stable.owned,'Leaving early does not grant the horse');key('KeyF');click('stable-next');
-  assert(/G to mount/.test(document.getElementById('stable-words').textContent),'Riding controls explained');
-  await frame();return {checks:['Local map and Bear marker outside','Bear and horse on dry forecourt','F talks; lesson pauses campaign','Declining preserves unclaimed horse']};
+  assert(!api.stable.owned,'Horse handoff awaits Continue');
+  assert(/G/.test(document.getElementById('stable-words').textContent)&&/H/.test(document.getElementById('stable-words').textContent),'Mount and whistle controls are in the single offer');
+  await frame();return {checks:['Local map and Bear marker outside','Bear and horse on dry forecourt','Conversation pauses campaign','One offer explains mount and whistle before Continue']};
 }
 export async function rideWithBear(api){
-  click('stable-next');click('stable-next');assert(api.stable.state().owned&&api.stable.state().taught,'Lesson hands over horse');
-  const first=api.stable.snapshot();key('KeyF');click('stable-next');click('stable-next');click('stable-next');assert(JSON.stringify(first)===JSON.stringify(api.stable.snapshot()),'Repeated lesson cannot duplicate or move horse');
-  await api.visit({x:STABLE.horse.x+1.5,z:STABLE.horse.z});key('KeyG');api.step(.04);
+  click('stable-next');assert(api.stable.state().owned&&api.stable.state().taught,'One Continue hands over horse');
+  assert(!api.stable.mounted,'Taking the horse does not force riding');
+  const first=api.stable.snapshot();key('KeyF');click('stable-next');assert(JSON.stringify(first)===JSON.stringify(api.stable.snapshot()),'Repeated reminder cannot duplicate or move horse');
+  key('KeyG');api.step(.04);
   assert(api.stable.mounted&&api.state().mount.kind==='horse'&&api.state().mount.horseSpeed===1,'G mounts real horse');
   assert(!api.stable.state().horseVisible,'Parked model hidden while riding');
   api.hold('KeyW',true);api.hold('ShiftLeft',true);for(let i=0;i<12;i++)api.step(.04);api.hold('KeyW',false);api.hold('ShiftLeft',false);
-  assert(Math.hypot(api.state().position[0]-STABLE.horse.x,api.state().position[2]-STABLE.horse.z)>4,'Canter moves the mounted player');
+  assert(Math.hypot(api.state().position[0]-first.horse.x,api.state().position[2]-first.horse.z)>4,'Canter moves the mounted player');
   assert(api.save().ok,'Mounted save succeeds');key('KeyG');api.step(.04);
   assert(!api.stable.mounted&&api.stable.state().horseVisible&&api.state().mount.kind==='foot','G safely dismounts and parks the horse');
   await api.loadSaved();api.step(.2);assert(api.stable.owned&&!api.stable.mounted,'Reload restores ownership on foot');

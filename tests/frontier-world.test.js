@@ -29,7 +29,7 @@ test('Integrated frontier settlements retain clear entrances, prince meeting pla
  const w=await world();
  for(const p of [MENORA.arrival,...MENORA_GATES,MENORA_NPC_ANCHORS.cedric,MENORA_NPC_ANCHORS.wilhelm,...MENORA_NPC_ANCHORS.army,CARICAS_TOWN.arrival,...CARICAS_GUARD_POSTS,YUNETHRE_ARRIVAL,YUNETHRE_CAMP])
   assert.ok(!blocked(w,p.x,p.z),`${p.id??'meeting point'} blocked at ${p.x},${p.z}`);
- assert.ok(w.yunethreMetrics.trees>60);assert.equal(w.yunethreMetrics.buildings,6);
+ assert.ok(w.yunethreMetrics.trees>60);assert.equal(w.yunethreMetrics.buildings,17);
 });
 
 test('Actual Minora gates and all five visible bridges carry walkers without closing the river',async()=>{

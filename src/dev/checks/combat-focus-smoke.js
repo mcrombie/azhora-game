@@ -19,10 +19,13 @@ export async function checkFocus(a){
  assert(fight().presentation.focus.id===locked&&fight().presentation.focus.manual,'Manual look temporarily overrides the camera without losing focus');
  const manualYaw=a.state().camera.yaw;for(let i=0;i<20;i++)a.step(1/60);assert(a.state().camera.yaw===manualYaw,'Automatic follow does not fight a recent manual look');
  press('KeyT');a.step(1/60);assert(fight().hero.focusId===null,'T releases focus');
- press('KeyT');a.step(1/60);const clock=fight().time;press('KeyH');press('KeyE');for(let i=0;i<30;i++)a.step(1/60);assert(fight().time===clock,'Help still freezes combat with a target locked');press('Escape');
+ a.soundtrack.unlock();a.soundtrack.refresh();assert(a.soundtrack.state().cue==='battle','Active combat selects battle music');
+ press('KeyT');a.step(1/60);const clock=fight().time;press('KeyH');press('KeyE');for(let i=0;i<30;i++)a.step(1/60);assert(fight().time===clock,'Help still freezes combat with a target locked');
+ a.soundtrack.refresh();assert(fight().presentation.helpOpen&&a.soundtrack.state().cue===null,'Combat Help pauses the soundtrack as well as the fight');
+ press('Escape');a.soundtrack.refresh();assert(!fight().presentation.helpOpen&&a.soundtrack.state().cue==='battle','Closing Help restores the combat score');
  document.getElementById('world-skirmish-retry').click();assert(fight().presentation.focus.id===null,'Retry resets focus without leaking the old target UI');
  assert(document.querySelectorAll('#combat-focus').length===1,'A single focus UI exists after retry');
  press('KeyT');for(let i=0;i<8;i++)a.step(1/60);window.dispatchEvent(new Event('blur'));await frame();
  assert(!a.state().frameErrors.length,'No targeting or camera renderer errors');
- return {checks:['T locks; E cycles; T releases','Strafing faces chosen opponent','Both fighters stay in camera frame','Manual look overrides camera without dropping target','Help freezes targeting and combat','Retry resets focus and disposes previous UI','No renderer errors'],focus:fight().presentation.focus};
+ return {checks:['T locks; E cycles; T releases','Strafing faces chosen opponent','Both fighters stay in camera frame','Manual look overrides camera without dropping target','Help freezes targeting and combat','Combat music pauses for Help and resumes on closing','Retry resets focus and disposes previous UI','No renderer errors'],focus:fight().presentation.focus};
 }

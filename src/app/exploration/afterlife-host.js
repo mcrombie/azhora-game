@@ -33,7 +33,7 @@ export function createAfterlifeHost({saved,position,mode,setMode,capture,enter,r
       if(id==='retry'||id==='before'){
         // Restore exactly the attempt's checkpoint, never a stack of failed tries.
         rewindForm=d.previousForm;
-        await restore(structuredClone(d.before),id==='retry'?d.side:null,d.previousForm);
+        await restore(structuredClone(d.before),id==='retry'?d.side:null,d.previousForm,d.approach);
         state={version:1,form:d.previousForm,inLimbo:false,...(d.previousForm==='undead'?{death:d}:{})};
       }else{
         const form=id==='tower'?'living':id;
@@ -50,7 +50,7 @@ export function createAfterlifeHost({saved,position,mode,setMode,capture,enter,r
     beforeFight(){before={checkpoint:capture(),form:rewindForm??state.form};},
     async died({pending,side,field,report}){
       if(!before)throw Error('The pre-battle checkpoint is missing.');
-      state={version:1,form:before.form,inLimbo:true,death:{battleId:pending.battleId,stage:pending.rally?'rally':'intercept',side,previousForm:before.form,
+      state={version:1,form:before.form,inLimbo:true,death:{battleId:pending.battleId??pending.id,stage:pending.rally?'rally':'intercept',...(pending.duel?.status==='accepted'?{approach:'duel'}:{}),side,previousForm:before.form,
         fallen:{x:field.hero.x,y:position.y,z:field.hero.z},before:before.checkpoint,report}};
       await enter();onChange();update();
     },

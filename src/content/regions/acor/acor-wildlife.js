@@ -1,6 +1,7 @@
 /** Stable homes chosen from habitat, never spawned around the player. */
 import { ACOR_CELLS, ACOR_NAMES, ACOR_WATERS, acorCellAt, acorFeatures } from './acor-world.js';
 import { thalmagarFortressReserved } from '../thalmagar/thalmagar-fortress-site.js';
+import {endevorReserved} from '../endevor/endevor-country.js';
 const zones=[],F=Object.freeze;
 function add(c,species,sites,traits={}){
   zones.push(F({id:`acor-${c.q}-${c.r}-${species}`,region:c.region,species,keepRegion:true,scale:1,radius:.4,maxSlope:.65,minHeight:.8,
@@ -12,7 +13,7 @@ for(const [i,c] of ACOR_CELLS.entries()){
   const sites=[];
   for(let j=0;j<32;j++){
     const a=j*2.399963+c.q*.31,r=40*Math.sqrt((j+1)/32),x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;
-    if(acorCellAt(x,z)!==c||thalmagarFortressReserved(x,z,24))continue;const f=acorFeatures(x,z);
+    if(endevorReserved(x,z,24)||acorCellAt(x,z)!==c||thalmagarFortressReserved(x,z,24))continue;const f=acorFeatures(x,z);
     if(f.water!==null||f.grade>.42||f.height<1.2||f.pathDistance<10||f.shoreDistance<4)continue;
     if(![0,1.57,3.14,4.71].every(a=>{const p=acorFeatures(x+Math.cos(a)*5,z+Math.sin(a)*5);return p&&p.water===null&&p.height>1&&p.grade<.6;}))continue;
     sites.push({x,z,...f});

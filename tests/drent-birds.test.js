@@ -12,7 +12,8 @@ async function fixture() {
   built ??= (async () => {
     const { createWorld } = await sourceModule('../src/world.js');
     const birds = await sourceModule('../src/content/regions/drent/drent-birds.js');
-    return { world: createWorld(new THREE.Scene()), ...birds };
+    // Exercise every authored bird habitat without building the whole continent.
+    return { world: createWorld(new THREE.Scene(),{enabledRegions:['Drent','Luscia','Moros Plain','Amod','Elagos']}), ...birds };
   })();
   return built;
 }

@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import {decorateNylonFacade,polishNylon} from './nylon-polish.js';
-import {buildNylonColossus} from './nylon-colossus.js';
+import {buildNylonSeaLions} from './nylon-colossus.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
-import { NYLON, NYLON_OUTLINE, NYLON_GATES, NYLON_BUILDINGS, NYLON_PATHS, NYLON_QUAYS, NYLON_HARBOR_WALLS, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, NYLON_COLOSSUS, nylonRiverClearance, nylonHarborDeckHeight } from './nylon-city.js';
+import { NYLON, NYLON_OUTLINE, NYLON_GATES, NYLON_BUILDINGS, NYLON_PATHS, NYLON_QUAYS, NYLON_HARBOR_WALLS, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, NYLON_SEA_LIONS, nylonRiverClearance, nylonHarborDeckHeight } from './nylon-city.js';
 import { EER_CHANNELS } from '../western-regions/west-regions.js';
 
 // Nylon's scholarly river-port masonry is deliberately unlike the Empire's
@@ -97,6 +97,8 @@ export function* createNylonScenerySteps({parent,heightAt,groundHeight=heightAt,
   // buttresses and slit stores make the absurd height read as intentional civil
   // engineering, while the alternating stone courses remain visible far away.
   for(let edge=0;edge<NYLON_OUTLINE.length;edge++) {
+    // The harbor moles are the perimeter here. Keep the town open to its quays.
+    if(edge>=2&&edge<=4)continue;
     const a=NYLON_OUTLINE[edge],c=NYLON_OUTLINE[(edge+1)%NYLON_OUTLINE.length];
     const dx=c.x-a.x,dz=c.z-a.z,len=Math.hypot(dx,dz),yaw=Math.atan2(dx,dz);
     const gates=NYLON_GATES.filter(g=>g.edge===edge),count=Math.ceil(len/3.2),step=len/count;
@@ -152,12 +154,12 @@ export function* createNylonScenerySteps({parent,heightAt,groundHeight=heightAt,
     }
     if(options.plinth){
       b.cylinder(STONE,x,y+height,z,r+.5,1,Math.PI/7);
-      b.cylinder(IVORY,x,y+height+1,z,r+.9,NYLON_COLOSSUS.plinthHeight-1,Math.PI/7);
+      b.cylinder(IVORY,x,y+height+1,z,r+.9,NYLON_SEA_LIONS.plinthHeight-1,Math.PI/7);
     }else{b.cone(TEAL,x,y+height,z,r*.71,7);b.cone(BRONZE,x,y+height+7,z,.45,2.6);}
-    push({x,z,r:r+1.3,minY:culvert?y+floor:foundation,maxY:y+height+(options.plinth?NYLON_COLOSSUS.plinthHeight:9.6),kind:'city-tower',id:name});
+    push({x,z,r:r+1.3,minY:culvert?y+floor:foundation,maxY:y+height+(options.plinth?NYLON_SEA_LIONS.plinthHeight:9.6),kind:'city-tower',id:name});
     yield* finish(b);metrics.towers++;
   }
-  for(let i=0;i<NYLON_OUTLINE.length;i++){yield;const p=NYLON_OUTLINE[i];yield* tower(p.x,p.z,7.5,hWall+12,`Nylon — corner bastion ${i+1}`);}
+  for(let i=0;i<NYLON_OUTLINE.length;i++){if(i===3||i===4)continue;yield;const p=NYLON_OUTLINE[i];yield* tower(p.x,p.z,7.5,hWall+12,`Nylon — corner bastion ${i+1}`);}
   // The existing Eer drainage clips the northeast corner twice. Its original
   // course stays visible beneath paired masonry arches and the supported watch.
   const drains=createSceneryBuilder('Nylon — open northeast drainage culverts');
@@ -230,14 +232,14 @@ export function* createNylonScenerySteps({parent,heightAt,groundHeight=heightAt,
       }
     }
     yield* finish(b);metrics.harborWings++;
-    const end=wing.points.at(-1);yield* tower(end.x,end.z,6.5,NYLON_COLOSSUS.towerHeight,`${wing.id} sea gate watch`,{baseY:NYLON_HARBOR.deckHeight,plinth:true});
+    const end=wing.points.at(-1);yield* tower(end.x,end.z,6.5,NYLON_SEA_LIONS.towerHeight,`${wing.id} sea gate watch`,{baseY:NYLON_HARBOR.deckHeight,plinth:true});
     // A secondary watch at each turn makes the long enclosure legible from sea.
     const p=wing.points[wing.bastionIndex];yield* tower(p.x,p.z,4.1,29,`${wing.id} sea bastion`,{baseY:Math.max(NYLON_HARBOR.deckHeight,groundHeight(p.x,p.z))});
   }
-  const colossus=createSceneryBuilder(NYLON_COLOSSUS.name);buildNylonColossus(colossus,push);
-  const statue=yield* finish(colossus);
+  const guardians=createSceneryBuilder(NYLON_SEA_LIONS.name);buildNylonSeaLions(guardians,push);
+  const statue=yield* finish(guardians);
   statue.material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.67,metalness:.45,flatShading:true});
-  metrics.monuments=1;
+  metrics.monuments=NYLON_SEA_LIONS.figures.length;
   // Deck geometry and movement read the very same made surfaces. The terrain
   // and water underneath are retained, with seabed-founded piles visible below.
   for(const deck of NYLON_HARBOR_DECKS){

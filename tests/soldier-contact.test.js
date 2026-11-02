@@ -1,3 +1,4 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {stopAtSoldier,soldierWords} from '../src/app/exploration/soldier-contact.js';
@@ -29,10 +30,12 @@ test('soldiers report the actual resolved battle and current owner without chang
     const w=createWorldWar();w.advance(3);w.syncRegion('Caricas');const b=w.snapshot().engagements[0];
     assert(w.campaign.joinBattle(b.id,b.location).ok);assert(w.campaign.resolveEncounter(b.id,side,'success','vanguard-broken',3).ok);
     assert(w.campaign.joinBattle(b.id,b.location).ok);const p=w.snapshot().pending;assert(w.campaign.chooseAssault(p.id,campaignAssaultStyle(p)).ok);
-    assert(w.campaign.resolveEncounter(p.id,side,'success','rally-secured',p.rally.guards,{alliesLost:0,routed:0,allyDamage:30}).ok);
+    assert(w.campaign.resolveEncounter(p.id,side,'success','rally-secured',p.rally.guards,{alliesLost:0,routed:0,allyDamage:30,...commanderOutcome(w.campaign,side,true)}).ok);
     const state=w.snapshot(),before=structuredClone(state);
     const words=soldierWords({region:'caricas',owner:side,battleId:b.id,kind:'survivor'},state,null,id=>id,id=>id);
     assert.match(words.battle,new RegExp(side+' won'));assert.match(words.battle,/day 6/);assert(!words.battle.includes('undefined'));
+    assert.match(words.battle,new RegExp((side==='west'?'Serevan Dain':'Meret Voss')+' retreated'));
+    assert.match(words.battle,new RegExp((side==='west'?'Meret Voss':'Serevan Dain')+' survived'));
     assert.deepEqual(state,before);assert.deepEqual(createWorldWar(w.checkpoint()).snapshot(),state);
   }
 });

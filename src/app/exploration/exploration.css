@@ -3,6 +3,7 @@
 .developer-card{width:min(640px,95vw);max-height:96vh;overflow:auto}.developer-card h1{font-size:36px;margin:15px 0}.developer-mounts{display:grid;grid-template-columns:1fr 1fr;gap:8px}.developer-mounts [aria-pressed="true"]{border-color:#edcf89;background:#395749}.developer-card .developer-hint{font:12px/1.6 system-ui;color:#c6d0c0;margin:12px 0 20px}.developer-card label{font:14px system-ui}.developer-destination{display:flex;gap:8px;margin-top:10px}.developer-destination select{flex:1;min-width:0;font:14px system-ui;color:#eee7cb;background:#213f36;border:1px solid #a8b09c88;border-radius:4px;padding:10px}.developer-destination select:focus-visible{outline:2px solid #edcf89}.developer-reveal{display:flex;align-items:center;gap:10px}.developer-reveal input{width:18px;height:18px}.developer-actions{display:flex;justify-content:space-between;gap:8px}
 #world-war-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;font:12px system-ui}#world-war-controls strong{font:22px Georgia}#world-war-controls button{padding:8px 12px;font-size:12px}#world-war-controls select{background:#254539;color:#f1e8cb;padding:7px;border:1px solid #9fac94;border-radius:4px}#world-war-status{color:#b9c9af}#world-war-result{flex-basis:100%;font:12px system-ui;color:#f1d496;margin:0}#encounter-dialog h1{font-size:30px;margin:12px 0}#encounter-dialog p{font:12px/1.6 system-ui}#encounter-choice{display:flex;gap:12px}#world-map{min-height:0}
 
+#world-war-map-time{display:flex;align-items:center;gap:4px;flex-wrap:wrap}#world-war-map-time>span{margin-right:6px;color:#d5d9c1}#world-war-map-time button{min-width:44px}#world-war-map-time button[aria-pressed="true"]{background:#ead18e;color:#203b32;border-color:#ead18e;font-weight:600}
 #world-war-join{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);z-index:2;max-width:90vw}#world-war-battles{display:flex;flex-wrap:wrap;gap:8px;flex-basis:100%}
 
 #world-war-report{position:fixed;left:32px;bottom:85px;width:min(350px,calc(100vw - 64px));max-height:55vh;overflow:auto;z-index:2;background:#183b30f5;border:1px solid #c3af7c;border-radius:5px;padding:18px;box-shadow:0 5px 20px #14291f55}#world-war-report h2{font:24px/1.15 Georgia;margin:10px 0}#world-war-report p{font:13px/1.55 system-ui;margin:10px 0;color:#e5e7d2}#world-war-report #world-war-report-clock{font-size:12px;color:#f0d294}.war-report-actions{display:flex;gap:8px;margin-top:14px}.war-report-actions button{padding:8px 12px;font-size:12px}@media(max-width:760px){#world-war-report{left:16px;bottom:145px;max-height:45vh}}
@@ -46,12 +47,13 @@
 
 #world-demo-caption{flex-basis:100%;font:14px/1.5 system-ui;color:#f5e6ba;margin:0}
 
-#start-screen{overflow:auto;align-items:center}.launch-card{width:min(1150px,96vw);padding:32px}.launch-card h1{margin:16px 0}.launch-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.launch-options article{display:flex;flex-direction:column;padding:22px;background:#18392fcc;border:1px solid #a8b09c66;border-radius:6px}.launch-options h2{font:26px/1.2 Georgia;margin:0 0 12px;color:#f0d69e}.launch-options p{font:14px/1.65 system-ui;margin:0 0 18px}.launch-options .menu-actions{margin:auto 0 14px;padding-top:12px}.launch-options [data-start-mode]{background:#ead298;color:#25382d;border-color:#ead298;font-weight:600}.launch-options [data-start-mode]:hover{background:#f9e3af}.launch-options small{line-height:1.5}.launch-card #start-note{margin:22px 0 0}@media(max-width:850px){.launch-options{grid-template-columns:1fr}.launch-card{padding:24px}.launch-options article{padding:18px}.launch-options .menu-actions{grid-template-columns:1fr 1fr}#start-screen{align-items:start}}
+#start-screen{overflow:auto;align-items:safe center}.launch-card{width:min(810px,96vw);padding:28px 32px}.launch-card h1{margin:14px 0}.launch-card>p{margin:0 0 20px}.launch-options{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.launch-options article{display:flex;flex-direction:column;padding:18px 22px;background:#18392fcc;border:1px solid #a8b09c66;border-radius:6px}.launch-options h2{font:26px/1.2 Georgia;margin:0 0 8px;color:#f0d69e}.launch-options p{font:14px/1.55 system-ui;margin:0 0 12px}.launch-options .menu-actions{grid-template-columns:repeat(2,minmax(0,1fr));margin:0 0 8px}.launch-options .menu-actions>button:only-child{grid-column:1/-1}.launch-options [data-start-mode]{background:#ead298;color:#25382d;border-color:#ead298;font-weight:600}.launch-options [data-start-mode]:hover{background:#f9e3af}.launch-options small{line-height:1.5}.launch-options details{margin-top:12px;padding-top:12px;border-top:1px solid #a8b09c44;font:13px/1.5 system-ui}.launch-options summary{cursor:pointer;color:#d2d8bd}.launch-options details[open]>summary{margin-bottom:14px}.launch-options details .menu-actions{margin:12px 0 8px}.launch-card #start-note{margin:18px 0 0}@media(max-width:600px){.launch-card{padding:24px 16px}.launch-options article{padding:18px}.launch-options .menu-actions{grid-template-columns:1fr}#start-screen{align-items:start}}
 
-.launch-options small{min-height:36px}
+#loading-screen{overflow:auto;align-items:safe center}#loading-screen:has(#loading-choice:not([hidden])) .start-card{width:min(610px,94vw)}#loading-choice h2{font:34px/1.15 Georgia;font-weight:400;margin:22px 0}#loading-choice button{display:block;width:100%;padding:18px;text-align:left;margin:12px 0}#loading-choice strong{display:flex;justify-content:space-between;align-items:center;font:24px Georgia;gap:12px}#loading-choice strong span{font:11px system-ui;text-transform:uppercase;letter-spacing:.08em}#loading-choice .loading-description{display:block;font:13px/1.6 system-ui;margin-top:8px;color:#ced8ca}#loading-choice #loading-full{border-color:#ead298;background:#3b5142}#loading-choice #loading-full:hover{background:#49614f}#loading-choice #loading-countdown{font:12px/1.5 system-ui;color:#e6d19c;margin:18px 0 0}#loading-screen.choosing-mode>.start-card>h1,#loading-screen.choosing-mode #loading-message,#loading-screen.choosing-mode .loading-line,#loading-screen.choosing-mode #loading-help{display:none}
 
 #combat-testing-menu{overflow:auto}.combat-testing-card{width:min(1080px,96vw);padding:32px}.combat-testing-card>p{max-width:780px}
 .combat-exercises{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:26px 0}.combat-exercises article{display:flex;flex-direction:column;gap:12px;padding:24px;background:#18392fcc;border:1px solid #a8b09c66;border-radius:6px}.combat-exercises h2{font:26px/1.2 Georgia;color:#f0d69e;margin:0}.combat-exercises p{font:14px/1.65 system-ui;margin:0 0 12px}.combat-exercises button{margin-top:auto;background:#ead298;color:#25382d;font-weight:600}.combat-testing-help{font:13px/1.6 system-ui}
+.combat-tempo{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin-top:20px;font:15px/1.5 system-ui}.combat-tempo select{max-width:100%;padding:9px 12px;color:#f3e4bd;background:#24473e;border:1px solid #8f9f87;border-radius:4px}
 @media(max-width:850px){.combat-exercises{grid-template-columns:1fr}.combat-testing-card{padding:24px}#combat-testing-menu{align-items:start}}
 
 #world-skirmish-phase{margin:12px 0;padding:10px 0;border-top:1px solid #c3af7c66;border-bottom:1px solid #c3af7c66;font:12px/1.5 system-ui;color:#d8dcc5}#world-skirmish-phase strong,#world-skirmish-phase span{display:block}#world-skirmish-phase strong{color:#f4d99b;margin-bottom:3px}
@@ -62,10 +64,22 @@ body:has(#world-skirmish:not([hidden])) #exploration-status{top:auto;bottom:22px
 @media(max-width:760px){#world-war-report:has(#world-war-report-more[open]){max-height:50vh}}
 
 #combat-focus{margin:8px 0 12px;border-top:1px solid #b8d3bf44;padding-top:8px}
-#combat-focus>div{display:flex;gap:8px}
+#combat-focus>div{display:flex;gap:8px;flex-wrap:wrap}
 #combat-focus button{margin:0}
 #combat-focus button[aria-pressed="true"]{border-color:#9ff0ef;color:#b6ffff}
 #combat-focus small{display:block;line-height:1.4;margin-top:6px;color:#d2e5dc}
+#commander-hud{font:12px/1.5 system-ui;margin:8px 0;color:#e5dcc4}
+#commander-hud>div:first-child{color:#ffd2ae}
+.commander-morale{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:6px}
+.commander-morale label{min-width:0;font-size:11px}
+.commander-morale meter{display:block;width:100%;height:8px;margin-top:3px}
+.commander-morale meter::-webkit-meter-bar{background:#112c27;border:0}
+.commander-morale meter::-webkit-meter-optimum-value{background:#8ccfc6}
+.commander-morale label:last-child meter::-webkit-meter-optimum-value{background:#d2a276}
+#commander-notice{position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:5;pointer-events:none;width:380px;max-width:calc(100vw - 32px);padding:12px 16px;border:1px solid #d2b774;border-radius:5px;background:#18372ff2;text-align:center;box-shadow:0 4px 20px #0003}
+#commander-notice strong{display:block;font:20px/1.2 Georgia;color:#ffe0a0}
+#commander-notice span{display:block;margin-top:5px;font:12px/1.4 system-ui;color:#e5dcc4}
+@media(max-width:1100px){#commander-notice{top:auto;bottom:100px;width:340px}}
 
 #assault-choice{display:block;padding:12px;border:1px solid #7eb6ae;background:#21423b;margin:12px 0;font-size:14px;line-height:1.5}#assault-choice[hidden]{display:none}#assault-choice input{margin-right:8px}#allied-assault-status{color:#b5ece8;font-size:13px;margin:5px 0}.combat-testing-card{max-height:92vh;overflow:auto}
 @media(min-width:761px) and (max-width:1100px){
@@ -104,6 +118,27 @@ body:has(#battle-result-dialog[open]) #teresod-sorcery,body:has(#battle-result-d
 }
 
 /* The watch control remains reachable over briefings and native result dialogs. */
+.combat-trial-exercises{grid-template-columns:1fr;margin-bottom:20px}
+.combat-trial-exercises article{border-color:#d7bc76;background:#27483d}
+#combat-guard-exercises>summary{cursor:pointer;padding:12px 0;color:#ddc88f}
+.trial-briefing{width:min(560px,90vw);max-height:85vh;overflow:auto;padding:28px;background:#19352f;color:#f1e7cb;border:1px solid #c8ac6c;border-radius:6px;box-sizing:border-box}
+.trial-briefing::backdrop{background:#071b2066}
+.trial-briefing h2{font-size:32px;margin:10px 0;color:#e9cf91}
+.trial-briefing h3{font-size:19px;margin:10px 0}
+.trial-briefing p{line-height:1.6}
+.trial-briefing .menu-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.trial-stats{margin:16px 0}
+.trial-stats summary,.trial-briefing summary{cursor:pointer;color:#e9cf91;padding:6px 0}
+.trial-stat-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.trial-stat-fields label{display:grid;grid-template-columns:1fr 80px;gap:5px 10px;align-items:center}
+.trial-stat-fields small{grid-column:1/-1;color:#c0d0c6}
+.trial-stat-fields input{width:100%;box-sizing:border-box;padding:8px;border:1px solid #82998c;border-radius:3px;background:#18382e;color:#f3e9ca;font:inherit}
+.trial-stats #trial-stat-reset{width:auto;margin:0 0 8px}
+#trial-stat-preview[data-error]{color:#ffb9a5}
+.trial-stats-comparison{width:100%;border-collapse:collapse;font:13px system-ui;text-align:left;margin:10px 0}
+.trial-stats-comparison :is(th,td){padding:6px 8px;border-bottom:1px solid #526858}
+.trial-stats-comparison caption{text-align:left;color:#e9cf91;margin-bottom:8px}
+@media(max-width:600px){.trial-stat-fields{grid-template-columns:1fr}}
 #world-autoplay{z-index:45;left:50%;right:auto;transform:translateX(-50%);bottom:12px;max-width:min(700px,90vw);background:#193b35f5;border-color:#dfc47e}
 body:has(#battle-result-dialog[open]) #world-autoplay{visibility:visible}
 
@@ -114,3 +149,6 @@ body:has(#battle-result-dialog[open]) #world-autoplay{visibility:visible}
  body:has(> #world-autoplay:not([hidden])) #exploration-help{bottom:54px}
  body:has(> #world-autoplay:not([hidden])) :is(#world-war-join,#tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact){bottom:106px}
 }
+
+.combat-trial-exercises label:has(select){display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:14px system-ui}
+.combat-trial-exercises select{min-width:220px;padding:9px 12px;border:1px solid #82998c;border-radius:4px;background:#18382e;color:#f3e9ca;font:inherit}

@@ -49,6 +49,8 @@
 .atlas-place.local i{background:#f4e8bd;border-color:#473c30}
 .atlas-place.local span{font:12px 'Segoe UI',sans-serif;letter-spacing:0;color:#30291f;background:#f5e8cce8;border-radius:2px;padding:2px 4px;top:calc(-10px + var(--nudge,0px));text-shadow:none}
 .atlas-place.quest i{width:11px;height:11px;left:-5.5px;top:-5.5px;background:var(--quest-colour,#f3c46a);border:1.5px solid #72572a;border-radius:0;transform:rotate(45deg);box-shadow:0 0 0 2px #fff1bdab}
+#world-map:not([data-campaign-view=regions]) #atlas-places:has(.known-objective){display:block}
+#world-map:not([data-campaign-view=regions]) #atlas-places .atlas-place:not(.known-objective){display:none}
 .atlas-place.quest span,.atlas-place.tracked span{font:600 12px 'Segoe UI',sans-serif;letter-spacing:0;color:#2c281d;background:#fff0cfeF;border:1px solid #997c47;border-radius:3px;padding:3px 6px;top:calc(-12px + var(--nudge,0px));left:12px;text-shadow:none}
 .atlas-place.tracked i{width:12px;height:12px;left:-6px;top:-6px;background:#225c55;border:2px solid #afe4ce;box-shadow:0 0 0 1px #173d39}
 .atlas-place.tracked span{border-color:#4b8274}
@@ -76,6 +78,9 @@
 .atlas-place.capital span,.atlas-place.city span{font:600 15px Adventure,Georgia,serif;letter-spacing:.04em;color:#342619;background:#f4e2b8f2;border:1px solid #8b6b39;border-radius:3px;padding:3px 8px;text-shadow:none;line-height:18px}
 .atlas-place.capital small,.atlas-place.city small{display:block;font:9px 'Segoe UI',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6a512e;line-height:12px}
 
+.atlas-place[data-place-id="thalmagar-black-fortress"] i{background:#444c48;border-color:#303a35}
+.atlas-place[data-place-id="thalmagar-black-fortress"] i::before{background:#eadbb4;inset:1px 2px 2px;clip-path:polygon(0 100%,0 45%,18% 25%,35% 45%,35% 30%,50% 0,65% 30%,65% 45%,82% 25%,100% 45%,100% 100%)}
+.atlas-place[data-place-id="thalmagar-black-fortress"] span{background:#e0dbc7f5;border-color:#657064;color:#293b33}
 #world-map:not([data-campaign-view=regions]) #atlas-viewport{background:#0b1620}
 
 #atlas-battlefields{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}#atlas-battlefields .atlas-battlefield{position:absolute;pointer-events:auto;transform:translate(-50%,calc(-100% - 64px));white-space:nowrap;background:#382c20ed;color:#ffe8b0;border:1px solid #d2a768;border-radius:4px;font:12px system-ui;padding:6px 9px;cursor:pointer}
@@ -89,3 +94,10 @@
 #atlas-army-detail{position:absolute;z-index:4;bottom:12px;left:12px;width:270px;max-width:calc(100% - 24px);box-sizing:border-box;padding:14px;background:#f7f4ebf5;color:#293d34;border:1px solid #7b8068;border-radius:4px;box-shadow:0 3px 12px #0004;font:12px/1.5 system-ui;cursor:default}
 #atlas-army-detail[hidden]{display:none}#atlas-army-detail h3{font:20px Georgia;margin:5px 0 12px}#atlas-army-detail p{font:12px/1.6 system-ui;color:#293d34;margin:7px 0}#atlas-army-detail small{color:#65745e}#atlas-army-detail button{float:right;font:11px system-ui;padding:3px 7px;margin:0 0 8px 8px;color:#293d34;background:transparent;border:1px solid #899581;border-radius:3px}
 #atlas-army-detail #atlas-track-army{float:none;display:block;margin:12px 0 0;padding:7px 10px;background:#244c3e;color:#fff1cd}
+
+#atlas-nomadic-presences{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+#atlas-nomadic-presences[hidden]{display:none}
+#atlas-nomadic-presences button{position:absolute;transform:translate(-50%,-50%);width:30px;height:30px;padding:0;background:var(--presence-color);border:2px solid #ffefca;border-radius:5px;color:#fff6d9;font:20px system-ui;pointer-events:auto;cursor:pointer;box-shadow:0 1px 4px #0008}
+#atlas-nomadic-presences button:focus-visible{outline:3px solid #f6d895;outline-offset:3px}
+#atlas-nomadic-presences button[hidden]{display:none}
+#atlas-nomadic-presences svg{width:23px;height:23px;vertical-align:middle;pointer-events:none}

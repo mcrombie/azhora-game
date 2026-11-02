@@ -1,4 +1,5 @@
 import { TRANSFORM, hexAt } from '../../world/terrain/region-world.js';
+import { ATLAS_SETTLEMENTS } from './atlas-settlements.js';
 import { MARKER_STYLE } from '../../world/actors/marker-style.js';
 import { AMBRON_CENTRE, AMBRON_OUTLINE } from '../../content/regions/ambron/ambron-city-layout.js';
 import { AMBRON_CIRCUIT } from '../../content/regions/ambron/ambron.js';
@@ -8,10 +9,16 @@ import { AEVIS_OUTLINE } from '../../content/regions/aevis/aevis-city.js';
 import { MITHALA_CURTAIN } from '../../content/regions/mithala/mithala-city.js';
 import { VARN_CORNERS } from '../../content/regions/varn/varn-world.js';
 import { SEVRON_ENTRANCES } from '../../content/regions/west-oremindi/west-oremindi-world.js';
+import {STONEFIST_OUTLINE} from '../../content/regions/lond/lond-layout.js';
+import { ALEZHOR_TOWN_OUTLINE } from '../../content/regions/alezhor/alezhor-town-layout.js';
+import { THALMAGAR_FORTRESS, THALMAGAR_DARK_TOWER } from '../../content/regions/thalmagar/thalmagar-fortress-site.js';
 
 // Only built cities (including identifiable ruins) have this designation.
 // Stable discovery/save IDs deliberately retain the former spelling of Minora.
 export const ATLAS_CITY_DESIGNATIONS = Object.freeze({
+  ...Object.fromEntries(ATLAS_SETTLEMENTS.map(({ id, name, subtitle }) => [id, Object.freeze({ name, subtitle })])),
+  pyra: Object.freeze({ name: 'Pyra', subtitle: 'Imperial twin city' }),
+  'thalmagar-black-fortress': Object.freeze({ name: "Thalmagar's Fortress", subtitle: THALMAGAR_DARK_TOWER.name }),
   menora: Object.freeze({ name: 'Minora', subtitle: 'Holy city' }),
   varn: Object.freeze({ name: 'Varn', subtitle: 'Fortress city' }),
   solis: Object.freeze({ name: 'Solis', subtitle: 'City' }),
@@ -50,7 +57,9 @@ export function atlasCityBoundaries() {
     { id: 'nylon', boundary: NYLON_OUTLINE.map(point) },
     { id: 'aevis', boundary: AEVIS_OUTLINE.map(point) },
     { id: 'varn', boundary: VARN_CORNERS.map(point) },
-    { id: 'mithala', city: 'mithala', boundary: MITHALA_CURTAIN.map(point) }];
+    { id: 'mithala', city: 'mithala', boundary: MITHALA_CURTAIN.map(point) },
+    { id: 'stonefist', city: 'stonefist', boundary: STONEFIST_OUTLINE.map(point) },
+    { id: 'alezhor-town', city: 'alezhor-town', boundary: ALEZHOR_TOWN_OUTLINE.map(point) }];
 }
 
 /** A secret city gains a map badge only after its living galleries are found. */
@@ -68,7 +77,7 @@ export function atlasPlaceMarks(places = [], local = []) {
   return [...new Map([...entries, capital].map(mark => {
     const designation = ATLAS_CITY_DESIGNATIONS[mark.id];
     return [mark.id, designation && !['quest', 'tracked'].includes(mark.kind)
-      ? { ...mark, ...designation, kind: 'city' } : { ...mark }];
+      ? { ...mark, ...designation, kind: 'city', ...(mark.id === 'thalmagar-black-fortress' ? point(THALMAGAR_FORTRESS) : {}) } : { ...mark }];
   })).values()];
 }
 
@@ -116,9 +125,10 @@ export function atlasLocalDetail(model) {
   return { paths, buildings, markers: [...markers.values()] };
 }
 
-/** Entered tiles own exact details. Adjacent terrain alone never earns a label. */
+/** Entered tiles own exact details. An explicitly briefed quest may mark its
+ * destination before arrival; this never uncovers surrounding terrain. */
 export function atlasMarkKnown(mark, visited, reveal = false) {
-  return !!mark && (reveal || visited.has(atlasCellKey(mark)));
+  return !!mark && (reveal || mark.kind==='quest'&&mark.directionsKnown===true || visited.has(atlasCellKey(mark)));
 }
 
 /**

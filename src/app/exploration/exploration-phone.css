@@ -28,13 +28,12 @@ body.touch #world-skirmish-actions{display:none}
   kbd{display:none}
   .veil button,.war-report-actions button,#world-war-track button{min-height:42px}
 
-  /* The start menu: one column, the war first, tall buttons. */
+  /* The start menu: one column in the desktop order, with tall buttons. */
   #start-screen{align-items:start}
   .launch-card{padding:18px 14px}.launch-card h1{font-size:28px;margin:10px 0}.launch-card>p{font-size:14px;line-height:1.5}
   .launch-options{gap:12px;grid-template-columns:1fr}.launch-options article{padding:14px 14px 10px}.launch-options h2{font-size:21px;margin-bottom:8px}
   .launch-options p{font-size:13px;line-height:1.5;margin-bottom:10px}.launch-options .menu-actions{grid-template-columns:1fr;gap:8px;margin:0 0 8px}
   .launch-options .menu-actions button{min-height:48px}.launch-options small{min-height:0}
-  .launch-options article:has([data-start-mode="war"]){order:-1}
   .start-card{width:min(530px,94vw);padding:20px 16px}.start-card h1{font-size:28px;margin:12px 0}.start-card p{font-size:14px;line-height:1.55}
   .menu-actions button{min-height:46px}
   #war-loading-lore h2{font-size:20px}#war-loading-lore p{font-size:14px;line-height:1.5}
@@ -60,11 +59,11 @@ body.touch #world-skirmish-actions{display:none}
   #teresod-sorcery meter{height:8px}
 
   /* What F would do: a wide button over the thumbs. */
-  #tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact,#world-war-join,#reaper-talk{bottom:calc(176px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);min-height:46px;padding:10px 16px;font-size:14px}
+  #harbor-interact,#tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact,#world-war-join,#reaper-talk{bottom:calc(176px + env(safe-area-inset-bottom));max-width:calc(100vw - 24px);min-height:46px;padding:10px 16px;font-size:14px}
   #tower-objective{left:10px;top:calc(100px + env(safe-area-inset-top));max-width:calc(100vw - 130px);padding:8px 10px;font-size:12px}
 
   /* Cards: the width of the screen, buttons for a thumb. They open in their own mode, so the stick is away. */
-  #tower-briefing,#stable-lesson,#council-dialog,#resident-dialog{padding:8px}
+  #harbor-dialog,#tower-briefing,#stable-lesson,#council-dialog,#resident-dialog{padding:8px}
   .tower-dialog-card{width:100%;max-height:88dvh;padding:16px 14px}.tower-dialog-card h2{font-size:22px;margin:8px 0 4px}.tower-dialog-card h3{font-size:15px}
   .tower-dialog-card p{font-size:14px;line-height:1.55}.tower-dialog-actions{gap:8px}.tower-dialog-actions button{flex:1 1 100%;min-height:46px}
   #afterlife-heading{top:8px;left:10px;max-width:58vw}#afterlife-heading h2{font-size:20px}#afterlife-heading p{font-size:12px}
@@ -109,9 +108,6 @@ body.touch #world-skirmish-actions{display:none}
   #world-war-track{top:calc(104px + env(safe-area-inset-top));left:8px;right:112px;width:auto;max-width:none;max-height:min(200px,24dvh);overflow:auto;padding:8px 10px;gap:8px}
   .has-local-map #world-war-track{top:calc(104px + env(safe-area-inset-top));width:auto;right:112px;bottom:auto}
   #world-war-track .war-track-arrow{font-size:22px}#world-war-track p{font-size:11px;margin:3px 0}#world-war-track button{min-height:36px}
-  #world-war-report,#world-war-report:has(#world-war-report-facts:not([hidden])){left:8px;right:8px;width:auto;top:auto;bottom:calc(228px + env(safe-area-inset-bottom));max-height:min(32dvh,calc(100dvh - 540px));padding:12px}
-  #world-war-report h2{font-size:19px;margin:6px 0}#world-war-report p{font-size:12px;margin:6px 0}
-  .war-report-actions{gap:6px;margin-top:8px}.war-report-actions button{flex:1 1 auto;min-height:40px}
   #world-autoplay{top:calc(38vh + 70px);bottom:auto;left:8px;right:8px;max-width:none}
   #world-skirmish{top:calc(58px + env(safe-area-inset-top))}
   body:has(#world-skirmish:not([hidden])) #teresod-sorcery{top:calc(66px + 34dvh + env(safe-area-inset-top))}
@@ -128,10 +124,7 @@ body.touch #world-skirmish-actions{display:none}
   #teresod-sorcery{top:calc(164px + env(safe-area-inset-top))}
   #world-war-track,.has-local-map #world-war-track{top:calc(96px + env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));right:auto;bottom:auto;width:min(300px,36vw);max-width:none;max-height:calc(100dvh - 96px - 150px);overflow:auto;padding:8px 10px;gap:8px}
   #world-war-track p{display:none}#world-war-track button{min-height:34px}
-  #world-war-report,#world-war-report:has(#world-war-report-facts:not([hidden])){top:calc(56px + env(safe-area-inset-top));bottom:auto;left:calc(min(300px,36vw) + 18px);right:110px;width:auto;max-height:calc(100dvh - 56px - 112px);padding:10px 12px}
-  #world-war-report h2{font-size:18px;margin:4px 0}#world-war-report p{font-size:12px;margin:5px 0}
-  .war-report-actions{gap:6px;margin-top:6px}.war-report-actions button{flex:1 1 auto;min-height:38px;padding:6px 10px}
-  #tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact,#world-war-join,#reaper-talk{bottom:calc(14px + env(safe-area-inset-bottom));max-width:44vw}
+  #harbor-interact,#tower-interact,#stable-interact,#council-interact,#resident-interact,#soldier-interact,#world-war-join,#reaper-talk{bottom:calc(14px + env(safe-area-inset-bottom));max-width:44vw}
   #exploration-touch-help{bottom:calc(70px + env(safe-area-inset-bottom));max-width:44vw}
   #exploration-status{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));left:50%;right:auto;transform:translateX(-50%);max-width:44vw}
   #world-autoplay{top:auto;bottom:calc(118px + env(safe-area-inset-bottom));right:auto;left:50%;transform:translateX(-50%);max-width:44vw}

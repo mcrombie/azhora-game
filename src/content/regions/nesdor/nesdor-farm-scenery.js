@@ -1,3 +1,5 @@
+import {settlementFacade,settlementCourt} from '../minora-frontier/lizeem-settlement-detail.js';
+import {groundPatch} from '../../../world/scenery/ground-face.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
@@ -51,7 +53,7 @@ const STYLE = freeze({
 });
 const hash = (a, b = 0) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
 
-export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = [] }) {
+export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = [], terrainSurface }) {
   let work = 0;
   const tick = () => ++work % 8 === 0;
   const root = new THREE.Group(); root.name = 'Nesdor farm country'; parent.add(root);
@@ -102,15 +104,6 @@ export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = []
       kit.beam(timber, [px + ox, floor + .2, pz + oz], [px - ox * .05, floor + high - .2, pz - oz * .05], .1);
     }
     if (tick()) yield;
-    for (let storey = 0; storey < (s.storeys ?? 1); storey++) for (const side of [-1, 1]) for (const u of [-.3, .3]) {
-      const wy = floor + 1.15 + storey * 2.6, sx = along ? b.x + u * b.w : b.x + side * (b.w / 2 + .04), sz = along ? b.z + side * (b.d / 2 + .04) : b.z + u * b.d;
-      // Never a window over the door.
-      if (storey === 0 && Math.hypot(sx - dx, sz - dz) < wide / 2 + .9) continue;
-      if (b.kind === 'barn') continue;
-      if (along) { kit.block(C.glass, sx, wy, sz, .8, .75, .06); kit.block(C.shutter, sx - .62, wy - .02, sz, .42, .8, .07); kit.block(C.shutter, sx + .62, wy - .02, sz, .42, .8, .07); }
-      else { kit.block(C.glass, sx, wy, sz, .06, .75, .8); kit.block(C.shutter, sx, wy - .02, sz - .62, .07, .8, .42); kit.block(C.shutter, sx, wy - .02, sz + .62, .07, .8, .42); }
-    }
-    if (tick()) yield;
     if (s.chimney) {
       // At the gable away from the door's end, through the roof.
       const cx = along ? b.x - Math.sign(dx - b.x || 1) * (b.w / 2 - .9) : b.x, cz = along ? b.z : b.z - Math.sign(dz - b.z || 1) * (b.d / 2 - .9);
@@ -129,6 +122,7 @@ export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = []
       for (const k of [-1, 1]) { kit.block(timber, dx + k * 1.3, floor, pz, .16, 2.6, .16); collide({ x: dx + k * 1.3, z: pz, r: .12, kind: 'nesdor-post' }); }
       kit.roof(s.roof, dx, floor + 2.6, b.z + n.z * (b.d / 2 + .7), 1.6, 3.2, .45, Math.PI / 2, s.wall);
     }
+    settlementFacade(kit,b,floor,{region:'nesdor',rise,door:b.door,ridgeAlongX:along,storeys:s.storeys??1,doorWidth:wide,doorHeight:high,porch:s.porch});
     collide({ x: b.x, z: b.z, hx: b.w / 2, hz: b.d / 2, minY: low - .5, maxY: top + rise + 1, kind: 'building', id: b.id });
     metrics.buildings++;
   }
@@ -138,7 +132,7 @@ export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = []
   // Ninehands: the yard, the seed bench, the barn's rick, the hives, the strips
   // -------------------------------------------------------------------------
   yield;
-  (yield* patch(C.yard, y, -1595, 583, 18, 12, 0, .045, 5));
+  yield* settlementCourt(ground,terrainSurface,y,{x:-1595,z:583,w:18,d:12,region:'nesdor'});
   (yield* patch(C.yard, y, -1613, 587.2, 3, 3.4, 0, .05, 2));
   {
     const bench = NESDOR_SEED_BENCH, by = y(bench.x, bench.z);
@@ -267,7 +261,7 @@ export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = []
     }
     const collider = collide({ x: tree.x, z: tree.z, r: .5, kind: 'nesdor-hazel-stool' });
     registerWorldTree(colliders, { id: tree.id, x: tree.x, z: tree.z, y: ty, species: 'common-hazel', radius: .5, harvestable: false,
-      reason: 'Idunn’s coppice is cut on its own turn, for poles and for nuts. It is not yours to fell.' }, [], collider);
+      reason: 'Idunn’s coppice is cut on its own turn, for poles and for nuts. It is not yours to fell.' }, [], collider,root);
     metrics.hazels++;
   }
   {
@@ -311,7 +305,7 @@ export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = []
   // -------------------------------------------------------------------------
   {
     const yd = NESDOR_INN_YARD;
-    (yield* patch(C.yard, y, (yd.minX + yd.maxX) / 2, (yd.minZ + yd.maxZ) / 2, yd.maxX - yd.minX, yd.maxZ - yd.minZ, 0, .045, 5));
+    yield* settlementCourt(ground,terrainSurface,y,{x:(yd.minX+yd.maxX)/2,z:(yd.minZ+yd.maxZ)/2,w:yd.maxX-yd.minX,d:yd.maxZ-yd.minZ,region:'nesdor'});
     (yield* patch(C.yard, y, -1420, 596.6, 5, 4, 0, .05, 2));
     (yield* patch(C.yard, y, -1419, 607.2, 3.4, 5, 0, .05, 2));
     // Rails on the north and east sides; the yard is open to the road.
@@ -409,7 +403,7 @@ export function* createNesdorFarmScenerySteps({ parent, heightAt, colliders = []
         yield;
         const t = (j + .5) / n, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
         if (underWater(x, z)) continue;
-        (yield* patch(ROAD_TINT[road.id] ?? C.way, y, x, z, road.width, len / n + .25, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
+        (yield* groundPatch(ground,terrainSurface,ROAD_TINT[road.id] ?? C.way, y, x, z, road.width, len / n + .25, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
         metrics.roadPatches++;
       }
     }

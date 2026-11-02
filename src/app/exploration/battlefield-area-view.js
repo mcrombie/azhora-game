@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {BATTLEFIELD_AREA} from './battlefield-area.js';
 
-// A terrain-following opaque veil marks the active battle instance.
+// A terrain-following dark dome marks the active battle instance.
 // Hidden during combat; nonparticipants stop at this same perimeter.
 export function createBattlefieldAreaView(scene,world){
   const footprints=new Map(),radius=BATTLEFIELD_AREA.radius,segments=96,pennants=12;
@@ -9,7 +9,8 @@ export function createBattlefieldAreaView(scene,world){
   const poleGeometry=new THREE.CylinderGeometry(.045,.055,2.1,4),flagGeometry=new THREE.PlaneGeometry(.95,.5);
   const poleMaterial=new THREE.MeshStandardMaterial({color:0x715734});
   const flagMaterial=new THREE.MeshBasicMaterial({color:0xd3ab5c,side:THREE.DoubleSide});
-  const wallMaterial=new THREE.MeshBasicMaterial({color:0x846947,transparent:true,opacity:.76,side:THREE.DoubleSide,depthWrite:false});
+  // Only the outward surface is drawn, avoiding two overlapping alpha layers.
+  const wallMaterial=new THREE.MeshBasicMaterial({color:0x101216,transparent:true,opacity:.78,side:THREE.FrontSide,depthWrite:false,fog:false});
   const dummy=new THREE.Object3D();
   function surface(x,z){
     if(!world.readyAt(x,z))return null;
@@ -19,13 +20,23 @@ export function createBattlefieldAreaView(scene,world){
   function remove(entry){scene.remove(entry.root);entry.line.geometry.dispose();entry.wall.geometry.dispose();entry.poles.dispose();entry.flags.dispose();}
   function build(entry,at){
     const points=[],wallPoints=[];let count=0,complete=true;
-    for(let i=0;i<segments;i++){
-      const a=i/segments*Math.PI*2,b=(i+1)/segments*Math.PI*2;
-      const ends=[a,b].map(t=>{const x=at.x+Math.sin(t)*radius,z=at.z+Math.cos(t)*radius,y=surface(x,z);return y===null?null:[x,y,z];});
-      if(ends.some(p=>!p)){complete=false;continue;}
-      const [p,q]=ends,quad=[p,q,[q[0],q[1]+8,q[2]],[p[0],p[1]+8,p[2]]];
-      for(const n of [0,1,2,0,2,3])wallPoints.push(...quad[n]);
+    const centre=surface(at.x,at.z)??0,rings=12;
+    const rim=Array.from({length:segments},(_,i)=>{
+      const angle=i/segments*Math.PI*2,x=at.x+Math.sin(angle)*radius,z=at.z+Math.cos(angle)*radius,y=surface(x,z);
+      if(y===null)complete=false;
+      return {angle,y:y??centre};
+    });
+    const crown=Math.max(centre,...rim.map(p=>p.y))+radius*.6;
+    const point=(i,j)=>{
+      const p=rim[i%segments],t=j/rings,angle=t*Math.PI/2,r=radius*Math.cos(angle);
+      return [at.x+Math.sin(p.angle)*r,p.y-.12+(crown-p.y+.12)*Math.sin(angle),at.z+Math.cos(p.angle)*r];
+    };
+    for(let j=0;j<rings;j++)for(let i=0;i<segments;i++){
+      const a=point(i,j),b=point(i+1,j),c=point(i+1,j+1),d=point(i,j+1);
+      wallPoints.push(...a,...b,...c);
+      if(j<rings-1)wallPoints.push(...a,...c,...d);
     }
+    entry.domeHeight=crown-centre;
     entry.wall.geometry.dispose();entry.wall.geometry=new THREE.BufferGeometry();entry.wall.geometry.setAttribute('position',new THREE.Float32BufferAttribute(wallPoints,3));entry.wall.geometry.computeBoundingSphere();
     for(let i=0;i<segments;i++){
       const a=i/segments*Math.PI*2,b=(i+.64)/segments*Math.PI*2;
@@ -60,7 +71,7 @@ export function createBattlefieldAreaView(scene,world){
       if(!entry&&visible){
         const root=new THREE.Group();root.name=`Battlefield perimeter / ${battle.id}`;
         const line=new THREE.Mesh(new THREE.BufferGeometry(),lineMaterial),poles=new THREE.InstancedMesh(poleGeometry,poleMaterial,pennants),flags=new THREE.InstancedMesh(flagGeometry,flagMaterial,pennants);
-        poles.frustumCulled=false;flags.frustumCulled=false;const wall=new THREE.Mesh(new THREE.BufferGeometry(),wallMaterial);wall.name='Battle exclusion wall';root.add(line,poles,flags,wall);scene.add(root);
+        poles.frustumCulled=false;flags.frustumCulled=false;const wall=new THREE.Mesh(new THREE.BufferGeometry(),wallMaterial);wall.name='Battle exclusion dome';root.add(line,poles,flags,wall);scene.add(root);
         entry={root,line,poles,flags,wall,location:null,age:0,complete:false};footprints.set(battle.id,entry);
       }
       if(!entry)continue;entry.root.visible=visible;if(!visible)continue;
@@ -69,7 +80,7 @@ export function createBattlefieldAreaView(scene,world){
     }
   }
   return {update,
-    state:()=>[...footprints].filter(([,e])=>e.root.visible).map(([id,e])=>({id,radius,wallHeight:8,wallOpacity:wallMaterial.opacity,location:{...e.location},segments:e.segments,pennants:e.pennants,complete:e.complete})),
+    state:()=>[...footprints].filter(([,e])=>e.root.visible).map(([id,e])=>({id,radius,domeHeight:e.domeHeight,wallOpacity:wallMaterial.opacity,location:{...e.location},segments:e.segments,pennants:e.pennants,complete:e.complete})),
     dispose(){for(const entry of footprints.values())remove(entry);footprints.clear();wallMaterial.dispose();lineMaterial.dispose();poleGeometry.dispose();flagGeometry.dispose();poleMaterial.dispose();flagMaterial.dispose();}
   };
 }

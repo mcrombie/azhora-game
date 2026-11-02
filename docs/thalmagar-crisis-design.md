@@ -6,7 +6,7 @@ The Forsaken Citadel is on **Eshtor Plateau**. Its former proposed placement in 
 
 ## The overarching campaign
 
-Thalmagar is the overarching strategic enemy in the resistance campaign being developed. He is a necromancer as well as a military and political threat. His own species, origins and possible undeath remain undecided. The player potentially becoming his servant and winning on his side is retained as a future design option; it does not yet supply an alternate quest line, victory condition or diplomacy system.
+Thalmagar is the overarching strategic enemy in the resistance campaign being developed. He is an undead necromancer as well as a military and political threat. His original species and personal origin remain undecided. The player potentially becoming his servant and winning on his side is retained as a future design option; it does not yet supply an alternate quest line, victory condition or diplomacy system.
 
 | Campaign stage | Thalmagar's direction | The player's strategic problem |
 | --- | --- | --- |
@@ -46,7 +46,7 @@ A proposed diplomatic system would give each approached faction reasons to coope
 
 The undead are a distinct race and faction system. The **Blood Plague** is a working name for the fictional affliction: it kills a person and transforms them into a rotting undead being that remains cognizant. This is not limited to conventional mindless zombies, and no fixed vampire rules are established.
 
-Thalmagar creating the undead himself is a proposed origin. Whether he is undead, how his necromancy began, and the relationship between his powers and the plague's original creation remain open. The duke at the Forsaken Citadel is definitely undead and a necromancer; he deliberately works to spread the affliction.
+The user's later lore establishes that Thalmagar is undead: his necromancy sustains his existence while binding him to this world. The dead normally pass onward; undeath prevents that passage. Preserving a body becomes an enduring problem, and some undead lose their bodies while persisting as ghosts or wraiths. His original discovery of necromancy and the relationship between his powers and the plague's creation remain open. The duke at the Forsaken Citadel is also undead and a necromancer; he deliberately works to spread the affliction.
 
 Transmission, timing, prevention, treatment, reversibility, military recruitment and the degree of personal agency after transformation are not yet specified. Neither cognizance nor being undead alone establishes automatic obedience to Thalmagar. Faction allegiance and any magical control must be authored separately.
 
@@ -71,6 +71,12 @@ The resident is the **Duke of North Ganun**, a working title to be expressed in 
 | Personal nature and activity | Undead necromancer deliberately spreading the plague |
 
 The faction is independent of Ganun in practice while secretly subordinate to Thalmagar. That distinction must survive map presentation and diplomatic rules. Ganun's purported claim does not overwrite Eshtor's actual controller. The earlier proposed location immediately below the West Baldro Mountains does not transfer as a geographic constraint to Eshtor.
+
+### Ancient barrows and earlier outbreaks
+
+Confirmed 19 October 2026: **very ancient barrows on Eshtor Plateau survive from past undead outbreaks**. They predate the present duke's occupation and establish that the region has experienced undeath in earlier ages. The current crisis takes place in a landscape already marked by those events.
+
+Their builders, occupants and precise chronology are not yet assigned. Some barrows might eventually be designed as sealed containment sites, but this remains a proposal; buried victims, surviving undead and renewed activity must be specified individually. See the [Eshtor environment and barrow record](eshtor-plateau.md#ancient-barrows). Barrows and their encounters are lore and design at this stage, not built scenery.
 
 ## Rumors and recognition
 
@@ -125,6 +131,14 @@ The proposed information model stores actual allegiance, presented allegiance, t
 **Acor Wetlands** is disputed between **Acreland**, the existing Acorwood faction, the **Lower Kingdom of Endevor**, and **Thalmagar's Empire**. The user confirmed that the dictated Vandor means Endevor. This is a three-way dispute, with no sole controller or precise occupied holdings yet assigned.
 
 All three claims belong on the campaign map; contested status does not require painting the whole region as permanently owned by any one claimant. Acorwood, Endevor and Thalmagar's Narcosh have actual atlas approaches to the wetlands. The dispute does not make Acreland or Endevor a Thalmagar vassal.
+
+### Dark Goblin wraith influence
+
+Confirmed 19 October 2026: **Acor Wetlands is under the influence of Dark Goblin wraiths.** They belong to Thalmagar's ancient undead High Goblin following. Their bodies have been lost, but their spirits persist, bound to this world and unable to pass onward. Dark Goblins describe this undead allegiance and lineage; the living High Goblin descendants of Narcosh are not automatically members of it.
+
+This establishes the supernatural influence behind Thalmagar's presence in the wetlands. The three territorial claims remain, and influence does not by itself settle sole ownership, make every inhabitant undead, or provide safe passage for his armies. The wraiths' individual identities, number, exact haunts and means of exercising influence remain to be designed.
+
+This is confirmed regional lore. Wraith characters, encounters, powers and an influence simulation are not yet implemented. The existing wetland terrain, wildlife and walking routes remain the physical setting.
 
 ## Revised northern territory
 

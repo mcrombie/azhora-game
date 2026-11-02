@@ -1,14 +1,16 @@
+import {createArmyUnit} from '../../content/characters/army-unit-view.js';
+import {militiaWeapon} from '../../gameplay/combat/combat-units.js';
 import * as THREE from 'three';
 import {createCharacter} from '../../content/characters/characters.js';
-import {createEncounterWarnings,createEncounterTarget,encounterGuardPose} from './encounter-presentation.js';
+import {createEncounterWarnings,createEncounterTarget,encounterGuardPose,encounterHeroPose} from './encounter-presentation.js';
 import {ROLLO_LOOK} from '../../content/characters/rollo-look.js';
-import {createLizeemEncounter,ENCOUNTER_TIMING as T} from '../../gameplay/combat/lizeem-encounter.js';
+import {createLizeemEncounter} from '../../gameplay/combat/lizeem-encounter.js';
 import {createEncounterEffects} from './encounter-effects.js';
 
 // Lazy-loaded only when the player joins. No whole-world loader or quest host.
 export function openEncounter({canvas,hud,onEnd,enemyColor,guardCount=3}){
   const guardStarts=[{x:-3,z:-3},{x:3,z:-3},{x:0,z:-5}].slice(0,guardCount);
-  const model=createLizeemEncounter({guardStarts}),keys=new Set(),scene=new THREE.Scene();
+  const model=createLizeemEncounter({guardStarts:guardStarts.map((p,i)=>({...p,unitType:'militiaman',weapon:militiaWeapon(i)}))}),keys=new Set(),scene=new THREE.Scene();
   scene.background=new THREE.Color('#bbc7b4');scene.fog=new THREE.Fog('#bbc7b4',28,65);
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
   renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -17,7 +19,7 @@ export function openEncounter({canvas,hud,onEnd,enemyColor,guardCount=3}){
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(100,100),new THREE.MeshStandardMaterial({color:0x7b8963,roughness:1}));ground.rotation.x=-Math.PI/2;scene.add(ground);
   const edge=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([[-7,-7],[7,-7],[7,7],[-7,7]].map(([x,z])=>new THREE.Vector3(x,.025,z))),new THREE.LineBasicMaterial({color:0xd8c793}));scene.add(edge);
   const hero=createCharacter({role:'traveler',look:ROLLO_LOOK,armed:true,hat:false});hero.setWeapon('oak-staff');scene.add(hero.group);
-  const guards=Array.from({length:guardCount},()=>{const actor=createCharacter({role:'legion-soldier',look:{tunic:new THREE.Color(enemyColor).getHex()},armed:true});scene.add(actor.group);return actor;});
+  const guards=Array.from({length:guardCount},(_,i)=>{const actor=createArmyUnit({weapon:militiaWeapon(i),variant:i,tunic:new THREE.Color(enemyColor).getHex()});scene.add(actor.group);return actor;});
   const warnings=createEncounterWarnings(scene,guards.length),targetMarker=createEncounterTarget(scene),effects=createEncounterEffects(scene,canvas.parentElement);
   const feedback=document.createElement('p');feedback.setAttribute('role','status');canvas.parentElement.append(feedback);
   let frame,last=performance.now(),disposed=false,ended=false,paused=false,accumulator=0,clickAttack=false;
@@ -30,12 +32,12 @@ export function openEncounter({canvas,hud,onEnd,enemyColor,guardCount=3}){
   function draw(s){
     const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio())){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
     hero.group.position.set(s.hero.x,0,s.hero.z);hero.group.rotation.y=s.hero.heading;
-    hero.animate(s.time,Math.hypot(input().x,input().z)*4,true,{action:s.hero.dodge?'dodge':s.hero.hurt?'hurt':s.hero.swing?'attack':'idle',progress:s.hero.dodge?1-s.hero.dodge/T.dodge:s.hero.hurt?1-s.hero.hurt/T.hurt:s.hero.swing?1-s.hero.swing/T.swing:0});
+    hero.animate(s.time,Math.hypot(input().x,input().z)*s.hero.combat.moveSpeed,true,encounterHeroPose(s.hero));
     guards.forEach((actor,i)=>{const g=s.guards[i];actor.group.position.set(g.x,0,g.z);actor.group.rotation.y=g.heading;actor.group.visible=g.hp>0;actor.animate(s.time,g.speed,true,encounterGuardPose(g));});
     warnings.draw(s.guards);
     targetMarker.draw(s);
     effects.draw(s);feedback.textContent=effects.feedback(s)?.text??'';
-    hud.textContent=`Health ${s.hero.hp}/100 · Guards ${s.guards.filter(g=>!g.hp).length}/${guardCount} · ${Math.max(0,Math.ceil(90-s.time))}s · ${s.hero.dodgeCooldown?'Dodge recovering':'Dodge ready'}${paused?' · Paused while window is inactive':''}`;
+    hud.textContent=`Health ${s.hero.hp}/${s.hero.maxHp} · Guards ${s.guards.filter(g=>!g.hp).length}/${guardCount} · ${Math.max(0,Math.ceil(90-s.time))}s · ${s.hero.dodgeCooldown?'Dodge recovering':'Dodge ready'}${paused?' · Paused while window is inactive':''}`;
     renderer.render(scene,camera);
   }
   function loop(now){

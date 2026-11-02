@@ -67,8 +67,9 @@ export function* createWestLotharnGroundSteps(kit) {
         return u+v<=1?a+(c-a)*u+(b-a)*v:d+(b-d)*(1-u)+(c-d)*(1-v);
       };
     }
-    const rock = [new THREE.Color('#8d8374'), new THREE.Color('#7c7a72'), new THREE.Color('#948878'), new THREE.Color('#827d74')];
-    const scree = new THREE.Color('#8f8a6c'), lowGrass = new THREE.Color('#5c7642'), highGrass = new THREE.Color('#7e8a55');
+    const rock = [new THREE.Color('#ada48f'), new THREE.Color('#858985'), new THREE.Color('#a39580'), new THREE.Color('#92948a')];
+    const scree = new THREE.Color('#939185'), lowGrass = new THREE.Color('#667e51'), highGrass = new THREE.Color('#87986c');
+    const weathered=new THREE.Color('#69766f'),lichen=new THREE.Color('#b6af91');
     const baldGrass = new THREE.Color('#a6a771'), shade = new THREE.Color();
     const faceMaterial = material('#ffffff', { vertexColors: true, flatShading: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
     let jitter = 30809;
@@ -80,6 +81,12 @@ export function* createWestLotharnGroundSteps(kit) {
       if (u > 0 && onBald(x, z, 4)) shade.lerp(baldGrass, .85);
       shade.lerp(scree, Math.min(1, Math.max(0, (grade - .55) / .4)));
       shade.lerp(rock[((course % 4) + 4) % 4], Math.min(1, Math.max(0, (grade - .95) / .45)));
+      // Broad mineral streaks and lichen break up continuous colour bands.
+      // Colour only: no new triangles, collision changes or animated effects.
+      const streak=.5+.5*Math.sin(x*.057+Math.sin(z*.023)*2.1+Math.sin(y*.011)*.7);
+      const exposure=Math.min(1,Math.max(0,(grade-.6)/.9));
+      shade.lerp(weathered,exposure*Math.pow(streak,4)*.32);
+      shade.lerp(lichen,exposure*Math.pow(1-streak,3)*.16);
       shade.multiplyScalar(wobble());
     };
     const caves = kit.caves ?? [];

@@ -1,5 +1,5 @@
 import { finishBuild } from '../../../world/loading/build-steps.js';
-import { SELAMUS, selamusPatchWeight, selamusTint } from './selamus-city.js';
+import { SELAMUS, selamusTint } from './selamus-city.js';
 
 /** The tidal city uses a continuous fine surface so its channels and
  * banks share their visible triangles with collision.
@@ -11,7 +11,12 @@ export function refineSelamusGround(...args) { return finishBuild(refineSelamusG
 export function* refineSelamusGroundSteps({ THREE, terrainRoot, heightAt, coarseHeightAt, tintAt = selamusTint }) {
   if (!THREE || !terrainRoot?.add || typeof heightAt !== 'function' || typeof coarseHeightAt !== 'function')
     throw new TypeError('Selemis refinement requires THREE, terrainRoot, analytic heightAt and coarseHeightAt.');
-  const B = SELAMUS.bounds, spacing = 1;
+  // Finish the replacement beyond the lowered coarse terrain. Blending against
+  // that lowered mesh inside the city bounds carved an artificial ditch through
+  // the mainland headland (and the southern coastal village).
+  const inner=SELAMUS.bounds,margin=24;
+  const B={minX:inner.minX-margin,maxX:inner.maxX+margin,minZ:inner.minZ-margin,maxZ:inner.maxZ+margin},spacing=1;
+  const weightAt=(x,z)=>{const t=Math.max(0,Math.min(1,Math.min(x-B.minX,B.maxX-x,z-B.minZ,B.maxZ-z)/14));return t*t*(3-2*t);};
   const cols = Math.round((B.maxX - B.minX) / spacing), rows = Math.round((B.maxZ - B.minZ) / spacing), stride = cols + 1;
   const positions = [], colours = [], indices = [], ids = new Int32Array((cols + 1) * (rows + 1)).fill(-1);
   const levels = new Float32Array(ids.length), cells = new Uint8Array(cols * rows), colour = new THREE.Color();
@@ -20,9 +25,10 @@ export function* refineSelamusGroundSteps({ THREE, terrainRoot, heightAt, coarse
     const key = j * stride + i;
     if (ids[key] >= 0) return ids[key];
     const x = Math.fround(B.minX + i * spacing), z = Math.fround(B.minZ + j * spacing);
-    const strength = selamusPatchWeight(x, z);
-    const coarse = strength < 1 ? coarseHeightAt(x, z) : 0;
-    const y = Math.fround(strength ? coarse + (heightAt(x, z) - coarse) * strength : coarse);
+    const strength=weightAt(x,z),coarse=coarseHeightAt(x,z);
+    // Outside the lowered footprint, retain any higher coarse triangle so the
+    // floor cannot fall below still-visible ground along the blending apron.
+    const y=Math.fround(Math.max(coarse,coarse+(heightAt(x,z)-coarse)*strength));
     levels[key] = y; ids[key] = positions.length / 3; positions.push(x, y, z);
     colour.set(tintAt?.(x, z, y) ?? 0xb3a980); colours.push(colour.r, colour.g, colour.b);
     return ids[key];
@@ -30,8 +36,8 @@ export function* refineSelamusGroundSteps({ THREE, terrainRoot, heightAt, coarse
   for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
     if ((++work & 63) === 0) yield;
     const x = B.minX + i * spacing, z = B.minZ + j * spacing;
-    if (selamusPatchWeight(x, z) <= 0 && selamusPatchWeight(x + spacing, z) <= 0
-      && selamusPatchWeight(x, z + spacing) <= 0 && selamusPatchWeight(x + spacing, z + spacing) <= 0) continue;
+    if (weightAt(x,z)<=0&&weightAt(x+spacing,z)<=0
+      &&weightAt(x,z+spacing)<=0&&weightAt(x+spacing,z+spacing)<=0)continue;
     cells[j * cols + i] = 1;
     const a = vertex(i, j), b = vertex(i + 1, j), c = vertex(i, j + 1), d = vertex(i + 1, j + 1);
     indices.push(a, c, b, b, c, d);

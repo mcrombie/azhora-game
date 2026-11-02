@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
-import { NYLON, NYLON_BUILDINGS, NYLON_PATHS, NYLON_GATES, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, NYLON_HARBOR_WALLS, NYLON_OUTLINE, NYLON_COLOSSUS, nylonHarborDeckHeight, nylonRiverClearance } from '../src/content/regions/nylon/nylon-city.js';
+import { NYLON, NYLON_BUILDINGS, NYLON_PATHS, NYLON_GATES, NYLON_HARBOR, NYLON_HARBOR_DECKS, NYLON_HARBOR_BOATS, NYLON_HARBOR_WALLS, NYLON_OUTLINE, NYLON_SEA_LIONS, nylonHarborDeckHeight, nylonRiverClearance } from '../src/content/regions/nylon/nylon-city.js';
 import { LIZEEM_REACH, courseHalfAt, coursePosition } from '../src/content/regions/western-regions/west-regions.js';
 import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 
@@ -58,22 +58,32 @@ test('The harbor shares city bastions and has no duplicate curtain behind the qu
   }
 });
 
-test('The colossus stands on both sea-tower plinths above a full ship-height passage',()=>{
-  const c=NYLON_COLOSSUS,mesh=city.root.children.find(m=>m.name===c.name);
+test('Seated sea-facing lions rest on the original towers and leave the channel open at every height',()=>{
+  const c=NYLON_SEA_LIONS,mesh=city.root.children.find(m=>m.name===c.name);
   assert.ok(mesh);mesh.geometry.computeBoundingBox();
-  assert.ok(Math.abs(mesh.geometry.boundingBox.min.y-c.baseY)<.001,'Feet rest at the plinth height');
-  assert.ok(mesh.geometry.boundingBox.max.y>c.baseY+75,'A monumental figure crowns the sea gate');
+  assert.equal(city.metrics.monuments,2);
+  assert.deepEqual(c.figures.map(f=>f.form),['lion','lioness']);
+  assert.ok(Math.abs(mesh.geometry.boundingBox.min.y-c.baseY)<.001,'Paws rest at the plinth height');
   const p=mesh.geometry.attributes.position;
   for(let i=0;i<p.count;i++)if(p.getY(i)<c.baseY+.01){
-    assert.ok(c.feet.some(f=>Math.hypot(p.getX(i)-f.x,p.getZ(i)-f.z)<7.4),'Every foot base is supported by a tower');
+    assert.ok(c.figures.some(f=>Math.hypot(p.getX(i)-f.x,p.getZ(i)-f.z)<7.4),'Every foot base is supported by a tower');
   }
-  for(const f of c.feet){
+  // No geometry or collider spans between the figures.
+  for(let i=0;i<p.count;i+=3){
+    const side=Math.sign(p.getX(i)-c.x);
+    for(let j=0;j<3;j++){
+      assert.equal(Math.sign(p.getX(i+j)-c.x),side,'Triangle crosses between guardians');
+      assert.ok(Math.abs(p.getX(i+j)-c.x)>10,'Statue intrudes into the central sky gap');
+    }
+  }
+  for(const f of c.figures){
     const tower=colliders.find(s=>s.kind==='city-tower'&&s.x===f.x&&s.z===f.z);
     assert.ok(tower);assert.equal(tower.maxY,c.baseY);
+    const head=colliders.find(s=>s.id===`${f.id}-head`);
+    assert.ok(head&&head.maxY>c.baseY+20&&head.z>f.z,'Each head projects forward toward the sea');
   }
-  const mastHeight=Math.max(...NYLON_HARBOR_BOATS.map(b=>b.mast))+3;
   for(let x=c.x-5;x<=c.x+5;x+=2.5)for(let z=c.z-10;z<=c.z+10;z+=2){
-    for(let y=NYLON_HARBOR.waterHeight;y<=NYLON_HARBOR.waterHeight+mastHeight;y+=2){
+    for(let y=NYLON_HARBOR.waterHeight;y<=mesh.geometry.boundingBox.max.y+3;y+=2){
       assert.equal(blocked(x,z,y,3.5),undefined,`Ship or mast obstructed at ${x},${y},${z}`);
     }
   }

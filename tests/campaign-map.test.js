@@ -42,10 +42,11 @@ test('limited faction inspection identifies its count as discovered holdings',()
   const html=factionHTML('ambroni-empire',{factions,territories:['Moros Plain'],snapshot:'opening',limited:true});
   assert.match(html,/1 discovered region/);assert.match(html,/Discovered territory/);assert.match(html,/Not charted/);assert.doesNotMatch(html,/data-region="Elagos"/);
 });
-test('every starting allocation exists in the atlas and the added Thalmagar regions have one owner',()=>{
+test('every starting allocation exists in the atlas and independent northern countries have one owner',()=>{
   const atlas=JSON.parse(readFileSync(new URL('../assets/azhora-world-map.json',import.meta.url))),names=new Set(atlas.regions.map(r=>r.name));
   for(const f of factions)for(const region of factionRegions(f))assert.ok(names.has(region),region);
-  for(const region of ['Cudon','Lesser Oremindi Mountains'])assert.deepEqual(factions.filter(f=>factionRegions(f).includes(region)).map(f=>f.id),['thalmagars-empire']);
+  for(const [region,id] of [['Cudon','kudan'],['Lesser Oremindi Mountains','narcosh'],['Narcosh','narcosh']])assert.deepEqual(factions.filter(f=>factionRegions(f).includes(region)).map(f=>f.id),[id]);
+  assert.deepEqual(factionRegions(factions.find(f=>f.id==='thalmagars-empire')),['Cape Thalmagar','Urubond']);
 });
 test('public country profile does not disclose Thalmagar secret capital',()=>{
   const html=factionHTML('thalmagars-empire',{factions,territories:['Urubond'],snapshot:'opening',relation:'Diplomacy not yet specified.'});

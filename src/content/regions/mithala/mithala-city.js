@@ -159,15 +159,19 @@ const rampTop = (foot, from, to) => {
 };
 const FORD_QUAYS_TOP = rampTop(FORD_QUAYS_FOOT, MITHALA_FORD.b, MITHALA_FORD.a), FORD_SOUTH_TOP = rampTop(FORD_SOUTH_FOOT, MITHALA_FORD.a, MITHALA_FORD.b);
 /** The stone-faced quay on the main channel's north bank, outside the Quays' bank, at platform
- * height; its outer face is the water's edge. It follows the bank in four straight runs, its face a
- * quarter of a metre short of the water at every bend and about a metre short at most between them,
- * so a barge lies alongside it; the face stands on the river's own bank and the bank is left as it is. */
+ * height. Short runs follow the widened channel's bank with half a metre between
+ * the quay face and the water, allowing barges to lie alongside. */
+const quayBank=x=>{
+  let dry=-1440,wet=-1380;
+  for(let i=0;i<32;i++){const z=(dry+wet)/2;if(mithalaCityWaterClearance(x,z)>3)dry=z;else wet=z;}
+  return point(x,(dry+wet)/2);
+};
 export const MITHALA_QUAY = freeze({ id: 'mithala-quay', name: 'The Grain Quay', width: 5, deck: MITHALA_CITY.platform,
-  points: outline([[-1663, -1403.01], [-1658, -1401.6], [-1643, -1401.48], [-1635, -1403.86], [-1621, -1411.61]]) });
-/** Moored alongside the quay's two long runs, square to them, with a metre of water or less between hull and face. */
+  points: freeze(Array.from({length:29},(_,i)=>quayBank(-1663+i*1.5))) });
+/** Moored parallel to the bank, clear of both the quay's face and its mooring posts. */
 export const MITHALA_BARGES = freeze([
-  freeze({ id: 'mithala-barge-1', name: 'Grain barge', x: -1650.54, z: -1395.85, yaw: 0.008, length: 16, width: 3.6 }),
-  freeze({ id: 'mithala-barge-2', name: 'Grain barge', x: -1625.67, z: -1403.52, yaw: -0.506, length: 14, width: 3.4 }),
+  freeze({ id: 'mithala-barge-1', name: 'Grain barge', x: -1648.89788, z: -1401.20701, yaw: -.253086, length: 10, width: 3.4 }),
+  freeze({ id: 'mithala-barge-2', name: 'Grain barge', x: -1627.95, z: -1410.61227, yaw: -.523599, length: 10, width: 3.4 }),
 ]);
 function alongSpan(s, x, z, margin = 0) {
   const dx = s.b.x - s.a.x, dz = s.b.z - s.a.z, len = Math.hypot(dx, dz), px = x - s.a.x, pz = z - s.a.z;
@@ -196,13 +200,13 @@ export const MITHALA_STREETS = freeze([
   street('mithala-arm-gate-street', 'Arm Gate Street', 6, [[-1740, -1440], [-1733, -1413.7]]),
   // The gauge lane: down the tower's east side and out through the water gate to the gauge at the
   // meeting, where the flood is read (the user's choice of gate, 4 October 2026).
-  street('mithala-gauge-lane', 'Gauge Lane', 4, [[-1719, -1440], [-1719, -1427], [-1711, -1422.6]]),
+  street('mithala-gauge-lane', 'Gauge Lane', 4, [[-1719, -1440], [-1719, -1435], [-1710.888, -1424.47]]),
   // The Quays.
   street('mithala-quay-street', 'Quay Street', 8, [[-1687, -1440], [-1665, -1440], [-1660, -1440], [-1640, -1440], [-1616, -1440]]),
   street('mithala-dry-street', 'The Dry Street', 7, [[-1660, -1440], [-1660, -1470], [-1675, -1496], [-1680, -1530]]),
   // Ford Landing turns on the level at the top of the hollow way and goes down it on the ford's own line.
   street('mithala-ford-landing', 'Ford Landing', 6, [[-1665, -1440], [FORD_QUAYS_TOP.x, FORD_QUAYS_TOP.z], [-1667.16, -1413.91]]),
-  street('mithala-quay-stairs', 'Quay Stairs', 5, [[-1640, -1440], [-1640, -1401.27]]),
+  street('mithala-quay-stairs', 'Quay Stairs', 5, [[-1640, -1440], [-1640, -1409.87]]),
   // The Braid Bank, and the road north toward the Acorwood.
   street('mithala-market-street', 'Market Street', 8, [[-1704.25, -1496.9], [-1700, -1515], [-1680, -1530], [-1680, -1600]]),
   // The Ford, and the south road toward the Lotharn passes.
@@ -263,18 +267,24 @@ export const MITHALA_BUILDINGS = freeze([
   building('mithala-threshing-floor', 'Threshing floor', 'mithala-braid-bank', -1733, -1532, 8, 8, .3, 'floor'),
   building('mithala-barn-1', 'Barn', 'mithala-braid-bank', -1700, -1563, 12, 9, 8, 'barn'),
   // The Quays: the grain trade.
-  building('mithala-granary-1', 'Raised granary', 'mithala-quays', -1650, -1422, 14, 7, 10, 'granary', { posts: 2.2 }),
+  building('mithala-granary-1', 'Raised granary', 'mithala-quays', -1650, -1422, 10, 7, 10, 'granary', { posts: 2.2 }),
   building('mithala-granary-2', 'Raised granary', 'mithala-quays', -1628, -1430, 10, 8, 10, 'granary', { posts: 2.2 }),
   building('mithala-weighing-house', 'The Weighing House', 'mithala-quays', -1674, -1455, 10, 10, 9, 'weighing'),
   building('mithala-factors-hall-1', 'Grain factors’ hall', 'mithala-quays', -1640, -1460, 18, 12, 11, 'hall'),
   building('mithala-factors-hall-2', 'Grain factors’ hall', 'mithala-quays', -1620, -1456, 10, 14, 11, 'hall'),
-  building('mithala-quay-crane', 'The warehouse crane', 'mithala-quays', -1653, -1400.8, 3, 3, 12, 'crane', { onQuay: true }),
+  building('mithala-quay-crane', 'The warehouse crane', 'mithala-quays', -1653, -1407.11, 3, 3, 12, 'crane', { onQuay: true }),
   // The Ford: the mountain market, inns, smithies.
   building('mithala-inn-1', 'Inn with a yard', 'mithala-ford', -1718, -1355, 14, 14, 9, 'inn'),
   building('mithala-inn-2', 'Inn with a yard', 'mithala-ford', -1672, -1350, 12, 10, 9, 'inn'),
   building('mithala-smithy-1', 'Smithy', 'mithala-ford', -1715, -1332, 10, 8, 6, 'smithy'),
   building('mithala-mountain-market', 'The mountain market', 'mithala-ford', -1675, -1364, 14, 10, .3, 'market'),
   building('mithala-ford-house-1', 'House', 'mithala-ford', -1722, -1342, 9, 7, 7),
+  ...[
+    ['fork',-1771,-1415],['braid-bank',-1697,-1550],['braid-bank',-1733,-1544],
+    ['braid-bank',-1697,-1538],['braid-bank',-1667,-1532],['braid-bank',-1691,-1508],
+    ['quays',-1653,-1475],['quays',-1641,-1475],['ford',-1685,-1353],
+    ['ford',-1709,-1341],['ford',-1679,-1335],['ford',-1703,-1329],
+  ].map(([district,x,z],i)=>building(`mithala-neighbor-${i+1}`,'Mithali household',`mithala-${district}`,x,z,6,6,7+i%3,'house')),
 ]);
 /**
  * The tower's inside stair: twelve straight flights up the four inner walls, turning on a square
@@ -312,7 +322,7 @@ export const MITHALA_CITY_LANDMARKS = freeze([
     description: 'The old Mithali royal hall, a long brick hall in the Fork, where a Cref king still holds the oath at the old seat and holds little else. The curtain round it is the conquerors’ one visible mark on the city. Its doors are shut.' }),
   freeze({ id: 'mithala-flood-gauge', name: 'The Flood Gauge', region: 'West Mithala', x: MITHALA_GAUGE.x, z: MITHALA_GAUGE.z, radius: 6,
     description: `A squared stone post at the water’s edge on the Fork’s point, where the arms meet, cut with the marks of the floods and with the proverb “${MITHALA_GAUGE.inscription}”: ${MITHALA_GAUGE.meaning} Gauge Lane comes down to it from beside the tower, through the water gate.` }),
-  freeze({ id: 'mithala-quay', name: 'The Grain Quay', region: 'East Mithala', x: -1645, z: -1402, radius: 22,
+  freeze({ id: 'mithala-quay', name: 'The Grain Quay', region: 'East Mithala', ...quayBank(-1645), radius: 22,
     description: 'A stone-faced quay on the main channel’s north bank, outside the Quays’ bank, with grain barges moored along it and the warehouse crane over them. Raised granaries, the weighing house and the grain factors’ halls stand behind: the richest ground in the city.' }),
   freeze({ id: 'mithala-paved-ford', name: 'The Paved Ford', region: 'South Mithala', x: -1676.5, z: -1397.5, radius: 14,
     description: 'The plain’s only crossing of the main channel, paved over its gravel and waded, with a hollow way cut down to it through the bank on either side. Lotharn iron and Amodian chestnuts come north over it and grain goes back.' }),
@@ -415,7 +425,7 @@ export const MITHALA_APPROACHES = freeze([
   approach('mithala-dry-street-causeway', 'mithala-dry-street', 0, streetOf('mithala-dry-street').points),
   // Stopped a metre short of the quay's inner edge: the quay's own deck carries the street on over the water's edge, and
   // made ground run out under it would stand as a lip outside its stone face.
-  approach('mithala-quay-stairs-causeway', 'mithala-quay-stairs', 0, [streetOf('mithala-quay-stairs').points[0], [-1640, -1405.98]]),
+  approach('mithala-quay-stairs-causeway', 'mithala-quay-stairs', 0, [streetOf('mithala-quay-stairs').points[0], [-1640, -1413.28717]]),
 ].map(a => {
   const reach = a.half + APPROACH_BAND;
   return freeze({ ...a, box: freeze({ minX: Math.min(...a.path.map(p => p.x)) - reach, maxX: Math.max(...a.path.map(p => p.x)) + reach,

@@ -182,6 +182,8 @@ Wilhelm's undeath and secret vassalage to Thalmagar are also established. His fo
 
 **Acor Wetlands** is a three-way dispute between Acreland, the existing Acorwood faction, the Lower Kingdom of Endevor, and Thalmagar's Empire. No sole controller is assigned. The user's Vandor has been confirmed as Endevor; it is not a new kingdom.
 
+The 19 October lore update places the wetlands under **Dark Goblin wraith influence**: bodiless undead High Goblin followers of Thalmagar. This influence coexists with the territorial dispute. It does not give his armies automatic passage or establish sole occupation. See the [Acor wraith lore](thalmagar-crisis-design.md#dark-goblin-wraith-influence); actors and influence mechanics remain unimplemented.
+
 ## Connecting quests and people to the campaign
 
 The campaign view first reads existing saved outcomes and observed movements. An adventure event should identify what changed and where: a ruler entered a city, a company arrived, a crossing was repaired, a local agreement was reached, or a holding changed hands. Infection, death, undead raising and hostile allegiance are distinct saved events attached to persistent people. Each event must be recorded once and remain true after changing views or reloading.

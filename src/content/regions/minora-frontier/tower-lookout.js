@@ -4,6 +4,7 @@ import {createCharacter,disposeCharacter} from '../../characters/characters.js';
 import {TALETH} from '../../quests/lizeem-farmlands/taleth.js';
 import {LOOKOUT,LOOKOUT_TALETH} from '../../../app/exploration/tower-state.js';
 import {createLookoutPigeons} from './lookout-pigeons.js';
+import {createLookoutDoor} from './lookout-door.js';
 
 export function createTowerLookout(parent){
   const root=new THREE.Group();root.name='Wizard Guild / river lookout';root.position.set(LOOKOUT.x,LOOKOUT.y,LOOKOUT.z);parent.add(root);
@@ -19,7 +20,8 @@ export function createTowerLookout(parent){
   for(const z of [-10,10])block('#c7c8b6',0,5.8,z,21,.3,.8);
   // A stair hood and homing loft make this a working lookout, without hiding
   // the surrounding country behind a solid room or loading more regions.
-  block('#536575',0,0,8,4,2.8,2,true);block('#384b51',0,.02,6.9,3,.06,2);block('#b6a66f',0,2.8,8,4.5,.25,2.5);
+  const stairDoor=createLookoutDoor(root);
+  colliders.push({x:LOOKOUT.x,z:LOOKOUT.z+8.5,hx:2.7,hz:1.5,minY:LOOKOUT.y,maxY:LOOKOUT.y+5.3,kind:'lookout-stone'});
   block('#766553',-7,0,5,3,2.2,1.2,true);for(const x of [-8,-7,-6]){block('#203d41',x,1.3,4.36,.65,.55,.05);block('#c4b18a',x,1.22,4.1,.8,.12,.65);}
   const birds=createLookoutPigeons(root);
   block('#bca876',-7,1.23,3.97,2.5,.045,.4);
@@ -30,5 +32,5 @@ export function createTowerLookout(parent){
   return {root,colliders,birds,origin:LOOKOUT,bounds:{minX:LOOKOUT.x-9.5,maxX:LOOKOUT.x+9.5,minZ:LOOKOUT.z-9.5,maxZ:LOOKOUT.z+9.5},
     point:value=>{direction=value;},
     update(time,player,dt){birds.update(dt);taleth.animate(time,0,true);const aimed=direction&&lookoutCamera(direction).target;taleth.group.rotation.y=aimed?Math.atan2(aimed.x-LOOKOUT_TALETH.x,aimed.z-LOOKOUT_TALETH.z):Math.atan2(player.x-LOOKOUT_TALETH.x,player.z-LOOKOUT_TALETH.z);if(direction&&shoulder&&elbow){shoulder.rotation.set(-1.4,0,-.2);elbow.rotation.x=-.08;}},
-    dispose(){disposeCharacter(taleth);birds.dispose();for(const g of geometries)g.dispose();for(const m of materials.values())m.dispose();root.removeFromParent();}};
+    dispose(){stairDoor.dispose();disposeCharacter(taleth);birds.dispose();for(const g of geometries)g.dispose();for(const m of materials.values())m.dispose();root.removeFromParent();}};
 }

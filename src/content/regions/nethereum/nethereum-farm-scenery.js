@@ -1,3 +1,5 @@
+import {settlementFacade,settlementCourt} from '../minora-frontier/lizeem-settlement-detail.js';
+import {groundPatch} from '../../../world/scenery/ground-face.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
@@ -38,7 +40,7 @@ export const NETHEREUM_FLOOD_STATES = Object.freeze(['dry', ...Object.keys(FLOOD
 
 export function createNethereumFarmScenery(...args) { return finishBuild(createNethereumFarmScenerySteps(...args)); }
 
-export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders = [] }) {
+export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders = [], terrainSurface }) {
   let work = 0;
   const root = new THREE.Group(); root.name = 'Haethom and the Nethereum flood meadow'; parent.add(root);
   const metrics = { buildings: 0, houses: 0, paths: 0, beds: NETHEREUM_FARM_ROWS.length, weirStakes: 0, fishTraps: 0,
@@ -91,12 +93,6 @@ export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders =
       kit.box(C.timber, 0, floor + doorH / 2 + .05, d / 2 + .05, doorW + .3, doorH + .2, .12);
       kit.box(b.kind === 'byre' ? C.timberLight : '#4c3e2d', 0, floor + doorH / 2, d / 2 + .1, doorW, doorH, .06);
       kit.block(C.stone, 0, foot, d / 2 + .7, doorW + .4, floor - foot - .02, .6);
-      // Small shuttered windows on the long sides.
-      if (b.kind === 'house' || b.kind === 'hut') for (const sx of [-1, 1]) {
-        const at = sx * (w / 2 - Math.min(1.5, w * .22));
-        kit.box(C.timber, at, floor + 1.45, d / 2 + .06, .8, .7, .07); kit.box(C.dark, at, floor + 1.45, d / 2 + .09, .56, .48, .04);
-        kit.box(C.timberLight, at - .42, floor + 1.45, d / 2 + .1, .26, .62, .04);
-      }
       // A steep reed roof over the long sides, deep eaves, a ridge cap and a smoke louvre.
       kit.roof(thatch, 0, floor + h, 0, d + 1.3, w + 1.1, rise, Math.PI / 2, daub);
       kit.box(C.thatch[(index + 2) % 4], 0, floor + h + rise - .02, 0, w + 1.15, .2, .34);
@@ -105,6 +101,7 @@ export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders =
         for (const sz of [-1, 1]) kit.box(C.soot, 0, floor + h + rise + .12, sz * .55, 1.5, .26, .06);
       } else if (b.kind !== 'byre') kit.cone(C.thatch[(index + 1) % 4], 0, floor + h + rise - .15, 0, .34, .5, 0, 4);
     });
+    settlementFacade(kit,b,floor,{region:'nethereum',rise,yaw:b.yaw,doorWidth:b.kind==='byre'?2.3:1.05,doorHeight:b.kind==='byre'?2:1.85});
     // The collider takes in the plinth, and a second one the door step, so nobody walks into either.
     push({ x: b.x, z: b.z, hx: b.hx + .45, hz: b.hz + .45, minY: foot, maxY: floor + h + rise + .4, kind: 'building', id: b.id });
     const step = local(b, 0, b.d / 2 + .7), across = Math.abs(Math.sin(b.yaw)) > .5, half = (b.kind === 'byre' ? 2.3 : 1.05) / 2 + .2;
@@ -161,7 +158,7 @@ export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders =
       hamlet.box(C.timberLight, x, y + .46, z, 2.4, .12, .5); for (const s of [-1, 1]) hamlet.block(C.timber, x + s * .95, y, z, .14, .42, .42);
       box(x, z, 1.25, .3, 'bench', 'haethom-common-bench', y, .6); }
   }
-  (yield* earth.patchSteps(C.common, ground, HAETHOM.common.x, HAETHOM.common.z, HAETHOM.common.width, HAETHOM.common.depth, 0, .04, 8));
+  yield* settlementCourt(earth,terrainSurface,ground,{x:HAETHOM.common.x,z:HAETHOM.common.z,w:HAETHOM.common.width,d:HAETHOM.common.depth,region:'nethereum'});
 
   // ---------------------------------------------------------------------------------------------
   // The levee, its head and its hatch; the hummock
@@ -288,7 +285,7 @@ export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders =
     const tub = bench.tub, ty = ground(tub.x, tub.z);
     works.cylinder(C.timber, tub.x, ty, tub.z, .43, .55); works.cylinder(C.water, tub.x, ty + .47, tub.z, .38, .01); works.cylinder(C.iron, tub.x, ty + .16, tub.z, .44, .05);
     push({ ...tub, r: .46, kind: 'farm-water-tub', farmId: bench.farmId, minY: ty - .3, maxY: ty + .7 });
-    (yield* earth.patchSteps(C.path, ground, bench.x, bench.z + .8, 2.9, 1.5, 0, .06, 3));
+    (yield* groundPatch(earth,terrainSurface,C.path, ground, bench.x, bench.z + .8, 2.9, 1.5, 0, .06, 3));
   }
   // Stepping stones where the byre path crosses the north-east thread.
   for (const [i, s] of NETHEREUM_STEPPING_STONES.entries()) works.rock(C.stone, s.x, heightAt(s.x, s.z) + .12, s.z, .55, .32, .45, i);
@@ -348,7 +345,7 @@ export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders =
       weir.rock(C.fish, x, y - .32, z, .07, .26, .11, n * .3); }
     const bx = smoke.x - smoke.hx - 1.5, bz = smoke.z + 1.2; woodpile(weir, bx, bz, Math.PI / 2, 'gwyddno-smokehouse-wood');
   }
-  (yield* earth.patchSteps(C.path, ground, -2275, 548.5, 7, 9, 0, .045, 5));
+  (yield* groundPatch(earth,terrainSurface,C.path, ground, -2275, 548.5, 7, 9, 0, .045, 5));
 
   // ---------------------------------------------------------------------------------------------
   // Paths: worn earth, following the bank where they meet it.
@@ -358,7 +355,7 @@ export function* createNethereumFarmScenerySteps({ parent, heightAt, colliders =
       const a = route.points[i - 1], b = route.points[i], len = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(len / 5);
       for (let j = 0; j < n; j++) { if (++work % 4 === 0) yield;
         const t = (j + .5) / n;
-        (yield* earth.patchSteps(C.path, ground, a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, route.width, len / n + .2, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
+        (yield* groundPatch(earth,terrainSurface,C.path, ground, a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, route.width, len / n + .2, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
       }
     }
     metrics.paths++;

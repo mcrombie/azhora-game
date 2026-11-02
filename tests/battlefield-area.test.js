@@ -40,6 +40,19 @@ test('manual F can suppress the automatic offer before its first update',()=>{
   area.update({battles:[battle],position:at(80)});
   assert.equal(area.update({battles:[battle],position:at()}),battle);
 });
+test('entry, manual interaction and exit memory follow each battle footprint',()=>{
+  for(const radius of [35,95]){
+    const field={...battle,entryRadius:radius},area=createBattlefieldArea();
+    const update=d=>area.update({battles:[field],position:at(d)});
+    assert.equal(update(radius+1),null,'No offer beyond the visible wall');
+    assert.equal(area.nearest(at(radius+1)),null);
+    const edge=stopAtBattleBoundary(at(radius+5),at(radius-5),field);
+    assert.equal(area.update({battles:[field],position:edge}),field,'Stopping at the wall offers entry');
+    assert.equal(area.nearest(edge),field,'F reopens the same battle after declining');
+    assert.equal(update(radius+7),null);assert.equal(update(radius-1),null,'No repeated prompt from edge jitter');
+    assert.equal(update(radius+9),null);assert.equal(update(radius-1),field,'Leaving the actual footprint rearms it');
+  }
+});
 
 test('overlapping areas offer only the nearest eligible battle per update',()=>{
   const area=createBattlefieldArea(),other={...battle,id:'other',location:{x:110,z:200}};
@@ -57,11 +70,32 @@ test('perimeter follows terrain, stays bounded, hides unknown/unloaded/far areas
   const root=scene.children[0],line=root.children[0],points=line.geometry.attributes.position;
   for(let i=0;i<points.count;i++)assert.ok(Math.abs(points.getY(i)-world.heightAt(points.getX(i),points.getZ(i))-.16)<.00001);
   for(let i=0;i<120;i++)view.update([battle],()=>true,at());
-  assert.equal(scene.children[0],root);assert.equal(root.children.length,4);assert.equal(root.children[3].material.opacity,.76);assert.deepEqual(battle,before);
+  assert.equal(scene.children[0],root);assert.equal(root.children.length,4);assert.equal(root.children[3].material.opacity,.78);assert.deepEqual(battle,before);
   view.update([battle],()=>true,at(300));assert.deepEqual(view.state(),[]);
   world.readyAt=()=>false;view.update([battle],()=>true,at());assert.deepEqual(view.state(),[]);
   view.update([{...battle,status:'resolved'}],()=>true,at());assert.equal(scene.children.length,0);
   view.dispose();
+});
+
+test('the dark dome closes above sloping ground without extra draws, and combat hides it',()=>{
+  const scene=new THREE.Scene(),world={heightAt:(x,z)=>5+(x-100)*.04,waterAt:()=>0,readyAt:()=>true};
+  const view=createBattlefieldAreaView(scene,world);view.update([battle],()=>true,at(80));
+  const root=scene.children[0],dome=root.children[3],geometry=dome.geometry;
+  assert.equal(dome.material.color.getHex(),0x101216);
+  assert.equal(dome.material.side,THREE.FrontSide);
+  assert.ok(geometry.attributes.position.count/3<2500,'Bounded low-poly shell');
+  for(const n of geometry.attributes.position.array)assert.ok(Number.isFinite(n));
+  scene.updateMatrixWorld(true);
+  const ray=new THREE.Raycaster();
+  for(const [dx,dz] of [[0,0],[20,30],[-40,10],[0,-60],[67,0]]){
+    ray.set(new THREE.Vector3(100+dx,100,200+dz),new THREE.Vector3(0,-1,0));
+    const hits=ray.intersectObject(dome);
+    assert.ok(hits.length>0,`No open roof at ${dx}, ${dz}`);
+    assert.ok(hits[0].point.y>world.heightAt(100+dx,200+dz));
+  }
+  view.update([battle],()=>true,at(80));assert.equal(dome.geometry,geometry,'No per-frame rebuild');
+  view.update([battle],()=>true,at(),{enabled:false});assert.equal(root.visible,false);
+  view.update([],()=>true,at());assert.equal(scene.children.length,0);view.dispose();
 });
 
 test('partially loaded perimeter skips missing terrain and fills it when ready',()=>{

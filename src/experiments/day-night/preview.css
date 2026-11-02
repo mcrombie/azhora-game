@@ -1,0 +1,13 @@
+#developer-day-night{padding:12px 0 20px;border-bottom:1px solid #a8b09c55;margin-bottom:20px}
+#developer-day-night h2{font:24px Georgia;margin:0 0 10px}
+#developer-day-night p{font:13px/1.6 system-ui;color:#c6d0c0}
+#day-night-preview{position:fixed;top:106px;left:50%;transform:translateX(-50%);z-index:14;width:min(380px,calc(100vw - 32px));box-sizing:border-box;padding:12px 14px;background:#152f3bed;color:#f4e5c7;border:1px solid #bba470;border-radius:6px;font:12px/1.5 system-ui}
+#day-night-preview[hidden]{display:none}
+#day-night-preview button,#day-night-preview select{font:12px system-ui;padding:8px;min-height:34px}
+#day-night-preview select{color:#f4e5c7;background:#203d44;border:1px solid #80968a;border-radius:3px;margin-left:5px}
+#day-night-preview .sky-preview-title,#day-night-preview .sky-preview-play{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#day-night-preview .sky-preview-title{margin-bottom:8px}
+#day-night-preview .sky-preview-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+#day-night-preview [aria-pressed="true"]{background:#ecd197;color:#203629;border-color:#ecd197}
+#day-night-preview small{display:block;color:#bbcbc9;margin-top:8px}
+@media(max-width:760px){#day-night-preview{top:auto;bottom:96px;z-index:14}#day-night-preview button{min-height:40px}}

@@ -1,0 +1,41 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {sourceModule} from './module-loader.js';
+import {MENORA,MENORA_CAMP} from '../src/content/regions/minora-frontier/menora-city.js';
+import {createSkirmishGround} from '../src/app/exploration/skirmish-ground.js';
+
+test('trial scenery stays isolated, solid and reusable when switching practice arenas',async t=>{
+  const raf=globalThis.requestAnimationFrame,caf=globalThis.cancelAnimationFrame;
+  globalThis.requestAnimationFrame=callback=>setTimeout(()=>callback(performance.now()),0);
+  globalThis.cancelAnimationFrame=clearTimeout;
+  t.after(()=>{
+    if(raf===undefined)delete globalThis.requestAnimationFrame;else globalThis.requestAnimationFrame=raf;
+    if(caf===undefined)delete globalThis.cancelAnimationFrame;else globalThis.cancelAnimationFrame=caf;
+  });
+  const THREE=await sourceModule('../vendor/three.module.js');
+  const {loadCombatPracticeWorld}=await sourceModule('../src/app/exploration/combat-practice-world.js');
+  const scene=new THREE.Scene(),light=new THREE.HemisphereLight();scene.add(light);
+  const background=scene.background=new THREE.Color('#b6c8b0'),fog=scene.fog=new THREE.Fog('#b6c8b0',180,560);
+  const world=await loadCombatPracticeWorld(scene,()=>{},{exercise:'trials',outdoorLights:[light]});
+  t.after(()=>world.dispose());
+  const room=world.root,movementWorld={...world},ground=createSkirmishGround(world,MENORA_CAMP,16);
+  assert.deepEqual(world.state().loadedArenas,['stillroom']);assert.equal(world.loading.state().jobs.length,0);
+  assert.equal(light.visible,false);assert.equal(scene.fog.near,24);assert.equal(world.state().room.buildings,1);
+  assert.equal(world.heightAt(MENORA_CAMP.x,MENORA_CAMP.z),MENORA.elevation);
+  assert(ground.clear(MENORA_CAMP.x,MENORA_CAMP.z));
+  assert(ground.spawn(MENORA_CAMP,Math.PI,1).every(p=>ground.clear(p.x,p.z)));
+  const wall=world.colliders[0];assert(!ground.clear(wall.x,wall.z),'Translated pavilion collides at the drawn height');
+  const start={x:wall.x-3,z:wall.z},end=ground.move(start,6,0);
+  assert(end.x<wall.x-wall.hx,'Fast movement cannot cross the pavilion wall');
+  assert.equal(world.readyAt(MENORA_CAMP.x+97,MENORA_CAMP.z),false);
+  await world.selectExercise('trials');assert.equal(world.root,room);
+  await world.selectExercise('lesson');const camp=world.root;
+  assert.equal(room.visible,false);assert.equal(camp.visible,true);assert.equal(light.visible,true);assert.equal(scene.fog.near,100);
+  const cityWall=world.colliders.find(c=>c.id?.startsWith('menora-wall-'))??world.colliders[0];
+  assert(movementWorld.nearColliders(cityWall.x,cityWall.z,1).includes(cityWall),'Cached movement queries follow the active arena');
+  assert(!world.colliders.some(c=>c.id?.startsWith('blood-prince-tent-')),'The retired army camp stays absent in outdoor practice');
+  await world.selectExercise('trials');assert.equal(world.root,room);assert.equal(room.visible,true);assert.equal(camp.visible,false);
+  assert.equal(light.visible,false);assert.equal(scene.fog.near,24);assert.equal(world.loading.state().jobs.length,0);
+  assert(movementWorld.nearColliders(wall.x,wall.z,1).includes(wall));
+  world.dispose();assert.equal(scene.background,background);assert.equal(scene.fog,fog);assert.equal(light.visible,true);
+});

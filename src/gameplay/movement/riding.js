@@ -19,6 +19,7 @@ export const RIDE = Object.freeze({
   swim: 3.6, wadingDepth: .95, floatOffset: .85, // deep water: head and saddle stay above the surface
   turnRate: 2.7,                  // rad/s at a walk; a canter turns wider
   radius: 0.62,                   // the mount's footprint for collisions
+  jumpSpeed: 7.8, bodyHeight: 2.8, // fixed jump height; clearance includes the rider
   reach: 2.9,                     // how near the horse must be to mount
   near: 5,                        // a whistle is wasted inside this
   earshot: 150,                   // beyond this the horse does not trot over, it turns up
@@ -41,7 +42,7 @@ export const DEVELOPER_HORSE_NAME = 'A horse that should not exist';
 /** Shared exploration tuning: developer horses retain their speed multiplier in water. */
 export function horseMovementTuning(multiplier=1) {
   const scale=multiplier===DEVELOPER_HORSE_SPEED?DEVELOPER_HORSE_SPEED:1;
-  return {walk:RIDE.walk*scale,run:RIDE.canter*scale,radius:RIDE.radius,swimming:true,
+  return {walk:RIDE.walk*scale,run:RIDE.canter*scale,radius:RIDE.radius,bodyHeight:RIDE.bodyHeight,swimming:true,
     swim:RIDE.swim*scale,swimDepth:RIDE.wadingDepth,swimOffset:RIDE.floatOffset};
 }
 
@@ -151,8 +152,16 @@ export function createRiding({ onEvent = () => {} } = {}) {
   function place(point, yaw = state.horse?.yaw ?? 0) {
     if (!state.owned || !finitePoint(point)) return false;
     state = { ...state, horse: { x: point.x, z: point.z, yaw: wrap(yaw) } };
-    called = false; blocked = 0;
+    called = false; blocked = 0; pace = 0;
     return true;
+  }
+
+  /** The host finds a safe, dry arrival before requesting the magical call. */
+  function summon(point,yaw=state.horse?.yaw??0){
+    if(!state.owned)return fail('You have no horse to call.');
+    if(mounted)return fail('Dismount before calling your horse.');
+    if(!finitePoint(point)||!Number.isFinite(yaw))return fail('There is no safe place for your horse here.');
+    place(point,yaw);return emit('horse-summoned',{position:{...state.horse}});
   }
 
   /**
@@ -201,7 +210,7 @@ export function createRiding({ onEvent = () => {} } = {}) {
     return true;
   }
 
-  return { grant, teach, mount, dismount, unseat, ride, whistle, place, update, speed, mountBlock, distanceTo, snapshot, restore,
+  return { grant, teach, mount, dismount, unseat, ride, whistle, summon, place, update, speed, mountBlock, distanceTo, snapshot, restore,
     setDeveloperMount(on) { developerMount = !!on; }, get developerMount() { return developerMount; },
     get owned() { return state.owned; }, get taught() { return state.taught; }, get mounted() { return mounted; }, get called() { return called; },
     get horse() { return state.horse ? { ...state.horse } : null; }, get pace() { return pace; } };

@@ -10,7 +10,8 @@ import { LEGION_POSTS } from '../src/content/regions/drent/legion-posts.js';
 import { MOROS_GATE_ID, MOROS_LEGATE_ID } from '../src/content/chapters/civil-war/moros-chapter.js';
 
 const { createWorld } = await sourceModule('../src/world.js');
-const world = createWorld(new THREE.Scene());
+const scene = new THREE.Scene();
+const world = createWorld(scene);
 
 /** Nobody stands on a circuit's wall line except in its gates, and each gate can be walked from beyond the ditch to inside. */
 function assertClosed(circuit, { gatesOpen = true } = {}) {
@@ -102,13 +103,13 @@ test('the ground north round to east of the main gate is clear of new colliders 
   assert.ok(Math.hypot(campPoint(0, 0).x - OUTPOST_CENTRE.x, campPoint(0, 0).z - OUTPOST_CENTRE.z) < 1e-9);
 });
 
-test('the forward stockade is a smaller work to the same pattern: one gate, corner towers, a ditch and a wall walk', () => {
-  assert.equal(STOCKADE_CIRCUIT.gates.length, 1);
-  assert.equal(STOCKADE_CIRCUIT.towers.filter(tower => tower.kind === 'corner').length, 4);
-  assert.ok(STOCKADE_CIRCUIT.standard.walkHeight === FORT_STANDARD.walkHeight && STOCKADE_CIRCUIT.standard.wallHeight === FORT_STANDARD.wallHeight, 'the same heights');
-  assert.equal(STOCKADE_CIRCUIT.standard.ditchWidth, FORT_STANDARD.ditchWidth, 'the same ditch');
-  assertClosed(STOCKADE_CIRCUIT);
-  assert.ok(world.colliders.some(c => c.kind === 'truce-pole'), 'the truce-flag pole stands inside');
+test('the removed forward stockade leaves traversable ground and no invisible enclosure', () => {
+  scene.traverse(object => assert.ok(!/^The border stockade (walls|interior)$/.test(object.name)));
+  for (const p of STOCKADE_CIRCUIT.wallLine(2)) {
+    assert.ok(canStand(p.x, p.z, world), 'the former wall line is open ground');
+  }
+  assert.ok(!world.colliders.some(c => c.kind === 'truce-pole' || c.kind?.startsWith('stockade-')));
+  assert.ok(!world.enclosures.some(e => e.id === 'stockade'));
 });
 
 test('Elod’s frontier runs in stone from the southern hills to the sea, closing on the border at both ends, its gate shut', () => {

@@ -1,3 +1,4 @@
+import {createSpeciesTreesSteps} from './species-trees.js';
 /** Small, static architectural parts. Cities supply their own palette and placement;
  * this module knows nothing about countries, quests or residents. */
 import {createSceneryBuilder} from './scenery-builder.js';
@@ -66,27 +67,6 @@ export function planterTree(b,p,x,y,z,index=0){
   b.cylinder(p.stone,x,y-.1,z,1.05,.65,Math.PI/7);
   b.cylinder(p.trim,x,y+.55,z,1.12,.18,Math.PI/7);
   b.cylinder('#635745',x,y+.73,z,.95,.06);
-  const tall=p.tree==='cypress',palm=p.tree==='palm';
-  b.cylinder(p.wood,x,y+.6,z,palm?.23:.16,palm?5.6:tall?3.8:3.1);
-  if(palm){
-    for(let h=1;h<5.8;h+=.45)b.cylinder(p.pot,x,y+h,z,.25,.08);
-    b.rock(p.leaf,x,y+6.15,z,.45,.65,.45);
-    for(let i=0;i<9;i++){
-      const a=i*Math.PI*2/9+index*.3,dx=Math.cos(a),dz=Math.sin(a),nx=-dz,nz=dx;
-      const start=[x,y+6.2,z],mid=[x+dx*1.35,y+6.55,z+dz*1.35],end=[x+dx*2.8,y+5.55,z+dz*2.8];
-      const left=[mid[0]+nx*.36,mid[1],mid[2]+nz*.36],right=[mid[0]-nx*.36,mid[1],mid[2]-nz*.36];
-      b.sheet(i%2?p.leaf:p.leafLight,start,left,end,right);
-      b.beam(p.leafLight,start,mid,.045);b.beam(p.leafLight,mid,end,.035);
-    }
-    for(const dx of [-.3,.3])b.rock('#94733e',x+dx,y+5.7,z+.24,.22,.48,.22);
-  }else if(tall){b.cone(p.leaf,x,y+2,z,1.13,4.8);b.cone(p.leafLight,x,y+4.2,z,.75,3.2);}
-  else{
-    b.rock(p.leaf,x-.6,y+3.4,z,.95,1.3,1.2);
-    b.rock(p.leafLight,x+.5,y+4.1,z-.22,1.1,1.4,1.15);
-    b.rock(p.leaf,x,y+4,z+.55,1.2,1.15,1);
-    if(p.tree==='blossom')for(let i=0;i<5;i++){const a=i*Math.PI*.4;b.rock(p.flower,x+Math.cos(a)*.85,y+4.6+(i%2)*.4,z+Math.sin(a)*.8,.42,.28,.4);}
-    if(p.tree==='citrus')for(let i=0;i<6;i++){const a=i*Math.PI/3;b.rock('#d8a342',x+Math.cos(a)*1.05,y+3.7+(i%2)*.5,z+Math.sin(a),.12,.14,.12);}
-  }
   for(let i=0;i<4;i++){const a=i*Math.PI/2+index;b.rock(p.leafLight,x+Math.cos(a)*.65,y+.9,z+Math.sin(a)*.65,.27,.16,.28);}
 }
 
@@ -99,7 +79,7 @@ const segmentDistance=(x,z,a,c)=>{
  * against every existing solid, water, gate and street before it is emitted.
  * Returned placements make these clearances inspectable in tests and previews. */
 export function* createCityStreetDetail({root,colliders,heightAt,paths,palette:p,id,inside=()=>true,dry=()=>true,protectedPoints=[],spacing=14}){
-  const b=createSceneryBuilder(`${id} - planted streets and lanterns`),placements=[];
+  const b=createSceneryBuilder(`${id} - planted streets and lanterns`),placements=[],trees=[];
   const segments=paths.flatMap(s=>s.points.slice(1).map((c,i)=>({a:s.points[i],c,half:s.width/2})));
   const clear=(x,z,r)=>{
     const y=heightAt(x,z);
@@ -118,7 +98,13 @@ export function* createCityStreetDetail({root,colliders,heightAt,paths,palette:p
         const off=side*(s.half+r+1+extra),x=s.a.x+dx/len*at-dz/len*off,z=s.a.z+dz/len*at+dx/len*off;
         if(!clear(x,z,r)||placements.some(q=>Math.hypot(q.x-x,q.z-z)<6))continue;
         const y=heightAt(x,z),index=placements.length;
-        if(type==='tree')planterTree(b,p,x,y,z,index);
+        if(type==='tree'){
+          planterTree(b,p,x,y,z,index);
+          const species={palm:'date-palm',cypress:'mediterranean-cypress',blossom:'dogwood',citrus:'sweet-orange'}[p.tree]??'small-leaved-lime';
+          trees.push({id:`${id}-street-tree-${index}`,species,x,z,y:y+.74,height:p.tree==='palm'?6:p.tree==='cypress'?7:4.8,
+            crownRadius:p.tree==='palm'?2.8:p.tree==='cypress'?1.13:1.7,trunkRadius:p.tree==='palm'?.23:.16,rotation:index*.3,
+            region:id,harvestable:false,protectedReason:'A planted town tree.'});
+        }
         else{
           b.cylinder(p.stone,x,y,z,.34,.6);b.cylinder(p.metal,x,y+.5,z,.1,3.8);
           b.beam(p.metal,[x,y+4.2,z],[x+.6,y+4.2,z],.1);cityLantern(b,p,x+.55,y+3.3,z,.85);
@@ -130,5 +116,6 @@ export function* createCityStreetDetail({root,colliders,heightAt,paths,palette:p
   }
   const mesh=yield* b.finishSteps(root);
   if(mesh)mesh.userData.cityDetail=placements;
-  return {placements,vertices:b.vertexCount,batches:mesh?1:0};
+  const planted=yield* createSpeciesTreesSteps({parent:root,colliders,trees,name:`${id} planted tree species`});
+  return {placements,vertices:b.vertexCount+planted.vertices,batches:(mesh?1:0)+planted.batches};
 }

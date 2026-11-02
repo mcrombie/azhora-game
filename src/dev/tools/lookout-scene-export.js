@@ -4,7 +4,7 @@ import {LOOKOUT} from '../../app/exploration/tower-state.js';
 
 // Rendering data only: no actor, collider, script or saved state serialization.
 // Geometries remain shared by tree instances.
-export function snapshotLookoutScene(scene){
+export function snapshotLookoutScene(scene,{center=LOOKOUT,maxDistance=3800}={}){
   const geometries=[],materials=[],meshes=[],geometryIds=new Map(),materialIds=new Map();
   const sphere=new THREE.Sphere();
   const attribute=a=>a?{array:a.array.slice(),itemSize:a.itemSize,normalized:a.normalized}:null;
@@ -34,7 +34,7 @@ export function snapshotLookoutScene(scene){
   }
   scene.traverseVisible(o=>{
     if(!o.isMesh||o.isSkinnedMesh)return;
-    const lineage=[];for(let p=o;p&&p!==scene;p=p.parent)lineage.push(p.name);
+    const lineage=[];for(let p=o;p;p=p.parent){if(p.userData.lookoutDynamic)return;if(p===scene)break;lineage.push(p.name);}
     if(lineage.some(n=>/Tidehaven|Goblin camp site|arrival boat/i.test(n)))return;
     // Council standards are scenario state and are drawn by the lookout host.
     // Keep the old flags out of merged city batches so they cannot double up.
@@ -42,7 +42,7 @@ export function snapshotLookoutScene(scene){
     const g=o.geometry;if(!g.attributes.position)return;
     g.computeBoundingSphere();if(o.isInstancedMesh)o.computeBoundingSphere();
     sphere.copy(o.isInstancedMesh?o.boundingSphere:g.boundingSphere).applyMatrix4(o.matrixWorld);
-    if(Math.hypot(sphere.center.x-LOOKOUT.x,sphere.center.z-LOOKOUT.z)-sphere.radius>3800)return;
+    if(Math.hypot(sphere.center.x-center.x,sphere.center.z-center.z)-sphere.radius>maxDistance)return;
     const part={name:lineage.filter(Boolean).reverse().join(' / '),geometry:geometry(g),material:Array.isArray(o.material)?o.material.map(material):material(o.material),
       matrix:o.matrixWorld.toArray(),region:o.userData.district??regionAt(sphere.center.x,sphere.center.z)?.id,
       sphere:[...sphere.center.toArray(),sphere.radius],instances:null,instanceColors:null};

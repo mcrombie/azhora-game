@@ -4,6 +4,8 @@
  * and climbing all use these same shores and the same continuous heightfield. */
 import { createHexBoundaryDistance } from '../../../world/terrain/hex-boundary-distance.js';
 import { cacheTerrainPointSamples } from '../../../world/terrain/terrain-point-cache.js';
+import {frontierRelief} from '../oremindi-frontier/oremindi-frontier-layout.js';
+import {southOremindiExpeditionGround,southOremindiExpeditionPathDistance,SOUTH_OREMINDI_EXPEDITION_PATHS,createSouthOremindiTraverse} from './south-oremindi-expedition.js';
 import { REGION_CELLS, REGION_OUTLINES, hexAt, hexCentre, TRANSFORM,
   seamlessTerrainMix, relief } from '../../../world/terrain/region-world.js';
 import { PLAYABLE_SURVEY } from '../../../dev/tools/region-survey.js';
@@ -165,7 +167,7 @@ const crownTraverse=route('oremindi-crown-traverse','The Shoulder Traverse',[
     [-3500,-317,38],[-3590,-357,76],[-3640,-410,130],[-3680,-495,193],[-3660,-588,262],
     [-3625,-687,351],[-3490,-735,445],[-3400,-708,510],[-3425,-642,550],[-3480,-605,596],
     [-3520,-620,625],
-  ],6);
+  ],9);
 const crownScramble=(()=>{
   const start=crownTraverse.points.at(-1),peak=PEAKS[0],distance=Math.hypot(peak.x-start.x,peak.z-start.z),length=distance+2.5;
   const ux=(peak.x-start.x)/distance,uz=(peak.z-start.z)/distance;
@@ -191,7 +193,9 @@ const PATH_SHAPES=freeze([
   ],7),
   crownScramble,
 ]);
-export const PATHS=freeze(PATH_SHAPES.map(p=>freeze({...p,points:freeze(p.points.map(at=>freeze({...at,y:altitude(at.y)})))})));
+const originalPaths=PATH_SHAPES.map(p=>freeze({...p,points:freeze(p.points.map(at=>freeze({...at,y:altitude(at.y)})))}));
+const expeditionTraverse=createSouthOremindiTraverse(originalPaths[0]);
+export const PATHS=freeze([expeditionTraverse,...originalPaths.slice(1),...SOUTH_OREMINDI_EXPEDITION_PATHS]);
 function calculatePathSample(path,x,z) {
   const b=path.bounds;if(x<b.minX||x>b.maxX||z<b.minZ||z>b.maxZ)return null;
   let nearest=Infinity,chosen=null;
@@ -210,7 +214,7 @@ function calculatePathSample(path,x,z) {
 }
 const pathSample=cacheTerrainPointSamples(calculatePathSample);
 export function southOremindiPathDistance(x,z) {
-  let d=Infinity;for(const path of PATH_SHAPES){const p=pathSample(path,x,z);if(p)d=Math.min(d,p.distance);}return d;
+  let d=southOremindiExpeditionPathDistance(x,z);for(const path of PATH_SHAPES){const p=pathSample(path,x,z);if(p)d=Math.min(d,p.distance);}return d;
 }
 function ownedGround(x,z,base,inset) {
   const share=smooth(0,82,inset);let ground=lerp(base,mountainHeight(x,z),share);
@@ -249,7 +253,15 @@ export function southOremindiGround(x,z,base) {
   if(!southOremindiOwns(x,z))return original;
   // Compress only the regional relief. Even a supplied high neighboring base
   // keeps its exact boundary value, rather than being lowered at ownership.
-  return original+altitude(ownedGround(x,z,original,southOremindiInset(x,z)))-altitude(original);
+  const y=original+altitude(ownedGround(x,z,original,southOremindiInset(x,z)))-altitude(original);
+  let margin=Infinity;for(const l of LAKES)margin=Math.min(margin,lakeDistance(l,x,z));
+  const changed=frontierRelief(x,z,y,'South Oremindi Mountains',southOremindiInset(x,z));
+  // New occupied benches must not cut through the existing climb or the thin
+  // alpine meadows. Keep their cores, then blend back into the settlement relief.
+  let share=smooth(8,28,southOremindiPathDistance(x,z));
+  for(const shelf of SHELF_SHAPES)share*=smooth(1,1.8,shelfSample(shelf,x,z).distance);
+  const country=lerp(y,changed,smooth(0,18,margin)*share);
+  return southOremindiExpeditionGround(x,z,country,{inset:southOremindiInset(x,z),shore:margin,traverse:expeditionTraverse,peaks:PEAKS});
 }
 
 export const LANDMARKS=freeze([
@@ -283,7 +295,10 @@ export function southOremindiTint(x,z) {
   if(f.snow>.58)return '#e3e9e6';
   if(f.rock>.55)return '#7f888b';
   if(f.height>altitude(430))return '#a1aba8';
-  if(f.height>altitude(270))return '#858f73';
+  if(f.height>altitude(270)){
+    const m=Math.sin(x*.065+Math.sin(z*.043)*1.8)*.55+Math.cos(z*.073-x*.019)*.35;
+    return m>.35?'#a0a18b':m<-.35?'#7e896f':'#92977e';
+  }
   return f.shoreDistance<7?'#b2ad92':'#758562';
 }
 export { PEAKS as SOUTH_OREMINDI_PEAKS, PATHS as SOUTH_OREMINDI_PATHS,

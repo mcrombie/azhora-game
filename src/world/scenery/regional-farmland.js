@@ -3,6 +3,7 @@
  * dependency. Fields are anonymous working places, not settlements and not invitations to invent
  * residents. The Caricas beds farm by rotation and alone grow bridge rye, field beans and soft
  * fruit (src/gameplay/skills/farming/farming.js, docs/lizeem-farmlands-design.md §5.1); their seed benches stock them. */
+import {countrysideReserved} from '../../content/regions/minora-frontier/lizeem-countryside.js';
 const freeze = Object.freeze;
 const point = (x, z) => freeze({ x, z });
 const local = (farm, x, z) => point(farm.x + x, farm.z + z);
@@ -111,6 +112,7 @@ function edgeDistance(points, x, z) {
 }
 /** Suppress incidental forest/rocks before their generation; never move an authored road. */
 export function regionalFarmlandClear(x, z, margin = 0) {
+  if(countrysideReserved(x,z,margin))return true;
   return FARMSTEADS.some(farm => Math.abs(x - farm.x) < 24 + margin && Math.abs(z - farm.z) < 24 + margin
     && (inFarmPolygon(farm.boundary, x, z) || (margin > 0 && edgeDistance(farm.boundary, x, z) < margin)))
     || FARM_LANES.some(lane => lane.points.slice(1).some((b, i) => {
@@ -122,6 +124,7 @@ export function regionalFarmlandClear(x, z, margin = 0) {
 }
 /** Wildlife may visit meadow margins, but its home must not occupy tilled soil or the shelter. */
 export function regionalFarmlandWorked(x, z, margin = 0) {
+  if(countrysideReserved(x,z,margin))return true;
   return FARMSTEADS.some(farm => Math.abs(x - farm.x) < 24 + margin && Math.abs(z - farm.z) < 24 + margin && (
     farm.fields.some(f => ['grain', 'vegetable'].includes(f.kind) && (inFarmPolygon(f.polygon, x, z) || edgeDistance(f.polygon, x, z) < margin))
     || farm.rows.some(row => Math.abs(x - row.x) < 1.6 + margin && Math.abs(z - row.z) < 1.75 + margin)

@@ -11,7 +11,7 @@ const player=(x,z)=>new THREE.Vector3(x,2,z);
 const tick=(view,p,count=200)=>{for(let i=0;i<count;i++)view.update(i*.1,.1,p);};
 
 test('twelve added residents have individual local and postwar speech without mutating the campaign',()=>{
- assert.equal(CORRIDOR_RESIDENTS.length,12);assert.equal(new Set(LIZEEM_RESIDENTS.map(d=>d.id)).size,18);
+ assert.equal(CORRIDOR_RESIDENTS.length,12);assert.equal(new Set(LIZEEM_RESIDENTS.map(d=>d.id)).size,LIZEEM_RESIDENTS.length);
  for(const d of LIZEEM_RESIDENTS)for(const state of [{},battle,{winner:'west',engagements:[]},{winner:'east',engagements:[]}]){
   const before=JSON.stringify(state);for(const topic of ['hello','work','war','news'])assert(residentWords(d.id,topic,state)?.length>20,d.id+topic);
   if(state.winner)for(const topic of ['future','memory'])assert(residentWords(d.id,topic,state)?.length>20,d.id+topic);

@@ -20,3 +20,13 @@ export function clampScopeOffset(scope,{width,height,scale,x,y}){
   const clamp=(value,size,min,max)=>{min-=24;max+=24;return (max-min)*scale<=size?(size-(min+max)*scale)/2:Math.max(size-max*scale,Math.min(-min*scale,value));};
   return {x:clamp(x,width,b.minX,b.maxX),y:clamp(y,height,b.minY,b.maxY)};
 }
+
+// Fit a briefed destination and the traveler together. Screen-space margins
+// leave room for their labels; nearby goals keep the familiar local scale.
+export function atlasObjectiveFrame(traveler,goal,{width,height,fitScale,localZoom,minimumZoom=1}){
+  if(![traveler?.x,traveler?.y,goal?.x,goal?.y,width,height,fitScale,localZoom].every(Number.isFinite)||width<=0||height<=0||fitScale<=0)return null;
+  const paddingX=Math.min(150,width*.22),paddingY=Math.min(90,height*.22);
+  const scale=Math.min(localZoom*fitScale,(width-paddingX*2)/Math.max(1,Math.abs(goal.x-traveler.x)),(height-paddingY*2)/Math.max(1,Math.abs(goal.y-traveler.y)));
+  const zoom=Math.max(minimumZoom,scale/fitScale);
+  return {zoom,x:width/2-(traveler.x+goal.x)/2*fitScale*zoom,y:height/2-(traveler.y+goal.y)/2*fitScale*zoom};
+}

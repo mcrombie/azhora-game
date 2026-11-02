@@ -69,7 +69,7 @@ export const MITHALA_WILDLIFE_ZONES = freeze([
   // The shared city perimeter now surrounds the meeting. These homes follow
   // the south bank immediately downstream, outside its river arch and walls.
   zone('mithala-meeting-otters', 'otter', 'South Mithala', .35, [-1640, -1540, -1420, -1330],
-    [[-1614, -1394], [-1594, -1396], [-1606, -1396]],
+    [[-1614, -1388], [-1594, -1388], [-1606, -1390]],
     'The fauna overview puts otters on the whole Lizeem system - "river otters and their larger relatives occupy the rivers from the Oremindi meltwater sources through the forest-margin watercourses" - and names the great river otter, which takes fish the size of a river-horn calf and is not loved by the farming communities for it. These are on the bank at the meeting of the arms, where three channels come together and the fish that are going anywhere on this plain have to pass.',
     { scale: 1.2 }),
   zone('south-mithala-buffalo', 'frostback', 'South Mithala', .8, [-1540, -1370, -1390, -1270],
@@ -77,7 +77,7 @@ export const MITHALA_WILDLIFE_ZONES = freeze([
     'Frostback buffalo on the flood plain between the apron and the main channel. The overview gives the animal this plain by name - "a heavy wild bovid of the Mithsla and Celder plains" - and gives its herds a circuit rather than a range: "west through the mineral-rich Celder river terraces in some years, east and south across Mithsla in others, and north into Henborth only when the thaw and summer moisture make the upland pasture worth the risk." This is the summer face of that: the grass on the levee backs, which is the best of it and the only ground here that is never under water.',
     { scale: 1.06 }),
   zone('south-mithala-herons', 'wading-bird', 'South Mithala', .4, [-1660, -1550, -1420, -1350],
-    [[-1612, -1394], [-1602, -1390], [-1578, -1384]],
+    [[-1612, -1389], [-1602, -1390], [-1578, -1380]],
     'Grey herons on the main channel’s upper reach, standing a pace off the water on the levee. "Wetland birds of Mitholo and Ond constitute what the Academy’s natural historians call... the richest avian assemblage documented on the continent. Wading birds in particular - herons, spoonbills, a range of stilt-legged species - use the Lizeem distributaries as both breeding grounds and wintering locations." This is the Lizeem’s own plain and they are not an extension here.'),
   zone('apron-hares', 'upland-hare', 'South Mithala', .3, [-1590, -1440, -1340, -1250],
     [[-1556, -1285], [-1496, -1321], [-1472, -1285]],

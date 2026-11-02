@@ -7,7 +7,7 @@ export function dodgeLesson(state,advanced=false){
   if(state.outcome)return {complete:learned&&state.outcome==='success',text:learned?(advanced?'Thrust and sweep counters recorded.':'Dodge and counter recorded.'):(advanced?'Counter both attacks: sidestep the thrust; retreat from the sweep.':'Dodge a committed strike, then hit that soldier while their guard is open.')};
   const live=state.guards.filter(g=>g.hp>0&&!g.escaped);
   const threat=live.find(g=>(!state.squad||g.targetId===-1)&&(g.phase==='windup'||g.phase==='strike'));
-  if(threat)return {complete:false,kind:'threat',text:threat.attack==='sweep'?'Sweep: dodge away with direction + Space. Stay beyond the pink arc.':'Thrust: tap direction + Space to sidestep across the orange warning.'};
+  if(threat)return {complete:false,kind:'threat',text:threat.attack==='overhead'?'Overhead: sidestep the gold warning, then counter the opening.':threat.attack==='sweep'?'Sweep: dodge away with direction + Space. Stay beyond the pink arc.':'Thrust: tap direction + Space to sidestep across the orange warning.'};
   const open=live.find(g=>g.open&&g.dodged);
   if(open){
     const distance=Math.hypot(open.x-state.hero.x,open.z-state.hero.z);
@@ -32,8 +32,13 @@ export function encounterInstruction(state,practice=false){
   if(['threat','approach','face','counter'].includes(lesson.kind))return lesson;
   if(feedback&&(recent||feedback.type==='defense'&&feedback.kind==='hit'))return {kind:'feedback',text:feedback.text};
   if(practice==='lesson'||practice==='advanced')return lesson;
+  if(state.objective?.type==='duel')return {kind:'duel',text:'Break the champion’s guard. Sidestep thrusts and overheads; retreat from sweeps. Fireball deals damage but does not cancel a committed attack.'};
   const live=state.guards.filter(g=>g.hp>0&&!g.escaped),runner=state.guards.find(g=>g.role==='runner');
-  if(state.objective?.type==='rally')return {kind:'rally',text:state.squad?`Fight beside your allies; flank occupied guards. ${live.length} enemies remain.`:`Break the rally guard: ${live.length} remaining. Dodge, then counter.`};
+  if(state.objective?.type==='rally'){
+    const captain=live.find(g=>g.commanderId);
+    if(captain&&live.length===1)return {kind:'rally',text:`${captain.name} still holds the field. Fight beside your allies to defeat or rout the captain.`};
+    return {kind:'rally',text:state.squad?`Fight beside your allies; flank occupied guards. ${live.length} enemies remain.`:`Break the rally guard: ${live.length} remaining. Dodge, then counter.`};
+  }
   if(runner?.escaped)return {kind:'rally',text:'Runner escaped. Stop the escorts; each soldier still counts.'};
   if(runner?.hp>0){
     const rally=state.objective?.rally;

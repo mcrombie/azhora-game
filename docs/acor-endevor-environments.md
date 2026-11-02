@@ -2,6 +2,8 @@
 
 Implemented 5 October 2026. Scope: terrain, plants, persistent wildlife, discovery landmarks and developer travel. No new inhabitants, settlements, factions or quests.
 
+Lore update, 19 October 2026: Acor Wetlands is under the influence of **Dark Goblin wraiths**, ancient undead High Goblin followers of Thalmagar who persist without bodies. The [regional lore](thalmagar-crisis-design.md#dark-goblin-wraith-influence) preserves the dispute between Acreland, Endevor and Thalmagar. Wraith actors and encounters are not part of the implemented environment described here.
+
 ## Regions and character
 
 | Runtime ID | Exact atlas name | Environment |

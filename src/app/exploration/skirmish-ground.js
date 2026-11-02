@@ -1,12 +1,14 @@
-import {canStand,moveCharacter} from '../../gameplay/movement/locomotion.js';
+import {canStand,moveCharacter,waterAt} from '../../gameplay/movement/locomotion.js';
 import {findRetreatRoute} from '../../gameplay/combat/retreat-route.js';
 
 export const SKIRMISH_RADIUS=45;
+export const SKIRMISH_BODY_RADIUS=.34;
 // The local fight stays on loaded, dry ground in the configured region. Shared walking collision
 // checks handle walls and trees; short height probes also reject abrupt cliffs.
 export function createSkirmishGround(world,centre,regionId=13,radius=SKIRMISH_RADIUS){
-  const inside=(x,z)=>Math.hypot(x-centre.x,z-centre.z)<=radius&&world.readyAt(x,z)&&world.regionAt(x,z).id===regionId;
-  const clear=(x,z,radius=.34)=>inside(x,z)&&canStand(x,z,world,radius,world.heightAt(x,z));
+  const inside=(x,z)=>Math.hypot(x-centre.x,z-centre.z)<=radius&&world.readyAt(x,z)&&(regionId===null||world.regionAt(x,z).id===regionId);
+  const clear=(x,z,radius=SKIRMISH_BODY_RADIUS)=>inside(x,z)&&canStand(x,z,world,radius,world.heightAt(x,z))&&
+    [[radius,0],[-radius,0],[0,radius],[0,-radius]].every(([dx,dz])=>inside(x+dx,z+dz)&&world.heightAt(x+dx,z+dz)>=waterAt(x+dx,z+dz,world));
   function segment(a,b,radius=.18){
     const length=Math.hypot(b.x-a.x,b.z-a.z),steps=Math.max(1,Math.ceil(length/.18));let last=world.heightAt(a.x,a.z);
     for(let i=1;i<=steps;i++){
@@ -17,7 +19,7 @@ export function createSkirmishGround(world,centre,regionId=13,radius=SKIRMISH_RA
   }
   function move(at,dx,dz){
     const point={x:at.x,z:at.z,y:world.heightAt(at.x,at.z)};
-    moveCharacter(point,dx,dz,world,.34,{canTraverse:(x,z,nx,nz)=>inside(nx,nz)&&Math.abs(world.heightAt(nx,nz)-world.heightAt(x,z))<=.3});
+    moveCharacter(point,dx,dz,world,SKIRMISH_BODY_RADIUS,{canTraverse:(x,z,nx,nz)=>clear(nx,nz)&&Math.abs(world.heightAt(nx,nz)-world.heightAt(x,z))<=.3});
     return {x:point.x,z:point.z};
   }
   function spawn(hero,heading=0,count=3){
@@ -52,12 +54,16 @@ export function createSkirmishGround(world,centre,regionId=13,radius=SKIRMISH_RA
     for(const distance of [0,3,6,9,12,16,20])for(let i=0;i<(distance?16:1);i++)for(const turn of [0,.5,-.5,1,-1]){
       const angle=heading+i*Math.PI/8,at={x:centre.x+Math.sin(angle)*distance,z:centre.z+Math.cos(angle)*distance},yaw=heading+turn;
       const point=(side,forward)=>({x:at.x+Math.cos(yaw)*side-Math.sin(yaw)*forward,z:at.z-Math.sin(yaw)*side-Math.cos(yaw)*forward});
-      const hero=point(0,-3),rally=point(0,3),guards=Array.from({length:count},(_,n)=>point((n-(count-1)/2)*2.7,8));
-      const friendly=Array.from({length:allies},(_,n)=>point((n-(allies-1)/2)*3,0));
+      const formation=(size,spacing,forward,direction)=>Array.from({length:size},(_,n)=>{
+        const row=Math.floor(n/6),width=Math.min(6,size-row*6);
+        return point((n%6-(width-1)/2)*spacing,forward+row*3.2*direction);
+      });
+      const hero=point(0,allies>6?-8:-3),rally=point(0,3),guards=formation(count,2.7,8,1);
+      const friendly=formation(allies,3,0,-1);
       const points=[hero,rally,...guards,...friendly];
       if(points.every(p=>clear(p.x,p.z,.7)&&segment(at,p,.45))&&guards.every(g=>friendly.every(a=>segment(g,a,.4))))return {hero,guards,allies:friendly,rally,route:null};
     }
-    throw Error('The central battlefield has no clear space for both formations. Try the solo assault.');
+    throw Error('There is not enough clear ground here for both formations. Leave and approach from another side.');
   }
-  return {move,spawn,interception,stage,assaultStage,clear,retreatRoute:(at,hero)=>findRetreatRoute(at,hero,{centre,radius,clear,segment}),canHit:(a,b)=>Math.abs(world.heightAt(a.x,a.z)-world.heightAt(b.x,b.z))<=1.5&&segment(a,b)};
+  return {move,spawn,interception,stage,assaultStage,clear,segment,retreatRoute:(at,hero)=>findRetreatRoute(at,hero,{centre,radius,clear,segment}),canHit:(a,b)=>Math.abs(world.heightAt(a.x,a.z)-world.heightAt(b.x,b.z))<=1.5&&segment(a,b)};
 }

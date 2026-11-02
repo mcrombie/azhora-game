@@ -7,6 +7,7 @@ const {createWarHero}=await sourceModule('../src/app/exploration/afterlife-form.
 const {createLimboChamber}=await sourceModule('../src/content/regions/minora-frontier/limbo-chamber.js');
 const {createMinoraResidents}=await sourceModule('../src/app/exploration/resident-view.js');
 const {MINORA_RESIDENTS}=await sourceModule('../src/content/regions/minora-frontier/minora-residents.js');
+const {LIZEEM_RESIDENTS}=await sourceModule('../src/content/regions/minora-frontier/lizeem-residents.js');
 const world={bounds:{minX:-5000,maxX:5000,minZ:-5000,maxZ:5000},readyAt:()=>true,heightAt:()=>2,waterAt:()=>0,nearColliders:()=>[],regionAt:()=>({id:13})};
 
 test('fixed central staging validates a complete fight and is deterministic across entries',()=>{
@@ -40,7 +41,7 @@ test('resident trial is bounded, lazy, culled and disabled without new world wor
  view.update(0,.3,{x:0,z:0});assert.equal(view.state().constructed,0);
  const p=MINORA_RESIDENTS[0];view.update(1,.3,p);assert.equal(view.state().constructed,1,'Only one new rig per update');
  for(let i=0;i<80;i++)view.update(i/10,.1,{x:-2350,z:135});
- assert(view.state().constructed>=6&&view.state().constructed<=12);assert.equal(view.state().limit,12);assert.equal(view.state().total,18);
+ assert(view.state().constructed>=6&&view.state().constructed<=12);assert.equal(view.state().limit,12);assert.equal(view.state().total,LIZEEM_RESIDENTS.length);
  view.update(10,.3,{x:0,z:0});assert.equal(view.state().visible,0);const count=view.state().animationUpdates;
  for(let i=0;i<10;i++)view.update(10+i,.1,{x:0,z:0});assert.equal(view.state().animationUpdates,count);
  view.setEnabled(false);view.update(20,.3,p);assert.equal(view.state().visible,0);assert.equal(view.state().animationUpdates,count);view.dispose();
@@ -55,6 +56,7 @@ test('all six residents have reachable smalltalk, stop walking for it and respec
    const player=new THREE.Vector3(def.x,2,def.z+1);for(let i=0;i<7;i++)view.update(1,.3,player);
    assert.equal(view.target(player)?.id,def.id);
  }
+ const satetDef=MINORA_RESIDENTS.find(p=>p.id==='satet');for(let i=0;i<20;i++)view.update(i,.1,new THREE.Vector3(satetDef.x,2,satetDef.z+3));
  const satet=view.state().people.find(p=>p.id==='satet'),p=new THREE.Vector3(...satet.position);p.z+=3;
  view.setTalking('satet',p);for(let i=0;i<80;i++)view.update(i,.1,p);
  assert.deepEqual(view.state().people.find(p=>p.id==='satet').position,satet.position,'Conversation freezes the speaker');

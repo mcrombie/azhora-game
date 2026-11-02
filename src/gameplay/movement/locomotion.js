@@ -33,7 +33,7 @@ function clearHere(x, z, world, radius, afloat = false, feetY = world.feetY) {
     const c = near[i];
     if (WATER_COLLIDERS.has(c.kind)) continue;
     if ((Number.isFinite(c.minY) || Number.isFinite(c.maxY))
-      && !colliderOverlapsHeight(c, feetY ?? (feetY = world.heightAt(x, z)))) continue;
+      && !colliderOverlapsHeight(c, feetY ?? (feetY = world.heightAt(x, z)), world.bodyHeight ?? 1.75)) continue;
     if (c.r !== undefined) { const dx = x - c.x, dz = z - c.z, reach = c.r + radius; if (dx * dx + dz * dz < reach * reach) return false; }
     else if (Math.abs(x - c.x) < c.hx + radius && Math.abs(z - c.z) < c.hz + radius) return false;
   }

@@ -8,7 +8,7 @@ export function localRivers(position,radius){
   const shapes=[];
   const overlaps=b=>b.minX<=position.x+radius&&b.maxX>=position.x-radius&&b.minZ<=position.z+radius&&b.maxZ>=position.z-radius;
   for(const river of WEST_RIVERS){
-    if(!overlaps(river.bounds))continue;
+    if(!overlaps({minX:river.bounds.minX-river.maxHalf,maxX:river.bounds.maxX+river.maxHalf,minZ:river.bounds.minZ-river.maxHalf,maxZ:river.bounds.maxZ+river.maxHalf}))continue;
     let parts=segments.get(river);
     if(!parts){
       const samples=WEST_PROFILES.get(river.id);parts=[];

@@ -1,8 +1,9 @@
 /** A tree keeps its species from the world through harvesting and sawing.
  * Each species has its own timber: a cedar never turns into pine, and a red oak
  * is not a white oak. Unimplemented planks remain unavailable at the sawpit. */
+import {treeSpecies,TREE_LOCAL_NAMES} from '../../../world/life/tree-species.js';
 const freeze = Object.freeze;
-const timber = (species, name, woodKind = species, log = null, plank = null, carriageUse = null) => freeze({ species, woodName: name, woodKind, log, plank, carriageUse });
+const timber = (species, name, woodKind = species, log = null, plank = null, carriageUse = null) => freeze({ species, woodName: treeSpecies(species)?.name??name, localName:TREE_LOCAL_NAMES[species]?.name??null, realSpeciesId:treeSpecies(species)?.id??species, woodKind, log, plank, carriageUse });
 export const WOOD_SPECIES = freeze({
   acor: timber('acor', 'Acor', 'acor', 'acor-logs'),
   kapok: timber('kapok', 'Kapok', 'kapok', 'kapok-logs'),
@@ -52,6 +53,12 @@ export const WOOD_SPECIES = freeze({
   'desert-thorn': timber('desert-thorn', 'Desert thorn', 'desert-thorn', 'desert-thorn-logs'),
   'red-mangrove': timber('red-mangrove', 'Red mangrove', 'red-mangrove', 'red-mangrove-logs'),
   'black-poplar': timber('black-poplar', 'Black poplar', 'black-poplar', 'black-poplar-logs'),
+  'english-oak': timber('english-oak','English oak'),
+  'european-beech': timber('european-beech','European beech'),
+  'wych-elm': timber('wych-elm','Wych elm'),
+  'small-leaved-lime': timber('small-leaved-lime','Small-leaved lime'),
+  'date-palm': timber('date-palm','Date palm'),
+  'mediterranean-cypress': timber('mediterranean-cypress','Mediterranean cypress'),
 });
 
 export const WOOD_KIND_SPECIES = freeze(Object.fromEntries(Object.values(WOOD_SPECIES).filter(wood => wood.log).map(wood => [wood.woodKind, wood.species])));

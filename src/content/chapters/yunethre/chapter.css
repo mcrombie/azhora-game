@@ -1,0 +1,8 @@
+#yunethre-dialog{position:fixed;inset:0;z-index:25;background:#102b3377;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+#yunethre-dialog[hidden],#yunethre-interact[hidden]{display:none}
+#yunethre-dialog .tower-dialog-card{width:min(600px,94vw);max-height:85vh;overflow:auto}
+#yunethre-dialog p{white-space:pre-line;line-height:1.55}
+#yunethre-dialog .tower-dialog-actions{display:flex;flex-wrap:wrap;gap:8px}
+#yunethre-interact{position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:5;max-width:80vw}
+body:has(#stable-interact:not([hidden])) #yunethre-interact{bottom:190px}
+@media(max-width:700px){#yunethre-interact{bottom:130px}}

@@ -185,6 +185,7 @@ const BOX = freeze({ minX: -1665, maxX: -1375, minZ: 328, maxZ: 670 });
  */
 export function nesdorFarmReserved(x, z, margin = 0) {
   if (x < BOX.minX - margin || x > BOX.maxX + margin || z < BOX.minZ - margin || z > BOX.maxZ + margin) return false;
+  if (NESDOR_HAZEL_TREES.some(t => Math.hypot(x-t.x,z-t.z) < 3.5+margin)) return true;
   if (NESDOR_BUILDINGS.some(b => Math.abs(x - b.x) < b.w / 2 + 1 + margin && Math.abs(z - b.z) < b.d / 2 + 1 + margin)) return true;
   if (NESDOR_FARM_ROWS.some(row => Math.abs(x - row.x) < NESDOR_BED.along / 2 + .4 + margin && Math.abs(z - row.z) < NESDOR_BED.across / 2 + .4 + margin)) return true;
   if (x > NESDOR_INN_YARD.minX - margin && x < NESDOR_INN_YARD.maxX + margin && z > NESDOR_INN_YARD.minZ - margin && z < NESDOR_INN_YARD.maxZ + margin) return true;

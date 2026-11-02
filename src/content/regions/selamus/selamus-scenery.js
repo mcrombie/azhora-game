@@ -85,7 +85,7 @@ function solidRect(colliders,b,cx,cz,width,depth,minY,maxY,suffix){
 }
 function transformed(b,flip=0){return{...b,yaw:b.yaw+flip};}
 
-function* palazzo(s,b,y,colliders,metrics){
+export function* selemisHouseSteps(s,b,y,colliders,metrics){
   const face=transformed(b,b.v<0?Math.PI:0),w=b.width,d=b.depth,h=b.height,porch=Math.min(3,d*.24),spring=3.15;
   const tint=PLASTER[b.palette%PLASTER.length],roof=TILE[b.palette%TILE.length];
   s.frame(b.x,y,b.z,face.yaw,()=>{
@@ -284,7 +284,7 @@ export function* createSelamusScenerySteps({parent,heightAt,colliders}){
   const walkSurfaces=[],mapFeatures=[];
   for(const b of SELAMUS_BUILDINGS){
     const s=createSceneryBuilder(`Selemis ${b.name} ${b.id}`),y=heightAt(b.x,b.z);
-    if(b.kind==='temple')yield* temple(s,b,y,colliders,metrics);else if(b.kind==='campanile')yield* beacon(s,b,y,colliders,metrics);else yield* palazzo(s,b,y,colliders,metrics);
+    if(b.kind==='temple')yield* temple(s,b,y,colliders,metrics);else if(b.kind==='campanile')yield* beacon(s,b,y,colliders,metrics);else yield* selemisHouseSteps(s,b,y,colliders,metrics);
     const mesh=yield* s.finishSteps(root);mesh.userData.selamusBuilding=b.id;mesh.userData.kind=b.kind;
     metrics.buildings++;metrics.batches++;metrics.vertices+=s.vertexCount;if(!['house','palazzo','warehouse'].includes(b.kind))metrics.landmarks++;
     mapFeatures.push({id:b.id,name:b.name,kind:'building',x:b.x,z:b.z,width:b.width,depth:b.depth,angle:b.yaw});yield;

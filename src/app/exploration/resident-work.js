@@ -1,9 +1,22 @@
 import * as THREE from 'three';
+import {createSceneryBuilder} from '../../world/scenery/scenery-builder.js';
+
+export function residentUniform(actor,def){
+  if(!def.guard)return;
+  const chest=actor.group.getObjectByName('Chest');if(!chest)return;
+  // One merged local batch: neutral river-green tabard and three civic studs.
+  // Spears come from the existing mercenary rig, never an imported army skin.
+  const b=createSceneryBuilder('Minora watch: river-green civic tabard');
+  b.box('#315e57',0,1.10,.20,.31,.36,.035);
+  b.box('#d7c998',0,.94,.223,.31,.035,.02);
+  for(const x of [-.085,0,.085])b.rock('#d7c998',x,1.21,.232,.022,.022,.013);
+  const mesh=b.finish(chest,{castShadow:false});mesh.position.y=-chest.position.y;mesh.material=mesh.material.clone();
+}
 
 // A few occupation gestures on the existing rig, not jobs or resource production.
 // Props belong to the actor and are released by disposeCharacter with its rig.
-export function residentWork(actor,id){
-  const kind={melka:'bundle',pomona:'basket',messor:'rake',nepri:'measure',consus:'measure',ilmarinen:'hammer'}[id];
+export function residentWork(actor,id,gesture){
+  const kind=gesture??{melka:'bundle',pomona:'basket',messor:'rake',nepri:'measure',consus:'measure',ilmarinen:'hammer'}[id];
   const wrist=actor.group.getObjectByName('Right Wrist'),shoulder=actor.group.getObjectByName('Right Shoulder'),elbow=actor.group.getObjectByName('Right Elbow');
   if(!kind||!wrist||!shoulder||!elbow)return ()=>{};
   const prop=new THREE.Group();prop.name='Resident work / '+kind;wrist.add(prop);

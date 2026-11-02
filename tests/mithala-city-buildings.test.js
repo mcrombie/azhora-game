@@ -45,7 +45,8 @@ test('every building is drawn and collided, in a few merged batches under budget
   assert.equal(metrics.colliders, colliders.length);
   assert.equal(metrics.walkSurfaces, walkSurfaces.length);
   assert.equal(metrics.stairFlights, MITHALA_TOWER_STAIR.flights.length);
-  assert.ok(metrics.vertices < 160000, `${metrics.vertices} vertices`);
+  // Twelve added homes share the original six batches; retain a bounded geometry budget.
+  assert.ok(metrics.vertices < 215000, `${metrics.vertices} vertices`);
   assert.ok(metrics.batches <= 6 && metrics.batches === root.children.length, `${metrics.batches} batches`);
   const positions = root.children.map(mesh => {
     assert.ok(mesh.isMesh && Number.isFinite(mesh.geometry.boundingSphere.radius) && mesh.geometry.boundingSphere.radius > 0, mesh.name);
@@ -56,7 +57,7 @@ test('every building is drawn and collided, in a few merged batches under budget
     let drawn = 0;
     for (const p of positions) for (let i = 0; i < p.count; i++) if (inFootprint(b, p.getX(i), p.getZ(i), .3)) drawn++;
     assert.ok(drawn >= 300, `${b.id}: ${drawn} vertices in its footprint`);
-    const own = colliders.filter(c => c.id.startsWith(b.id));
+    const own = colliders.filter(c => (c.id === b.id || c.id.startsWith(b.id + '-')));
     assert.ok(own.length > 0, `${b.id} has no collider`);
     for (const c of own) assert.ok(inFootprint(b, c.x, c.z, 1.2), `${c.id} stands outside ${b.id}`);
   }
@@ -67,10 +68,10 @@ test('every building is drawn and collided, in a few merged batches under budget
   assert.equal(new Set(colliders.map(c => c.id)).size, colliders.length, 'collider ids are unique');
   // The crane on the quay collides by its mast alone, so the five-metre quay stays passable beside it.
   for (const b of MITHALA_BUILDINGS.filter(b => b.onQuay))
-    for (const c of colliders.filter(c => c.id.startsWith(b.id))) assert.ok((c.r ?? Math.max(c.hx, c.hz)) <= .7, `${c.id} is slim`);
+    for (const c of colliders.filter(c => (c.id === b.id || c.id.startsWith(b.id + '-')))) assert.ok((c.r ?? Math.max(c.hx, c.hz)) <= .7, `${c.id} is slim`);
   // Nothing of the buildings stands down to the plain or floats: every building's lowest stone is under the ground.
   for (const b of MITHALA_BUILDINGS.filter(b => !b.onQuay)) {
-    const body = colliders.filter(c => c.id.startsWith(b.id)).reduce((low, c) => Math.min(low, c.minY), Infinity);
+    const body = colliders.filter(c => (c.id === b.id || c.id.startsWith(b.id + '-'))).reduce((low, c) => Math.min(low, c.minY), Infinity);
     assert.ok(body <= ground(b.x, b.z) + .01, `${b.id} reaches the ground (${body.toFixed(2)})`);
   }
 });

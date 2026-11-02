@@ -6,6 +6,7 @@ import {
 import { DRENT_WAYSIDE } from '../../content/quests/roadside/wayside.js';
 import { LUMBER_TOWN } from '../terrain/region-world.js';
 import { SIGN_COLOURS } from './signs.js';
+import {registerWorldTree,worldTreeId} from './tree-registry.js';
 
 /**
  * Draws the built-up places of Drent and Luscia (`places.js`) and the Drent
@@ -124,7 +125,9 @@ export function buildPlaceWorks({ parent, heightAt, colliders, signs, roadDistan
     if (dead) {
       for (let k = 0; k < 4; k++) { const a = k * 1.7 + x; b.beam(CHAR, [x, g + h * (.55 + k * .1), z], [x + Math.sin(a) * 1.2 * scale, g + h * (.85 + k * .08), z + Math.cos(a) * 1.2 * scale], .07 * scale); }
     } else b.rock('#6f8f4a', x, g + h + .8 * scale, z, 1.5 * scale, 1.2 * scale, 1.5 * scale, x);
-    circle(x, z, .3 * scale, dead ? 'dead-tree' : 'orchard-tree');
+    const collider=circle(x, z, .3 * scale, dead ? 'dead-tree' : 'orchard-tree');
+    registerWorldTree(colliders,{id:worldTreeId('wayside-orchard',x,z),species:'apple',x,z,y:g,height:h,radius:.3*scale,
+      harvestable:false,condition:dead?'Fire-scarred, standing dead tree':'Living tree',protectedReason:'Part of the old orchard.'},[],collider,parent);
   };
 
   // -------------------------------------------------------------------------

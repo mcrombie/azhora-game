@@ -26,6 +26,7 @@ export function stopAtBattleBoundary(previous,next,battle){
 export function createBattlefieldArea({radius=BATTLEFIELD_AREA.radius,exitMargin=BATTLEFIELD_AREA.exitMargin}={}){
   const crossings=new Map();let active=[],lastPosition=null;
   const distance=(battle,position)=>Math.hypot(position.x-battle.location.x,position.z-battle.location.z);
+  const radiusOf=battle=>battle.entryRadius??radius;
   const valid=b=>b.status==='active'&&b.id!=null&&Number.isFinite(b.location?.x)&&Number.isFinite(b.location?.z);
   function update({battles,position,enabled=true,eligible=()=>true}){
     active=battles.filter(valid);lastPosition=position;
@@ -34,13 +35,13 @@ export function createBattlefieldArea({radius=BATTLEFIELD_AREA.radius,exitMargin
     if(!Number.isFinite(position?.x)||!Number.isFinite(position?.z))return null;
     for(const battle of active){
       const d=distance(battle,position),record=crossings.get(battle.id)??{inside:false,offered:false,entries:0,distance:d};
-      if(record.inside&&d>radius+exitMargin){record.inside=false;record.offered=false;}
-      if(!record.inside&&d<=radius){record.inside=true;record.entries++;}
+      if(record.inside&&d>radiusOf(battle)+exitMargin){record.inside=false;record.offered=false;}
+      if(!record.inside&&d<=radiusOf(battle)){record.inside=true;record.entries++;}
       record.distance=d;crossings.set(battle.id,record);
     }
     if(!enabled)return null;
     // If footprints overlap, offer only the nearest one at a time.
-    const next=active.filter(b=>{const c=crossings.get(b.id);return c.inside&&!c.offered&&c.distance<=radius&&eligible(b);})
+    const next=active.filter(b=>{const c=crossings.get(b.id);return c.inside&&!c.offered&&c.distance<=radiusOf(b)&&eligible(b);})
       .sort((a,b)=>distance(a,position)-distance(b,position))[0]??null;
     if(next)crossings.get(next.id).offered=true;
     return next;
@@ -52,7 +53,7 @@ export function createBattlefieldArea({radius=BATTLEFIELD_AREA.radius,exitMargin
     },
     nearest(position=lastPosition,eligible=()=>true){
       if(!position)return null;
-      return active.filter(b=>distance(b,position)<=radius&&eligible(b)).sort((a,b)=>distance(a,position)-distance(b,position))[0]??null;
+      return active.filter(b=>distance(b,position)<=radiusOf(b)&&eligible(b)).sort((a,b)=>distance(a,position)-distance(b,position))[0]??null;
     },
     reset(){crossings.clear();active=[];lastPosition=null;},
     state:()=>({radius,exitMargin,battles:[...crossings].map(([id,c])=>({id,...c}))})

@@ -6,6 +6,14 @@ Eshtor keeps its 34 authored hill hexes and cold continental climates. Its silho
 
 Long-Backs browse in the sheltered hollows. Hares, frostbacks, mountain goats and overhead plateau hawks complete the population. Trees retain their harvestable species. This is an environment build, without a settlement or quest arc.
 
+## Ancient barrows
+
+Confirmed 19 October 2026: **Eshtor Plateau contains very ancient barrows from past undead outbreaks.** These burial mounds belong to earlier episodes of undeath, long before the present duke's occupation of the Forsaken Citadel. The plateau's haunted reputation therefore has a much older history than its current undead ruler.
+
+The builders, peoples buried within, dates and relationship between the separate outbreaks remain open. Whether particular barrows hold victims, entombed undead or both is also undecided. No automatic reawakening, link to a specific High Civilization, or claim that the present duke caused those ancient outbreaks is established.
+
+For a later scenery pass, weathered mounds partly absorbed into the plateau, low stone entrances and remnants of old seals are proposed visual directions. Exact sites and functioning tombs are not yet implemented.
+
 ## Planned Forsaken Citadel
 
 The later 5 October campaign design assigns Eshtor to a separate undead faction and places the **Forsaken Citadel** here: an ancient, reputedly haunted site abandoned for centuries, now occupied by the undead Duke of North Ganun. Its small walled town surrounds a towering, many-storied structure. The duke claims the plateau for Ganun but secretly serves Thalmagar and spreads the fictional plague. **The Citadel is not in North Ganun.** Eshtor's earlier Goblinland assignment is superseded.

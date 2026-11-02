@@ -5,6 +5,7 @@ import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-regi
 import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
 import { hexAt, hexOwnerAt, landDistance, regions, REGION_CELLS } from '../../../world/terrain/region-world.js';
 import { WORLD_SCALE } from '../../../world/terrain/world-scale.js';
+import {coastalVillageReserved} from './coastal-villages.js';
 import {
   NORTH, SOUTH, isAscarth, ASCARTH_CLIMATE, ASCARTH_BOX, HILL_HEXES, GREEN_STONE, CLIFF,
   hillAt, hillLift, cliffShare, frontierWeight, onCliffFoot, spineAt,
@@ -46,7 +47,7 @@ export function* createAscarthScenerySteps(kit) {
   /** Where a traveler is set down by the developer's travel button: kept clear of anything solid. */
   const spawns = regions.filter(region => isAscarth(region.name)).map(region => region.spawn);
   const nearSpawn = (x, z, r) => spawns.some(s => Math.hypot(s.x - x, s.z - z) < r);
-  const ours = (x, z) => isAscarth(hexOwnerAt(x, z));
+  const ours = (x, z) => isAscarth(hexOwnerAt(x, z)) && !coastalVillageReserved(x,z,2);
   /** On the face of a cliff, or so near its edge that anything put there would hang over it. */
   const onFace = (x, z, d = landDistance(x, z)) => d < CLIFF.face + 1.5 && cliffShare(x, z) * frontierWeight(x, z) > .3;
 

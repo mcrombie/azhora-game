@@ -22,10 +22,12 @@ export const LIZEEM_SCENARIO = {
     {regions:['isareos','nethereum'],name:'Isa crossing',terrainMultiplier:1,crossingDays:1},
     {regions:['isareos','caricas'],name:'Isareos hills',terrainMultiplier:1.25,crossingDays:0},
     {regions:['nethereum','ovesos'],name:'Western farmlands',terrainMultiplier:1,crossingDays:0},
-    {regions:['nethereum','caricas'],name:'Lizeem crossing and upland approach',terrainMultiplier:1.25,crossingDays:1},
+    {regions:['nethereum','caricas'],name:'Nethereum–Caricas Bridge',terrainMultiplier:1.25,crossingDays:1},
     {regions:['ovesos','caricas'],name:'River crossing to the Caricas shelf',terrainMultiplier:1.25,crossingDays:1},
-    {regions:['ovesos','nesdor'],name:'Lower Lizeem crossing',terrainMultiplier:1,crossingDays:1},
+    {regions:['ovesos','nesdor'],name:'Ovesos–Nesdor Bridge',terrainMultiplier:1,crossingDays:1},
     {regions:['caricas','nesdor'],name:'Eastern river plain',terrainMultiplier:1,crossingDays:0},
   ],
-  rules:{garrisonCap:180,reserve:12,marchDistancePerDay:80,decisionEvery:3,defenseBonus:1.12,recoveryDays:2,armyRecoveryDays:3,maxRaisedArmies:3},
+  // Tactical militia health is scenario data, checked against the shared combat
+  // roster in scenario-combat.test.js. The simulation imports no combat engine.
+  rules:{garrisonCap:180,reserve:12,marchDistancePerDay:80,decisionEvery:3,defenseBonus:1.12,recoveryDays:2,armyRecoveryDays:3,maxRaisedArmies:3,encounterSoldierHealth:100},
 };

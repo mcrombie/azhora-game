@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { treeShapes, mergedGeometry } from '../../content/regions/drent/drent-trees.js';
 import { KOOPWOOD, WOODLOT_TREES, WOODLOT_LAYOUT, WOODLOT_SIGN, TREE_KINDS, lotPoint, woodlotColliders } from '../../gameplay/skills/woodcutting/woodcutting.js';
+import {getTreeRegistry,registerWorldTree} from './tree-registry.js';
 
 /**
  * The Koopwood (src/gameplay/skills/woodcutting/woodcutting.js): Bowden Koop's woodlot on the edge of the
@@ -59,7 +60,9 @@ export function createWoodlot({ parent, material, mesh, box, post, round, cylind
   // -------------------------------------------------------------------------
   const shapes = treeShapes(), willow = willowShape();
   const leafy = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: .92, flatShading: true });
-  const trees = new Map();
+  // Bowden's existing controller owns cutting, stock, colliders and save IDs.
+  // Keep these observation descriptors out of the wild-timber catalog.
+  const trees = new Map(),observationColliders=[],treeRegistry=getTreeRegistry(observationColliders);
   for (const t of WOODLOT_TREES) {
     const k = TREE_KINDS[t.kind], y = heightAt(t.x, t.z);
     const group = new THREE.Group(); group.name = `Koopwood ${t.kind} ${t.id}`; group.position.set(t.x, y, t.z); root.add(group); movingGroups.add(group);
@@ -74,6 +77,8 @@ export function createWoodlot({ parent, material, mesh, box, post, round, cylind
     const piece = (geometry, mat, y, sx, sy, sz, rx = 0) => { const m = new THREE.Mesh(geometry, mat); m.position.set(0, y, 0); m.scale.set(sx, sy, sz); m.rotation.x = rx; m.castShadow = true; stump.add(m); };
     piece(cylinder, bark, .25, r, .5, r); piece(cylinder, endGrain, .505, r * .9, .02, r * .9); piece(new THREE.TorusGeometry(r * .5, .012, 3, 14), woodDark, .52, 1, 1, 1, Math.PI / 2);
     trees.set(t.id, { t, group, pivot, tree, stump, falling: -1, fallTurn: 0, growing: -1 });
+    registerWorldTree(observationColliders,{...t,y,radius:k.trunk,base:{x:t.x,y,z:t.z},harvestable:false,
+      protectedReason:'Cutting this woodlot tree is managed by Bowden\u2019s existing woodcutting lesson.'},[],null,pivot);
   }
   // Chips: a handful of small pale flakes knocked off at every swing.
   const chipMat = material('#d7b98a'), chipShape = new THREE.BoxGeometry(.07, .025, .05), chips = [];
@@ -201,16 +206,19 @@ export function createWoodlot({ parent, material, mesh, box, post, round, cylind
   function fell(id, from = null) {
     const entry = trees.get(id); if (!entry) return;
     const g = entry.group.position, away = from ? Math.atan2(g.x - from.x, g.z - from.z) : 0;
+    treeRegistry.set(id,false);
     entry.pivot.rotation.set(0, away, 0); entry.fallTurn = 0; entry.falling = 0; entry.growing = -1; entry.stump.visible = true;
   }
   /** Up it comes again out of the stump. */
   function regrow(id) {
     const entry = trees.get(id); if (!entry) return;
+    treeRegistry.set(id,true);
     entry.falling = -1; entry.growing = 0; entry.pivot.visible = true; entry.pivot.rotation.set(0, 0, 0); entry.tree.rotation.x = 0; entry.pivot.scale.setScalar(.15);
   }
   /** Put a tree straight up or down at once, for a restore or a review. */
   function set(id, standing) {
     const entry = trees.get(id); if (!entry) return;
+    treeRegistry.set(id,standing);
     entry.falling = -1; entry.growing = -1; entry.pivot.visible = standing; entry.pivot.scale.setScalar(1); entry.pivot.rotation.set(0, 0, 0); entry.stump.visible = !standing;
   }
   function chip(id) {
@@ -251,5 +259,5 @@ export function createWoodlot({ parent, material, mesh, box, post, round, cylind
       s.m.scale.setScalar(.2 + t * 1.2); s.m.material.opacity = .45 * Math.sin(Math.PI * Math.min(1, t * 1.6)) * (1 - t * .6);
     }
   }
-  return { root, fell, regrow, set, chip, update, standing: id => !!trees.get(id)?.pivot.visible && trees.get(id)?.falling < 0 };
+  return { root, treeRegistry, fell, regrow, set, chip, update, standing: id => !!trees.get(id)?.pivot.visible && trees.get(id)?.falling < 0 };
 }

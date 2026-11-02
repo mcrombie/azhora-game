@@ -1,0 +1,34 @@
+[hidden]{display:none!important}
+.scenario-choice{display:flex;flex-direction:column;gap:5px;font:12px system-ui;color:#bdcbb8}
+.scenario-choice select{max-width:100%}
+.scenario-choice small{font-size:10px}
+.food-stock{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font:12px system-ui;color:#bdcbb8}
+.food-stock strong{font:30px Georgia;color:#f1dfba;font-variant-numeric:tabular-nums}
+#region-detail .food-period{font-size:10px;margin:9px 0 5px;color:#bdcbb8}
+#region-detail dd{font-variant-numeric:tabular-nums}
+.food-reserve{color:#ead8ac;margin:8px 0}
+.food-reserve:empty{display:none}
+#region-detail .food-health{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-top:1px solid #687c6966;padding-top:10px}
+.food-health span{display:block;font:10px/1.4 system-ui;min-height:28px;color:#afc0ad}
+.food-health strong{font:22px Georgia;color:#f1dfba}
+#region-detail .food-policy{font-size:10px;line-height:1.5;margin:8px 0}
+#food-explanation p{border-left:2px solid #bcaa74;padding-left:10px}
+.food-buttons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.food-buttons button{margin:0;padding:10px 7px;font-size:12px}
+.supply-route{fill:none;stroke:#245d71;stroke-width:2;pointer-events:none;opacity:.85}.supply-route.closed{stroke:#782f38;stroke-dasharray:4 4}
+.active-battle-region{fill:none;stroke:#782f38;stroke-width:3;stroke-dasharray:3 2;pointer-events:none}
+.battle-label{font:bold 8px system-ui;fill:#68212a;paint-order:stroke;stroke:#f7e8c7;stroke-width:2.5px;text-anchor:middle;pointer-events:none}
+body[data-scenario=food] .food-battle-status{font-size:11px;color:#efcf99;border-left:2px solid #ba9976;padding-left:8px;margin:8px 0}
+.food-routes ul{font:11px/1.5 system-ui;color:#bdcbb8;padding-left:16px}.food-routes li{margin-top:8px}
+#region-detail details{margin:10px 0 0;padding:10px}#region-detail summary{font-size:13px}
+#food-action-note{color:#e4cf95}
+body[data-scenario=food] .masthead{padding-top:16px;padding-bottom:16px}
+body[data-scenario=food] main{grid-template-columns:minmax(0,1fr) 336px}
+body[data-scenario=food] #region-detail h2{font:12px system-ui;color:#bdcbb8;margin:8px 0}
+body[data-scenario=food] #region-detail dl{gap:6px;margin:9px 0}
+body[data-scenario=food] #food-explanation p{font-size:11px;line-height:1.5;margin:9px 0 0}
+body[data-scenario=food] .region-card,body[data-scenario=food] details{padding:14px}
+body[data-scenario=food] #food-controls p{font-size:11px;line-height:1.5;margin:9px 0}
+@media(max-width:900px){body[data-scenario=food] main{grid-template-columns:minmax(0,1fr) 280px}.masthead{gap:15px}.masthead p{max-width:220px}}
+@media(max-width:650px){body[data-scenario=food] main{display:flex}}
+@media(max-width:650px){.masthead{align-items:flex-start;gap:14px;flex-wrap:wrap}.scenario-choice{width:100%}body[data-scenario=food] .map-toolbar{padding:8px;gap:4px}.map-toolbar button{padding:9px 7px}}

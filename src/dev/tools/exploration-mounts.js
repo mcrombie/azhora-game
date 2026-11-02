@@ -8,7 +8,7 @@ import {RIDE,DEVELOPER_HORSE_SPEED,horseMovementTuning,dismountSpot} from '../..
 import {canStand,getMovementInput} from '../../gameplay/movement/locomotion.js';
 
 export function createExplorationMounts({scene,actor,position,world,movement}){
-  const presentation=createMountedPresentation();let lastDraw;
+  const presentation=createMountedPresentation();let lastDraw,wasJumping=false,landingTime=0;
   const models={};let kind='foot',heading=Math.PI,bank=0,horseSpeed=DEVELOPER_HORSE_SPEED;
   const ground=(x,z)=>world.supportAt?.(x,z,{maxY:position.y,stepUp:.45})?.height??world.heightAt(x,z);
   const footing={...world,heightAt:ground};
@@ -19,11 +19,17 @@ export function createExplorationMounts({scene,actor,position,world,movement}){
     if(!models[name]){models[name]=name==='horse'?createHorse({saddled:true}):name==='bat'?createBatman():createDeveloperDragon();scene.add(models[name].group);}
     return models[name];
   }
-  function reset(){presentation.reset();lastDraw=undefined;flight.cancel();kind='foot';bank=0;for(const m of Object.values(models))m.group.visible=false;movement.reset(heading);}
+  function reset(){
+    presentation.reset();lastDraw=undefined;wasJumping=false;landingTime=0;
+    // Riding tilt can encode yaw as paired pitch/roll turns. Restore the true
+    // heading as an upright rotation instead of clearing only the pitch.
+    actor.group.rotation.set(0,heading,0);
+    flight.cancel();kind='foot';bank=0;for(const m of Object.values(models))m.group.visible=false;movement.reset(heading);
+  }
   function select(name,{speedMultiplier=DEVELOPER_HORSE_SPEED}={}){
     if(!['foot','horse','bat','dragon'].includes(name))return {ok:false,reason:'Unknown mount.'};
     if(name==='foot')return land();
-    if(name==='horse'&&(airborne()||!movement.state().grounded||!canStand(position.x,position.z,footing,RIDE.radius,position.y)))
+    if(name==='horse'&&(airborne()||!movement.state().grounded||!canStand(position.x,position.z,{...footing,bodyHeight:RIDE.bodyHeight},RIDE.radius,position.y)))
       return {ok:false,reason:'Land on open, dry ground before mounting the horse.'};
     if(name!=='horse'&&!airborne()){flight.start(position,actor.group.rotation.y);Object.assign(position,flight.view().position);}
     horseSpeed=speedMultiplier===1?1:DEVELOPER_HORSE_SPEED;
@@ -33,11 +39,14 @@ export function createExplorationMounts({scene,actor,position,world,movement}){
   function land({canDismountAt=()=>true}={}){
     if(airborne())return flight.requestLanding();
     if(kind==='foot')return {ok:true};
+    if(!movement.state().grounded)return {ok:false,reason:'Wait until your horse lands before dismounting.'};
+    if(movement.state().onObstacle)return {ok:false,reason:'Ride off the obstacle onto clear ground before dismounting.'};
     const at=dismountSpot(position,heading,(x,z)=>canDismountAt(x,z)&&world.readyAt(x,z)&&(!world.canExploreAt||world.canExploreAt(x,z))&&canStand(x,z,footing,.34,position.y));
     if(!at)return {ok:false,reason:'Ride to a clear bank before dismounting.'};
     position.set(at.x,ground(at.x,at.z),at.z);
     reset();return {ok:true};
   }
+  function jump(){return !airborne()&&movement.jump(kind==='horse'?RIDE.jumpSpeed:undefined);}
   function step(keys,yaw,dt){
     if(!airborne())return movement.step(keys,yaw,dt,kind==='horse'?horseMovementTuning(horseSpeed):undefined);
     const input=getMovementInput(keys),dx=-Math.sin(yaw)*input.forward+Math.cos(yaw)*input.side,dz=-Math.cos(yaw)*input.forward-Math.sin(yaw)*input.side;
@@ -61,19 +70,23 @@ export function createExplorationMounts({scene,actor,position,world,movement}){
   }
   function draw(time,moved){
     const dt=lastDraw===undefined?1/60:Math.max(0,Math.min(.1,time-lastDraw));lastDraw=time;
-    const smooth=kind==='horse'?presentation.update({y:position.y,heading:moved.heading,speed:moved.speed},dt):null;
-    heading=smooth?.heading??moved.heading;actor.group.rotation.y=heading;
+    const jumping=kind==='horse'&&!moved.grounded&&!moved.swimming;
+    landingTime=wasJumping&&!jumping&&!moved.swimming ? .18 : Math.max(0,landingTime-dt);wasJumping=jumping;
+    const smooth=kind==='horse'?presentation.update({y:position.y,heading:moved.heading,speed:moved.speed,exactHeight:jumping||landingTime>0},dt):null;
+    heading=smooth?.heading??moved.heading;actor.group.rotation.set(0,heading,0);
     actor.group.position.copy(position);
     if(kind==='foot'){actor.animate(time,moved.speed,moved.grounded,{swimming:moved.swimming});return;}
     const m=model(kind);m.group.position.copy(position);m.group.rotation.y=heading;
     if(kind==='horse'){
-      const pace=smooth.speed/horseSpeed,gait=m.animate(time,pace,true,{swimming:moved.swimming});
+      const pace=smooth.speed/horseSpeed,jump=jumping||landingTime>0?{verticalSpeed:moved.verticalSpeed??0,landing:landingTime/.18}:undefined;
+      const gait=m.animate(time,pace,moved.grounded,{swimming:moved.swimming,jump});
       const floatBob=moved.swimming?Math.sin(time*2.7)*.035:0;
       m.group.position.y=smooth.y+floatBob;actor.group.position.y=smooth.y+floatBob+RIDE.seat.up;
-      actor.animate(time,0,true,{armed:false,riding:{pace:moved.swimming?0:pace,beat:Math.sin(gait.phase)}});
+      actor.animate(time,0,true,{armed:false,riding:{pace:moved.swimming||jumping?0:pace,beat:Math.sin(gait.phase)}});
+      actor.group.rotateX((gait.jumpPitch??0)*.55);
       actor.group.position.x+=Math.sin(heading)*RIDE.seat.forward;actor.group.position.z+=Math.cos(heading)*RIDE.seat.forward;
     }else{actor.animate(time,0,true,{armed:false,riding:{pace:0}});m.update(time,{flying:true,speed:moved.speed,bank});m.group.updateMatrixWorld(true);m.passengerAnchor.getWorldPosition(actor.group.position);}
   }
-  return {select,land,reset,step,draw,airborne,get kind(){return kind;},
-    state:()=>({kind,horseSpeed,swimming:kind==='horse'&&!!movement.state().swimming,landing:flight.view().landing,visible:Object.entries(models).filter(([,m])=>m.group.visible).map(([id])=>id)})};
+  return {select,land,reset,step,draw,jump,airborne,get kind(){return kind;},
+    state:()=>({kind,horseSpeed,grounded:!airborne()&&movement.state().grounded,jumping:kind==='horse'&&!movement.state().grounded&&!movement.state().swimming,verticalSpeed:movement.state().verticalSpeed??0,swimming:kind==='horse'&&!!movement.state().swimming,landing:flight.view().landing,visible:Object.entries(models).filter(([,m])=>m.group.visible).map(([id])=>id)})};
 }

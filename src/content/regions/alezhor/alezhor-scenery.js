@@ -11,6 +11,7 @@ import { ALEZHOR, ALEZHOR_ARRIVAL, ALEZHOR_LANDMARKS, ALEZHOR_TRAILS, ALEZHOR_AP
 // and whatever account of its cover it gives (`alezhorCover`).
 import * as GROUND from './alezhor-world.js';
 import { alezhorWildlifeClear } from './alezhor-wildlife.js';
+import { alezhorTownReserved } from './alezhor-town-layout.js';
 
 /**
  * **Alezhor's natural cover: a cool summer-dry coastal strip between the open ocean and the Ibenwood's tree line.**
@@ -169,6 +170,7 @@ const LANDMARK_POINTS = [...ALEZHOR_LANDMARKS, ALEZHOR_ARRIVAL].filter(p => p &&
  * landmark's point or the arrival, and a reserved place. `margin` is the thing's reach.
  */
 export function alezhorPathClear(x, z, margin = 0) {
+  if (alezhorTownReserved(x,z,margin)) return true;
   for (const p of LANDMARK_POINTS) if (Math.hypot(x - p.x, z - p.z) < 5 + margin) return true;
   if (alezhorTrailDistance(x, z) < 1.4 + margin) return true;
   return alezhorReserved(x, z, margin);
@@ -624,7 +626,7 @@ export function* createAlezhorScenerySteps({ parent, heightAt, legacyHeightAt = 
     const h = legacyHeightAt(x, z);
     return alezhorWaterAt(x, z, h) === null && h > WATERLINE + lift;
   };
-  const plantable = (x, z) => alezhorScatterOwns(x, z) && dry(x, z);
+  const plantable = (x, z) => alezhorScatterOwns(x, z) && dry(x, z) && !alezhorTownReserved(x,z,.5);
   /** For a clump whose lobes stand off its centre: its own ground and dry for `r` metres round. */
   const roomy = (x, z, r) => plantable(x, z) && [[r, 0], [-r, 0], [0, r], [0, -r]].every(([dx, dz]) => plantable(x + dx, z + dz));
   // Spacing by a hash grid rather than a scan of everything already placed.

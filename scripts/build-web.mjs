@@ -22,7 +22,7 @@ if (!relativeOut || relativeOut.startsWith('..') || path.isAbsolute(relativeOut)
 }
 
 /** What a browser asks for, and nothing else. */
-const PUBLISHED = ['index.html', 'exploration.html', 'adventure.html', 'lizeem.html', 'src', 'vendor', 'assets'];
+const PUBLISHED = ['index.html', 'exploration.html', 'adventure.html', 'lizeem.html', 'farmland.html', 'src', 'vendor', 'assets'];
 /** Test files live beside the code they test; they are not part of the game. */
 const skip = entry => entry.endsWith('.test.js') || entry.split(/[\\/]/).some(part => part.toLowerCase() === 'reference-private');
 

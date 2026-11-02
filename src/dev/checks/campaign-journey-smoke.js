@@ -1,3 +1,4 @@
+import {confirmTowerCampaign} from './tower-smoke.js';
 import {travel,fight} from './first-session-smoke.js';
 import {createWorldWar} from '../../app/exploration/world-war.js';
 import {availableBattleStage} from '../../simulation/battle-stages.js';
@@ -34,7 +35,7 @@ export async function secondRide(a){
   return {checks:['Whistle recovers horse after the first battle','Ride from Caricas to Ovesos at normal speed','Area entry opens the second battle in time'],started,arrival:s.day,seconds};
 }
 export async function secondBattle(a,side){
-  window.dispatchEvent(new Event('focus'));await a.war.help(side);const first=await fight(a);assert(first.outcome==='success','Second interception remains winnable');a.war.continue();
+  window.dispatchEvent(new Event('focus'));await a.war.help(side,'intercept');const first=await fight(a);assert(first.outcome==='success','Saved two-stage interception remains winnable');a.war.continue();
   assert(a.war.state().campaign.pending?.rally,'Second battle offers its assault');await a.war.help(side);const final=await fight(a);
   assert(final.outcome==='success'&&final.squad.damageByAllies>0&&final.squad.damageByHero>0,'Teresod and allies complete the second assault');
   const button=document.getElementById('world-skirmish-continue'),r=button.getBoundingClientRect();assert(r.top>=0&&r.bottom<=innerHeight&&r.width>0,'Result Continue stays visible on a compact screen');
@@ -60,7 +61,8 @@ export async function choices(a){
   for(let i=0;i<6000&&!a.war.state().opportunity.alternative;i++){if(i%100===0)window.dispatchEvent(new Event('focus'));a.step(.04);if(i%100===99)await frames();}
   const opportunity=a.war.state().opportunity;assert(opportunity.alternative,'Both known defensive and offensive opportunities become available');a.openMap();document.getElementById('taleth-letters').click();
   for(const id of ['taleth-letter-title','taleth-letter-follow','taleth-letter-alternative','taleth-letter-close']){const r=document.getElementById(id).getBoundingClientRect();assert(r.width>0&&r.top>=0&&r.bottom<=innerHeight,'Decision control fits: '+id);}
-  assert(document.getElementById('taleth-campaign-now').textContent.includes(opportunity.tradeoff),'Letter explains both strategic consequences');
+  document.getElementById('corris-strategy').open=true;
+  assert(document.getElementById('corris-live-strategy').textContent.includes(opportunity.tradeoff),'Optional reasoning explains both current strategic consequences');
   await frames();return {checks:['Known attack and defense are both offered','Compact letter keeps both choices visible'],opportunity};
 }
 export async function alternate(a){
@@ -74,8 +76,14 @@ export async function alternate(a){
 // Separate UI fixture for the new wait button; this does not claim real travel
 // or combat. The ordinary-input two-battle journey above tests those separately.
 export async function waitFixture(a){
-  window.dispatchEvent(new Event('focus'));await travel(a,{x:TALETH_SPOT.x,z:TALETH_SPOT.z+2},{reach:1.5});key('KeyF');document.getElementById('tower-next').click();
-  const w=createWorldWar();w.advance(3);for(let i=0;i<4;i++){const b=w.snapshot().engagements.find(availableBattleStage);w.campaign.locateHero(b.region);w.campaign.joinBattle(b.id,b.location);const p=w.snapshot().pending;assert(w.campaign.resolveEncounter(p.id,'west','success',p.rally?'rally-secured':'vanguard-broken',p.rally?p.rally.guards:3).ok,'Fixture result is valid');}
+  window.dispatchEvent(new Event('focus'));await travel(a,{x:TALETH_SPOT.x,z:TALETH_SPOT.z+2},{reach:1.5});key('KeyF');confirmTowerCampaign(a);
+  const w=createWorldWar();w.advance(3);
+  for(let i=0;i<4;i++){
+    const b=w.snapshot().engagements.find(availableBattleStage);assert(b,'Fixture battle is available');
+    w.campaign.locateHero(b.region);assert(w.campaign.joinBattle(b.id,b.location).ok,'Fixture enters the actual battlefield');
+    const p=w.snapshot().pending,progress=p.rally?{commanders:Object.fromEntries(Object.entries(p.commanders??{}).filter(([,c])=>c.status==='active').map(([f,c])=>[f,{id:c.id,hp:f==='west'?c.hp:1,outcome:f==='west'?'active':'routed'}]))}:null;
+    assert(w.campaign.resolveEncounter(p.id,'west','success',p.rally?'rally-secured':'vanguard-broken',p.rally?p.rally.guards:3,progress).ok,'Fixture result is valid');
+  }
   a.war.restore(w.checkpoint());const result=await quietWait(a);const campaign=a.war.state().campaign;assert(a.save().ok,'Waited campaign can save');await a.loadSaved();assert(JSON.stringify(a.war.state().campaign)===JSON.stringify(campaign),'Waited campaign replays exactly');assert(!a.state().frameErrors.length,'Wait has no renderer errors');await frames();
   return {...result,checks:[...result.checks,'Wait/save/Continue retains exact campaign']};
 }

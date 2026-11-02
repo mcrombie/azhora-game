@@ -1,10 +1,12 @@
 import { forEachBuild } from '../../../world/loading/build-each.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
-import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-registry.js';
-import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
+import { worldTreeId } from '../../../world/scenery/tree-registry.js';
+import { createSpeciesTreesSteps } from '../../../world/scenery/species-trees.js';
 import { acorFeatures, acorWaterAt } from './acor-world.js';
 import { thalmagarFortressReserved } from '../thalmagar/thalmagar-fortress-site.js';
+import {endevorReserved} from '../endevor/endevor-country.js';
+import {createEndevorWaterSteps} from '../endevor/endevor-water.js';
 import { acorWildlifeClear } from './acor-wildlife.js';
 
 const CHUNK = 110;
@@ -15,16 +17,7 @@ const geometry = {
   stone: new THREE.IcosahedronGeometry(1, 0),
   blade: new THREE.ConeGeometry(1, 1, 3),
 };
-const tones = {
-  acor: ['#706048','#44673e'],
-  beech: ['#8a8876','#719058'],
-  'black-alder': ['#696248','#617d48'],
-  'black-willow': ['#807558','#7f9864'],
-  'silver-fir': ['#6e6553', '#385c50'],
-  'stone-pine': ['#78624b', '#506956'],
-  'silver-birch': ['#c3c4ae', '#82905b'],
-  'common-juniper': ['#7a705b', '#5a705c'],
-};
+
 
 /** One stable, batched maritime landscape. No artificial cliff collision hulls:
  * the visible heightfield supplies all ridges, passes and climbing surfaces. */
@@ -33,7 +26,7 @@ export function createAcorScenery(...args) { return finishBuild(createAcorScener
 export function* createAcorScenerySteps({ parent, heightAt, renderedGroundHeight = heightAt, colliders, terrainRoot, profile }) {
   const regionName=profile.name, regionBounds=profile.bounds, regionLakes=profile.lakes;
   const owns=profile.owns, featuresAt=acorFeatures, waterAt=acorWaterAt;
-  const isReserved=(x,z,r=0)=>thalmagarFortressReserved(x,z,r)||acorWildlifeClear(x,z,r)||acorFeatures(x,z)?.pathDistance<5+r;
+  const isReserved=(x,z,r=0)=>endevorReserved(x,z,r)||thalmagarFortressReserved(x,z,r)||acorWildlifeClear(x,z,r)||acorFeatures(x,z)?.pathDistance<5+r;
   let buildWork = 0;
   const root = new THREE.Group(); root.name = profile.name+' maritime country'; parent.add(root);
   const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .98, flatShading: true });
@@ -48,32 +41,11 @@ export function* createAcorScenerySteps({ parent, heightAt, renderedGroundHeight
     dummy.position.set(x, y, z); dummy.scale.set(sx, sy, sz); dummy.rotation.set(0, ry, rz); dummy.updateMatrix();
     const p = { matrix: dummy.matrix.clone(), tint, x, z, radius: Math.max(sx, sz) }; batches.get(key).pieces.push(p); return p;
   }
-  function tree(x, z, species, height) {
-    const y = renderedGroundHeight(x, z), [bark, leaf] = tones[species], pieces = [];
-    const r = height * (species === 'acor' ? .052 : species === 'silver-birch' ? .021 : .032), bole = height * .73;
-    const trunk = part('trunk', bark, x, y + bole / 2, z, r, bole, r);
-    const offset = treeGroundingOffset(trunk.matrix, renderedGroundHeight, { radius: 1, segments: 7, embed: .06 });
-    trunk.matrix.elements[13] += offset; pieces.push(trunk);
-    if (species === 'silver-fir') {
-      for (let i = 0; i < 4; i++) pieces.push(part('fir', leaf, x, y + offset + height * (.36 + i * .16), z,
-        height * (.23 - i * .044), height * .38, height * (.23 - i * .044), range(0, 6)));
-    } else {
-      const pine = species === 'stone-pine', low = species === 'common-juniper', acor = species === 'acor', willow = species === 'black-willow';
-      for (let i = 0; i < (acor?5:3); i++) {
-        const a = i * Math.PI * 2 / (acor?5:3) + x * .019, spread = height * (acor ? .29 : pine ? .20 : .13);
-        pieces.push(part('crown', leaf, x + Math.cos(a) * spread, y + offset + height * (low ? .63 : .76) + i * height * .055,
-          z + Math.sin(a) * spread, height * (acor ? .31 : pine ? .25 : .21), height * (acor ? .16 : willow ? .29 : pine ? .13 : .24), height * (acor ? .27 : .21), a));
-      }
-      if (species === 'silver-birch') for (let i = 0; i < 3; i++) pieces.push(part('trunk', '#6e7466', x, y + offset + bole * (.2 + i * .23), z, r * .96, .09, r * .96));
-    }
-    // Consume the same random draws before omitting a whole tree, so reserving
-    // a cottage does not move the surrounding woodland or shoreline erratics.
-    const omitted = isReserved(x, z, height * .4);
-    for (const piece of pieces) { piece.tree = true; piece.omitted = omitted; }
-    if (omitted) return;
-    const collider = { x, z, r, kind: 'tree' }; colliders.push(collider);
-    pendingTrees.push({ descriptor: { id: worldTreeId('acor-maritime-'+profile.id, x, z), region: regionName,
-      species, x, z, y, height, radius: r, base: { x, y: y + offset, z } }, pieces, collider });
+  function tree(x,z,species,height) {
+    if(species==='silver-fir')for(let i=0;i<4;i++)range(0,6);
+    if(isReserved(x,z,height*.4))return;
+    pendingTrees.push({id:worldTreeId('acor-maritime-'+profile.id,x,z),region:regionName,species,x,z,height,
+      trunkRadius:height*(species==='acor'?.052:species==='silver-birch'?.021:.032),rotation:x*.019});
   }
 
   const b = regionBounds;
@@ -85,11 +57,12 @@ export function* createAcorScenerySteps({ parent, heightAt, renderedGroundHeight
     if(!owns(x,z)||waterAt(x,z)!==null)continue;
     const f=featuresAt(x,z);if(f.height<1||f.grade>.85||f.pathDistance<5||f.shoreDistance<2)continue;
     const patch=.6+.4*Math.sin(x*.024+Math.sin(z*.011))*Math.cos(z*.017);
-    const cover=f.deep?.94:f.forest?.70:f.wet?.25:profile.index===0?.29:profile.index===8?.11:profile.index===9?.10:.055;
+    const cover=f.deep?.94:f.forest?.70:f.wet?.25:profile.index===0?.29:profile.index===8?.11:profile.index===9?.43:.055;
     if(random()>cover*(.45+.55*patch))continue;
     const v=random();let species;
     if(f.wet||f.shoreDistance<12)species=v<.5?'black-alder':'black-willow';
     else if(f.forest)species=v<.68?'acor':v<.83?'beech':'silver-birch';
+    else if(profile.index===9)species=v<.40?'acor':v<.7?'beech':v<.9?'silver-birch':'common-juniper';
     else if(profile.index===0)species=v<.4?'silver-fir':v<.8?'silver-birch':'common-juniper';
     else species=v<.65?'silver-birch':'common-juniper';
     tree(x,z,species,species==='acor'?range(f.deep?22:17,f.deep?31:24):species==='common-juniper'?range(2,4):range(8,15));
@@ -146,8 +119,9 @@ export function* createAcorScenerySteps({ parent, heightAt, renderedGroundHeight
     yield* forEachBuild(batch.pieces, function* (p, index) { mesh.setMatrixAt(index, p.matrix); mesh.setColorAt(index, color.set(p.tint)); p.handle = { mesh, index }; });
     mesh.computeBoundingBox(); mesh.computeBoundingSphere(); root.add(mesh);
   }
-  const trees = pendingTrees.map(t => registerWorldTree(colliders, t.descriptor, t.pieces.map(p => p.handle), t.collider));
-  metrics.trees = trees.length; metrics.batches = batches.size;
+  const woodland=yield* createSpeciesTreesSteps({parent:root,colliders,trees:pendingTrees,heightAt:renderedGroundHeight,name:regionName+' trees'});
+  const trees=woodland.trees;
+  metrics.trees=trees.length;metrics.batches=batches.size+woodland.batches;
 
   const waterRoot = new THREE.Group(); waterRoot.name = profile.name+' lakes and springs'; root.add(waterRoot);
   const waterMaterial = new THREE.ShaderMaterial({ side: THREE.DoubleSide, fog: true,
@@ -170,6 +144,7 @@ vec3 colour=vec3(.13,.34,.36)+vec3(.18,.22,.21)*pow(max(ripple,0.),12.);gl_FragC
     mesh.name = lake.name; mesh.rotation.x = -Math.PI / 2; mesh.position.y = lake.surface;
     waterRoot.add(mesh); metrics.lakes++; return mesh;
   });
+  if(profile.index>=6)yield* createEndevorWaterSteps({parent:waterRoot,owns});
   const steam=[];
   for(const lake of regionLakes.filter(l=>l.thermal)){
     const mat=new THREE.MeshBasicMaterial({color:'#d9e7e0',transparent:true,opacity:.16,depthWrite:false});

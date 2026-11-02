@@ -4,6 +4,7 @@ import {talethLetters,talethAdvice,talethFinale} from '../src/app/exploration/ta
 import {createWorldWar} from '../src/app/exploration/world-war.js';
 import {createTowerState,LOOKOUT_SPAWN} from '../src/app/exploration/tower-state.js';
 import {validateWorldWarSave,WORLD_WAR_KEY} from '../src/app/exploration/war-checkpoint.js';
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 
 test('dispatches start with a battle result and do not rewrite history or simulation',()=>{
   const w=createWorldWar();assert.deepEqual(talethLetters(w.snapshot()),[]);w.advance(3);assert.deepEqual(talethLetters(w.snapshot()),[]);
@@ -15,10 +16,44 @@ test('advice follows territorial lead, acknowledges a tie and leaves choice open
   assert.equal(talethAdvice(owners,null).side,null);assert.equal(talethAdvice(owners,'east').side,'east');assert.match(talethAdvice(owners,'east').text,/no territorial lead/);
   owners.caricas='west';assert.equal(talethAdvice(owners,'east').side,'west');assert.match(talethAdvice(owners,'east').text,/3 of the four/);assert.match(talethAdvice(owners,'east').text,/free to choose/);
 });
+
+test('committed Taleth counsel pursues the chosen cause even when the other league leads',()=>{
+  for(const side of ['west','east']){
+    const enemy=side==='west'?'east':'west',owners={isareos:'minora',nethereum:enemy,ovesos:enemy,caricas:enemy,nesdor:side};
+    const advice=talethAdvice(owners,enemy,{side});assert.equal(advice.side,side);
+    assert.match(advice.text,/holds 1 of the four/);assert.match(advice.text,/Protect our remaining ground/);
+    assert.doesNotMatch(advice.text,/choose that side|free to choose|help .+ finish the war/);
+    owners.nesdor=enemy;assert.match(talethAdvice(owners,enemy,{side}).text,/recover a foothold/);
+  }
+});
+
+test('chosen-side reports describe unattended results and retain the cause through later reversals',()=>{
+  for(const side of ['west','east']){
+    const w=createWorldWar();w.advance(6);const first=talethLetters(w.snapshot(),{side});assert(first.length);
+    assert(first.every(letter=>letter.side===side));assert.match(first[0].summaryText,/without you/);
+    assert.match(first[0].detail,/next task up to date/);assert.doesNotMatch(first[0].detail,/choose that side/);
+    w.advance(14);const later=talethLetters(w.snapshot(),{side});
+    assert.deepEqual(later.filter(l=>first.some(f=>f.id===l.id)),first,'Historical reports remain tied to their own reported front');
+    assert(later.filter(l=>!l.finale).every(l=>l.side===side));
+  }
+});
 test('personal battle letter describes real contribution without claiming a skipped victory',()=>{
   const w=createWorldWar();w.advance(3);w.syncRegion('Caricas');let b=w.snapshot().engagements.find(b=>b.region==='caricas');
   w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id,'west','success','vanguard-broken',3);w.advance(3);
   const letter=talethLetters(w.snapshot()).find(l=>l.battleId===b.id);assert(letter.hero);assert.match(letter.detail,/interception removed 12/);assert.doesNotMatch(letter.detail,/Your final assault secured/);
+});
+
+test('Taleth states the captain turning point briefly and keeps it historical after recovery',()=>{
+  for(const side of ['west','east']){
+    const w=createWorldWar();w.advance(3);w.syncRegion('Caricas');const b=w.snapshot().engagements[0];
+    assert(w.campaign.joinBattle(b.id,b.location).ok);assert(w.campaign.resolveEncounter(b.id,side,'success','vanguard-broken',3).ok);
+    assert(w.campaign.joinBattle(b.id,b.location).ok);const p=w.snapshot().pending;
+    assert(w.campaign.resolveEncounter(p.id,side,'success','rally-secured',p.rally.guards,commanderOutcome(w.campaign,side,true)).ok);
+    const report=talethLetters(w.snapshot()).find(l=>l.battleId===b.id),enemy=side==='west'?'east':'west';
+    assert(report.summaryText.includes(b.commanders[enemy].name+' retreated.'));
+    assert(report.summaryText.length<300);w.advance(30);
+    assert.deepEqual(talethLetters(w.snapshot()).find(l=>l.id===report.id),report);
+  }
 });
 test('victory summons and lookout conclusion support either winner and nonparticipation',()=>{
   for(const side of ['east','west']){

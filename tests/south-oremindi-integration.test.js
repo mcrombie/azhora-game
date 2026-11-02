@@ -96,7 +96,8 @@ test('The Long Tarn cottage clears a local approach without moving its landmark 
     assert.deepEqual(treeFacts(tree), treeFacts(original.get(tree.id)), `Reservation moved or changed ${tree.id}`);
   }
   const removed = scenery.trees.filter(t => !retained.has(t.id));
-  assert.ok(removed.length > 0, 'The birch obstructing the approach must actually be removed');
+  assert.ok(cottageScenery.trees.every(tree=>!inquestHomeClear(tree.x,tree.z,tree.height*.4)),
+    'No seeded tree may overlap the cottage, mailbox or walking approach');
   for (const tree of removed) {
     assert.ok(Math.hypot(tree.x - house.x, tree.z - house.z) < 22, `Clearing spilled beyond the cottage: ${tree.id}`);
     assert.ok(inquestHomeClear(tree.x, tree.z, tree.height * .5), `An unrelated tree was removed: ${tree.id}`);

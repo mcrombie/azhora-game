@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Azhora · Farmland review</title>
+<link rel="stylesheet" href="./src/app/farmland-review/farmland.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head><body>
+<aside id="panel"><div class="eyebrow">Azhora / countryside study</div><h1 id="region-name">Nethereum</h1>
+<label for="region">Region</label><select id="region"><option value="nethereum">Nethereum · West Lizeem</option><option value="caricas">Caricas · East Lizeem</option><option value="ovesos">Ovesos · West Lizeem</option><option value="nesdor">Nesdor · East Lizeem</option><option value="isareos">Isareos · Minora</option></select>
+<p id="region-description"></p>
+<nav aria-label="Places"><button data-view="overview">Whole region</button><button data-view="fields">Fields</button><button data-view="town">Town</button><button data-view="wildland">Meadow & brush</button></nav>
+<div class="row"><button id="walk-town">Walk in town</button><button id="walk-fields">Walk the fields</button></div>
+<p id="controls">Drag to orbit · Shift-drag to pan · Scroll to zoom</p>
+<details id="housing"><summary>Population &amp; housing</summary>
+<div id="housing-report" aria-live="polite"></div>
+<p class="note">Population and housing are regional totals. Caricas uses representative homes and farms; its visible building count does not set the population or capacity.</p>
+</details>
+<details id="economy"><summary>Food production · <strong id="capacity"></strong></summary>
+<p id="food-description">Capacity is represented by productive land; the campaign calculates each day's output.</p>
+<table><caption id="farm-caption">Daily capacity</caption><tbody id="farm-budget"></tbody></table>
+<hr><div id="ledger" aria-live="polite"></div>
+<div id="food-transfers" class="note" aria-live="polite"></div>
+<p id="food-balance" class="note" aria-live="polite"></p>
+<fieldset id="import-routes" hidden><legend>Minora import routes</legend>
+<label><input id="import-nethereum" type="checkbox" checked> Nethereum route open</label><br>
+<label><input id="import-caricas" type="checkbox" checked> Caricas route open</label>
+</fieldset>
+<div class="row"><button id="day">Advance 1 day</button><button id="week">Advance 7 days</button></div>
+<label for="condition">Regional production condition</label><select id="condition"><option value="1">Healthy · 100%</option><option value="0.5">Disrupted · 50%</option><option value="0">Stopped · 0%</option></select>
+<button id="reset">Reset food test</button><p class="note">All regions share this food test with fixed armies. Switching region keeps the same day and food stores. Reset starts the whole test over. These controls do not change your game save or the appearance of individual fields.</p>
+</details></aside>
+<div id="place" aria-live="polite">Nethereum · West Lizeem</div>
+<div id="loading" role="status"><div><div id="loading-region" class="eyebrow">Nethereum</div><h2>Preparing the countryside.</h2><p id="progress">Reading the regional landscape…</p></div></div>
+<script type="module" src="./src/app/farmland-review/entry.js"></script></body></html>

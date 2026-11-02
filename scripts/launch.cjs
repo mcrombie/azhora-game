@@ -38,7 +38,8 @@ function cleanTestProfile() {
 // The console wrapper may be hidden, but the GUI process must receive normal
 // startup visibility. Hiding Electron suppresses its first native game window.
 const args=process.argv.slice(2);
-const entry = args.includes('--cities-review') ? path.join(root,'scripts/cities-review.cjs')
+const entry = args.includes('--farmland-review') ? path.join(root,'scripts/farmland-review.cjs')
+  : args.includes('--cities-review') ? path.join(root,'scripts/cities-review.cjs')
   : args.includes('--ambron-review') ? path.join(root,'scripts/ambron-review.cjs')
   : args.includes('--web-checks') ? path.join(root,'scripts/web-smoke.cjs')
   : args.includes('--lizeem') ? path.join(root,'scripts/lizeem-desktop.cjs')

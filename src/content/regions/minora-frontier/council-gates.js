@@ -1,3 +1,4 @@
+import {menoraWallDatum} from './menora-river-walls.js';
 import * as THREE from 'three';
 import {MENORA_GATES,MENORA_OUTLINE} from './menora-city.js';
 import {COUNCIL_ROOMS,MINORA_COUNCIL} from './minora-council.js';
@@ -10,7 +11,7 @@ export function createCouncilGates(parent,heightAt){
   const poleGeometry=new THREE.CylinderGeometry(.085,.12,1,6),poleMaterial=new THREE.MeshStandardMaterial({color:'#746048',roughness:.8});
   const gates=MENORA_GATES.map(g=>{
     const a=MENORA_OUTLINE[g.edge],b=MENORA_OUTLINE[(g.edge+1)%MENORA_OUTLINE.length],group=new THREE.Group();
-    group.position.set(g.x,heightAt(g.x,g.z)+22,g.z);group.rotation.y=Math.atan2(b.x-a.x,b.z-a.z)-Math.PI/2;root.add(group);
+    group.position.set(g.x,menoraWallDatum(heightAt,g.x,g.z)+22,g.z);group.rotation.y=Math.atan2(b.x-a.x,b.z-a.z)-Math.PI/2;root.add(group);
     for(const [x,top] of [[-4.8,4.05],[0,7.45],[4.8,4.05]]){const pole=new THREE.Mesh(poleGeometry,poleMaterial);pole.scale.y=top+1.2;pole.position.set(x,(top-1.2)/2,-.16);group.add(pole);}
     const standards=['taleth','mayor','temple'].map(id=>{const cloth=councilBanner(id);cloth.scale.setScalar(1.5);group.add(cloth);return {id,cloth};});
     return {group,standards,id:g.id};

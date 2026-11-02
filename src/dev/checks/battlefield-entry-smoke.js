@@ -71,6 +71,28 @@ export async function setupBattlefieldEntry(api){
   return {checks:['Fresh day-3 Caricas battlefield is visibly marked before arrival','A clear dry path crosses its real 70m perimeter'],battle:fixture.battle,approach,footprint};
 }
 
+export async function checkDomeFlight(api){
+  api.war.pause();assert(api.selectMount('dragon').ok,'The exterior dome is visible from dragon flight');
+  api.hold('Space',true);try{for(let i=0;i<95;i++)api.step(.04);}finally{api.hold('Space',false);}
+  api.look({yaw:fixture.approach.angle,pitch:.42,distance:90});await frame();
+  let root=api.testHero.group;while(root.parent)root=root.parent;
+  const unfogged=[];
+  root.traverseVisible(o=>{if(!o.isMesh||!/water|river|pond|Caloss|Thelas|Lizeem/i.test(o.name))return;
+    for(const material of Array.isArray(o.material)?o.material:[o.material])if(material.isShaderMaterial&&(!material.fog||!material.fragmentShader.includes('fog_fragment')))unfogged.push(o.name);
+  });
+  assert(!unfogged.length,'Water fades with its banks, rather than floating beyond them: '+unfogged.join(', '));
+  const footprint=api.war.state().battlefield.footprints.find(p=>p.id===fixture.battle.id);
+  assert(footprint?.domeHeight>=42&&footprint.wallOpacity===.78,'A dark roof encloses the active battle');
+  assert(api.state().mode==='playing'&&!api.war.state().campaign.pending,'Flying near the dome does not opt into combat');
+  return {checks:['Charcoal dome remains visible from above on a dragon','Visible river and pond shaders share the terrain fog'],position:position(api),footprint};
+}
+
+export async function checkDomeGroundReturn(api){
+  api.selectMount('foot');await api.visit(fixture.approach.outside);api.war.run();api.step(.04);
+  api.look({yaw:fixture.approach.angle,pitch:.26,distance:8});await frame();
+  return {checks:['Ground boundary remains aligned with the closed dome']};
+}
+
 export async function checkFootEntry(api){
   assert(fixture,'Call setupBattlefieldEntry first');
   moveTo(api,fixture.approach.inside,{entry:true});const before=beforeChoice(api);
@@ -106,8 +128,9 @@ export async function checkMountedEntry(api){
 }
 
 export async function checkAcceptedEntry(api){
-  const before=beforeChoice(api);await api.war.help('west');await frame();
+  const before=beforeChoice(api);await api.war.help('west','intercept');await frame();
   assert(api.state().mode==='skirmish','Accepting entry opens the actual outdoor skirmish: '+document.getElementById('encounter-result').textContent);
+  api.step(.04);assert(api.war.state().battlefield.footprints.length===0,'The dome is hidden from participants during combat');
   assert(api.stable.owned&&!api.stable.mounted&&api.state().mount.kind==='foot','Accepting automatically dismounts the rider safely');
   const encounter=api.war.state().encounter.encounter;
   assert(encounter?.site==='caricas-world'&&encounter.radius===70,'Combat uses the same Caricas battlefield footprint');
@@ -133,6 +156,9 @@ async function playCombatUntil(api,done,label){
   window.dispatchEvent(new Event('focus'));api.autoplay.start();
   try{
     for(let i=0;i<3600;i++){
+      // Native screenshots/tool windows can steal focus between frame yields.
+      // Keep this isolated input rehearsal active, as other combat smokes do.
+      if(i%180===0)window.dispatchEvent(new Event('focus'));
       const field=api.war.state().encounter.encounter;
       if(field&&done(field))return field;
       assert(api.state().mode==='skirmish','Combat left its field before '+label+': '+JSON.stringify({mode:api.state().mode,autoplay:api.autoplay.state(),field}));
@@ -159,7 +185,7 @@ export async function checkPartialBattleProgress(api){
   assert(fixture,'Call setupBattlefieldEntry first');api.war.pause();
   const before=api.war.state().campaign,battle=battleFor(api);
   assert(battle.participation.intercept.status==='available','Interception remains available for partial progress check');
-  reopen(api);await api.war.help('west');
+  reopen(api);await api.war.help('west','intercept');
   const field=await playCombatUntil(api,s=>s.guards.some(g=>g.hp===0),'one defeated soldier');
   const stopped=field.guards.filter(g=>g.hp===0).length,escaped=field.guards.filter(g=>g.escaped).length;
   assert(stopped===1&&!field.outcome,'Withdraw after exactly one genuine combat kill, before this phase ends');
@@ -183,7 +209,7 @@ export async function checkPartialBattleProgress(api){
 
 let completion;
 export async function checkInterceptionReview(api){
-  assert(partial,'Call checkPartialBattleProgress first');await api.war.help('west');
+  assert(partial,'Call checkPartialBattleProgress first');await api.war.help('west','intercept');
   assert(api.war.state().encounter.encounter.guards.length===partial.remaining,'Rejoined combat physically spawns only the remaining opponents');
   const interception=await playCombatUntil(api,s=>!!s.outcome,'the completed interception');
   assert(interception.hero.hp>0,'Teresod survives the remaining interception to regroup');
@@ -211,7 +237,7 @@ export async function checkAssaultBriefing(api){
   await frame();return {checks:['Regroup records the interception once and opens the final assault briefing'],pending:campaign.pending};
 }
 export async function checkAssaultReview(api){
-  await api.war.help('west');
+  await api.war.help('west','intercept');
   const final=await playCombatUntil(api,s=>!!s.outcome,'the final assault and its hold objective');
   assert(final.hero.hp>0,'Teresod survives the final assault');completion.final=final;
   assert(document.getElementById('battle-result-dialog').open&&document.getElementById('world-skirmish-continue').textContent.includes('Continue to campaign'),'Centered final result offers an immediate return to the campaign');

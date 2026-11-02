@@ -33,7 +33,9 @@ async function capture(a,view){
   assert(p.buildMs===buildMs&&p.sourceHash===hash,'Every view reuses the same scenery');
   assert(JSON.stringify(a.war.state().campaign)===campaign,'Tour leaves recorded campaign unchanged');
   assert(!s.frameErrors.length,'No tour frame errors');
-  return {view,title:document.getElementById('tower-topic').textContent,page:document.getElementById('tower-page').textContent,camera:s.cameraPosition,fov:s.cameraFov,render:a.renderStats()};
+  const next=document.getElementById('tower-next').textContent;
+  assert(next&&next!=='Look with Taleth','Next action names its destination or purpose');
+  return {view,title:document.getElementById('tower-topic').textContent,next,page:document.getElementById('tower-page').textContent,camera:s.cameraPosition,fov:s.cameraFov,render:a.renderStats()};
 }
 export async function river(a){
   campaign=JSON.stringify(a.war.state().campaign);const p=a.tower.state().panorama;buildMs=p.buildMs;hash=p.sourceHash;
@@ -86,7 +88,7 @@ export async function quickChart(a){
   click('tower-close');assert(a.save().ok,'Completion saves');await a.loadSaved();
   a.reveal(false);const post=await chart(a,true);
   assert(a.state().map.campaign.knownRegions.length===5+LOOKOUT_CHART_REGIONS.length,'All supplied map knowledge survives without developer reveal');
-  const target=document.querySelector('.atlas-campaign-info button[data-faction="charted:Telemonia"]');assert(target,'Charted region can be inspected');target.click();
+  const target=document.querySelector('.atlas-campaign-info button[data-faction="telemonia"]');assert(target,'Charted country can be inspected');target.click();
   assert(document.querySelector('.atlas-campaign-content').textContent.includes('outside the five playable'),'Surrounding region explains its scope');
   document.querySelector('[data-atlas-view="stability"]').click();
   assert(a.state().map.campaign.knownRegions.includes('Telemonia'),'Stability layer retains chart knowledge');

@@ -3,7 +3,7 @@ import {soldierWords} from './soldier-contact.js';
 
 // Conversations for the existing bounded aftermath/sentry cast only. No new
 // persistent NPCs, troop strengths, pathfinding or campaign commands.
-export function createSoldierHost({world,position,getMode,setMode,people,campaign,opportunity,faction,region,available}){
+export function createSoldierHost({world,position,getMode,setMode,people,campaign,opportunity,faction,region,available,clock=()=>null}){
   const prompt=document.createElement('button');prompt.id='soldier-interact';prompt.hidden=true;
   const dialog=document.createElement('dialog');dialog.id='soldier-dialog';dialog.setAttribute('aria-labelledby','soldier-speaker');
   dialog.innerHTML='<span class="eyebrow">A MOMENT AFTER THE FIGHT</span><h2 id="soldier-speaker"></h2><p id="soldier-office"></p><p id="soldier-words"></p><div class="tower-dialog-actions"><button data-topic="battle">What happened here?</button><button data-topic="next">What now?</button><button data-topic="close">Goodbye (Esc)</button></div>';
@@ -16,7 +16,7 @@ export function createSoldierHost({world,position,getMode,setMode,people,campaig
   }
   function close(){if(!speaking)return;dialog.close();speaking=null;setMode('playing');update();document.getElementById('exploration-canvas').focus();}
   function interact(){const person=target();if(!person)return false;
-    speaking=person;words=soldierWords(person,campaign(),opportunity(),faction,region);
+    speaking=person;words=soldierWords(person,campaign(),opportunity(),faction,region,clock());
     for(const [id,value]of [['speaker',words.name],['office',words.office],['words',words.hello]])dialog.querySelector('#soldier-'+id).textContent=value;
     setMode('briefing');prompt.hidden=true;dialog.showModal();dialog.querySelector('button').focus();return true;
   }

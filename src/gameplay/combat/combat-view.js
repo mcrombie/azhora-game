@@ -1,3 +1,4 @@
+import {createArmyUnit} from '../../content/characters/army-unit-view.js';
 import * as THREE from 'three';
 import { createCentaur } from '../../world/actors/centaur-model.js';
 import { createCharacter, createGoblin, createWolf, createOgre, setShadowCasting, groundShadow } from '../../content/characters/characters.js';
@@ -56,7 +57,7 @@ export function createCombatView(scene, world, camera, { onCorpse = () => false,
     // A named body on the other side of a fight is drawn as himself, exactly as an ally is: that
     // is how a man you are sparring with looks like the man you are sparring with (src/gameplay/skills/teachers.js).
     const borrowed=getActor(enemy.id)??(enemy.npcId?getActor(enemy.npcId):null);
-    const actor=borrowed??(enemy.kind==='centaur'?createCentaur({variant:index}):enemy.kind==='spider'?createSpider():enemy.kind==='bear'?createKaylaBear():enemy.kind==='batman'?createBatman():enemy.model?createCharacter({...enemy.model,armed:enemy.armed!==false}):enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='ogre'?createOgre():enemy.kind==='officer'?createCharacter({role:'legion-officer',armed:true}):enemy.kind==='soldier'?createCharacter({role:enemy.look==='legion'?'legion-soldier':'suvali-guard',armed:true}):enemy.kind==='rebel'?createCharacter({role:'forest-woodcutter',armed:true}):createGoblin({variant:index}));scene.add(actor.group);
+    const actor=borrowed??(enemy.kind==='centaur'?createCentaur({variant:index}):enemy.kind==='spider'?createSpider():enemy.kind==='bear'?createKaylaBear():enemy.kind==='batman'?createBatman():enemy.model?createCharacter({...enemy.model,armed:enemy.armed!==false}):enemy.kind==='wolf'?createWolf({variant:index}):enemy.kind==='ogre'?createOgre():enemy.kind==='officer'?createArmyUnit({faction:enemy.faction??(enemy.kind==='officer'||enemy.look==='legion'?'empire':''),officer:true}):enemy.kind==='soldier'?createArmyUnit({faction:enemy.faction??(enemy.kind==='officer'||enemy.look==='legion'?'empire':'')}):enemy.kind==='rebel'?createCharacter({role:'forest-woodcutter',armed:true}):createGoblin({variant:index}));scene.add(actor.group);
     // A fight is a crowd of articulated figures: each shadow costs as much as the figure.
     setShadowCasting(actor,false);const enemyShade=groundShadow(enemy.kind==='wolf'?.3:.34);
     // The disc is a person's footprint; a creature this size needs its own.
@@ -81,7 +82,7 @@ export function createCombatView(scene, world, camera, { onCorpse = () => false,
     const item={actor,borrowed:!!borrowed,tell,sector,edge,badge,fill,intent,deadTime:0};actors.set(enemy.id,item);return item;
   }
   function createAlly(ally) {
-    const actor=createCharacter(ally.model?{...ally.model,armed:ally.armed!==false}:{role:ally.kind==='officer'?'legion-officer':'legion-soldier',armed:true});scene.add(actor.group);
+    const actor=ally.model?createCharacter({...ally.model,armed:ally.armed!==false}):createArmyUnit({faction:ally.faction??(['legionary','officer'].includes(ally.kind)||ally.look==='legion'?'empire':''),officer:ally.kind==='officer'});scene.add(actor.group);
     setShadowCasting(actor,false);actor.group.add(groundShadow());
     const badge=document.createElement('div');badge.className='enemy-badge ally';
     const name=document.createElement('span');name.textContent=ally.name||'Soldier';

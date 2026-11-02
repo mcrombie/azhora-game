@@ -10,7 +10,37 @@ The [five-region Lizeem test](lizeem-simulation.md) is the first independent cam
 
 ## Exploration development
 
-The separate [exploration starting point](exploration.md) is the current place to test movement, camera, map discovery and basic saving without the old quest or skill controllers. Run `npm run start:exploration` or double-click `Explore Azhora.cmd`. The original game remains available with `npm run start:adventure`. `npm start` opens the shared four-option menu. The [Hearthfall sandbox](hearthfall-sandbox.md) loads Feradom only and reserves an isolated local integration seam for the replacement settlement PR. The linked audit records the world builder dependencies that still need separation.
+The independent campaign now also has a [food production and supply experiment](lizeem-simulation.md#food-production-and-supply-experiment).
+Run `npm run start:food` for the map-only food test, with regional reports and
+named disruption/recovery buttons. `npm run start:food-war` adds the moving armies
+and timed battles, with carried supplies and interrupted routes visible on the
+map. The selector retains the ordinary war test. Run `npm run analyze:food-war`
+for the paired balance audit and `npm run simulate:food` to compare normal trade, interruptions, restoration
+and an active war without loading graphics. `simulation/campaign.js` owns its
+clock and commands, `simulation/food.js` owns the daily calculation, and
+`content/scenarios/lizeem-food.js` owns the new regional targets. New **Begin Lizeemi War**
+campaigns combine this economy with the reviewed five-region countryside and
+elapsed adventure clock. Earlier saves and free exploration keep their original
+rules and scenery.
+The elapsed campaign's map offers Pause, 1×, 4× and 20× playback. It opens paused;
+closing it clears acceleration. `app/exploration/campaign-map-time.js` advances
+bounded normal simulation ticks without changing saved speed or event rules.
+Tower, conversation, food-report and inactive-window holds still apply. Check
+with `tests/campaign-map-time.test.js` and the isolated native flag
+`--campaign-map-time-checks` on the exploration/world-war smoke launcher.
+Completed large battles now advance the elapsed campaign to their scheduled end
+on Continue. Normal army orders, food and other battles progress through that
+interval. New adventures use `lizeem-adventure-food-v4`; ongoing older elapsed
+saves replay their history first, then record a one-way timing upgrade for future
+battles. See [shared clock behavior](../shared-clock-opening.md) and
+`tests/battle-deadline.test.js` for exact timestamps, previews and pause handling.
+The current food war's [supply planner](../../src/simulation/supply-planning.js)
+estimates march and battle endurance before `campaign.js` commits an order.
+Armies may provision or recover briefly, and their inspector records why they
+waited or accepted a shortage. Previous food-war rules remain available under
+**Reset and replay**; `analyze:food-war -- --compare-planning` audits both versions.
+
+The separate [exploration starting point](exploration.md) is the current place to test movement, camera, map discovery and basic saving without the old quest or skill controllers. Run `npm run start:exploration` or double-click `Explore Azhora.cmd`. The original game remains available with `npm run start:adventure`. `npm start` opens the shared development menu. The [Hearthfall sandbox](hearthfall-sandbox.md) loads Feradom only and reserves an isolated local integration seam for the replacement settlement PR. The linked audit records the world builder dependencies that still need separation.
 
 ## Where things live
 
@@ -42,7 +72,7 @@ Three source entry points deliberately retain their original locations:
 
 `npm start` runs the shared exploration menu through `scripts/launch.cjs --exploration` and `scripts/exploration-desktop.cjs`. For the original adventure, `npm run start:adventure` starts Electron with the root `main.cjs`. That file opens a window and serves `adventure.html` locally. The page loads `src/boot.js`, then `src/main.js`; the latter connects gameplay, content, world construction, UI and persistence.
 
-The package default and public `index.html` open the same four-option menu. `exploration.html` redirects old bookmarks there, preserving query parameters. Render publishes these through `npm run build:web`; deploying remains manual. The root **`main.cjs` is the original adventure desktop host**; **`src/main.js` is its running game**, not the shared menu controller.
+The package default and public `index.html` open the same development menu. `exploration.html` redirects old bookmarks there, preserving query parameters. Render publishes these through `npm run build:web`; deploying remains manual. The root **`main.cjs` is the original adventure desktop host**; **`src/main.js` is its running game**, not the shared menu controller.
 
 The existing fallback launcher finds Electron in the neighboring World Builder project when there is no local installation. Source reorganization does not change that relationship.
 
@@ -80,7 +110,7 @@ The independent simulation now owns time, armies and territory for the isolated 
 
 In the original adventure and exploration map, existing Chapter 1 and aftermath records still determine the visible political outcome. The Lizeem test has its own live map adapter and does not modify those records. See [the Solis walkthrough](chapter-one-walkthrough.md) for the current connections.
 
-The [Yunethre campaign design](../yunethre-campaign-design.md) defines a proposed continuation after the Lizeemi War: negotiate Laketown's accession and centaur protection before implementing the alternate military routes. It documents bounded region access, independent political relationships and preservation of the completed war. This is a design plan, not an implemented campaign.
+The [Yunethre continuation](../yunethre-campaign-design.md) now has a playable diplomacy and nonintervention opening. Choose **Begin Chapter 2** from `npm start`: meet Taleth, negotiate with Laketown, the centaurs and Celder, then return for the Chapter 3 handoff. `content/chapters/yunethre/` owns its rules, host, political projection and separate checkpoint; the transactional driver is exported through `simulation/campaign.js`. Continuing a completed Chapter 1 preserves its actual checkpoint as history. The five original Lizeem regions remain accessible alongside Yunethre and its Celder destinations. Fresh starts begin beside Taleth on the full Sky Lookout after a simulated unattended Chapter 1, with the shared minimap, quest panel and owned horse. P follows the diplomacy quests using real movement and conversation choices. The tower and lookout remain separate spaces. Hero battles, conquest encounters and Chapter 3's relocated tower and ranger/orc encounters are still pending. Run `npm run test:yunethre` and `npm run test:yunethre:desktop` for the model and native checks.
 
 ## Running and checking
 
@@ -97,12 +127,20 @@ node scripts/launch.cjs --smoke-test --chapter-one-checks
 
 `node scripts/run-tests.cjs` runs the full explicit suite, isolating each file to release large world fixtures between batches. Native smoke runs use an isolated profile rather than the player's normal save. See [reorganization verification](reorganization.md) for the checks performed during this cleanup.
 
-`npm run review:cities` opens a save-free scenery review for Aevis, Nylon, Selemis, Pyra and Mithala. Choose a city and a street or landmark view, then drag to orbit and scroll to zoom. It builds the same city modules used in exploration. `node scripts/launch.cjs --cities-review --smoke-test` captures the review views and rendering errors in `tests/artifacts/`; add `--cities=mithala,pyra` to inspect a subset. City-specific polish lives beside each city's scenery; the shared static parts are in `world/scenery/city-detail.js`.
+`npm run review:cities` opens a save-free scenery review for the authored cities, including Ganun, Riesov and Witherst. Open a northern town directly with `npm run review:cities -- --city=witherst` (or `riesov` / `ganun`). Ganun lives in `content/regions/ganun/`; the shared coastal construction and distinct Finnish- and Danish-inspired buildings live in `content/regions/northern-towns/`. These are actual exploration scenery modules, streamed only when their regions load. Choose a city and a street or landmark view, then drag to orbit and scroll to zoom. It builds the same city modules used in exploration. `node scripts/launch.cjs --cities-review --smoke-test` captures the review views and rendering errors in `tests/artifacts/`; add `--cities=mithala,pyra` to inspect a subset. City-specific polish lives beside each city's scenery; the shared static parts are in `world/scenery/city-detail.js`.
+
+Stonefist and unwalled Lond Town live in `src/content/regions/lond/`: `lond-layout.js` owns the rock, ascent and bridge surfaces; `lond-country.js` places dry farmland and town lots; the scenery modules build the shared world/review geometry. Their discovery marks use the ordinary atlas rules. Run `npm run review:cities -- --city=lond` to inspect this first capital pass directly. The other four Lond regions also receive farmland through their own deferred regional builds.
+
+Endevor Town lives in `src/content/regions/endevor/`. Its river follows the atlas edges; `endevor-layout.js` shares the bridge, sloping quays and town ground with movement, while `endevor-country.js` keeps fields and building lots on dry land around the port. The two-bank town loads once when North or West Endevor is prepared. East Endevor remains a wild march, with more patchy broadleaf woodland and its existing open routes. Run `npm run review:cities -- --city=endevor` for the five save-free views. This is an exterior scenery pass: residents, interiors and regional quests are not implemented.
 
 The project uses native JavaScript modules and an import map for local Three.js. There is no TypeScript compilation step. The surrounding folder name `typescript` does not affect execution. Moving the project directory and migrating the language are separate decisions.
 
 ## Keeping this navigable
 
+The [music and nature first pass](music.md) lives in `src/world/audio/`, with launcher/pause integration in `src/app/exploration/audio-host.js`. It shares scene-aware themes across Explore, campaign and combat practice, keeps music independent of campaign time, and leaves space for a separate bird layer.
+
 Keep new files with their feature family. Prefer feature-owned implementation over new inline subsystems in `main.js` and `world.js`. Add links here for major new areas and keep experimental status explicit.
 
 The private manuscript directory is outside the runtime and this index. Its existing confidentiality and read-only rules remain in force.
+
+The separate [food-enabled world test](lizeem-simulation.md#food-enabled-playable-world-test) is assembled in `src/app/food-world/`. It connects the reviewed agricultural layouts to the existing hero war through `campaign.js`, with its own scenario ID and save. It bypasses `src/world.js` rather than changing the legacy farm builders. Run `npm run start:food-world` and choose **Start food world test**.

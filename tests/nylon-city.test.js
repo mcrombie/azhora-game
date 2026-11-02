@@ -44,8 +44,8 @@ test('All tall buildings are separate, fully on dry land, and clear of the thick
   }
 });
 
-test('The two gates, travel arrival and map landmarks are reachable ground instead of building centres', () => {
-  assert.equal(NYLON_GATES.length, 2);
+test('The land gate, open harbor, travel arrival and map landmarks are reachable ground instead of building centres', () => {
+  assert.equal(NYLON_GATES.length, 1, 'The internal harbor gate was removed with its dividing curtain');
   for (const gate of NYLON_GATES) {
     assert.ok(gate.width >= 11);
     assert.ok(nylonSegmentDistance(gate.x, gate.z, NYLON_OUTLINE[gate.edge], NYLON_OUTLINE[(gate.edge + 1) % NYLON_OUTLINE.length]) < .001);

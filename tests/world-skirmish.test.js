@@ -140,3 +140,13 @@ test('choosing to fight the escorts lets the runner escape with a partial contri
   assert(s.guards.find(g=>g.role==='runner').escaped);assert(s.guards.filter(g=>g.role==='escort').every(g=>g.hp===0));
   const report=interceptionFeedback(s,{strength:12,endsOn:8});assert.equal(report.title,'Partial interception');assert.match(report.detail,/8 of 12 reinforcement strength removed; 4 remains/);
 });
+
+test('roadside staging can straddle a province edge while retaining loaded dry ground and local limits',()=>{
+  const world={...plain(),regionAt:x=>({id:x<0?13:14})},ground=createSkirmishGround(world,{x:0,z:0},null,32);
+  const stage=ground.assaultStage(0,4,2);
+  assert.equal(stage.guards.length,4);assert.equal(stage.allies.length,2);
+  assert(stage.guards.some(p=>p.x<0)&&stage.guards.some(p=>p.x>0));
+  assert(ground.move({x:-1,z:0},2,0).x>0);
+  assert(ground.move({x:31,z:0},5,0).x<=32);
+  for(const change of [{waterAt:()=>3},{readyAt:()=>false}])assert.equal(createSkirmishGround({...world,...change},{x:0,z:0},null,32).clear(0,0),false);
+});

@@ -81,7 +81,7 @@ export const isArmyBattle = id => ARMY_BATTLE_IDS.includes(id);
  */
 export const FILL_LOOK = freeze({
   empire: freeze({ name: 'Soldier', model: freeze({ role: 'legion-soldier', tunic: 0x8f3b30 }) }),
-  coalition: freeze({ name: 'Valley company', model: freeze({ role: 'suvali-guard', tunic: 0x55636f }) }),
+  coalition: freeze({ name: 'Militiaman', model: freeze({ role: 'militiaman', tunic: 0x55636f }) }),
 });
 
 /**
@@ -101,7 +101,7 @@ export function fillCount({ walking = 0, room = Infinity, floor = FILE_FLOOR } =
  * the companions, because the file is what is being filled.
  */
 export function fillFor({ side = 'empire', walking = 0, room = Infinity, floor = FILE_FLOOR } = {}) {
-  const look = FILL_LOOK[side] ?? FILL_LOOK.empire;
+  const look = FILL_LOOK[side] ?? FILL_LOOK.coalition;
   return freeze(Array.from({ length: fillCount({ walking, room, floor }) }, (_, index) => freeze({
     id: `file-fill-${index + 1}`, name: look.name, kind: FILL_KIND,
     level: FILL_ARMS.level, toughness: FILL_ARMS.toughness,

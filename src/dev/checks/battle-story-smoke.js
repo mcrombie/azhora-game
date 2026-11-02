@@ -40,7 +40,7 @@ export async function taleth(a){
   await frame();return {checks:['Returning through Guild door gives Taleth a result-specific conversation','Taleth explains the provisional banner leadership without restarting the war']};
 }
 async function leaveRoom(a,id){await a.visit(id==='tower'?{...TOWER_DOOR,z:TOWER_DOOR.z-1}:{...councilDoor(id),z:councilDoor(id).z-1});await doorway(a);}
-async function talkMember(a,id){await a.visit(MINORA_COUNCIL[id].exit);await doorway(a);const p=councilPerson(id);await a.visit({x:p.x+1.7,z:p.z+2.2});a.look({yaw:-.5,pitch:.17,distance:5});f();}
+async function talkMember(a,id){await a.visit(MINORA_COUNCIL[id].exit);await doorway(a);const p=councilPerson(id);await a.visit({x:p.x+1.7,y:p.y,z:p.z+2.2});a.look({yaw:-.5,pitch:.17,distance:5});f();}
 export async function mayor(a){
   document.getElementById('tower-next').click();await leaveRoom(a,'tower');await talkMember(a,'mayor');
   assert(document.getElementById('council-words').textContent.includes('Caricas'),'Mayor acknowledges Caricas');

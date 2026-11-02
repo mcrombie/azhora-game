@@ -10,6 +10,10 @@ export function selectFireballTarget(origin,direction,targets,{lockedId=null,vis
   const valid=g=>aliveTarget(g)&&Math.hypot(g.x-origin.x,g.y-origin.y,g.z-origin.z)<=range&&visible(origin,g);
   // A chosen opponent never redirects the spell to somebody else behind them.
   if(lockedId!==null)return targets.find(g=>g.id===lockedId&&valid(g))??null;
+  // Ground hazards underfoot have no useful horizontal aim direction. With no
+  // opponent locked, Q clears that immediate hazard instead of firing over it.
+  const hazard=targets.find(g=>['web','binding','trap'].includes(g.kind)&&valid(g)&&Math.hypot(g.x-origin.x,g.z-origin.z)<g.radius);
+  if(hazard)return hazard;
   const alignment=g=>{const dx=g.x-origin.x,dz=g.z-origin.z;return (dx*direction.x+dz*direction.z)/Math.max(.001,Math.hypot(dx,dz));};
   return targets.filter(g=>valid(g)&&alignment(g)>Math.cos(Math.PI/8)).sort((a,b)=>alignment(b)-alignment(a)||a.id-b.id)[0]??null;
 }

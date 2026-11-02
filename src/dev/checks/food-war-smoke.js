@@ -1,0 +1,54 @@
+export async function checkFoodWar(h){
+  const checks=[],assert=(ok,message)=>{if(!ok)throw Error(message);checks.push(message);};
+  const $=id=>document.getElementById(id),click=id=>$(id).click(),state=()=>h.state();
+  const choose=id=>{$('selected-region').value=id;$('selected-region').dispatchEvent(new Event('change'));};
+  assert(state().campaign.scenario==='lizeem-food-war-v2'&&state().campaign.day===0,'War with food opens the supply-planning scenario paused');
+  assert(!$('army-inspector').hidden&&$('hero-panel').hidden,'Army inspector is available without a hero encounter UI');
+  assert(document.querySelectorAll('[data-supply-route]').length===2,'Minora selected: only its two supply links appear');
+  click('advance');
+  assert(state().campaign.armies.length>0&&state().campaign.armies.some(a=>a.supply.carried>0),'Marching armies take real supplies');
+  let marker=document.querySelector('[data-army]');marker.focus();marker.dispatchEvent(new KeyboardEvent('keydown',{code:'Enter',bubbles:true}));
+  assert(state().selectedArmy!==null&&$('army-detail').textContent.includes('Carried food'),'Keyboard selection opens the army supply report');
+  assert($('army-detail').textContent.includes('Last planning estimate')&&$('army-detail').textContent.includes('Accepting about'),'Inspector explains the expedition forecast and its accepted supply risk');
+  while(!state().campaign.engagements.some(b=>b.region==='caricas'&&b.status==='active')&&state().campaign.day<20)h.advance();
+  const battle=state().campaign.engagements.find(b=>b.region==='caricas'&&b.status==='active');assert(battle,'Caricas has a timed battle');
+  const attacker=state().campaign.armies.find(a=>a.id===battle.attackingIds[0]);
+  marker=document.querySelector(`[data-army="${attacker.id}"]`);assert(marker&&attacker.region===null,'Committed attackers remain visible despite region:null');
+  marker.dispatchEvent(new KeyboardEvent('keydown',{code:'Enter',bubbles:true}));
+  assert(state().selected==='caricas'&&$('army-detail').textContent.includes('until day '+battle.endsOn),'Selected army identifies its battlefield and deadline');
+  assert(document.querySelector('[data-battle-region="caricas"]'),'Active battle is outlined on the map');
+  assert($('region-detail').textContent.includes('battle in Caricas until day'),'Inspector explains battle-blocked supply access');
+  click('cut-imports');click('restore-imports');choose('isareos');
+  assert(state().campaign.food.blockedRoutes.length===0&&document.querySelector('[data-supply-route="isareos|caricas"]').dataset.open==='false','Removing a developer blockade does not reopen a battle route');
+  const before=state().campaign.day;h.advance();assert(state().campaign.day===before+1,'Clock continues through an unresolved battle');
+  document.querySelector('.food-routes').open=true;h.pause();assert(document.querySelector('.food-routes').open,'Supply details stay open when the interface refreshes');
+  assert(state().campaign.regions.caricas.food.last.exports===0,'Battle blocks actual Caricas exports');
+  const saved=JSON.stringify(state().campaign),run=h.exportRun();h.reset(42);h.importRun(run);
+  assert(JSON.stringify(state().campaign)===saved&&!state().running,'Active food battles and army supplies replay exactly');
+  let rejected=false;try{h.importRun({...run,scenario:'lizeem-food-budget-v1'});}catch{rejected=true;}
+  assert(rejected&&JSON.stringify(state().campaign)===saved,'Budget-mode imports cannot replace the war');
+  let oldMessage='';try{h.importRun({...run,scenario:'lizeem-food-war-v1'});}catch(error){oldMessage=error.message;}
+  assert(oldMessage.includes('previous food-war rules')&&JSON.stringify(state().campaign)===saved&&!$('planning-version').hidden,'Previous exports have an explicit route to their original rules without changing the current run');
+  click('disrupt-nethereum');assert(state().selected==='nethereum'&&state().campaign.regions.nethereum.food.condition===.25,'Nethereum has its own disruption control');
+  assert(state().baseline.regions.nethereum.food.condition===1,'Baseline receives no developer damage');
+  click('restore-nethereum');assert(state().campaign.regions.nethereum.food.condition===1,'Nethereum production can be restored');
+  h.reset(1);click('disrupt-nesdor');h.advance(120);
+  assert(state().campaign.winner&&state().baseline.winner,'Both war outcomes can be reviewed');
+  assert(state().campaign.day!==state().baseline.day&&$('comparison-note').textContent.includes('different days'),'Comparison explicitly dates diverging victories');
+  assert(document.querySelectorAll('#comparison tr').length===5,'Ownership, food and stability comparison covers all five regions');
+  const ended=JSON.stringify(state().campaign);click('restore-nesdor');
+  assert(JSON.stringify(state().campaign)===ended&&$('restore-nesdor').disabled&&$('play').disabled,'Food interventions and clock stop safely at victory');
+  assert($('events').textContent.includes('wins'),'Completed war has an outcome in recent events');
+  const resources=performance.getEntriesByType('resource').map(e=>new URL(e.name).pathname);
+  assert(!resources.some(p=>p.includes('/vendor/three')||p==='/src/world.js'),'Food war remains map-only with no 3D loading');
+  h.reset(2);
+  while(!state().campaign.events.some(e=>e.type==='army-hold')&&state().campaign.day<120&&!state().campaign.winner)h.advance();
+  const hold=state().campaign.events.find(e=>e.type==='army-hold');assert(hold,'A repeatable war demonstrates a supply wait');
+  $('selected-army').value=String(hold.armyId);$('selected-army').dispatchEvent(new Event('change'));
+  assert($('army-detail').textContent.includes('Reconsider day')&&$('army-detail').textContent.includes('supply waits end by'),'Selected holding army explains why and when it will reconsider');
+  const holding=JSON.stringify(state().campaign),waitingRun=h.exportRun();h.reset(42);h.importRun(waitingRun);
+  assert(JSON.stringify(state().campaign)===holding,'Provisioning / recovery decisions survive exact replay');
+  h.reset(1731);h.advance(5);choose('caricas');
+  $('army-inspector').open=false;document.querySelector('aside').scrollTop=0;
+  return {checks,readyMs:state().readyMs};
+}

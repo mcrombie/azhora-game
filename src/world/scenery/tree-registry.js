@@ -14,8 +14,8 @@ export function getTreeRegistry(colliders) {
   return registries.get(colliders);
 }
 
-export function registerWorldTree(colliders, tree, handles = [], collider = null) {
-  return getTreeRegistry(colliders).register(tree, handles, collider);
+export function registerWorldTree(colliders, tree, handles = [], collider = null, observationOwner = null) {
+  return getTreeRegistry(colliders).register(tree, handles, collider, observationOwner);
 }
 
 function createTreeRegistry(colliders) {
@@ -24,7 +24,7 @@ function createTreeRegistry(colliders) {
   const matrix = new THREE.Matrix4(), rotate = new THREE.Matrix4(), translate = new THREE.Matrix4();
   const pivot = new THREE.Vector3(), axis = new THREE.Vector3();
 
-  function register(tree, handles, collider) {
+  function register(tree, handles, collider, observationOwner) {
     const timber = timberForSpecies(tree.species);
     if (!timber) throw new Error(`Unknown tree species ${tree.species} (${tree.id})`);
     if (!tree.id || entries.has(tree.id)) throw new Error(`Duplicate or missing tree id: ${tree.id}`);
@@ -40,7 +40,7 @@ function createTreeRegistry(colliders) {
       return { mesh, index, original, world: null, inverse: null };
     });
     if (collider) Object.assign(collider, { id: descriptor.id, species: descriptor.species, woodKind: descriptor.woodKind });
-    const entry = { tree: descriptor, pieces, collider, standing: true, age: -1, stump: null, away: 0 };
+    const entry = { tree: descriptor, pieces, collider, observationOwner, standing: true, age: -1, stump: null, away: 0 };
     maxRadius = Math.max(maxRadius, descriptor.radius);
     trees.push(descriptor); entries.set(descriptor.id, entry);
     const key = bucket(tree.x, tree.z); if (!cells.has(key)) cells.set(key, []); cells.get(key).push(entry);
@@ -163,7 +163,35 @@ function createTreeRegistry(colliders) {
     return best;
   }
 
-  return { trees, register, get: id => entries.get(id)?.tree ?? null, nearest, fell, set, remove, regrow: id => set(id, true), chip, update,
+  function attachedVisible(object) {
+    // Parked scenery retains descriptors but its detached root cannot be seen.
+    for (let node = object; node; node = node.parent) {
+      if (!node.visible || node.scale.x === 0 || node.scale.y === 0 || node.scale.z === 0) return false;
+      if (node.isScene) return true;
+    }
+    return false;
+  }
+
+  function visible(entry) {
+    if (!entry?.standing) return false;
+    // A protected tree may be merged into one scenery mesh. Its owner gives
+    // observation visibility without pretending it has separable felling parts.
+    if (!entry.pieces.length) return attachedVisible(entry.observationOwner);
+    return entry.pieces.some(({ mesh, index }) => {
+      if (mesh.isInstancedMesh) {
+        if (index >= mesh.count) return false;
+        mesh.getMatrixAt(index, matrix);
+        if (Math.abs(matrix.determinant()) < 1e-12) return false;
+      }
+      return attachedVisible(mesh);
+    });
+  }
+
+  function nearestVisible(position, reach = 3.4, predicate = () => true) {
+    return nearest(position, reach, (tree, standing) => standing && visible(entries.get(tree.id)) && predicate(tree));
+  }
+
+  return { trees, register, get: id => entries.get(id)?.tree ?? null, nearest, nearestVisible, fell, set, remove, regrow: id => set(id, true), chip, update,
     standing: id => entries.get(id)?.standing ?? false,
     configure(options) { root = options.root ?? root; reindex = options.reindex ?? reindex; return this; },
   };

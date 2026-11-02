@@ -123,7 +123,7 @@ export function* createSuvalHighlandScenerySteps({ root, material, mesh, box, po
       const limb = box(char, x + .45, y + h * .7, z, 1.5, .13, .13, group); limb.rotation.z = .4;
       const collider = { x, z, r: .26, kind: 'burned-tree' }; colliders.push(collider);
       registerWorldTree(colliders, { id: worldTreeId('burned-holm-oak', x, z), x, z, y, species: 'holm-oak', radius: .26, harvestable: false,
-        reason: 'This burned holm oak has no sound timber left.' }, [], collider);
+        reason: 'This burned holm oak has no sound timber left.', condition:'Standing burned holm oak' }, [], collider,group);
     }
     const altar = mesh(round, material('#645049'), scar.x, groundHeight(scar.x, scar.z) + .5, scar.z, 1.8, .75, 1.8, group);
     altar.name = 'Abandoned Nanvir offering stone'; colliders.push({ x: scar.x, z: scar.z, r: 1.5, kind: 'nanvir-ruin' });

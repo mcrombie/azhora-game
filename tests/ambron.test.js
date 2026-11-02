@@ -35,6 +35,13 @@ world.loading.stop();
 const P = ambronPoint;
 const WALKER = .45;
 
+test('the capital trims the northwest wedge while keeping the new Lake Gate on dry ground',()=>{
+  assert.equal(inAmbronOutline(-1255,-213),false,'The old projecting corner is outside the city');
+  assert.equal(inAmbronOutline(-1205,-155),true,'The settled interior remains inside');
+  const gate=AMBRON_CIRCUIT.gates.find(g=>g.id==='lake-gate');
+  assert.ok(ambronDryDistance(gate.centre.x,gate.centre.z)>6,'Relocated gate stays clear of both lakes and canal');
+});
+
 /** The world with only the colliders near Ambron: a fine grid over the city stays quick. */
 const nearAmbron = (() => {
   const reach = 290;
@@ -109,7 +116,7 @@ test('the enlarged capital uses unchanged lakes as open defensive arcs', () => {
   for(let i=0;i<AMBRON_OUTLINE.length;i++){const a=AMBRON_OUTLINE[i],b=AMBRON_OUTLINE[(i+1)%AMBRON_OUTLINE.length];twiceArea+=a.x*b.z-b.x*a.z;}
   for(const run of AMBRON_CIRCUIT.runs){const edge=AMBRON_CIRCUIT.edges[run.edge];for(let at=run.from;at<=run.to;at+=.5){const p=AMBRON_CIRCUIT.pointOn(edge,at);assert.ok(ambronDryDistance(p.x,p.z)>=3,'no curtain masonry in water');}}
   assert.ok(Math.abs(twiceArea)/2>184*136*2,'more than twice the former footprint');
-  assert.ok(AMBRON_BUILDINGS.length>=160,'expanded districts have substantial building density');
+  assert.ok(AMBRON_BUILDINGS.length>=150,'rounded capital retains dense districts after trimming the northwest wedge');
   assert.equal(CHANNEL.enabled,false);assert.equal(AMBRON_QUAYS.length,0);
   assert.equal(ambronDeckHeight(AMBRON.centre.x,AMBRON.centre.z),null,'no phantom causeway deck on the market');
   for(const lake of ELAGOS_BASINS){assert.ok(elagosWaterDistance(lake.centre.x,lake.centre.z)<0);assert.equal(canStand(lake.centre.x,lake.centre.z,world,WALKER),false);}
@@ -355,7 +362,7 @@ test('every separate dry wall section has a land gate', () => {
     if(!current){current={length:0,gate:false};groups.push(current);}
     current.length+=.5;current.gate||=sample.gate;
   }
-  assert.equal(groups.length,5,'five curtains separated by the lakes');
+  assert.equal(groups.length,6,'six curtains separated by lakes and the northern canal at the trimmed corner');
   for(const section of groups)assert.ok(section.gate,`${section.length}m curtain has a gate`);
 });
 

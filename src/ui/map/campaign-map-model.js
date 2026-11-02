@@ -21,7 +21,7 @@ export const CHAPTER_FACTIONS=['ambroni-empire','izol','west-suval'];
 export const imperial=new Set(['Elagos','Drent','Amod','Pueth','Luscia','Moros Plain','Vastos','Meneth','Peblos','East Lotharn Mountains','West Lotharn Mountains']);
 export const disputed=new Set(['Acor Wetlands','Noth Hills','East Lotharn Mountains','West Lotharn Mountains','Caricas','Nethereum','Ovesos','Nesdor']);
 export const shortNames={'stonefist-lond':'Lond','ambroni-empire':'Ambron','pyrosi-empire':'Pyros','minoran-league':'Minoran League','eshtor-undead':'Undeadland','acorwood-satyrs':'Acreland','north-gorgi-goblins':'North Gorgi','south-gorgi-goblins':'South Gorgi','orgmala-goblins':'Orgmala','gorgiwood-goblins':'Gorgiwood','wilhelm-undead':'Blood Prince','west-baldro-dwarves':'West Dwarfland','east-baldro-dwarves':'East Dwarfland','nylon':'Nylon','henborth-centaurs':'Henborth','yunethre-shared':'Yunethre','disputed':'Disputed','unassigned':'Unassigned'};
-const fixedColors={'stonefist-lond':'#86a9c8','ambroni-empire':'#d3a28c','izol':'#7eabc4','west-suval':'#a5b88a','eshtor-undead':'#ad8ab8','riesov':'#d3bd80','ganun':'#b6c28b','endevor':'#daa984','witherst':'#9abcab','wilhelm-undead':'#bd859e','west-baldro-dwarves':'#a9b7b5','east-baldro-dwarves':'#c2a7a2','disputed':'#c8c1ab','unassigned':'#c4c8b8','yunethre-shared':'#8bb99e'};
+const fixedColors={'kudan':'#809dc4','narcosh':'#a2b078','oremindi-west-orcs':'#b9836c','oremindi-east-orcs':'#7da7a5','oremindi-north-orcs':'#bcb087','oremindi-south-orcs':'#ad83a5','oremindi-kingdom':'#8a9ebd','stonefist-lond':'#86a9c8','ambroni-empire':'#d3a28c','izol':'#7eabc4','west-suval':'#a5b88a','eshtor-undead':'#ad8ab8','riesov':'#d3bd80','ganun':'#b6c28b','endevor':'#daa984','witherst':'#9abcab','wilhelm-undead':'#bd859e','west-baldro-dwarves':'#a9b7b5','east-baldro-dwarves':'#c2a7a2','disputed':'#c8c1ab','unassigned':'#c4c8b8','yunethre-shared':'#8bb99e'};
 const palette=['#a7b9d2','#ccb88e','#aabd87','#bb9fba','#94bdbb','#d2ac81','#b6aecc','#bfcd9e','#d0a6a2','#9ab2c0','#c6b895','#a3c2a8'];
 export const factionRegions=f=>[...(f?.regions||[]),...(f?.proposedRegions||[])];
 export const factionName=(id,factions)=>shortNames[id]||factions.find(f=>f.id===id)?.name.replace(/ \(.*\)$/,'')||id;
@@ -35,6 +35,9 @@ export function ownerOf(name,factions,snapshot='opening'){
 }
 export function stability(name,snapshot='opening'){
   if(SNAPSHOTS[snapshot]?.owner&&SNAPSHOTS[snapshot].region===name)return ['Recently conquered','conflict'];
+  if(['West Oremindi Mountains','East Oremindi Mountains','North Oreminidi Mountains','South Oremindi Mountains'].includes(name))return ['Orc occupation','conflict'];
+  if(name==='Cudon')return ['Threatened','unstable'];
+  if(name==='Lesser Oremindi Mountains')return ['Orc passage permitted','unstable'];
   if(name.includes('Ithzel'))return ['Restoration war','conflict'];
   if(name==='West Suval')return ['Border war','conflict'];
   if(disputed.has(name))return [['Acor Wetlands','Noth Hills'].includes(name)?'Disputed':'Open rebellion','conflict'];
@@ -49,6 +52,13 @@ export function chapterSnapshot(chapter,aftermath){
   return chapter?.reported&&required&&aftermath?.variant===required&&aftermath.cleared===true?CHAPTER_PATHS[chapter.winner].snapshot:'opening';
 }
 export const publicProfiles={
+  kudan:{ruler:'Independent human monarchy',seat:'Kudan Town, southwest coast of Cudon',war:'Fears an invasion by Thalmagar; independent at the opening.',ties:'Hostile to Thalmagar. The coastal town is its only major settlement; surrounding farms support the countryside.'},
+  narcosh:{ruler:'Independent government; ruler not yet specified',seat:'Narcosh',war:'Claims part of the disputed Acor Wetlands.',ties:'A country of mixed human and goblin ancestry. Friendly toward Thalmagar, but has not joined him. Permits northern orc passage through the Orthakar woodland corridor into the Oremindi.'},
+  'oremindi-kingdom':{ruler:'The surviving human king; name not yet specified',seat:'The Last Refuge; the old seat is lost',war:'Nearly destroyed by four rival orc chieftains. Most human mountain communities lie in ruins.',ties:'Once little heeded by isolated villages, the king became a rallying point against the invasions. A remnant claim survives, without control of a whole region.'},
+  ...Object.fromEntries(['west','east','north','south'].map((direction,i)=>['oremindi-'+direction+'-orcs',{
+    ruler:'An independent orc chieftain; name not yet specified',seat:['Broken Horn Hold','Ashen Stair Hold','White Anvil Hold','Red Tarn Hold'][i],
+    war:'Occupies the mountain surface; human resistance is almost destroyed.',ties:'Rivals the other three Oremindi chieftains. No unified orc command or established allegiance to Thalmagar. Warbands have passed south with Narcosh\'s permission.'
+  }])),
   'ambroni-empire':{ruler:'Willard, constitutional monarch',seat:'Ambron, Elagos',war:'At war with the Coalition in Moros Plain and West Suval.',ties:'Nominal vassal of the Stone Fist; effectively autonomous. Feradom is an independent ally.'},
   izol:{ruler:'Ruler not yet specified',seat:'Izolveth, West Izol',war:'Represents the Coalition fighting Ambron. A Chapter 1 victory brings Moros Plain under Izol.',ties:'Coalition partner of the republican forces holding West Suval. These remain separate territories and governments.'},
   'west-suval':{ruler:'Republican council at Solis',seat:'Solis, West Suval',war:'Coalition-held at the opening; threatened by the Ambroni army.',ties:'Fights alongside Izol against Ambron. Coalition membership does not make West Suval an Izoli province.'},

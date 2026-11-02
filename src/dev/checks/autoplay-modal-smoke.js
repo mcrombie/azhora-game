@@ -71,8 +71,16 @@ export function resumedCampaign(a){
   assert(driver.state().battles===battles&&JSON.stringify(a.war.state().campaign)===before,'Repeated resume cannot duplicate battle accounting');
   window.dispatchEvent(new Event('focus'));
   for(let i=0;i<110;i++)a.step(.04);
-  assert(driver.state().stage==='letter'&&!document.getElementById('taleth-letter-dialog').hidden,'Resumed campaign reaches Taleth\'s real letter');
+  assert(driver.state().stage==='letter'&&!document.getElementById('taleth-letter-dialog').hidden&&a.war.state().courier.telepathic,'Resumed campaign reaches Taleth\'s spoken message');
   driver.stop();document.getElementById('taleth-letter-close').click();
+  assert(driver.resume()&&driver.state().stage==='letter-wait','Resume returns to postponed news from Taleth');
+  for(let i=0;i<150&&driver.state().stage!=='letter';i++)a.step(.04);
+  assert(driver.state().stage==='letter'&&a.war.state().courier.conversation&&!a.war.state().courier.people.length,'Postponed telepathic conversation can be reopened without finding a bird');
+  driver.stop();document.getElementById('corris-understood').click();
+  const acknowledged=JSON.stringify(a.war.state().campaign);
+  assert(driver.resume()&&driver.state().stage==='choose','Resume proceeds after manual Understood');
+  assert(!a.war.state().courier.delivery&&JSON.stringify(a.war.state().campaign)===acknowledged,'Acknowledgement does not replay the battle');
+  driver.stop();
   assert(!a.state().frameErrors.length,'Final-result handoff has no frame errors');
   return {stage:driver.state().stage,battles,day:a.war.state().campaign.day,errors:a.state().frameErrors};
 }

@@ -1,0 +1,75 @@
+/* One campaign card owns time, objectives, navigation and incoming news.
+   Combat and reading dialogs keep their separate, modal presentation. */
+#world-war-report #war-log-open{display:block;margin-top:10px;padding:5px 9px;font-size:12px;background:none;border-color:#b9ad8055}
+#campaign-war-log{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;padding:20px;background:#102b33aa;box-sizing:border-box}
+#campaign-war-log[hidden]{display:none}
+#campaign-war-log .tower-dialog-card{display:flex;flex-direction:column;width:min(760px,94vw);max-height:85dvh;overflow:hidden}
+#campaign-war-log header,#campaign-war-log footer{flex-shrink:0}
+#campaign-war-log header p,#campaign-war-log label{font:13px/1.5 system-ui;color:#d7dfcc}
+#war-log-entries{overflow:auto;min-height:0;margin:16px 0;padding-right:12px;scrollbar-width:thin}
+#war-log-entries article{border-top:1px solid #b9ad8055;padding:15px 0}
+#war-log-entries small{color:#e7cf92;font:12px system-ui}
+#war-log-entries h3{font:22px Georgia,serif;margin:8px 0}
+#war-log-entries p{font:14px/1.6 system-ui;margin:0}
+@media(max-height:500px){#campaign-war-log{padding:8px}#campaign-war-log .tower-dialog-card{max-height:95dvh;padding:14px}#campaign-war-log h2{margin:6px 0}#war-log-entries{margin:8px 0}}
+#world-war-report{left:24px;bottom:78px;width:324px;max-height:calc(100dvh - 240px);padding:16px;background:#173831ee;border-color:#b9ad8066;border-radius:7px;box-shadow:0 5px 22px #10291e33;scrollbar-width:thin;scrollbar-color:#819684 #173831}
+#world-war-report:has(#world-war-report-more[open]){max-height:calc(100dvh - 200px)}
+#world-war-report .war-objective{position:relative}
+#world-war-report .war-objective .eyebrow{display:block;padding-right:46px;font-size:9px;line-height:1.5;letter-spacing:.13em;color:#b9cab9}
+#world-war-report h2{font-size:23px;line-height:1.16;margin:8px 0}
+#world-war-report p{font-size:12px;line-height:1.5;margin:8px 0}
+#world-war-report #campaign-panel-toggle{float:right;margin:0 0 4px 8px;padding:2px 4px;min-height:24px;font-size:11px;color:#c5d3c4;background:none;border-color:transparent}
+#world-war-report #campaign-panel-toggle:hover{color:#ffdfa0;border-color:#b9ad8077}
+#world-war-report .war-report-actions{margin-top:8px}
+#world-war-report .war-report-actions:not(:has(button:not([hidden]))){display:none}
+#world-war-report .war-report-actions button{font-size:12px;min-height:36px;padding:7px 11px}
+#world-war-report-more{margin-top:12px;padding-top:9px;border-color:#b9ad803d}
+#world-war-report summary:focus-visible{outline:2px solid #edcf89;outline-offset:3px}
+#world-war-report #world-war-track{position:static;inset:auto;transform:none;order:initial;z-index:auto;width:100%;max-width:none;max-height:none;overflow:visible;display:flex;align-items:center;gap:9px;margin:10px 0 0;padding:10px 0 0;border:0;border-top:1px solid #a8b09c33;border-radius:0;box-shadow:none;background:none;font-size:12px}
+#world-war-report #world-war-track .war-track-arrow{font-size:23px;flex-shrink:0;order:0}
+#world-war-report #world-war-track .war-track-body{flex:1;min-width:0;order:1}
+#world-war-report #world-war-track strong{display:block;font-size:12px;font-weight:500;color:#c3ebe0}
+#world-war-report #world-war-track .war-track-distance{font-size:11px;color:#c3ccbb;font-variant-numeric:tabular-nums}
+#world-war-report #world-war-track>button{order:2;flex-shrink:0;min-height:30px;background:none;border-color:#a8b09c44;color:#becabb;font-size:10px;padding:4px 7px}
+#world-war-report #world-war-track p{margin:4px 0;font-size:11px;line-height:1.4}
+#world-war-report #world-war-track .war-council-destinations{font-size:11px}
+#world-war-report #corris-arrival{position:static;inset:auto;transform:none;order:initial;z-index:auto;width:100%;max-width:none;margin:11px 0 0;padding:10px 0 0;background:none;border:0;border-top:1px solid #d8bb7555;border-radius:0;box-shadow:none;font:12px/1.4 system-ui}
+#world-war-report #corris-arrival span{display:block;margin:0 0 6px;color:#e9d69f}
+#world-war-report #corris-arrival button{width:100%;padding:8px 10px;min-height:36px;color:#f9e1a9;background:#3c4b36;border-color:#c6ad6b80;font-size:12px}
+#world-war-report.campaign-panel-compact #world-war-objective-detail,#world-war-report.campaign-panel-compact #world-war-objective-clock,#world-war-report.campaign-panel-compact #world-war-report-more,#world-war-report.campaign-panel-compact #world-war-track p,#world-war-report.campaign-panel-compact .war-council-destinations{display:none}
+#world-war-report.campaign-panel-compact h2{font-size:19px}
+body:has(#opening-world-time) #world-war-hud,#world-war-report:has(#opening-world-time) #world-war-objective-clock{display:none}
+/* The local chart and spell remain at the opposite edge. Explanations reveal
+   on hover/focus instead of forming permanent extra blocks. */
+body:has(#world-war-controls:not([hidden])) #exploration-minimap .minimap-legend,body:has(#world-war-controls:not([hidden])) #exploration-minimap>small:last-child{display:none}
+body:has(#world-war-controls:not([hidden])) #exploration-minimap:is(:hover,:focus-within) .minimap-legend,body:has(#world-war-controls:not([hidden])) #exploration-minimap:is(:hover,:focus-within)>small:last-child{display:block}
+@media(min-width:961px) and (min-height:481px){
+  #teresod-sorcery{width:184px;right:24px;bottom:78px;padding:9px;font-size:12px;border-color:#b9ad8066;border-radius:6px}
+  #teresod-sorcery button{padding:8px 10px;font-size:12px}
+  #teresod-sorcery label{margin-top:5px}#teresod-sorcery meter{height:9px}
+  #teresod-sorcery small{display:none}#teresod-sorcery:is(:hover,:focus-within) small{display:block}
+}
+@media(max-height:760px) and (min-width:481px){
+  #world-war-report{left:16px;bottom:64px;width:302px;padding:13px;max-height:calc(100dvh - 205px)}
+  #world-war-report:has(#world-war-report-more[open]){max-height:calc(100dvh - 170px)}
+  #world-war-report h2{font-size:21px}#world-war-report p{font-size:11px}
+}
+@media(max-width:480px){
+  #world-war-report,#world-war-report:has(#world-war-report-more[open]){left:max(8px,env(safe-area-inset-left));right:112px;top:calc(76px + env(safe-area-inset-top));bottom:auto;width:auto;max-height:calc(100dvh - 384px);padding:10px}
+  #world-war-report h2{font-size:18px}#world-war-report.campaign-panel-compact h2{font-size:18px}
+  #world-war-report .war-objective .eyebrow{font-size:8px;padding-right:40px;letter-spacing:.08em}
+  #world-war-report #campaign-panel-toggle{font-size:10px;min-height:28px}
+  #world-war-report .war-report-actions button,#world-war-report #corris-arrival button{min-height:42px;font-size:11px;padding:7px 8px}
+  #world-war-report #world-war-track{gap:6px;margin-top:7px;padding-top:7px}#world-war-report #world-war-track strong{font-size:11px}
+  #world-war-report #world-war-track>button{min-height:36px;padding:4px 6px}
+  #world-war-report #corris-arrival span{font-size:11px}
+  body:has(#world-war-report:not([hidden])) #exploration-hud:not([hidden])~#exploration-status:not(.on-map){top:auto;bottom:calc(236px + env(safe-area-inset-bottom));left:8px;right:8px;transform:none;max-width:none;max-height:60px;overflow:auto;font-size:12px;padding:9px 12px}
+}
+@media(max-width:960px) and (max-height:480px){
+  #world-war-report,#world-war-report:has(#world-war-report-more[open]){left:max(8px,env(safe-area-inset-left));right:auto;top:calc(65px + env(safe-area-inset-top));bottom:auto;width:min(290px,34vw);padding:9px 11px;max-height:calc(100dvh - 220px)}
+  #world-war-report h2,#world-war-report.campaign-panel-compact h2{font-size:17px;margin:5px 0}
+  #world-war-report .war-objective .eyebrow{font-size:8px}
+  #world-war-report .war-report-actions button{min-height:36px}
+  #world-war-report #world-war-track{padding-top:6px;margin-top:6px}
+}
+

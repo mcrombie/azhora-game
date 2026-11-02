@@ -3,8 +3,11 @@ import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-registry.js';
 import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
+import {createSceneryBuilder} from '../../../world/scenery/scenery-builder.js';
+import {southOremindiExpeditionReserved} from './south-oremindi-expedition.js';
+import {buildSouthOremindiExpeditionScenery} from './south-oremindi-expedition-scenery.js';
 import { SOUTH_OREMINDI, SOUTH_OREMINDI_BOUNDS, SOUTH_OREMINDI_LAKES,
-  southOremindiOwns, southOremindiFeatures, southOremindiWaterAt } from './south-oremindi-world.js';
+  southOremindiOwns, southOremindiFeatures, southOremindiWaterAt, SOUTH_OREMINDI_PATHS } from './south-oremindi-world.js';
 
 const CHUNK = 110;
 const geometry = {
@@ -25,9 +28,10 @@ const tones = {
  * the visible heightfield supplies all ridges, passes and climbing surfaces. */
 export function createSouthOremindiScenery(...args) { return finishBuild(createSouthOremindiScenerySteps(...args)); }
 
-export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGroundHeight = heightAt, colliders, terrainRoot, isReserved = () => false }) {
+export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGroundHeight = heightAt, colliders, terrainRoot, isReserved = () => false, excludeLakeIds = [] }) {
   let buildWork = 0;
   const root = new THREE.Group(); root.name = 'South Oremindi alpine country'; parent.add(root);
+  const reserved=(x,z,r=0)=>isReserved(x,z,r)||southOremindiExpeditionReserved(x,z,r);
   const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .98, flatShading: true });
   const batches = new Map(), pendingTrees = [], dummy = new THREE.Object3D(), color = new THREE.Color();
   const metrics = { trees: 0, rocks: 0, tufts: 0, flowers: 0, shrubs: 0, lakes: 0, batches: 0 };
@@ -60,7 +64,7 @@ export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGro
     }
     // Consume the same random draws before omitting a whole tree, so reserving
     // a cottage does not move the surrounding woodland or shoreline erratics.
-    const omitted = isReserved(x, z, height * .4);
+    const omitted = reserved(x, z, height * .4);
     for (const piece of pieces) { piece.tree = true; piece.omitted = omitted; }
     if (omitted) return;
     const collider = { x, z, r, kind: 'tree' }; colliders.push(collider);
@@ -69,6 +73,10 @@ export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGro
   }
 
   const b = SOUTH_OREMINDI_BOUNDS;
+  // The pale shoreline erratic beside Inquest's cottage is an authored
+  // landmark now. Keep it stable when distant terraforming changes the seeded
+  // scatter's random sequence. Its original low-poly shape is retained below.
+  const erratic={x:-3458.939458955894,z:-462.5571666201686,r:2.1585750555656853};
   // Wind and altitude open the canopy gradually; groves occupy sheltered lower
   // slopes rather than forming a uniform band parallel to the map's hexes.
   for (let z0 = b.minZ + 4; z0 < b.maxZ; z0 += 11) { if (++buildWork % 32 === 0) yield; for (let x0 = b.minX + 4; x0 < b.maxX; x0 += 11) { if (++buildWork % 32 === 0) yield;
@@ -97,7 +105,7 @@ export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGro
       // boulders have small colliders, never invisible mountainside rectangles.
       const tint = f.snow > .6 ? '#b6bdb7' : random() < .5 ? '#858b85' : '#9b9d8e';
       const stone = part('stone', tint, x, y + h * .23, z, r, h, r * range(.65, 1.2), range(0, 6), range(-.2, .2));
-      if (erratic && !isReserved(x, z, stone.radius)) colliders.push({ x, z, r: r * .68, minY: y - .4, maxY: y + h, kind: 'rock' });
+      if (erratic && !reserved(x, z, stone.radius)) colliders.push({ x, z, r: r * .68, minY: y - .4, maxY: y + h, kind: 'rock' });
       metrics.rocks++;
     }
     if (f.grade > .9 || f.snow > .7 || random() > .64) continue;
@@ -113,8 +121,12 @@ export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGro
       part('crown', '#6e805f', x, y + .25, z, range(.4, .9), .4, .55, range(0, 6)); metrics.shrubs++;
     }
   } }
+  const ey=renderedGroundHeight(erratic.x,erratic.z),landmark=part('stone','#9b9d8e',erratic.x,ey+.5840852548,erratic.z,1,1,1);
+  landmark.landmark=true;landmark.matrix.fromArray([-3.0963542461395264,-.2811439335346222,.6404731273651123,0,-.2202526479959488,2.5295205116271973,.045558709651231766,0,-.5501251816749573,0,-2.659569025039673,0,erratic.x,ey+.5840852548,erratic.z,1]);
+  for(let i=colliders.length-1;i>=0;i--)if(colliders[i].kind==='rock'&&Math.hypot(colliders[i].x-erratic.x,colliders[i].z-erratic.z)<4)colliders.splice(i,1);
+  colliders.push({...erratic,minY:ey-.4,maxY:ey+2.53950006537,kind:'rock'});
   for (const [key, batch] of batches) { if (++buildWork % 32 === 0) yield;
-    batch.pieces = batch.pieces.filter(p => !p.omitted && (p.tree || !isReserved(p.x, p.z, p.radius)));
+    batch.pieces = batch.pieces.filter(p => p.landmark || !p.omitted && (p.tree || !reserved(p.x, p.z, p.radius)&&Math.hypot(p.x-erratic.x,p.z-erratic.z)>4));
     if (!batch.pieces.length) continue;
     const mesh = new THREE.InstancedMesh(geometry[batch.type], material, batch.pieces.length);
     mesh.name = `South Oremindi ${key}`; mesh.castShadow = batch.type !== 'blade'; mesh.receiveShadow = true;
@@ -124,7 +136,34 @@ export function* createSouthOremindiScenerySteps({ parent, heightAt, renderedGro
   const trees = pendingTrees.map(t => registerWorldTree(colliders, t.descriptor, t.pieces.map(p => p.handle), t.collider));
   metrics.trees = trees.length; metrics.batches = batches.size;
 
-  const waterRoot = new THREE.Group(); waterRoot.name = 'South Oremindi glacial lakes'; root.add(waterRoot);
+  const cairns=createSceneryBuilder('South Oremindi / worn path cairns');let marks=0;
+  for(const path of SOUTH_OREMINDI_PATHS){
+    if(path.kind==='scramble')continue;
+    let since=0;
+    for(let i=1;i<path.points.length;i++){
+      const a=path.points[i-1],p=path.points[i],length=Math.hypot(p.x-a.x,p.z-a.z);since+=length;
+      if(since<32||length<.1)continue;since=0;
+      const side=marks%2?1:-1,x=p.x+(p.z-a.z)/length*(path.width/2+2.3)*side,z=p.z-(p.x-a.x)/length*(path.width/2+2.3)*side;
+      if(!southOremindiOwns(x,z)||southOremindiWaterAt(x,z)!==null||reserved(x,z,.6))continue;
+      const y=renderedGroundHeight(x,z);cairns.rock('#92958a',x,y+.18,z,.55,.27,.44);
+      cairns.rock('#b1b2a0',x+.04,y+.48,z-.04,.37,.22,.31);cairns.rock('#d1cdb7',x-.03,y+.73,z,.22,.17,.19);
+      marks++;if(marks%8===0)yield;
+    }
+  }
+  yield* cairns.finishSteps(root);metrics.cairns=marks;
+  metrics.expedition=yield* buildSouthOremindiExpeditionScenery({parent:root,heightAt:renderedGroundHeight});
+
+  const water = createSouthOremindiLakeWater(root, {excludeLakeIds});
+  metrics.lakes = water.waterMeshes.length;
+  return { root, terrainRoot, ...water, trees, metrics, renderedGroundHeight };
+}
+
+/** Standalone scenery owns both lakes. A world that already owns a border
+ * lake explicitly excludes it here, so delayed mountain loading cannot add
+ * a second coplanar water sheet or take away the town's existing water. */
+export function createSouthOremindiLakeWater(parent, {excludeLakeIds = []} = {}) {
+  const excluded = new Set(excludeLakeIds);
+  const waterRoot = new THREE.Group(); waterRoot.name = 'South Oremindi glacial lakes'; parent.add(waterRoot);
   const waterMaterial = new THREE.ShaderMaterial({ side: THREE.DoubleSide, fog: true,
     uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { time: { value: 0 } }]),
     vertexShader: `#include <fog_pars_vertex>
@@ -139,12 +178,16 @@ vec3 colour=vec3(.13,.34,.36)+vec3(.18,.22,.21)*pow(max(ripple,0.),12.);gl_FragC
 #include <fog_fragment>
 }`,
   });
-  const waterMeshes = SOUTH_OREMINDI_LAKES.map(lake => {
+  const waterMeshes = SOUTH_OREMINDI_LAKES.filter(lake => !excluded.has(lake.id)).map(lake => {
     const shape = new THREE.Shape(lake.shore.map(p => new THREE.Vector2(p.x, -p.z)));
     const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), waterMaterial);
-    mesh.name = lake.name; mesh.rotation.x = -Math.PI / 2; mesh.position.y = lake.surface;
-    waterRoot.add(mesh); metrics.lakes++; return mesh;
+    mesh.name = lake.name; mesh.userData.lakeId = lake.id; mesh.rotation.x = -Math.PI / 2; mesh.position.y = lake.surface;
+    waterRoot.add(mesh); return mesh;
   });
-  return { root, terrainRoot, waterRoot, waterMeshes, trees, metrics,
-    renderedGroundHeight, update: time => { waterMaterial.uniforms.time.value = time; } };
+  let disposed = false;
+  return {waterRoot, waterMeshes, update: time => {waterMaterial.uniforms.time.value = time;},
+    dispose() {
+      if (disposed) return; disposed = true; waterRoot.removeFromParent();
+      for (const mesh of waterMeshes) mesh.geometry.dispose(); waterMaterial.dispose();
+    }};
 }

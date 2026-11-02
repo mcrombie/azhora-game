@@ -1,17 +1,25 @@
-import {LIZEEM_SCENARIO as scenario} from '../../content/scenarios/lizeem.js';
+import {LIZEEM_SCENARIO} from '../../content/scenarios/lizeem.js';
+import {createLizeemFoodScenario} from '../../content/scenarios/lizeem-food.js';
 import {createCampaign,normalizeSeed,replayCampaign} from '../../simulation/campaign.js';
 import {createScenarioMap} from './map.js';
 import {isAlive,isMoving,stationed,defendingStrength} from '../../simulation/forces.js';
 import {createReports} from './reports.js';
 import {createHeroControls} from './hero-controls.js';
+import {createFoodView} from './food-view.js';
+import {armyFoodMarkup} from './food-war-report.js';
+import {armyMapRegion} from './army-map-state.js';
 
 const $=id=>document.getElementById(id),started=performance.now();
+const params=new URLSearchParams(location.search),choice=params.get('scenario');
+const mode=['food','food-war'].includes(choice)?choice:'war',foodMode=mode!=='war',foodWar=mode==='food-war';
+const legacyPlanning=foodWar&&params.get('planning')==='legacy';
+const scenario=foodMode?createLizeemFoodScenario({war:foodWar,planning:foodWar&&!legacyPlanning}):LIZEEM_SCENARIO;
 const reports=createReports(scenario),regionName=reports.region;
 const factionName=id=>scenario.factions.find(f=>f.id===id)?.short??id;
-let campaign=createCampaign(scenario),baseline=createCampaign(scenario),selected='isareos',selectedArmy=null,view='geopolitical',running=false,timer=null,map,heroUI;
+let campaign=createCampaign(scenario),baseline=createCampaign(scenario),selected='isareos',selectedArmy=null,view='geopolitical',running=false,timer=null,map,heroUI,foodUI;
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const eventText=reports.event;
-function selectArmy(id){selectedArmy=id;document.getElementById('army-inspector').open=true;render();}
+function selectArmy(id){selectedArmy=id;if(foodWar){const state=campaign.snapshot(),army=state.armies.find(a=>a.id===id);if(army)selected=armyMapRegion(state,army)??selected;}document.getElementById('army-inspector').open=true;render();if(foodWar)$('army-inspector').scrollIntoView({block:'nearest'});}
 function renderArmy(state){
   const list=$('selected-army');list.replaceChildren(new Option('Select an army',''));
   for(const army of state.armies)list.add(new Option(`${army.name} - ${army.status}`,String(army.id)));
@@ -19,21 +27,24 @@ function renderArmy(state){
   $('army-count').textContent=`(${state.armies.filter(isAlive).length} active)`;
   const a=state.armies.find(one=>one.id===selectedArmy);
   if(!a){$('army-detail').innerHTML='<p>Click an army marker or choose a name to follow its orders and battle history.</p>';return;}
-  const history=state.events.filter(e=>e.type==='battle'&&(e.armyId===a.id||e.defendingIds.includes(a.id)));
+  const history=state.events.filter(e=>e.type==='battle'&&(e.armyId===a.id||e.attackingIds?.includes(a.id)||e.defendingIds.includes(a.id)));
   $('army-detail').innerHTML=`<h2>${escape(a.name)}</h2><dl><dt>Status</dt><dd>${escape(a.status)}</dd><dt>Strength</dt><dd>${a.strength}</dd><dt>Raised in</dt><dd>${escape(regionName(a.origin))}</dd><dt>Battles fought</dt><dd>${a.battles}</dd></dl>`+
     (isMoving(a)?`<p><b>${escape(regionName(a.from))} to ${escape(regionName(a.to))}</b><br>Departed day ${a.departed}; arrives day ${a.arrives} (${a.arrives-state.day} days left).</p><p>${escape(reports.route(a.route))}</p>`
       :a.region?`<p>Stationed in ${escape(regionName(a.region))}.${a.readyOn?` Ready for orders on day ${a.readyOn}.`:''}</p>`:'')+
     `<p><b>Order:</b> ${escape(a.reason)}</p>`+
-    (history.length?`<h3>Latest battle</h3><p>${escape(eventText(history.at(-1)))}</p>`:'');
+    armyFoodMarkup(scenario,state,a)+(history.length?`<h3>Latest battle</h3><p>${escape(eventText(history.at(-1)))}</p>`:'');
 }
 function render(){
   const state=campaign.snapshot(),base=baseline.snapshot(),region=state.regions[selected],definition=scenario.regions.find(r=>r.id===selected);
-  map.render(state,view,selected,selectedArmy);renderArmy(state);heroUI?.render(state);
+  map.render(state,view,selected,selectedArmy);heroUI?.render(state);
   $('day').textContent='Day '+state.day;$('play').textContent=running?'Pause':'Run';
   $('war-status').textContent=state.pending?'Local battle awaits you':state.winner?`${factionName(state.winner)} wins`:running?'Running':'Paused';
   $('play').disabled=!!state.winner||!!state.pending;$('advance').disabled=!!state.winner||!!state.pending||running;
   $('selected-region').value=selected;
   document.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===view)));
+  if(foodUI){foodUI.render(state,base,selected);if(foodWar)renderArmy(state);}
+  else{
+  renderArmy(state);
   const incoming=state.armies.filter(a=>isMoving(a)&&a.to===selected),local=stationed(state,selected),outgoing=state.armies.filter(a=>isMoving(a)&&a.from===selected);
   $('region-detail').innerHTML=`<h2>${escape(scenario.factions.find(f=>f.id===region.owner).name)}</h2><dl><dt>Defending strength</dt><dd>${defendingStrength(state,selected)}</dd><dt>Local garrison</dt><dd>${region.garrison}</dd><dt>Stationed armies</dt><dd>${local.length}</dd><dt>Recruitment / day</dt><dd>${region.recovery?0:definition.recruits}</dd><dt>Armies approaching</dt><dd>${incoming.length}</dd></dl><p>${region.owner==='minora'?'Neutral. Neither league can attack or march through Isareos. Teresod begins in Minora.':region.recovery?`Recovering after capture: ${region.recovery} days before recruitment resumes.`:'New recruits gather here; armies choose targets along shared borders.'}</p>${[...new Map([...incoming,...local,...outgoing].map(a=>[a.id,a])).values()].map(a=>`<button class="army-link" data-inspect-army="${a.id}">${escape(a.name)}: ${a.strength} / ${a.status}</button>`).join('')}`;
   $('reinforce').disabled=region.owner==='minora'||!!state.winner||!!state.pending;
@@ -41,6 +52,7 @@ function render(){
   $('comparison-note').textContent=`Same seed, no interventions. ${base.winner?`${factionName(base.winner)} won on day ${base.day}.`:`Baseline advanced to day ${base.day}.`} This run: ${state.winner?`${factionName(state.winner)} won on day ${state.day}`:`day ${state.day}`}.`;
   $('finish-baseline').hidden=!state.winner||!!base.winner;
   $('comparison').innerHTML=scenario.regions.map(r=>`<tr><td>${escape(r.name)}</td><td>${escape(factionName(base.regions[r.id].owner))}</td><td class="${base.regions[r.id].owner!==state.regions[r.id].owner?'changed':''}">${escape(factionName(state.regions[r.id].owner))}</td></tr>`).join('');
+  }
   $('event-count').textContent=`(${state.events.length})`;
   $('events').innerHTML=state.events.slice(-25).reverse().map(e=>`<li><b>Day ${e.day}</b> ${escape(eventText(e))}</li>`).join('');
   $('faction-key').innerHTML=scenario.factions.map(f=>`<span><i style="background:${f.color}"></i>${escape(f.short)} · ${Object.values(state.regions).filter(r=>r.owner===f.id).length} regions</span>`).join('');
@@ -64,15 +76,34 @@ function reinforce(){
 }
 function exportRun(){const {seed,day,commands}=campaign.snapshot();return {format:'azhora-lizeem-experiment',version:1,scenario:scenario.id,seed,day,commands};}
 function importRun(data){
-  if(data?.format!=='azhora-lizeem-experiment'||data.version!==1||data.scenario!==scenario.id||!Array.isArray(data.commands)||data.commands.length>10000)throw Error('This experiment uses different scenario rules. Import a v3 Lizeem experiment; older exports are kept unchanged.');
+  if(foodWar&&!legacyPlanning&&data?.scenario==='lizeem-food-war-v1')throw Error('This uses previous food-war rules. Export your current run, then choose Open previous food-war rules below and import again.');
+  if(data?.format!=='azhora-lizeem-experiment'||data.version!==1||data.scenario!==scenario.id||!Array.isArray(data.commands)||data.commands.length>10000)throw Error(`This file does not match ${foodWar?'War with food':foodMode?'Food & supply test':'The East-West War'}. Select the matching scenario before importing. Older exports are kept unchanged.`);
   const restored=replayCampaign(scenario,data),untouched=createCampaign(scenario,data.seed);if(data.day)untouched.step(data.day);
   pause();heroUI?.clear();selectedArmy=null;campaign=restored;baseline=untouched;$('seed').value=String(data.seed);render();$('experiment-note').textContent='Experiment replayed and paused at day '+data.day+'.';
 }
 try{
+  document.body.dataset.scenario=foodMode?'food':'war';
+  $('scenario-choice').value=mode;
+  $('scenario-choice').onchange=()=>{pause();const url=new URL(location.href);url.searchParams.set('scenario',$('scenario-choice').value);url.searchParams.delete('planning');location.assign(url.href);};
+  if(foodMode){
+    document.title=foodWar?'Azhora - War with food':'Azhora - Food & supply test';$('scenario-title').textContent=foodWar?'War with food':'Food & supply';
+    $('scenario-description').textContent=foodWar?(legacyPlanning?'Previous food-war rules: current readiness only.':'Armies weigh supplies before marching. Three-day battles.'): 'Five regions. Stationary armies. Watch how food shortages spread.';
+    document.querySelector('.page-note').textContent='Food & supply test · No army movement or recruitment · Drag to pan · Scroll to zoom · Space to run / pause';
+    for(const id of ['hero-panel','army-inspector','reinforcement-controls'])$(id).hidden=true;
+    $('food-controls').hidden=false;
+    if(foodWar){
+      $('planning-version').hidden=false;$('planning-version').textContent=legacyPlanning?'Open current food-war rules (starts fresh)':'Open previous food-war rules (starts fresh)';
+      $('planning-version').onclick=()=>{pause();const url=new URL(location.href);if(legacyPlanning)url.searchParams.delete('planning');else url.searchParams.set('planning','legacy');location.assign(url.href);};
+      document.querySelector('.page-note').textContent='Selected region: solid supply links are open; dashed links are closed · Red dotted borders mark battles · Space to run / pause';
+      $('army-inspector').hidden=false;$('food-controls').open=false;$('food-war-actions').hidden=false;
+      $('food-controls').before($('army-inspector'));$('food-test-help').textContent='Disrupt a region to 25% production condition; restore it to 100%. Reopening imports cannot remove a battle or an enemy border.';
+    }
+  }
   map=await createScenarioMap($('scenario-map'),scenario,id=>{selected=id;render();},selectArmy);
-  heroUI=createHeroControls({scenario,getCampaign:()=>campaign,pause,refresh:region=>{if(region)selected=region;render();}});
-  for(const region of scenario.regions)$('selected-region').add(new Option(region.name,region.id));
-  $('selected-army').onchange=()=>{selectedArmy=$('selected-army').value?Number($('selected-army').value):null;render();};
+  if(foodMode)foodUI=createFoodView({scenario,getCampaign:()=>campaign,pause,refresh:region=>{selected=region;render();},war:foodWar});
+  if(!foodMode)heroUI=createHeroControls({scenario,getCampaign:()=>campaign,pause,refresh:region=>{if(region)selected=region;render();}});
+  for(const region of scenario.regions)$('selected-region').add(new Option(foodMode&&region.id==='isareos'?'Isareos / Minora':region.name,region.id));
+  $('selected-army').onchange=()=>{selectArmy($('selected-army').value?Number($('selected-army').value):null);};
   $('region-detail').onclick=e=>{const button=e.target.closest('[data-inspect-army]');if(button)selectArmy(Number(button.dataset.inspectArmy));};
   $('selected-region').onchange=()=>{selected=$('selected-region').value;render();};
   for(const button of document.querySelectorAll('[data-view]'))button.onclick=()=>{view=button.dataset.view;render();};
@@ -81,7 +112,7 @@ try{
   $('reinforce').onclick=reinforce;$('reset').onclick=()=>{try{reset();}catch(error){$('experiment-note').textContent=error.message;}};
   $('export-run').onclick=()=>{
     const blob=new Blob([JSON.stringify(exportRun(),null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
-    a.href=url;a.download=`azhora-lizeem-seed-${campaign.snapshot().seed}-day-${campaign.snapshot().day}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    a.href=url;a.download=`azhora-${mode}-seed-${campaign.snapshot().seed}-day-${campaign.snapshot().day}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     $('experiment-note').textContent='Export requested. The file contains the seed, day and intervention history.';
   };
   $('import-run').onchange=async()=>{
@@ -93,5 +124,5 @@ try{
   window.addEventListener('pagehide',()=>clearTimeout(timer));render();
   const readyMs=Math.round(performance.now()-started);console.log('LIZEEM_READY '+readyMs+'ms');
   if(new URLSearchParams(location.search).has('test'))window.__LIZEEM__={advance,reset,pause,toggle,reinforce,exportRun,importRun,
-    state:()=>({campaign:campaign.snapshot(),baseline:baseline.snapshot(),running,selected,selectedArmy,view,map:map.state(),hero:heroUI.state(),readyMs})};
+    state:()=>({campaign:campaign.snapshot(),baseline:baseline.snapshot(),running,selected,selectedArmy,view,map:map.state(),hero:heroUI?.state()??null,readyMs})};
 }catch(error){console.error(error);$('scenario-map').textContent='Could not open the scenario: '+error.message;window.__LIZEEM_ERROR__=String(error.stack||error);}

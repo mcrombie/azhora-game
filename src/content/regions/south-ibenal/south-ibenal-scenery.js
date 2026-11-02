@@ -12,6 +12,7 @@ import { alezhorRivers, alezhorWaterAt } from '../alezhor/alezhor-world.js';
 import * as SOUTH_WORLD from './south-ibenal-world.js';
 import * as NORTH_WORLD from '../north-ibenal/north-ibenal-world.js';
 import { ibenalWildlifeClear } from './south-ibenal-wildlife.js';
+import { ibenalSettlementReserved } from '../ibenal-settlements/ibenal-settlements-layout.js';
 
 /**
  * **The Ibenale corridor's natural cover: a summer-dry coastal plain between the open western ocean and the
@@ -270,6 +271,7 @@ export const IBENAL_KEPT_POINTS = freeze(LANDMARK_POINTS.map(p => freeze({ id: p
  * landmark's point or an arrival, and a reserved place. `margin` is the thing's reach.
  */
 export function ibenalPathClear(x, z, margin = 0) {
+  if(ibenalSettlementReserved(x,z,margin))return true;
   for (const p of LANDMARK_POINTS) if (Math.hypot(x - p.x, z - p.z) < 5 + margin) return true;
   if (ibenalTrailDistance(x, z) < 1.4 + margin) return true;
   return ibenalReserved(x, z, margin);
@@ -852,7 +854,7 @@ export function* createIbenalScenerySteps(country, { parent, heightAt, renderedG
     const h = heightAt(x, z);
     return ibenalWaterAt(x, z, h) === null && h > WATERLINE + lift;
   };
-  const plantable = (x, z) => ibenalOwns(country, x, z) && dry(x, z);
+  const plantable = (x, z) => ibenalOwns(country, x, z) && dry(x, z) && !ibenalSettlementReserved(x,z,.5);
   /** For a clump whose lobes stand off its centre: its own ground and dry for `r` metres round. */
   const roomy = (x, z, r) => plantable(x, z) && [[r, 0], [-r, 0], [0, r], [0, -r]].every(([dx, dz]) => plantable(x + dx, z + dz));
   // Spacing by a hash grid rather than a scan of everything already placed.

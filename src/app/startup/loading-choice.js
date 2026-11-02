@@ -1,9 +1,10 @@
 import {yieldStartup} from './startup.js';
 
 /** The launch preference is deliberately per-launch; Full always remains the default. */
-export function chooseLoadingMode({document=globalThis.document,search=globalThis.location?.search??'',afterPaint=yieldStartup,now=()=>performance.now(),schedule=setTimeout,cancel=clearTimeout}={}){
-  const panel=document?.getElementById('loading-choice'),full=document?.getElementById('loading-full'),fast=document?.getElementById('loading-fast');
-  const countdown=document?.getElementById('loading-countdown'),status=document?.getElementById('loading-status'),loading=document?.getElementById('loading');
+export function chooseLoadingMode({document=globalThis.document,search=globalThis.location?.search??'',afterPaint=yieldStartup,now=()=>performance.now(),schedule=setTimeout,cancel=clearTimeout,ids={}}={}){
+  const element=(key,fallback)=>document?.getElementById(ids[key]??fallback);
+  const panel=element('panel','loading-choice'),full=element('full','loading-full'),fast=element('fast','loading-fast');
+  const countdown=element('countdown','loading-countdown'),status=element('status','loading-status'),loading=element('loading','loading');
   const override=new URLSearchParams(search).get('load');
   if(!panel||!full||!fast)return Promise.resolve('full');
   return new Promise(resolve=>{

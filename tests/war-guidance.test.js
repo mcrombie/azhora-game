@@ -1,9 +1,13 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createWorldWar,WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
+import {createWorldWar,WORLD_WAR_SCENARIO,OPENING_WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
+import {createAdventureWar} from '../src/experiments/day-night/opening-war.js';
+import {CARICAS_TOWN} from '../src/content/regions/minora-frontier/caricas-settlement.js';
 import {withColumnPosition,worldWarArmies} from '../src/app/exploration/war-armies.js';
 import {openingWarGuidance,openingArmyTarget,guidanceScreenPoint} from '../src/app/exploration/war-guidance.js';
 import {trackedWarTarget} from '../src/app/exploration/war-tracking.js';
+import {warPointerPlacement} from '../src/app/exploration/war-pointer-layout.js';
 import {savedWarNavigation,validWarNavigation} from '../src/app/exploration/war-navigation-state.js';
 import {MINORA_COUNCIL} from '../src/content/regions/minora-frontier/minora-council.js';
 import {ovesosColumn,caricasColumn,campaignColumn,columnRoadPoint,COLUMN_LENGTH,OVESOS_COLUMN_ROAD,CARICAS_COLUMN_LENGTH,CARICAS_COLUMN_ROAD} from '../src/app/exploration/war-columns.js';
@@ -18,7 +22,7 @@ test('Briefing starts with real marching orders; repeated begin and replay do no
 });
 
 test('Continue restores the chosen destination or an explicitly stopped guide',()=>{
-  for(const navigation of [{kind:'army',id:3},{kind:'battle',id:'caricas-1'},{kind:'opening',id:'mayor'},{kind:'opening',id:'temple'},null]){
+  for(const navigation of [{kind:'army',id:3},{kind:'battle',id:'caricas-1'},{kind:'opening',id:'caricas'},{kind:'opening',id:'mayor'},{kind:'opening',id:'temple'},null]){
     assert.equal(validWarNavigation(navigation),true);
     assert.deepEqual(savedWarNavigation({navigation,riding:{owned:true}}),navigation);
   }
@@ -27,6 +31,46 @@ test('Continue restores the chosen destination or an explicitly stopped guide',(
   assert.equal(savedWarNavigation({navigation:{kind:'opening',id:'bear'},afterlife:{inLimbo:true}}),null);
   assert.deepEqual(savedWarNavigation({navigation:{kind:'opening',id:'temple'},afterlife:{death:{},inLimbo:false}}),{kind:'opening',id:'temple'},'A recovered character can keep a new destination');
   for(const invalid of [{kind:'army',id:3,x:4},{kind:'opening',id:'unknown'},{kind:'battle',id:''},{kind:'battle',id:-1},[]])assert.equal(validWarNavigation(invalid),false);
+});
+
+test('elapsed opening has an honest fixed destination before the real army and battlefield exist',()=>{
+  const war=createAdventureWar();war.begin();
+  for(let i=0;i<41;i++)war.tick(1,true);
+  const marks=()=>worldWarArmies(war.snapshot(),OPENING_WORLD_WAR_SCENARIO,()=>true,war.clock());
+  const before=war.snapshot(),checkpoint=war.checkpoint();
+  assert.equal(war.clock().elapsedSeconds,41);
+  assert.equal(before.armies.some(a=>a.status==='marching'),false,'The destination guide must not require an invented pre-departure army');
+  assert.equal(openingArmyTarget(before,marks(),()=>true),null);
+  const destination=openingWarGuidance('caricas',{owned:true,mounted:true});
+  assert(destination?.location,'Mounted travel retains a usable destination before departure');
+  assert.deepEqual(destination.location,CARICAS_TOWN.arrival);
+  assert.match(destination.label,/Caricas/);
+  assert.doesNotMatch(destination.label,/Army/);
+  assert.deepEqual(war.snapshot(),before,'Reading the destination does not issue orders or advance time');
+  assert.deepEqual(war.checkpoint(),checkpoint);
+  war.pause();for(let i=0;i<10;i++)war.tick(1,true);
+  assert.equal(war.clock().elapsedSeconds,41);
+  assert.deepEqual(openingWarGuidance('caricas',{owned:true,mounted:true}),destination);
+  const restored=createAdventureWar(checkpoint);
+  assert.equal(restored.clock().elapsedSeconds,41);
+  assert.equal(savedWarNavigation({...checkpoint,navigation:null,riding:{owned:true}}),null,'Save/reload preserves explicitly stopped navigation');
+  assert.deepEqual(savedWarNavigation({...checkpoint,navigation:{kind:'opening',id:'caricas'},riding:{owned:true}}),{kind:'opening',id:'caricas'});
+  war.begin();for(let i=0;i<19;i++)war.tick(1,true);
+  assert.equal(war.clock().elapsedSeconds,60);
+  const target=openingArmyTarget(war.snapshot(),marks(),()=>true);
+  const actual=war.snapshot().armies.find(a=>a.status==='marching'&&a.owner==='west'&&a.from==='nethereum'&&a.to==='caricas');
+  assert(actual);assert.deepEqual(target,{kind:'army',id:actual.id});
+  assert.equal(openingArmyTarget(war.snapshot(),[],()=>false),null,'The new fixed destination does not disclose an undiscovered army');
+  const guide=trackedWarTarget(target,war.snapshot(),OPENING_WORLD_WAR_SCENARIO,marks(),()=>true,(x,y)=>({x,z:y}));
+  const mark=marks().find(a=>a.id===actual.id);
+  assert.deepEqual(guide.location,{x:mark.x,z:mark.y},'After departure the real moving army supplies the point');
+  for(let i=0;i<120;i++)war.tick(1,true);
+  assert.equal(war.clock().elapsedSeconds,180);
+  const battle=war.snapshot().engagements.find(b=>b.region==='caricas'&&b.status==='active');assert(battle);
+  assert.deepEqual(openingArmyTarget(war.snapshot(),marks(),()=>true),{kind:'battle',id:battle.id});
+  const battlefield=trackedWarTarget(target,war.snapshot(),OPENING_WORLD_WAR_SCENARIO,marks(),()=>true,(x,y)=>({x,z:y}));
+  assert.deepEqual(battlefield.target,{kind:'battle',id:battle.id});
+  assert.deepEqual(battlefield.location,battle.location);
 });
 
 test('Horse and council guidance point directly to the useful destination',()=>{
@@ -76,14 +120,26 @@ test('Directional pointer keeps offscreen and behind-camera targets on screen',(
   }
 });
 
+test('World pointer avoids actual HUD rectangles and hides when every edge is occupied',()=>{
+  const viewport={width:1024,height:768},size={width:110,height:40};
+  const obstacles=[{left:16,top:300,right:356,bottom:700},{left:840,top:90,right:1008,bottom:320},{left:820,top:585,right:1008,bottom:730}];
+  for(const point of [{x:900,y:635},{x:100,y:450}]){
+    const result=warPointerPlacement(point,viewport,size,obstacles);assert.ok(result?.shifted);
+    for(const r of obstacles)assert.ok(result.x+65<=r.left||result.x-65>=r.right||result.y+30<=r.top||result.y-30>=r.bottom);
+  }
+  assert.deepEqual(warPointerPlacement({x:600,y:350},viewport,size,obstacles),{x:600,y:350,shifted:false});
+  assert.equal(warPointerPlacement({x:10,y:10},viewport,size,[{left:0,top:0,right:1024,bottom:768}]),null);
+  assert.equal(warPointerPlacement({x:10,y:10},{width:100,height:100},size,[]),null);
+});
+
 test('Caricas guide offers the second fight and reports completion only after the actual outcome',()=>{
   const war=createWorldWar();war.advance(3);war.syncRegion('Caricas');
   const b=war.snapshot().engagements.find(b=>b.region==='caricas'),position=b.location;
   const guide=()=>trackedWarTarget({kind:'battle',id:b.id},war.snapshot(),WORLD_WAR_SCENARIO,[],()=>true,(x,y)=>({x,z:y}));
   war.campaign.joinBattle(b.id,position);war.campaign.resolveEncounter(b.id,'west','success','vanguard-broken',3);
   assert.match(guide().detail,/Final assault available/);assert.deepEqual(guide().location,position);
-  war.campaign.joinBattle(b.id,position);war.campaign.resolveEncounter(b.id+':rally','west','success','rally-secured',3);
-  assert.equal(guide().location,null);assert.match(guide().detail,/Battle ended/);assert.doesNotMatch(guide().detail,/continues/);
+  war.campaign.joinBattle(b.id,position);war.campaign.resolveEncounter(b.id+':rally','west','success','rally-secured',3,commanderOutcome(war.campaign,'west',true));
+  assert.equal(guide().location,null);assert.equal(guide().finished,true);assert.match(guide().detail,/Battle ended/);assert.doesNotMatch(guide().detail,/continues/);
 });
 
 test('Column follows campaign time along the authored approach and stops with the battle',()=>{

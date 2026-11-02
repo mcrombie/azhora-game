@@ -2,6 +2,8 @@ import {parseCells,unionCells,labelAnchor,visibleAnchor} from './campaign-map-ge
 import {ownerOf,factionName,factionColor,stability,stabilityColors,chapterSnapshot,CHAPTER_REGIONS,publicProfiles} from './campaign-map-model.js';
 import {escapeHTML as esc,factionHTML,chapterHTML} from './campaign-map-info.js';
 import {cellKey,discoveredCells} from './campaign-map-discovery.js';
+import {surroundingFactionHTML,nomadicPresenceHTML} from './surrounding-map-info.js';
+import {createNomadicMapPresence} from './nomadic-map-presence.js';
 
 // Alternate, read-only layers on the ordinary M map. No commands or simulation.
 export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=true,regionScope=null}){
@@ -17,21 +19,32 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
   const aside=document.createElement('aside');aside.className='atlas-campaign-info';aside.setAttribute('aria-label','Political information');aside.hidden=true;
   aside.innerHTML='<nav aria-label="Campaign information"><button data-info-tab="factions" aria-pressed="true">Factions</button><button data-info-tab="quests" aria-pressed="false">Quests</button></nav><div class="atlas-campaign-content"></div>';
   body.append(aside);const content=aside.lastElementChild;
+  const nomads=createNomadicMapPresence(viewport,id=>{selected=id;tab='presence';renderInfo();});
   if(!includeQuests)aside.querySelector('[data-info-tab="quests"]').remove();
   const labels=document.createElement('div');labels.id='atlas-country-labels';labels.hidden=true;viewport.append(labels);
   const key=document.createElement('div');key.id='atlas-stability-key';key.hidden=true;key.innerHTML=Object.entries(stabilityColors).map(([id,color])=>`<span><i style="background:${color}"></i>${({stable:'Stable',unstable:'Unstable',conflict:'Conflict',unknown:'Unassessed'})[id]}</span>`).join('');viewport.append(key);
   const territories=id=>['yunethre-free-state','yunethre-centaurs'].includes(id)?(knownRegions.has('Yunethre')?['Yunethre']:[]):groups.get(id)?.regions||[];
   const name=id=>id?.startsWith('charted:')?id.slice(8):simulation?(id==='unassigned'?'Outside scenario':factions.find(f=>f.id===id)?.short??id):factionName(id,factions);
-  const owner=region=>simulation?simulation.regions[region]?.owner??`charted:${region}`:ownerOf(region,factions,snapshot);
-  const condition=region=>simulation?simulation.regions[region]?.condition??['Charted from the Guild lookout; outside the playable scenario','unknown']:stability(region,snapshot);
+  const reference=()=>simulation?.reference;
+  const refFaction=id=>reference()?.factions.find(f=>f.id===id);
+  const knownPresences=()=>reference()?.presences.filter(p=>knownRegions.has(p.region))??[];
+  const owner=region=>simulation?simulation.regions[region]?.owner??reference()?.regions[region]?.owner??`charted:${region}`:ownerOf(region,factions,snapshot);
+  const condition=region=>simulation?simulation.regions[region]?.condition??reference()?.regions[region]?.condition??['Charted from the Guild lookout; outside the playable scenario','unknown']:stability(region,snapshot);
   const color=id=>simulation?factions.find(f=>f.id===id)?.color??'#c4c8b8':factionColor(id,factions);
+  const knownClaim=id=>!simulation&&factions.some(f=>f.id===id&&!f.hidden&&f.disputedRegions?.some(r=>knownRegions.has(r)));
   function renderInfo(){
     aside.querySelectorAll('[data-info-tab]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.infoTab===tab)));
     if(includeQuests&&tab==='quests'){content.innerHTML=chapterHTML(path,snapshot,{preview:false});return;}
+    if(tab==='presence'){
+      const presence=knownPresences().find(p=>p.id===selected);
+      if(presence){content.innerHTML=nomadicPresenceHTML(presence,reference()?.description);return;}
+      selected=null;tab='factions';
+    }
     if(tab==='region'){
       if(!knownRegions.has(selected)){content.innerHTML='<h2 class="title">Uncharted territory</h2><p>Explore this area to learn who controls it.</p>';return;}
       if(simulation&&!simulation.regions[selected]){
-        content.innerHTML=`<span class="eyebrow">Surrounding country</span><h2 class="title">${esc(selected)}</h2><p>Charted from the Guild lookout. This land is shown for reference, outside the five playable regions.</p>`;return;
+        const controller=refFaction(owner(selected));
+        content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Surrounding region</span><h2 class="title">${esc(selected)}</h2><p>${esc(condition(selected)[0])}</p>${controller?`<h3>${controller.kind==='disputed'?'Disputed claims':'Territorial control'}</h3><button class="text-button" data-faction="${controller.id}">${esc(controller.name)}</button>`:''}${knownPresences().filter(p=>p.region===selected).map(p=>`<p><button class="text-button" data-presence="${p.id}">${esc(p.name)} / nomadic presence</button></p>`).join('')}<p>${esc(reference()?.description??'Charted from the Guild lookout. This land is shown for reference, outside the five playable regions.')}</p>`;return;
       }
       const heldBy=owner(selected),[status]=condition(selected);
       const claimants=!simulation&&heldBy==='disputed'?factions.filter(f=>f.disputedRegions?.includes(selected)):[];
@@ -41,8 +54,15 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
     if(selected?.startsWith('charted:')){
       content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Surrounding country</span><h2 class="title">${esc(name(selected))}</h2><p>Charted from the Guild lookout. Taleth can tell you about this country on his tour.</p><p>This land is shown for reference; it is outside the five playable regions of this scenario.</p>`;return;
     }
-    if(!selected||!reveal&&!territories(selected).length){content.innerHTML='<span class="eyebrow">Discovered territory</span><h2 class="title">Factions</h2>'+(factions.filter(f=>reveal||territories(f.id).length).map(f=>`<button class="faction-row" data-faction="${f.id}">${esc(name(f.id))}<small>${territories(f.id).length} ${reveal?'':'discovered '}regions</small></button>`).join('')||'<p>Explore the map to discover who controls the surrounding land.</p>')+(simulation?[...groups.values()].filter(g=>g.id.startsWith('charted:')).map(g=>`<button class="faction-row" data-faction="${esc(g.id)}">${esc(name(g.id))}<small>Charted / beyond this scenario</small></button>`).join(''):'');return;}
-    if(simulation){content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Lizeem world test / Day ${simulation.day}</span><h2 class="title">${esc(name(selected))}</h2><p>${selected==='minora'?'Neutral city-state.':'A league in the East-West War.'}</p><h3>${reveal?'Controlled':'Discovered'} regions</h3><ul>${territories(selected).map(n=>`<li><button class="text-button" data-region="${esc(n)}">${esc(n)}</button></li>`).join('')}</ul>`;return;}
+    if(!selected||!reveal&&!territories(selected).length&&!knownClaim(selected)){
+      const listed=factions.filter(f=>refFaction(f.id)?territories(f.id).length:reveal||territories(f.id).length||knownClaim(f.id));
+      content.innerHTML='<span class="eyebrow">Discovered territory</span><h2 class="title">Factions</h2>'+(reference()&&listed.some(f=>refFaction(f.id))?'<p>Stripes: disputed control.<br>Tent: nomadic encampment.</p>':'')+listed.filter(f=>f.kind!=='disputed').map(f=>`<button class="faction-row" data-faction="${f.id}">${esc(name(f.id))}<small>${territories(f.id).length} ${refFaction(f.id)?'charted':'discovered'} regions</small></button>`).join('')+
+        (listed.some(f=>f.kind==='disputed')?'<h3>Disputed territories</h3>'+listed.filter(f=>f.kind==='disputed').map(f=>`<button class="faction-row" data-faction="${f.id}">${esc(name(f.id))}<small>No secure controller</small></button>`).join(''):'')+
+        (knownPresences().length?'<h3>Nomadic peoples</h3>'+knownPresences().map(p=>`<button class="faction-row" data-presence="${p.id}">${esc(p.name)}<small>${esc(p.region)} / encampment</small></button>`).join(''):'')+
+        (simulation?[...groups.values()].filter(g=>g.id.startsWith('charted:')).map(g=>`<button class="faction-row" data-faction="${esc(g.id)}">${esc(name(g.id))}<small>Control not yet established</small></button>`).join(''):'');return;
+    }
+    if(refFaction(selected)){content.innerHTML=surroundingFactionHTML(refFaction(selected),reference(),territories(selected));return;}
+    if(simulation){content.innerHTML=`<button class="text-button" id="back-factions">All factions</button><span class="eyebrow">Lizeemi War / ${esc(simulation.timeLabel??'Day '+simulation.day)}</span><h2 class="title">${esc(name(selected))}</h2><p>${selected==='minora'?'Neutral city-state.':'A league in the East-West War.'}</p><h3>${reveal?'Controlled':'Discovered'} regions</h3><ul>${territories(selected).map(n=>`<li><button class="text-button" data-region="${esc(n)}">${esc(n)}</button></li>`).join('')}</ul>`;return;}
     content.innerHTML=factionHTML(selected,{includeQuests,factions,territories:territories(selected),snapshot,limited:!reveal,knownRegions,relation:publicProfiles[selected]?.ties||'Only publicly established territory is shown here. Further diplomatic information is not yet specified.'});
   }
   function buildGroups(){
@@ -67,15 +87,19 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
     if(!svg)return;
     svg.style.clipPath=regionScope?`path('${originals.filter(p=>regionScope.includes(p.dataset.region)).map(p=>p.getAttribute('d')).join('')}')`:'';
     chartedContent.setAttribute('clip-path',reveal?'none':'url(#atlas-campaign-discovered)');
-    clip.replaceChildren();if(!reveal)for(const cell of knownCells){const p=document.createElementNS('http://www.w3.org/2000/svg','polygon');p.setAttribute('points',cell.map(p=>p.join(',')).join(' '));clip.append(p);}
+    // Use the already-unioned discovered polygons, avoiding hairline holes at
+    // every hex edge when a large lookout chart is shown without developer reveal.
+    clip.replaceChildren();if(!reveal)for(const group of groups.values()){const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',group.path);clip.append(p);}
     const political=view==='geopolitical';
     svg.querySelector('#region-labels').style.display=political?'none':'';svg.querySelector('#region-boundaries').style.display=political?'none':'';
     svg.querySelector('#terrain').style.opacity=political?'.2':'1';svg.querySelector('#relief').style.opacity=political?'.1':'1';
     countryLayer.replaceChildren();countryLayer.style.display=political?'':'none';
     for(const group of groups.values()){
       const p=document.createElementNS('http://www.w3.org/2000/svg','path');p.setAttribute('d',group.path);p.setAttribute('fill',color(group.id));p.classList.add('atlas-country');p.dataset.faction=group.id;p.setAttribute('vector-effect','non-scaling-stroke');countryLayer.append(p);
+      if(refFaction(group.id)?.kind==='disputed'){p.setAttribute('fill','url(#atlas-disputed-hatch)');p.setAttribute('stroke-dasharray','5 3');}
     }
     for(const p of originals){const region=p.dataset.region;p.setAttribute('fill',political?'transparent':stabilityColors[condition(region)[1]]);p.setAttribute('fill-opacity',political?'0':'.6');p.dataset.owner=owner(region);}
+    nomads.render(reference()?.presences??[],regionCells,knownRegions,knownKeys,reveal,cellKey,political);
     renderLabels();renderInfo();
   }
   function setView(next){
@@ -90,13 +114,14 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
     if(b.dataset.infoTab){tab=b.dataset.infoTab;selected=null;}
     if(b.id==='back-factions'){tab='factions';selected=null;}
     if(b.dataset.faction){tab='factions';selected=b.dataset.faction;}
+    if(b.dataset.presence){tab='presence';selected=b.dataset.presence;}
     if(b.dataset.region){tab='region';selected=b.dataset.region;onFocus(selected);}
     if(b.dataset.chapter){tab='quests';path=b.dataset.chapter;}
     renderInfo();
   });
   viewport.addEventListener('pointerdown',e=>{start={x:e.clientX,y:e.clientY};});
   viewport.addEventListener('pointerup',e=>{
-    if(view==='regions'||!start||Math.hypot(e.clientX-start.x,e.clientY-start.y)>5)return;
+    if(view==='regions'||!start||e.target.closest('[data-presence]')||Math.hypot(e.clientX-start.x,e.clientY-start.y)>5)return;
     start=null;const region=document.elementFromPoint(e.clientX,e.clientY)?.closest('[data-campaign-region]')?.dataset.campaignRegion;if(!region||!knownRegions.has(region))return;
     if(view==='geopolitical'&&owner(region)!=='disputed'){tab='factions';selected=owner(region);}else{tab='region';selected=region;}
     renderInfo();
@@ -104,9 +129,10 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
   root.dataset.campaignView=view;
   return {
     async load(data,source){
-      const response=await fetch('./assets/campaign-factions.json');if(!response.ok)throw Error('Campaign map roster missing');authoredFactions=await response.json();factions=simulation?.factions??authoredFactions;metadata=data;
+      const response=await fetch('./assets/campaign-factions.json');if(!response.ok)throw Error('Campaign map roster missing');authoredFactions=await response.json();factions=simulation?[...simulation.factions,...(reference()?.factions??[])]:authoredFactions;metadata=data;
       svg=document.importNode(new DOMParser().parseFromString(source,'image/svg+xml').documentElement,true);svg.id='atlas-campaign-layer';
       svg.setAttribute('width',data.width);svg.setAttribute('height',data.height);svg.style.width=data.width+'px';svg.style.height=data.height+'px';
+      const pattern=document.createElementNS('http://www.w3.org/2000/svg','pattern');pattern.id='atlas-disputed-hatch';pattern.setAttribute('width','8');pattern.setAttribute('height','8');pattern.setAttribute('patternUnits','userSpaceOnUse');pattern.innerHTML='<rect width="8" height="8" fill="#aaa18e"/><path d="M-2 2L2-2 M0 8L8 0 M6 10L10 6" stroke="#6e6251" stroke-width="1.4" opacity=".55"/>';svg.querySelector('defs').append(pattern);
       svg.querySelector('#unbuilt-regions')?.remove();svg.querySelector('#ornaments')?.remove();
       const tints=svg.querySelector('#region-tints');originals=[...tints.querySelectorAll('[data-region]')];
       tints.setAttribute('opacity','1');
@@ -120,10 +146,10 @@ export function createCampaignMapLayer({viewport,onResize,onFocus,includeQuests=
     },
     setView,
     setRegionScope(names){regionScope=names?[...names]:null;if(metadata){buildGroups();render();}},
-    setSimulation(value){const changed=simulation?.id!==value?.id;simulation=value?JSON.parse(JSON.stringify(value)):null;factions=simulation?.factions??authoredFactions;if(changed){selected=null;tab='factions';}if(metadata){buildGroups();render();}},
+    setSimulation(value){const changed=simulation?.id!==value?.id;simulation=value?JSON.parse(JSON.stringify(value)):null;factions=simulation?[...simulation.factions,...(reference()?.factions??[])]:authoredFactions;if(changed){selected=null;tab='factions';}if(metadata){buildGroups();render();}},
     setChapter(chapter,aftermath){const next=chapterSnapshot(chapter,aftermath);if(next===snapshot)return;snapshot=next;if(metadata){buildGroups();render();}},
     setKnowledge({cells=[],reveal:all=false}){const keys=cells.map(cellKey),stamp=JSON.stringify([!!all,keys]);if(stamp===knowledgeStamp)return;knowledgeStamp=stamp;reveal=!!all;knownCells=cells;knownKeys=new Set(keys);if(metadata){buildGroups();render();}},
-    transform(scale,x,y){transform={scale,x,y};if(svg)svg.style.transform=`translate(${x}px,${y}px) scale(${scale})`;renderLabels();},
-    state:()=>({view,snapshot,simulation:simulation?{id:simulation.id,day:simulation.day}:null,reveal,knownRegions:[...knownRegions],owner:region=>knownRegions.has(region)?owner(region):null,countries:groups.size}),
+    transform(scale,x,y){transform={scale,x,y};if(svg)svg.style.transform=`translate(${x}px,${y}px) scale(${scale})`;nomads.transform(transform);renderLabels();},
+    state:()=>({view,snapshot,simulation:simulation?{id:simulation.id,day:simulation.day}:null,reveal,knownRegions:[...knownRegions],owner:region=>knownRegions.has(region)?owner(region):null,countries:groups.size,presences:nomads.state()}),
   };
 }

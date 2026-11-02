@@ -1,4 +1,3 @@
-import { treeGroundingOffset } from '../scenery/tree-grounding.js';
 import { tutorialSceneryClearAt } from '../../content/chapters/prologue/peninsula-tutorial-scenery.js';
 import { forEachBuild } from '../loading/build-each.js';
 import { finishBuild } from '../loading/build-steps.js';
@@ -31,7 +30,7 @@ import { suvalFalsePassClear } from '../../content/regions/minora-frontier/front
 import { brandyHomeClear } from '../../content/quests/brandy/brandy-home-world.js';
 import { jesseWorkshopClear } from '../../content/quests/jesse/jesse-carriage-world.js';
 import { forestTimber } from '../../gameplay/skills/woodcutting/wood-species.js';
-import { registerWorldTree } from '../scenery/tree-registry.js';
+import { createSpeciesTreesSteps, createSpeciesTreeLibrary } from '../scenery/species-trees.js';
 
 /** An authored (56 m per hex) anchor in world metres; its own scenery keeps its offsets. */
 const at = (x, z) => { const p = toWorld(x, z); return Object.freeze({ x: p.x, z: p.z }); };
@@ -140,7 +139,6 @@ export function* createRegionScenerySteps(kit) {
   const { root, material, mesh, box, post, pebble, rope, cottage, fence, leanTo, barrel, crate,
     groundHeight, colliders, wornPatch, dummy, color,
     wood, woodLight, darkWood, cream, rockMat, roofGeometry, cylinder, round, movingGroups } = kit;
-  const reviewedWoodland = new Set(['Drent', 'Luscia', 'Moros Plain', 'West Suval']);
   const treeGroundAt = kit.renderedGroundHeight ?? groundHeight;
   const scatterGroundAt = kit.legacyGroundHeight ?? groundHeight;
   let seed = 917351;
@@ -158,11 +156,7 @@ export function* createRegionScenerySteps(kit) {
   // -------------------------------------------------------------------------
   // Biome scatter: trees, rocks and ground cover, one instanced batch per block
   // -------------------------------------------------------------------------
-  const trunkGeometry = new THREE.CylinderGeometry(.21, .38, 1, 6);
-  // Regional canopies use the cheap icosahedron: thousands of them stand between
-  // Tidehaven and the Moros, and their silhouette reads the same at road distance.
-  const canopyGeometry = new THREE.IcosahedronGeometry(1, 0);
-  const coneGeometry = new THREE.ConeGeometry(1, 1, 6);
+  const treeLibrary = createSpeciesTreeLibrary();
   const grassGeometry = (() => {
     const positions = [], normals = [];
     for (let b = 0; b < 4; b++) {
@@ -176,8 +170,6 @@ export function* createRegionScenerySteps(kit) {
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     return geometry;
   })();
-  const trunkMaterial = material('#795e41');
-  const leafMaterial = material('#ffffff', { flatShading: true });
   const grassMaterial = material('#ffffff', { side: THREE.DoubleSide });
   const stoneMaterial = material('#8b9187');
 
@@ -238,51 +230,18 @@ export function* createRegionScenerySteps(kit) {
     }
     if (prepared) { seed = prepared.seed; pineTreeCount = prepared.pineOffset; broadTreeCount = prepared.broadOffset; }
     if (trees.length) {
-      const broad = trees.filter(tree => !tree.pine), pines = trees.filter(tree => tree.pine);
-      const trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, trees.length);
-      const canopies = new THREE.InstancedMesh(canopyGeometry, leafMaterial, Math.max(1, broad.length * 3));
-      const cones = new THREE.InstancedMesh(coneGeometry, leafMaterial, Math.max(1, pines.length * 3));
-      let broadIndex = 0, pineIndex = 0;
-      yield* forEachBuild(trees, function* (tree, index) {
-        let y = groundHeight(tree.x, tree.z); const height = tree.h * tree.s;
-        dummy.position.set(tree.x, y + height * .41, tree.z);
-        dummy.rotation.set(0, tree.rot, 0); dummy.scale.set(tree.s, height * .82, tree.s); dummy.updateMatrix();
-        if (reviewedWoodland.has(name)) {
-          const offset = treeGroundingOffset(dummy.matrix, treeGroundAt, { segments: 6 });
-          y += offset; dummy.position.y += offset; dummy.updateMatrix();
-        }
-        trunks.setMatrixAt(index, dummy.matrix);
-        const parts = [{mesh:trunks,index}];
-        const timber = { ...forestTimber(tree.pine), id: tree.pine ? `${idPrefix}-pine-${pineTreeCount++}` : `${idPrefix}-oak-${broadTreeCount++}`, x: tree.x, z: tree.z, y,
-          height, radius: .38 * tree.s, trunkHeight: height * .82, trunkTopRadius: .21 * tree.s,
-          axis: [0, 1, 0], base: { x: tree.x, y, z: tree.z }, region: name };
-        timberTrees.push(timber);
-        if (!tree.pine) broadleafTrees.push(timber);
-        const collider = { x: tree.x, z: tree.z, r: .52 * tree.s, kind: 'region-tree', id: timber.id, species: timber.species, woodKind: timber.woodKind }; colliders.push(collider);
-        if (tree.pine) for (let c = 0; c < 3; c++) { if (++buildWork % 32 === 0) yield;
-          dummy.position.set(tree.x, y + height * (.48 + c * .19), tree.z);
-          dummy.rotation.set(0, tree.rot + c * .35, 0);
-          dummy.scale.set(height * (.29 - c * .051), height * .49, height * (.29 - c * .051)); dummy.updateMatrix();
-          cones.setMatrixAt(pineIndex, dummy.matrix);
-          parts.push({mesh:cones,index:pineIndex});
-          cones.setColorAt(pineIndex++, color.setHSL(range(.25, .31), range(.28, .40), range(.26, .38)));
-        } else for (let c = 0; c < 3; c++) { if (++buildWork % 32 === 0) yield;
-          const a = tree.rot + c * 2.1, spread = c === 2 ? 0 : height * .15;
-          dummy.position.set(tree.x + Math.sin(a) * spread, y + height * (c === 2 ? .95 : .78) + Math.sin(c * 3) * .18, tree.z + Math.cos(a) * spread);
-          dummy.rotation.set(range(-.2, .2), a, range(-.18, .18));
-          dummy.scale.set(height * (c === 2 ? .29 : .33), height * (c === 2 ? .26 : .31), height * (c === 2 ? .28 : .32)); dummy.updateMatrix();
-          canopies.setMatrixAt(broadIndex, dummy.matrix);
-          parts.push({mesh:canopies,index:broadIndex});
-          canopies.setColorAt(broadIndex++, color.set(biome.canopy ?? '#5f8a48').offsetHSL(range(-.03, .03), range(-.05, .06), range(-.08, .07)));
-        }
-        registerWorldTree(colliders, timber, parts, collider);
+      const descriptors=[];
+      yield* forEachBuild(trees,function* (tree) {
+        // Match legacy sampling draws exactly, including deferred block builds.
+        for(let draw=0;draw<(tree.pine?9:15);draw++)random();
+        const timber={...forestTimber(tree.pine),id:tree.pine?`${idPrefix}-pine-${pineTreeCount++}`:`${idPrefix}-oak-${broadTreeCount++}`,
+          x:tree.x,z:tree.z,height:tree.h*tree.s,trunkRadius:.38*tree.s,collisionRadius:.52*tree.s,
+          rotation:tree.rot,region:name,colliderKind:'region-tree'};
+        descriptors.push(timber);
       });
-      canopies.count = broadIndex; cones.count = pineIndex;
-      for (const batch of [trunks, canopies, cones]) { if (++buildWork % 32 === 0) yield;
-        if (!batch.count) continue;
-        batch.castShadow = true; batch.receiveShadow = true; batch.computeBoundingSphere(); parent.add(batch); metrics.batches++;
-      }
-      metrics.trees += trees.length;
+      const built=yield* createSpeciesTreesSteps({parent,colliders,trees:descriptors,heightAt:treeGroundAt,library:treeLibrary,name:name+' trees'});
+      timberTrees.push(...built.trees);broadleafTrees.push(...built.trees.filter(tree=>tree.species==='white-oak'));
+      metrics.trees+=built.trees.length;metrics.batches+=built.batches;
     }
     if (rocks.length) {
       const batch = new THREE.InstancedMesh(round, stoneMaterial, rocks.length);
@@ -352,9 +311,17 @@ export function* createRegionScenerySteps(kit) {
   riverGeometry.setAttribute('position', new THREE.Float32BufferAttribute(riverVertices, 3));
   riverGeometry.setIndex(riverIndices); riverGeometry.computeVertexNormals();
   const riverMaterial = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 } }, side: THREE.DoubleSide,
-    vertexShader: 'varying vec3 p; void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'uniform float time; varying vec3 p; void main(){float w=sin(p.x*.35-time*1.2+p.z*.9)*sin(p.x*.13+p.z*1.1);vec3 c=vec3(.17,.38,.37)+vec3(.12,.17,.13)*pow(max(w,0.),8.);gl_FragColor=vec4(c,1.);}',
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{time:{value:0}}]), side: THREE.DoubleSide, fog:true,
+    vertexShader: `varying vec3 p;
+      #include <fog_pars_vertex>
+      void main(){p=position;vec4 mvPosition=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mvPosition;
+      #include <fog_vertex>
+      }`,
+    fragmentShader: `uniform float time; varying vec3 p;
+      #include <fog_pars_fragment>
+      void main(){float w=sin(p.x*.35-time*1.2+p.z*.9)*sin(p.x*.13+p.z*1.1);vec3 c=vec3(.17,.38,.37)+vec3(.12,.17,.13)*pow(max(w,0.),8.);gl_FragColor=vec4(c,1.);
+      #include <fog_fragment>
+      }`,
   });
   const riverMesh = new THREE.Mesh(riverGeometry, riverMaterial);
   riverMesh.name = 'The Caloss'; luscia.add(riverMesh);

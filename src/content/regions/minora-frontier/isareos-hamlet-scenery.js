@@ -1,3 +1,5 @@
+import {settlementFacade} from './lizeem-settlement-detail.js';
+import {groundPatch} from '../../../world/scenery/ground-face.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
@@ -27,7 +29,7 @@ const C = Object.freeze({
 
 export function createIsareosHamletScenery(...args) { return finishBuild(createIsareosHamletScenerySteps(...args)); }
 
-export function* createIsareosHamletScenerySteps({ parent, heightAt, colliders = [] }) {
+export function* createIsareosHamletScenerySteps({ parent, heightAt, colliders = [], terrainSurface }) {
   let work = 0;
   const root = new THREE.Group(); root.name = 'The cheese-maker’s hamlet, Isareos'; parent.add(root);
   const metrics = { buildings: 0, paths: 0, colliders: 0, batches: 0, vertices: 0 };
@@ -63,17 +65,13 @@ export function* createIsareosHamletScenerySteps({ parent, heightAt, colliders =
       steading.box(C.timber, 0, floor + doorH / 2 + .05, d / 2 + .04, doorW + .26, doorH + .16, .1);
       steading.box(byre ? C.timberLight : C.door, 0, floor + doorH / 2, d / 2 + .08, doorW, doorH, .06);
       steading.block(C.darkStone, 0, foot, d / 2 + .65, doorW + .5, floor - foot - .02, .6);
-      // Small windows on the house, and a slit for air in the byre's gable.
-      if (!byre) for (const sx of [-1, 1]) {
-        const at = sx * (w / 2 - 1.4);
-        steading.box(C.timber, at, floor + 1.35, d / 2 + .05, .7, .6, .07); steading.box(C.dark, at, floor + 1.35, d / 2 + .08, .5, .42, .04);
-      } else for (const sx of [-1, 1]) steading.box(C.dark, sx * (w / 2 + .03), floor + h - .5, 0, .06, .5, .18);
       // Thatch along the long side, a band of turf over the ridge, and a chimney stone on the house.
       steading.roof(C.thatch, 0, floor + h, 0, d + 1, w + .8, rise, Math.PI / 2, C.stone[index % 3]);
       steading.box(C.turf, 0, floor + h + rise - .04, 0, w + .85, .22, .6);
       for (const sz of [-1, 1]) steading.box(C.turf, 0, floor + h + .12, sz * (d / 2 + .38), w + .85, .16, .3);
       if (!byre) steading.block(C.darkStone, -w / 2 + .5, floor + h, 0, .6, rise + .6, .6);
     });
+    settlementFacade(steading,b,floor,{region:'isareos',rise,yaw:b.yaw,doorWidth:byre?2.3:1,doorHeight:byre?1.95:1.8});
     push({ x: b.x, z: b.z, hx: b.hx + .3, hz: b.hz + .3, minY: foot, maxY: floor + h + rise + .4, kind: 'building', id: b.id });
     const step = local(b, 0, b.d / 2 + .65), across = Math.abs(Math.sin(b.yaw)) > .5, half = (byre ? 2.3 : 1) / 2 + .25;
     push({ x: step.x, z: step.z, hx: across ? .3 : half, hz: across ? half : .3, minY: foot, maxY: floor + .4, kind: 'building-step', id: `${b.id}-step` });
@@ -179,7 +177,7 @@ export function* createIsareosHamletScenerySteps({ parent, heightAt, colliders =
   // ---------------------------------------------------------------------------------------------
   {
     const yard = ISAREOS_HAMLET_SITES.yard;
-    (yield* earth.patchSteps(C.yard, ground, yard.x, yard.z, yard.width, yard.depth, 0, .05, 6));
+    (yield* groundPatch(earth,terrainSurface,C.yard, ground, yard.x, yard.z, yard.width, yard.depth, 0, .05, 6));
   }
   for (const route of ISAREOS_HAMLET_PATHS) {
     for (let i = 1; i < route.points.length; i++) {
@@ -187,7 +185,7 @@ export function* createIsareosHamletScenerySteps({ parent, heightAt, colliders =
       for (let j = 0; j < n; j++) { if (++work % 4 === 0) yield;
         const t = (j + .5) / n, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
         if (westWaterSurface(x, z) !== null) continue;
-        (yield* earth.patchSteps(C.path, ground, x, z, route.width, len / n + .2, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
+        (yield* groundPatch(earth,terrainSurface,C.path, ground, x, z, route.width, len / n + .2, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
       }
     }
     metrics.paths++;

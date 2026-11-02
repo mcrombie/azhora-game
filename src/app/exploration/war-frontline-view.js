@@ -1,5 +1,8 @@
+import {createArmyUnit} from '../../content/characters/army-unit-view.js';
+import {createLizeemCommander} from '../../content/characters/lizeem-commanders.js';
+import {militiaWeapon} from '../../gameplay/combat/combat-units.js';
 import * as THREE from 'three';
-import {createCharacter,disposeCharacter} from '../../content/characters/characters.js';
+import {disposeCharacter} from '../../content/characters/characters.js';
 import {LIZEEM_FIELD_SITES} from '../../content/scenarios/lizeem-field-sites.js';
 import {createSkirmishGround} from './skirmish-ground.js';
 
@@ -21,7 +24,7 @@ export function createWarFrontline(scene,world){
       }
       if(!slot)return;used.push(slot);
       const faction=scenario.factions.find(f=>f.id===side),key=`${side}:${captain}:${index}`;
-      if(!actors.has(key))actors.set(key,createCharacter({role:captain?'legion-officer':'legion-soldier',tunic:new THREE.Color(faction.color).getHex(),armed:true}));
+      if(!actors.has(key))actors.set(key,captain?createLizeemCommander(side):createArmyUnit({weapon:militiaWeapon(index),variant:index,tunic:new THREE.Color(faction.color).getHex()}));
       const actor=actors.get(key);actor.group.visible=true;
       let start={x:slot.x,z:slot.z+(north?-3:3)};if(!ground.canHit(start,slot))start={...slot};
       actor.group.position.set(start.x,world.heightAt(start.x,start.z),start.z);actor.group.rotation.y=north?0:Math.PI;scene.add(actor.group);

@@ -1,5 +1,7 @@
+import {createArmyUnit} from '../../content/characters/army-unit-view.js';
+import {militiaWeapon} from '../../gameplay/combat/combat-units.js';
 import * as THREE from 'three';
-import {createCharacter,disposeCharacter} from '../../content/characters/characters.js';
+import {disposeCharacter} from '../../content/characters/characters.js';
 import {CARICAS_GUARD_POSTS} from '../../content/regions/minora-frontier/caricas-settlement.js';
 import {LIZEEM_BATTLEFIELDS} from '../../content/scenarios/lizeem-battlefields.js';
 import {canStand} from '../../gameplay/movement/locomotion.js';
@@ -17,14 +19,15 @@ export function createSitePresence(scene,world){
     if(owner!==presence.owner||!presence.guards){clear();owner=presence.owner;}
     // A blocked/unloaded post may leave fewer representatives than requested.
     // Retry when its terrain becomes ready, not by rebuilding rigs every frame.
-    const next=visible?`${presence.owner}/${presence.guards}/${CARICAS_GUARD_POSTS.map(p=>Number(world.readyAt(p.x,p.z))).join('')}`:null;
+    const posts=world.caricasPosts?.guards??CARICAS_GUARD_POSTS;
+    const next=visible?`${presence.owner}/${presence.guards}/${posts.map(p=>Number(world.readyAt(p.x,p.z))).join('')}`:null;
     if(visible&&presence.guards&&built!==next){
       clear();
       built=next;
-      for(const post of CARICAS_GUARD_POSTS){
+      for(const post of posts){
         if(guards.length>=presence.guards)break;
         if(!world.readyAt(post.x,post.z)||!canStand(post.x,post.z,world,.5,world.heightAt(post.x,post.z)))continue;
-        const guard=createCharacter({role:'legion-soldier',tunic:new THREE.Color(presence.color).getHex(),armed:true});
+        const guard=createArmyUnit({weapon:militiaWeapon(guards.length),variant:guards.length,tunic:new THREE.Color(presence.color).getHex()});
         guard.group.position.set(post.x,world.heightAt(post.x,post.z),post.z);guard.group.rotation.y=Math.PI;
         scene.add(guard.group);guards.push(guard);
       }

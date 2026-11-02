@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {ENCOUNTER_BALANCE} from '../../gameplay/combat/encounter-balance.js';
 import {encounterFeedback} from '../../gameplay/combat/encounter-feedback.js';
+import {playImpactSound} from './impact-sound.js';
 
 let soundEnabled=true;
 // Local synthesized cues: no audio downloads, permissions, or remote services.
@@ -14,19 +15,13 @@ function createImpactSound(controls){
   }
   button.onclick=()=>{soundEnabled=!soundEnabled;label();if(soundEnabled)unlock();};
   document.addEventListener('pointerdown',unlock);document.addEventListener('keydown',unlock);
-  const tone=(frequency,end,duration,gain,type='triangle',delay=0)=>{
-    const t=context.currentTime+delay,osc=context.createOscillator(),volume=context.createGain();osc.type=type;osc.frequency.setValueAtTime(frequency,t);osc.frequency.exponentialRampToValueAtTime(end,t+duration);
-    volume.gain.setValueAtTime(.0001,t);volume.gain.exponentialRampToValueAtTime(gain,t+.004);volume.gain.exponentialRampToValueAtTime(.0001,t+duration);
-    osc.connect(volume);volume.connect(context.destination);osc.start(t);osc.stop(t+duration+.01);osc.onended=()=>{osc.disconnect();volume.disconnect();};
-  };
   return {play(kind){
-    if(!soundEnabled||context?.state!=='running')return;
+    if(!soundEnabled)return;
+    globalThis.__AZHORA_DEMO_AUDIO__?.({kind:'impact',cue:kind});
+    if(context?.state!=='running')return;
     if(context.currentTime-lastPlayed<.06)return;lastPlayed=context.currentTime;
     played++;lastKind=kind;
-    if(kind==='guarded'){tone(980,650,.12,.035);tone(1510,1000,.07,.012,'sine');}
-    else if(kind==='counter'){tone(150,55,.13,.09);tone(440,660,.16,.028,'sine',.015);}
-    else if(kind==='hurt'){tone(85,38,.2,.1,'sine');tone(140,45,.11,.045);}
-    else tone(180,60,.11,.065);
+    playImpactSound(context,kind);
   },state:()=>({enabled:soundEnabled,state:context?.state??'locked',played,lastKind}),
   dispose(){disposed=true;document.removeEventListener('pointerdown',unlock);document.removeEventListener('keydown',unlock);button.remove();context?.close().catch(()=>{});}};
 }
@@ -55,8 +50,9 @@ export function createEncounterEffects(scene,controls){
       if(state.time-event.at>.25)continue;
       const enemy=state.guards.find(g=>g.id===event.target);
       if(type==='strike'&&enemy&&['hit','counter','guarded','fireball'].includes(event.kind)){
-        show(event.kind,enemy,event.kind==='guarded'?'SHIELD BLOCK':event.kind==='counter'?'COUNTER -25':event.kind==='fireball'?`FIRE -${event.damage??26}`:'-25',event.kind==='guarded'?'#bbddf5':event.kind==='counter'?'#ffdb72':'#fff1cc',clock);sound.play(event.kind);
-      }else if(type==='defense'&&event.kind==='hit'){show('hurt',h,`-${event.damage??ENCOUNTER_BALANCE.enemyDamage}`,'#ff9c89',clock);sound.play('hurt');}
+        show(event.kind,enemy,event.kind==='guarded'?'SHIELD BLOCK':event.defense==='weapon'?`PARRY -${event.damage}`:event.kind==='counter'?`COUNTER -${event.damage??25}`:event.kind==='fireball'?`FIRE -${event.damage??26}`:`-${event.damage??25}`,event.kind==='guarded'?'#bbddf5':event.kind==='counter'?'#ffdb72':'#fff1cc',clock);sound.play(event.kind);
+      }else if(type==='defense'&&event.kind==='blocked'){show('guarded',h,`STAFF BLOCK -${event.damage}`,'#bbddf5',clock);sound.play('guarded');}
+      else if(type==='defense'&&event.kind==='hit'){show('hurt',h,`-${event.damage??ENCOUNTER_BALANCE.enemyDamage}`,'#ff9c89',clock);sound.play('hurt');}
       else if(type==='dodge'&&event.kind!=='started')show('dodge',h,event.kind==='cooldown'?'DODGE RECOVERING':event.kind==='release'?'RELEASE SPACE':event.kind==='body-blocked'?'PATH BLOCKED':'SCENERY BLOCKED','#ffe1a0',clock,1);
     }
     for(const label of labels){const age=clock-label.at;label.sprite.visible=age>=0&&age<label.duration;if(!label.sprite.visible)continue;

@@ -1,8 +1,658 @@
 # The five-region simulation test
-
 This is the first independent campaign loop. Its proving ground is the East-West War between the West Lizeem League and East Lizeem League, with Minora neutral. The map-only launcher is separate from the existing adventure. An optional world test now connects the same core to the exploration build. The numbers below are test tuning, not settled world lore.
 
+## Food production and supply experiment
+
+The 12 October 2026 food pass has a dedicated map-only test. It uses the same authoritative
+`campaign.js` loop, with an opt-in `food.js` helper and fresh regional targets in
+`content/scenarios/lizeem-food-targets.js`. It does not enable food in existing playable
+scenario IDs or alter old saves. The separate Nethereum review below introduces the first replacement scenery. None of its production
+comes from old farm plots, crops, inventories, quest states or active-play timers.
+
+### Unified playable Lizeemi War
+
+**Begin Lizeemi War** now creates `lizeem-adventure-food-v1`: the reviewed farms,
+towns and food economy share the full adventure clock. Choose allegiance with
+Taleth inside the explorable tower, use his Stillroom training at any time, and
+leave at dawn. Supply production, deliveries, meals and army provisioning happen
+once per completed adventure minute through `campaign.js`. Local fighting holds
+time; its casualties reconcile the food ledger without another economic tick.
+The map's **Food and housing** report uses completed campaign minutes, including
+route deadlines and reserve estimates. Rest previews the actual food-aware army
+orders, so a regrouping pause can be skipped without silently passing a battle.
+
+New journeys use the existing main war save slot. Continue chooses scenery and
+rules from the saved scenario ID: old elapsed saves retain the older countryside
+and no-food rules; the day-based food test retains its separate slot. In-session
+loading refuses a different ruleset and directs the player to Continue in the
+main menu. This avoids replaying old battle commands under different supplies.
+
+Reviewed scenery uses merged buildings, fields and livestock rather than new
+per-building simulations. The lookout combines the same near countryside with
+the cached authentic distant regions, masking their overlapping old farms.
+Minora's existing warship and two traders retain their movement. Those boats are
+ambient traffic; physical food shipments, individual building assets, construction
+and farm intervention quests are still separate future work.
+
+The lookout alone uses a lighter triangulation of the same sampled terrain.
+Every tile/block edge remains exact; the surface can only lower, by at most 0.2 m,
+so it cannot cover the original roads and fields. Walking restores the original
+geometry and always uses the original collision surface. In the measured five-region
+build this removes 160,006 terrain triangles (25.2%) with about 105 ms of preparation
+on first opening the lookout. The reviewed river shares the authored water shader,
+including its world-coordinate ripples and fog, across the near/distant boundary.
+
+`npm run test:unified-war` covers the combined model, old-save isolation, local
+battle accounting, food time labels and training. `npm run test:unified-war:desktop`
+launches a hidden isolated main-menu playthrough; artifacts use `unified-war-*`.
+Append `-- --unified-war-continue` for real page reload/Continue checks, or
+`-- --unified-war-profile` for matched original/combined lookout and street frame
+samples. These use separate artifact prefixes and do not access the player's saves.
+The reviewed supply rules can lengthen an unattended war. At seed 1731 the current
+food rules finish at 76 campaign minutes, versus 33 without food. Scripted successful
+West and East interventions finish at 16 and 46 minutes respectively in either
+ruleset. Ten seeds across each of these three paths in both rulesets all finished
+(60 runs); supported runs all won for their chosen side. These are deterministic
+model checks, not human playtime measurements or final balance targets.
+
+Final validation passed 35 focused model/presentation tests, 110 native gameplay
+assertions and 58 native profile assertions, with no recorded renderer errors.
+Fresh-page Continue also passed for a unified outdoor save and a legacy tower save.
+The final isolated matched lookout sample measured 33.3 ms median for the original
+scenery and 33.4 ms for the combined view (both p95 66.7 ms). The combined view still
+draws more geometry and batches, and timings varied across runs; this does not
+establish zero overhead or a fixed frame rate. First exterior preparation took
+15.7 seconds, with the complete first door transition taking 16.8 seconds. All five
+regions then reuse that exterior. Layout and module-link checks pass.
+
+### Food-enabled playable world test
+
+Under **Earlier campaign rehearsals**, choose **Start food world test** (or launch
+its menu with `npm run start:food-world`). This earlier day-based experiment is a
+separate menu mode (`food-world`), scenario (`lizeem-food-world-v1`) and save
+(`azhora-lizeem-food-world-v1`; desktop directory `saves/lizeem-food-world-v1`).
+Old war and exploration saves cannot be loaded into or overwritten by this mode.
+
+Begin with Taleth in his chamber, collect the horse from Bear, then explore or
+follow the armies. M opens the geopolitical map and the folded **Food and housing**
+report. Choose a region there to inspect stores, completed-day production and
+transfers, rations, stability, housing and local/approaching armies' carried food.
+The stability layer uses food unrest/rations in this mode, with active battles
+still marked as conflict. F8 retains travel, mounts and reveal; F5 saves.
+
+`app/food-world/scenario.js` applies the existing food targets and supply planning
+to the current hero war, including commanders, interceptions and allied assaults.
+`campaign.js` owns all economic and military changes. Finishing a hero battle
+advances food on the same campaign days; there is no separate scenery clock.
+Housing remains capacity, independent of actual population.
+
+`app/food-world/world.js` assembles the five reviewed agriculture layouts through
+the shared review terrain/deck helpers and regional scenery adapters. It retains
+Minora and its hero hosts, while excluding the legacy global world/farm builder.
+All five regions are prepared once on first leaving the tower and reused during
+travel. The continuous 3-metre terrain grid is split into render tiles for culling;
+movement and crop surfaces use those same triangles. The lookout shows this
+actual countryside rather than the old exported farm panorama.
+
+Field colour and crop cover now reflect regional production condition, food
+unrest and active battle disruption. `app/food-world/conditions.js` is a read-only
+projection; `farm-view.js` changes existing geometry buffers only when output
+changes. Houses, collisions and housing capacity remain intact. The model does
+not yet record damage to individual holdings. Map explanations use the actual
+completed-day transfer ledger and distinguish it from pending production changes.
+
+After leaving Taleth's tower, open **F8 → Nesdor shortage and recovery**. This
+temporary exercise holds army orders and recruitment, using the same food rules
+in `campaign.js`. It shows normal trade (day 2), disrupted fields, diverted relief,
+shortages (day 32), restoration, returning meals (day 33), and resumed trade
+(day 52). Quiet days advance at 20x; each explanation stays for eight seconds.
+Pause or Next stage permits closer review. **Return to my game**, or Esc, restores
+the original campaign, hero position, discoveries and unsaved progress. Exercise
+checkpoints cannot be written into either persistent war save slot.
+
+The exercise lives in `app/food-world/demo.js` and `demo-plan.js`; it drives the
+existing host, with no second active economy or autonomous damage model. Food
+deliveries by physical boats/carts, migration, construction and farm intervention
+encounters remain future work. Minora's ambient river traffic moves without owning food deliveries. The bounded
+playable war still ends at victory.
+
+Checks: `npm run test:food-world` covers scenario composition, separate save
+validation, deterministic economic replay and hero victory with food effects.
+`npm run test:food-world:desktop` uses an isolated profile, checks all five towns
+and farm lanes, interception/allied-assault staging in all four war regions,
+physical Caricas combat, map reporting and save/reload. Captures and results are
+written to `tests/artifacts/food-world-*`. The native check also walks the named
+food demonstration and verifies exact return and save isolation; its stage
+captures are `tests/artifacts/food-demo-*`. Presentation tests cover the economic
+sequence, clock/pause controls and reversible field buffers.
+
+#### Shared countryside appearance and regional assets
+
+The food world uses a new agricultural layout and shared
+`world/scenery/agriculture-scenery.js` renderer, rather than the older towns'
+individual detail builders. Its first generic buildings, sparse crops and simple
+sheep caused a visible quality regression despite the larger settlements. The
+countryside polish updates that shared renderer for both the farmland review and
+playable food world. Architecture, field detail and livestock remain merged
+static scenery; the existing regional condition projection still changes crop
+buffers. This visual work does not change population, housing budgets, productive
+capacity, food rules or saves.
+
+Crop silhouettes share one generated 768 by 256 cutout texture (about 1 MiB with
+mipmaps), with no downloaded asset or per-plant object. The standalone review
+adds one merged crop batch per farm; the food world already separates crops for
+condition updates. Each card retains its ground height at both edges so damaged
+crops shorten toward the slope and recover without floating. The sheep are
+static grazing/standing scenery in this pass, not simulated livestock agents.
+
+Housing is already separate from special-purpose buildings: only residential
+`house` records receive housing capacity. Barns, granaries, river stores and
+market/town halls contribute none. Minora also retains its authored library,
+barracks, temple and Guild stable. These existing places are scenery and named
+destinations, not a completed economic building system.
+
+**Design proposal, not implemented:** represent regional institutions as durable
+assets with stable identities, locations, roles and operational condition,
+independently of population and decorative mesh counts. Granaries could protect
+stores; markets and quays could support trade; barracks and stables could support
+military preparation; halls and libraries could provide civic and knowledge
+services. Begin by cataloguing existing places and connecting a few explicit
+effects to the authoritative campaign model. Construction, maintenance, staffing,
+storage caps and population growth require separate rules and balance work;
+adding a decorative building must not silently grant an economic bonus.
+
+For a focused street, grain and livestock capture, run
+`npm run test:farmland:desktop -- --polish-review --region=caricas` (or another
+review region). The ordinary desktop command still checks all five regions,
+walkable routes, housing and food reports, and cached geometry reuse.
+
+Verification: all 27 agriculture/housing checks and nine food-world checks pass,
+including sloped crop shortening and exact restoration. Native review covers all
+five regions; the playable food-world run also passes combat staging, physical
+Caricas combat, save/reload, and the seven-stage shortage/recovery demonstration
+with exact return to the campaign. Both native runs report no renderer errors.
+Compared with the saved pre-polish food-world captures, town-view draw calls are
+133/70/101/54/31 for Isareos/Nethereum/Caricas/Ovesos/Nesdor, previously
+133/70/100/54/31. Submitted triangles increase by 8.2-25.6% across those views.
+The extra scenery and shared crop texture have a real rendering cost, but add no
+AI or per-frame agriculture simulation. These short captures are not a controlled
+frame-rate benchmark. Results are in `tests/artifacts/food-world-checks.json`;
+the retained comparison is `food-world-before-polish.json`.
+
+### Nethereum farmland review
+
+Run `npm run review:farmland` for the replacement agriculture study, or open
+`farmland.html` from a web build. The **Region** selector compares Nethereum,
+Caricas, Ovesos, Nesdor and Isareos/Minora. Start directly in Caricas with
+`npm run review:farmland -- --region=caricas`, or `farmland.html?region=caricas`.
+Use `--region=ovesos` or `farmland.html?region=ovesos` for Ovesos.
+Use `--region=nesdor` or `farmland.html?region=nesdor` for Nesdor.
+Use `--region=isareos` or `farmland.html?region=isareos` for Minora and its farms.
+It uses the selected region's real map coordinates and regional terrain,
+loading its fields and town without the adventure's quest farms. Isareos reuses
+Minora's existing city scenery, without residents or quests. **Whole region**, **Fields**, **Town**, and
+**Meadow & brush** (or **Woodlands** in Nesdor) select aerial views. Drag to orbit, Shift-drag to pan, and
+scroll to zoom. **Walk in town** and **Walk the fields** place Teresod at safe
+starting points: WASD/arrows walk, Shift runs, dragging turns the camera, and
+Escape returns to the overview. Stream crossings and the grain quay are walkable.
+
+`content/regions/nethereum/nethereum-agriculture.js` is the fresh parcel and
+settlement definition: five farm clusters, 41 productive parcels, 26 buildings,
+western cultivation, a small eastern river town, and an uncultivated northwest
+margin. `nethereum-agriculture-scenery.js` supplies that layout to the shared
+`world/scenery/agriculture-scenery.js` renderer in merged batches.
+`app/farmland-review/` owns the isolated review, terrain cache, camera,
+walking, and food controls. Existing adventure farms remain available to their
+old quests; this reviewed replacement has not yet been installed in that mode.
+
+The regional target is 220 food/day. Crop-weighted represented area apportions
+that target among parcels to two decimals, with an exact remainder; these are
+compressed game-world representations, not agronomic hectare yields. Editing
+the layout redistributes the authored budget; expanding live productive capacity
+is a future explicit simulation action. `lizeem-food.js` reads the summed parcel
+capacity, so CLI and map experiments use the same baseline as the scenery.
+
+Caricas's independent definitions are in
+`content/regions/minora-frontier/caricas-agriculture.js`: four farm clusters,
+31 productive parcels and 42 buildings, including a much larger river town.
+Two-storey houses, a market hall, grain warehouses and a walkable loading quay
+represent its denser population; farm hamlets and smaller parcels cover the
+interior while the eastern Carica corridor remains wooded. The layout is new,
+not a regrouping of legacy quest farms. Its target remains 170 food/day for
+1,265 civilians, with 30 food/day normally delivered to Minora. As in Nethereum,
+parcel capacities sum exactly to the scenario budget consumed by `campaign.js`.
+
+Ovesos's definitions are in `content/regions/oves/ovesos-agriculture.js`:
+three farming clusters, 19 productive parcels, 27 buildings and a working quay
+on the Lizeem. Its town is larger than Nethereum's and smaller than Caricas's,
+with mostly low houses, a few upper floors, an open market and riverside stores.
+The western meadow/scrub margin remains uncultivated. The new parcels represent
+the existing 100 food/day budget for 750 civilians. It has no direct Minora
+export contract: friendly transfers to/from Nethereum use the existing regional
+stores and route limits. Its review reports food received and sent as well as
+deliveries to Minora. The same scenery also loads in the separate food world test.
+
+Nesdor's definitions are in `content/regions/nesdor/nesdor-agriculture.js`:
+three farming clusters, 15 productive parcels and 27 buildings, with a river
+town comparable to Ovesos and a grain quay on the Lizeem. Most of the eastern
+countryside is wooded, with cultivated clearings and open cart lanes; trees
+avoid water, buildings and fields. Its existing 85 food/day budget barely covers
+750 civilians and the starting military demand of 5.5 food/day. The woodland
+represents uncultivated potential; timber production and clearing are future
+mechanics. Trees share a merged scenery batch and the landscape is cached on
+return. The separate food world test uses the same layout; ordinary exploration
+retains its original countryside.
+
+Isareos's fresh definitions are in
+`content/regions/minora-frontier/isareos-agriculture.js`: three farm clusters,
+18 productive parcels and nine rural buildings outside Minora's reserved area.
+Small plots follow the gentler lower slopes and leave the steep northern ground
+uncultivated. They sum to the existing 100 food/day target. Its scenery adapter reuses
+`menora-scenery.js` and the city's terrain and bridge heights, preserving the
+walls, guild tower, houses, river traffic models and streets. River traffic is
+static here and does not represent individual deliveries. The review adds no
+residents, quests, old farm plots or construction mechanics.
+
+Minora has 2,640 civilians and needs 270 food/day including its starting military.
+Normal imports supply 140 from Nethereum and 30 from Caricas. Open **Food
+production**, uncheck both **Minora import routes**, and advance two weeks.
+The starting 2,380 reserves cover the 170 daily deficit for fourteen days;
+the next day brings shortages. Reopen routes and advance several weeks to
+see rations, stability and stores recover. Either route can be closed separately.
+The reserve estimate uses the last completed day's net deficit and is suppressed
+while commands await the next day, so yesterday's healthy trade is not presented
+as a forecast after a closure.
+
+The food report now names each region supplying or receiving food. Set Nesdor
+to **50%** and advance a week to see Caricas support its ally, leaving less food
+for Minora. Switch to Caricas to inspect the same transfers without resetting
+the campaign. Restore Nesdor to **100%** and advance several weeks to watch
+stores recover and exports resume. **Reset** resets the shared scenario.
+
+**Population & housing** distinguishes actual civilian population from the
+capacity of residential buildings across each reviewed region. Empty homes do
+not generate residents. `content/scenarios/lizeem-housing-targets.js` holds
+provisional accommodation budgets: Nethereum 800, Caricas 1,600, Ovesos 950,
+Nesdor 950 and Isareos 3,300.
+Against their separately authored populations this leaves roughly a fifth spare;
+it is an initial comfortably occupied design assumption, not established lore.
+`content/settlements/housing-capacity.js` distributes each budget by relative
+residential footprint and storeys, with integer allocation preserving the exact
+total. Barns, granaries, warehouses and halls contribute zero. Editing the visual
+layout redistributes accommodation; changing its total requires an explicit
+budget edit. This replaces the first arbitrary uniform floor-area multiplier.
+`lizeem-food.js` supplies the sum to `campaign.js`
+as optional regional housing data; `simulation/housing.js` reports capacity,
+population, spare capacity and occupancy without importing scenery. Capacity is
+independent of the population target and of how many NPCs are rendered.
+Isareos explicitly reserves 300 places for its rural houses and 3,000 for
+Minora's existing homes. The scenery adapter apportions the city budget by
+residential floor area (provisional storeys from building height), without
+modifying the city definitions. The campaign reads the two authored budgets
+without importing Minora's terrain or renderer.
+
+Food consumption still uses actual population. Excess housing adds no demand;
+population may exceed housing capacity without being silently reduced. No growth,
+migration, construction or housing-shortage penalties are implemented yet. Regions
+whose replacement housing has not been authored remain unknown rather than being
+treated as having no homes. The review displays regional totals, not a claim that
+each individual building is occupied in equal proportion.
+
+Open **Food production** to inspect contributions, advance one/seven campaign
+days, disrupt production, or restore it. Every economic change uses
+`createCampaign()` and its validated `foodAction()`/`step()` methods. There is no
+scenery production timer. This isolated test holds armies fixed and does not
+touch saves. Regional condition affects the next economic tick; it does not
+yet change individual fields visually. Farm defense and restoration encounters
+remain the next integration step after layout review.
+
+Switching regions preserves the same campaign state, including pending food
+commands. Only the selected region's production condition is changed by its
+control; **Reset food test** resets the whole isolated run. Each landscape is
+built on first visit and reused afterwards, so comparing them does not repeatedly
+regenerate terrain or duplicate geometry. They are not installed into adventure
+or the live Lizeem exploration mode yet.
+
+`npm run test:farmland` checks capacities, dry regional placement, the wild margin,
+building footprints, Caricas streets and quay, campaign conservation/replay
+behavior, and merged geometry.
+`npm run test:farmland:desktop` checks visible rendered views, keyboard walking,
+every cart-lane centerline and crossing, all five regions' food and housing reports, shared state
+on region changes, cached geometry reuse and reset. It writes
+screenshots and rendering counts to `tests/artifacts/farmland-*`. The shared food
+regression suite remains `npm run test:food`.
+
+### Food map and CLI
+
+From the project directory:
+
+```powershell
+npm run start:food
+npm run start:food-war
+npm run analyze:food-war
+npm run simulate:food
+npm run simulate:food -- --case=imports-restored --days=35
+npm run simulate:food -- --case=nesdor-restored --days=35
+npm run simulate:food -- --case=war --days=60 --seed=42
+npm run simulate:food -- --case=normal --json
+npm run test:food
+npm run test:food:desktop
+npm run test:food-war:desktop
+```
+
+`start:food` opens **Food & supply test** on the existing five-region atlas.
+The scenario selector also switches between this test and **The East-West War**;
+switching starts a fresh run, so export first to keep an experiment. In a web
+build, open `lizeem.html?scenario=food`. This food mode holds armies and recruitment
+fixed; the ordinary war mode retains its existing rules.
+
+Select a region to inspect stores, completed-day production, demand, deliveries,
+civilian rations, stability and military readiness. Under **Food disruptions**,
+cut/restore both Minora import routes or reduce/restore Nesdor's production
+condition (25% / 100%). An action pauses the clock and changes the next day's
+calculation. The report labels pending changes and withholds stale reserve
+estimates. Run at 20x or advance individual days. **Compare with no intervention**
+shows stores and stability against the untouched run at the same day.
+
+For a repeatable demonstration, reset, cut Minora's imports on day zero, and
+advance fourteen days. Day fifteen starts hunger. Restore imports after day
+twenty; rations return the next day and stability recovers gradually. Separately,
+reset and disrupt Nesdor to see Caricas's actual shipments to Nesdor and the
+reduction in exports to Minora. Export/import replays the food actions exactly;
+imports from a different scenario are rejected without changing the run.
+
+`app/lizeem/food-view.js` binds the controls and `food-report.js` reads the core's
+daily ledger. Neither runs a second economic simulation. The UI has no new farm
+scenery or hero encounters. Native captures and assertions are written to
+`tests/artifacts/food-*` by `test:food:desktop`.
+
+### War with food: map test and initial balance review
+
+`npm run start:food-war` now opens the `lizeem-food-war-v2` simulation on
+the same atlas. It is also the third scenario-selector option, or
+`lizeem.html?scenario=food-war` in a web build. Army movement, recruitment,
+three-day battles, captures and food all run through `simulation/campaign.js`.
+Hero encounters and physical farm scenery are not added to this mode.
+
+Select an army to see carried food, the number of days it covers at current
+strength without resupply, latest rations, readiness, food-adjusted strength
+and consecutive shortage days. Engaged attackers are drawn in their battlefield
+region even though their authoritative `region` is null. Red dotted borders
+and an end-day label identify active battles. The selected region shows supply
+links: solid for open access, dashed for closed access. **Supply access now**
+explains developer blockades, fighting at either end and enemy borders. These
+lines are abstract regional links, not physical roads or animated convoys.
+
+The core and map share `foodRouteStatus()` from `simulation/food.js`. A route
+being open does not guarantee a shipment: available surplus, contracts, local
+reserves and throughput still decide delivery. Food is allocated before the
+day's army arrivals and battle outcomes; current access describes the next
+food calculation, while the flow report describes the completed food phase.
+The regional report now also includes **Packed for armies**, so provisioning
+does not misleadingly appear as unexplained stock loss. This is an accounting
+field only; no production, rationing or military tuning changed in this pass.
+
+**Food disruptions** includes Nethereum as well as Nesdor. The comparison run
+has no developer interventions but still suffers its own war disruptions.
+Both runs freeze at their respective victories; comparison labels explicitly
+show different dates when they diverge. **Finish baseline comparison** can run
+the remaining untouched war. Reset, replay and cross-scenario import validation
+apply to all three modes.
+
+`npm run analyze:food-war` compares six cases over seed 1731 and seeds 1–31,
+each for at most 120 campaign days. Add `-- --json` for daily data or
+`-- --seeds=1731,1,2 --days=90` for a smaller repeatable batch. Every case verifies
+exact replay. The no-food control keeps the same three-day battles, initial
+forces, recruitment and military rules; the ordinary map war's instant battles
+would make it an unsuitable direct control. Damage starts on day zero at 25%
+production condition; repair cases restore 100% after day twenty if still active.
+
+Initial results (12 October 2026; 32 seeds per row):
+
+| Case | West wins | East wins | Unresolved at 120 | Mean troop losses to hunger | Runs with Minora hunger |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Matched war without food | 2 | 27 | 3 | 0 | Not modeled |
+| Normal food war | 5 | 27 | 0 | 31.5 | 0 |
+| Nethereum disrupted | 5 | 27 | 0 | 67.5 | 32 |
+| Nethereum restored after day 20 | 5 | 27 | 0 | 38.5 | 32 |
+| Nesdor disrupted | 16 | 16 | 0 | 73.1 | 3 |
+| Nesdor restored after day 20 | 13 | 18 | 1 | 49.0 | 3 |
+
+Normal wartime interruptions draw down Minora's reserves without causing
+automatic civilian hunger in this sample. Its average daily imports were about
+156 units, compared with 170 in the stationary opening economy. Regional demand
+changes with recruitment and losses; shipment figures should not be read as a
+fixed deficit for every day. Armies still experience shortages and losses.
+
+Nethereum is crucial to Minora's food security: disrupting it caused hunger in
+all 32 runs. Repair restored full rations during 31 of them; one war ended before
+that recovery. However, the winner counts were unchanged. This does **not** yet
+demonstrate that West's superior agriculture is a decisive military advantage.
+Nesdor's vulnerability mattered more to the war outcome: disruption raised
+West's wins from 5 to 16 in this sample. Repair reduced average hunger losses,
+although it could not undo all earlier military consequences.
+
+The initial targets were retained for hands-on testing. East's larger initial
+forces and recruitment leave it favored (27/32 normal wins); parity was not an
+agreed design target. These are small paired scenario trials, not measured win
+probabilities. Supply changes alter later battles and random-number consumption,
+so one seed's changed winner cannot be attributed to a single shipment. The AI
+in that initial version used current food-adjusted strength but did not forecast route endurance or
+choose objectives to defend export capacity. Post-victory recovery is not tested:
+the existing campaign clock stops at victory. The restored-production cases
+demonstrate recovery during the war, not a simulated peacetime aftermath.
+
+### Supply-aware army planning
+
+The next pass keeps those food targets, troop numbers, carrying capacity and
+battle rules. `simulation/supply-planning.js` evaluates candidate orders during
+the existing decision phase; `campaign.js` remains the sole clock and authority
+for troop movement, provisioning and food consumption.
+
+- Forecasts cover the march and expected battle duration. An army reinforcing a
+  battle expected to remain active on arrival uses that battle's remaining days.
+  If it ends before arrival, the planner conservatively budgets a new battle.
+- Packing estimates use the same calculation as real provisioning, protecting
+  tomorrow's civilian ration. Enemy territory promises no food. Neutral trade
+  does not create military access or supplies for marching armies.
+- Target ranking considers expected readiness and supply coverage as well as
+  strength and distance. The existing minimum current-strength ratio still
+  applies; this is a refinement of the existing frontier planner.
+- A force can wait to provision where current production and still-open recent
+  deliveries suggest a surplus, or recover readiness where stores and expected
+  flows can support a short rest. These are estimates, not future reservations.
+  Waits last at most two decision intervals (six days with this scenario's rules).
+  A nearly as useful immediate attack can take priority over waiting.
+- Four days of carrying capacity cannot cover every march plus three-day battle.
+  Such attacks remain eligible, with a recorded explanation of the accepted risk.
+  Authored opening orders remain scenario commitments rather than being delayed.
+
+The army inspector shows its order reason and a dated **Last planning estimate**,
+separately from current food and readiness. Forecasts hold strength and territory
+fixed; they do not predict casualties, new orders or future conquest. Provisioning
+and readiness holds also appear in **Recent events** and replay deterministically.
+
+To see a repeatable recovery decision, run `npm run start:food-war`, open
+**Reset and replay**, enter seed **2**, reset, and advance to **day 16**. Select
+**East Lizeem Army 1** in Caricas: it is recovering readiness before another march
+on Ovesos and explains when it will reconsider. Seed 1731's opening still proceeds
+with explicitly accepted supply risks.
+
+New exports use `lizeem-food-war-v2`; old `lizeem-food-war-v1` exports are not
+silently reinterpreted. Under **Reset and replay**, **Open previous food-war rules**
+opens the preserved version for import. Switching starts a fresh run, so export
+first. Direct equivalents are `lizeem.html?scenario=food-war&planning=legacy` and
+`npm run start:food-war -- --legacy-planning`. Ordinary war, stationary food and
+3D exploration retain their existing rules.
+
+`npm run analyze:food-war -- --compare-planning` runs all six cases with both
+planning versions, using identical seeds and economic targets. Every run verifies
+exact replay. The no-food control uses the previous planner because endurance
+planning requires a food model. The old/new food comparison isolates the planning
+change more closely than the food/no-food comparison.
+
+Final planning audit (12 October 2026; 32 seeds per row, 120-day limit):
+
+| Case | West / East wins | Still active | Mean hunger losses, previous → new | Mean supply holds |
+| --- | ---: | ---: | ---: | ---: |
+| Normal | 5 / 26 | 1 | 31.5 → 29.6 | 1.28 |
+| Nethereum disrupted | 5 / 26 | 1 | 67.5 → 65.9 | 1.25 |
+| Nethereum restored | 5 / 26 | 1 | 38.5 → 36.1 | 1.28 |
+| Nesdor disrupted | 15 / 15 | 2 | 73.1 → 81.8 | 1.31 |
+| Nesdor restored | 13 / 17 | 2 | 49.0 → 40.0 | 1.22 |
+
+All 384 old/new trials reproduced their command replays, and the preserved
+previous-planner outcomes match the prior audit. Normal wars still kept Minora
+fed in every run. Average normal-war duration was 55.3 days versus 55.0 before;
+army-shortage days were 65.8 versus 65.3. Hunger losses fell modestly, but this is
+not a general solution to military supply: the disrupted-Nesdor case worsened.
+War duration and random-draw divergence affect the totals, so these are observed
+scenario results, not isolated causal estimates or a claim of better win rates.
+
+The seven new food runs still active at day 120 were continued separately to
+check for waiting deadlocks. All ended by day 157: normal seed 18 and both of its
+Nethereum variants ended on day 121; disrupted Nesdor seed 26 ended on 157 and
+seed 29 on 121; restored Nesdor seeds 14 and 26 ended on 124 and 121. The table
+retains the original 120-day cutoff instead of retroactively counting those wins.
+
+This planner still cannot design supply lines, defend export capacity as a
+strategic objective, or coordinate a multi-army campaign. Four-day packs remain
+a deliberate constraint rather than being increased to hide shortages. Next
+work can make the agreed production targets visible as newly designed farmland,
+then connect hero interventions to those authoritative production conditions.
+
+The default `simulate:food` command compares six cases: normal trade, all Minora imports cut,
+imports restored after day 20, Nesdor at 25% production, Nesdor restored after
+day 20, and the active war. The first five hold armies, recruitment and ownership
+fixed to isolate economic effects. The war case enables recruitment, normal army
+decisions and three-day regional battles; it stops on the actual victory day.
+All cases verify exact seed-and-command replay. `--help` lists the options;
+`--json` emits daily ledgers and the final replayable state. No graphics or player
+save files are loaded. Days are campaign days, independent of autoplay speed.
+
+### Starting economy
+
+One prototype food unit feeds ten population equivalents or ten military
+strength for a day. Population equivalents are balancing values, not final lore
+censuses or counts of rendered NPCs. Civilians remain fixed in this first model;
+recruitment adds military demand. A garrison-to-army transfer moves existing
+military demand and never creates a second set of consumers.
+
+| Region | Civilian equivalents | Food/day | Initial demand/day | Initial store | Normal exports to Minora |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Nethereum | 630 | 220 | 70 | 490 | 140 |
+| Caricas | 1,265 | 170 | 135 | 945 | 30 |
+| Ovesos | 750 | 100 | 79.5 | 556.5 | 0 |
+| Nesdor | 750 | 85 | 80.5 | 563.5 | 0 |
+| Isareos / Minora | 2,640 | 100 | 270 | 2,380 | Receives 170 |
+
+Demand includes existing troops: 70 in Nethereum, 85 in Caricas, 45 in Ovesos,
+55 in Nesdor and 60 in Isareos. Ovesos and Nesdor share the same civilian
+population; their different garrisons explain the half-unit difference from the
+rounded proposed budgets. The leagues' normal net surpluses after exports are
+30.5/day for West and 9.5/day for East. Isareos supplies about 37% of its needs;
+its starting stock covers fourteen days of the 170/day import deficit.
+
+Nethereum is the breadbasket, with the smallest eastern river town, extensive
+western farms and some northwestern meadow/brush. Ovesos is slightly more
+populous, concentrated at its river town. Caricas is the most populous league
+region and the second producer. Nesdor has comparable agricultural potential
+but less land cultivated, with much more forest and wildlife; its future timber
+role remains design-only. Town names are provisionally Nethereum Town, Ovesos
+Town, Caricas Town and Nesdor Town; Minora keeps its distinct name. These facts
+guide the future replacement farmland, not the old plots' placement or totals.
+
+### Daily rules and ownership
+
+`campaign.js` invokes food once at the start of each campaign day. Production is
+added everywhere before allocation. Friendly transfers address immediate needs,
+then reserves, then neutral export contracts. Meals are allocated, unrest and
+military health change, and recruitment and war actions follow. Pending hero
+encounters freeze the campaign clock and therefore food as well.
+
+- Producers protect local daily demand and a seven-day reserve before exports.
+  Minora's reserve target is the agreed 2,380 units. A faction's store is derived
+  from its actual regions; there is no second global pool to spend.
+- Friendly transfers use connected, same-owner regions. Every edge has one
+  shared daily capacity, including transfers passing through it: 40 units for
+  league routes and 180 for each Minora border route. Closed edges, hostile or
+  neutral transit territory, and active battle regions cannot be bypassed by
+  friendly supply. Commercial permission does not permit military movement.
+- Both leagues may trade with neutral Minora. Normal contracts move 140/30;
+  remaining route capacity and exporter surplus can make extra deliveries to
+  rebuild depleted reserves. No currency or trade-price model is implemented.
+- All factions begin with shared hardship. Civilian-first and military-first
+  policies are available through replayable commands. The same physical stock
+  funds all three policies; shortages cannot generate food.
+- Civilian underfeeding raises unrest proportionally, up to eight percentage
+  points per day at zero rations. Full rations restore four points per day.
+  Unrest can halve production and reduce recruitment by up to 75%; current
+  civilian ration fulfillment also scales recruitment. Fractional recruitment
+  accumulates deterministically. Hunger does not directly change ownership,
+  migrate civilians or create a rebellion in this version.
+- Armies provision up to four days of carried food from friendly regional
+  stores, leaving the next civilian day's rations. Provisioning is a domestic
+  expense, so it can use reserves that exporters must protect. Marching armies
+  and attackers in hostile territory eat from carried supplies. Friendly
+  stationary armies share regional military rations, supplement from carried
+  food if short, and replenish their stores locally. Food never appears when a
+  garrison becomes an army, or because a scene is loaded.
+- Missing military rations reduce readiness by up to 20 points/day; full rations
+  restore 10. After three consecutive short days, losses begin on the fourth,
+  at 2% times the missing ration share, rounded up to whole strength. Readiness
+  scales combat power from 100% down to a 25% floor and affects army planning
+  and normal battle odds. Troop strength and food losses remain separate.
+- Active battles halve local production and close food routes through the
+  region. Capture changes the controller while retaining civilians, production,
+  condition, unrest and stored food. Supplies abandoned with a destroyed army
+  are recorded as lost; no loot mechanic has been added.
+
+Food allocation uses deterministic daily throughput, not animated convoys or
+shipment travel times. There is no spoilage/storage cap, seasonality, timber
+economy, population growth or agriculture scenery generation in this pass.
+Those are separate future decisions. The current economic test is measured in
+weeks, and the war still ends under its existing victory condition.
+
+### Commands, diagnostics and checks
+
+These are validated simulation/developer actions, not yet playable farm quests:
+
+```javascript
+campaign.foodAction({type:'production',region:'nesdor',condition:.25});
+campaign.foodAction({type:'production',region:'nesdor',condition:1}); // restore
+campaign.foodAction({type:'route',from:'nethereum',to:'isareos',blocked:true});
+campaign.foodAction({type:'rationing',faction:'east',policy:'civilian-first'});
+```
+
+Conditions are absolute values from zero to one, separate from the regional
+production target. Every valid action is recorded in `state.commands`; invalid
+actions leave state unchanged. States use version 4 for food scenarios and
+version 3 for existing scenarios. Each food scenario has a new scenario ID.
+`replayCampaign()` reconstructs food, trade, policies, blockades, commands,
+events and future outcomes without adding random draws to the economy.
+
+`state.food.last` reports opening stock, production, consumption, lost supplies,
+closing stock and transfers (including paths). Regional `food.last` reports
+production, civilian/military demand, imports, exports and consumption.
+`foodSummary(state)` derives region and faction reports, including carried army
+stock and demand outside regions. Every day's accounting must satisfy:
+
+`opening + production - consumption - lost = closing regional and carried food`.
+
+The tests exercise normal budgets, the exact cutoff window, gradual recovery,
+Nesdor-to-Minora knock-on effects, rationing policies, friendly routing, shared
+capacity, protected exporter reserves, army provisioning, readiness, attrition,
+recruitment, capture, timed battle disruption, pending encounters, invalid input,
+CLI JSON and replay. Forty seeds check nonnegative resources and conservation
+through active wars; legacy campaign tests check unchanged older behavior.
+
+The next implementation slice can connect a bounded protect/restore encounter
+to these commands and build new farm scenery from the regional production
+targets. Old farms have not yet been removed or assigned economic authority.
+
 ## Current Ovesos prototype: two-stage battle (7 October 2026)
+
+For the new economic work, see the [food experiment](#food-production-and-supply-experiment) below. The earlier sections retain the existing playable scenario's history.
 
 Fresh world runs now use `lizeem-world-v5`. Start **Lizeemi War Scenario**, then use **F8 > Minora > Ovesos: ride and defend West (fresh run)** to watch the full sequence. Manual play reaches the same encounter through F at the Ovesos standard. This remains inside the five-region scenario.
 
@@ -53,9 +703,17 @@ Success improves the chosen side's battle chance by up to 20 percentage points; 
 
 ## Explore inside the five-region war
 
-Choose **Lizeemi War Scenario** from the shared main menu (or run `npm run start:lizeem-world`). A fresh game starts as Teresod inside a single spacious chamber in Minora's Wizard Guild. Taleth is the Guild Master, the only other person there, and represents neutral Minora. Walk toward him and press **F**. His opening explains the two leagues, the neutral city and the tower's time sorcery. The first option is **Start campaign**; the second is **Background / the preceding thirty days**. **Not yet** or Escape closes the conversation without starting the campaign. Starting advances the opening to day 1 exactly once and unlocks departure, with Bear and a prepared horse outside.
+Choose **Begin Lizeemi War** from the shared main menu (or run `npm run start:lizeem-world`). A fresh game starts as Teresod in Taleth's chamber, the middle of three developed floors in Minora's Wizard Guild. Taleth is the Master Time Wizard of the Guild and represents neutral Minora. Walk toward him and press **F** to choose which league to support, read the optional historical background, or enter the Stillroom for combat training. **Explore the tower** or Escape postpones the decision without starting the war.
 
-The southern door uses **F** to leave; the existing tower's forecourt uses **F** to return. Finishing the briefing is required before leaving, and mounts/developer travel are unavailable inside. Returning preserves the current campaign and permits rereading the briefing without restarting time. The chamber is an instanced room with its own collision, camera obstruction and lighting, rather than a new floor carved into the exterior mesh. It loads without constructing the exterior; first departure prepares Minora, and later visits reuse that world. There are no new quests or tower floors and no old Farmlands quest controller.
+A physical spiral stair connects Snero Fold's Folded Chamber below to Hadrin Brightlock's enchantment workshop above. These male wizards offer optional introductions; neither can commit allegiance or unlock departure. The tower is intended to grow beyond these first three floors. Guild gates close the unfinished extensions; the existing high lookout remains separate and opens through Taleth after the war. All three floors share one tower location and retain frozen campaign time while walking, conversing, and saving.
+
+Hadrin's upper workshop has an articulated, unfinished golem and two stocked enchantment benches. Approach the golem, Everlight lantern, Mending hammer, Homeward wayfinder or Rainkeeper cup and press **F** for a close observation. The golem's **Watch its test** action runs a repeatable six-second arm and head demonstration. These are visual experiments with no inventory rewards or campaign effects. Shared exhibit coordinates live in `content/regions/minora-frontier/hadrin-exhibits.js`; `hadrin-workshop.js` batches the furnishings and animates only a few joint pivots on the visible floor. `app/exploration/tower-workshop-host.js` owns observation focus and input. No extra point lights, creature AI or physics simulation are added. The isolated `--tower-floors-checks` native run verifies every exhibit, time freeze, access, demonstration completion and saving on all three floors.
+
+His practical workshop also contains self-polishing armor, two hovering task lamps and an overhelpful broom that moves tools across its sorting bench. The armor and broom have optional **F** observations and repeatable demonstrations. `hadrin-conveniences.js` adds deterministic local animation and static clutter to the existing workshop batches, sleeping with the hidden floor. Hadrin wears a work apron and offers optional conversations about everyday enchantments, the broom and future staff/equipment improvements. Equipment upgrades are not yet available; these conversations have no inventory, campaign or save effects.
+
+The southern door on Taleth's floor uses **F** to leave; the existing tower forecourt uses **F** to return. Confirming allegiance with Taleth is required before leaving, and mounts/developer travel remain unavailable inside. The interior has its own collision and lighting and loads without constructing the exterior. Existing saves keep Taleth's original coordinates. Saved feet height selects the appropriate supported floor or stair on return.
+
+`content/regions/minora-frontier/tower-floor-layout.js` defines landings, walk surfaces and bounded stair collision; `tower-staircase.js` draws those same treads. `tower-chamber.js` and `tower-furnishings.js` build merged static details with only nearby room contents animated. `guild-wizards.js` holds the new introductions, and `app/exploration/tower-wizard-host.js` owns their optional conversations. Run `node --test --test-isolation=none tests/tower-floors.test.js tests/tower-opening.test.js` for traversal and opening checks. Run `node scripts/launch.cjs --exploration --world-war --smoke-test --internal-review --tower-floors-checks` for actual movement, conversation, save/Continue, time, and training checks with screenshots.
 
 ### Taleth's optional Chronoscope history
 
@@ -355,6 +1013,15 @@ Verification for the thrust/sweep and runner pass: 67 focused model checks and 2
 
 ### Soldier spacing and deliberate targeting
 
+Direct field battles now reserve reachable striking and support positions around
+each target. Militia leave wider intervals than trained infantry; supporting
+soldiers can fill a vacated front position. Both steering alternatives check dry
+body clearance, with cached, bounded local detours when a shoreline or prop blocks
+the approach. `gameplay/combat/encounter-positioning.js` owns those reservations
+and detours. Weapon range, attack timing, damage and movement speed are unchanged.
+The demo driver checks the full dodge path against terrain and bodies, including
+the exact eight keyboard bearings, and blocks when no dodge is clear.
+
 [Encounter space](../../src/gameplay/combat/encounter-space.js) gives living actors 1.1m of separation. Movement and dodges stop or slide around bodies, compose with terrain collision, and allow escape from an existing overlap. Fallen and escaped opponents no longer block. Soldiers choose short paths around other bodies with a consistent passing side. Escorts seek separate positions between Teresod and a nearby runner, then commit to their existing attacks when he closes in. This is local steering for the small encounter, not army navigation or formation pathfinding through a city.
 
 [Target selection](../../src/gameplay/combat/encounter-target.js) uses Teresod's movement-facing, a forward cone and staff reach. It respects scenery and other living soldiers screening the target. A gold ring marks the selected opponent, and a small pointer shows Teresod's facing. Pressing X commits that target and direction for the swing; it neither turns toward someone behind Teresod nor changes opponents at contact. Moving or dodging into position, then facing the opponent, is now part of landing a counter. A target can still escape the swing's reach before contact.
@@ -400,13 +1067,15 @@ Verification: 82 focused world/combat tests, 12 exploration tests, 45 native cam
 
 ### Bear and the tower departure
 
-Taleth now refers Teresod to Bear outside the tower. This scenario reuses Barrett's existing child appearance (short brown hair) without moving the tutorial NPC or loading his old quest controller. Bear stands beside a saddled horse on the guild forecourt. F opens a repeatable three-page riding explanation; accepting the reins grants one horse. The campaign pauses during this conversation. G mounts within reach or dismounts on clear ground, Shift canters, and H calls a parked horse outside. Entering the tower and joining combat still require dismounting. Normal riding uses the existing 6.5/13 m/s gaits; developer mounts and autoplay retain their 2x pace.
+After handing over the horse, Bear turns toward his route before walking back to the stable. Three unsaddled Guild horses occupy separate open stalls. His local loop visits their sides for brushing and feeding, returning through the front aisle between stops. `guild-stable-layout.js` shares the stalls, horses and care waypoints; `bear-arrival.js` owns turning, movement and dwell times; `stable-yard.js` owns the three idle rigs and care gesture. The horses have body contact for walking and mounted players, and their animation is culled beyond the nearby stable. This ambient routine adds no campaign resources or save records. Pauses and conversations hold the route; loading an owned horse restarts Bear's work without another handoff. The hidden native `--stable-care-checks` review verifies the automatic greeting, departure heading, repeated visits to every stall, contact, mounting and save/load.
+
+Bear approaches Teresod automatically on the guild forecourt after the tower departure. This scenario reuses Barrett's existing child appearance (short brown hair) without moving the tutorial NPC or loading his old quest controller. One short offer explains G to mount/dismount, WASD to ride, Shift to canter, Space to jump and H to whistle. A single **Continue** grants the horse on checked dry ground in front of the player, within immediate G reach, without mounting automatically. Escape acknowledges the same offer. Walking away is allowed: ownership persists, H calls the horse later, and campaign guidance continues toward the front. The campaign pauses during the conversation. Bear returns to his stable; F can repeat the reminder or open his existing postwar greeting. An already owned horse is never granted again or moved by that conversation. Entering the tower and joining combat still require dismounting. Normal riding uses the existing 6.5/13 m/s gaits; developer mounts and autoplay retain their 2x pace.
 
 In exploration, both the owned horse and developer horse can swim across loaded water while keeping the rider mounted. Normal swimming is 3.6 m/s; the developer multiplier also applies in water. Shift does not turn swimming into a canter. The riding hint identifies swimming and asks for a clear bank before dismounting; mounting and dismounting still require suitable dry footing. A called horse may swim toward its rider. This does not enable mounted combat or bypass the five-region boundary and loading checks.
 
 The optional `riding` field in the isolated war save records ownership, instruction and parked location. Older saves remain valid and can collect the horse. Continue restores the player on foot and the horse where it was saved, including when saving from inside the tower. The local minimap reuses the existing canvas renderer at roughly eight updates per second, queries the local collider index, and projects nearby roads and existing river profiles. It marks Taleth, the exit, Bear, or the owned horse as appropriate. It reveals no additional hexes and opens the campaign map when clicked.
 
-Validation: `tests/minora-stable.test.js` covers save compatibility, single ownership, normal versus developer pace and local chart filtering. `npm run test:tower:desktop` also exercises the actual Bear dialogue, mounting, cantering, dismounting, whistling, two-way doorway and fresh Continue. Screenshots and results are under `tests/artifacts/tower-*`. These additions do not change battlefield resolution or the number of interventions allowed per battle.
+Validation: `tests/bear-arrival.test.js` covers the bounded approach and safe gift placement; `tests/minora-stable.test.js` covers save compatibility, single ownership, normal versus developer pace and local chart filtering. The focused native command `node scripts/launch.cjs --exploration --world-war --smoke-test --internal-review --unified-war-checks --unified-war-bear` exercises the automatic greeting at the actual tower exit, one-click handoff, optional walking, riding, recall and Continue. The focused run passed 65 checks at 1024 by 600 without renderer errors; its captures verify Bear is visible during the offer and the nearby door and mounting prompts do not overlap. `npm run test:tower:desktop` also exercises the actual Bear dialogue, mounting, cantering, dismounting, whistling, two-way doorway and fresh Continue. Screenshots and results are under `tests/artifacts/tower-*`. These additions do not change battlefield resolution or the number of interventions allowed per battle.
 
 The war minimap also draws faction-colored flags for discovered moving armies and crossed swords for active battles. Distant events get edge arrows; same-bearing arrows stack radially. Clicking an event toggles the existing tracking selection, highlighted in gold. Hover text explains distances, deadlines and that army positions are daily strategic estimates. This projection uses the existing map intelligence and does not expose undiscovered armies or battles.
 
@@ -584,7 +1253,7 @@ The existing `--allied-assault-checks` native run now captures `allied-assault-r
 
 ### Two-hour play-session and performance pass (8 October 2026)
 
-The opening, journey and aftermath now preserve the player's chosen destination in the isolated war save. Direct army tracking remains a single moving destination. The horse guide points to the actual parked horse until mounted. After a result, the player can choose Taleth, the Mayor or the High Priest as a direct destination; the main marker and minimap agree on that doorway. Stopping guidance also survives Continue. Older saves without a destination remain supported and do not send a player who already owns a horse back through Bear's introduction.
+The opening, journey and aftermath now preserve the player's chosen destination in the isolated war save. Direct army tracking remains a single moving destination. The horse guide points to the actual parked horse until mounted or the player walks away. After a result, the player can choose Taleth, the Mayor or the High Priest as a direct destination; the main marker and minimap agree on that doorway. Stopping guidance also survives Continue. Older saves without a destination remain supported and do not send a player who already owns a horse back through Bear's introduction.
 
 The pause menu includes **Save and exit to main menu**. A failed write leaves the player in the pause menu and preserves the previous save. The separate exit-without-saving action is explicit. Dismissed dispatches stay dismissed after Continue, while the latest battle result remains available on the campaign map. These optional navigation and report fields do not alter campaign replay or other game modes' saves.
 
@@ -898,3 +1567,555 @@ Reproduce the clarity check with `node scripts/launch.cjs --exploration --world-
 Final local comparison at 1424 x 921: initial preview readiness fell from 90,431 ms to 9,988 ms; prepared-scene loading/assembly fell from 75,963 ms including exterior preparation to 1,010 ms without it. Sampled JavaScript heap fell from about 377 MB to 230 MB (not total process/GPU memory). River-view draw calls fell from 978 to 838, Ambron from 1,340 to 1,125, Pyra from 549 to 525 and north from 1,394 to 1,255. The final frame-interval samples corresponded to roughly 28/27/32/18 fps respectively, versus 20/11/21/10 in the baseline. Timing varied between runs; these are local observations, not a stable frame-rate guarantee. North still submits about six million triangles and remains expensive.
 
 The rebuilt asset includes the latest city revisions: 3,891 batches, 11,758,780 total triangles and 24,266,459 compressed bytes. Its public-source fingerprint matches. All 20 focused model checks, source layout and module linking passed. Native checks passed the ten lifecycle/interaction stages and two compact layouts, plus the four final performance views with no game-frame errors. Visually checked the river/Colossus, Ambron and Pyra captures. Electron printed a GPU shutdown warning after the successful checks; the final direct native process exited with code 0. The source/assets remain local; no commit, push or deployment was performed.
+
+
+### Corris Weatherwise and the river review (10 October 2026)
+
+Corris Weatherwise is Taleth’s talking raven envoy in the isolated war scenario. The single low-poly actor is present in the guild chamber and lookout, and lands on clear, dry ground outside active battle areas after new campaign reports. Normal F interaction opens a short consequence and live next step; optional topics retain strategic detail and earlier reports. He waits, can be called closer, and has character contact on foot and horseback. Autoplay includes him among its route obstacles. Ordinary lookout pigeons retain their existing living-bird interactions.
+
+`corris-state.js` keeps acknowledgment separate from report-card dismissal and the simulation. The optional `corris` checkpoint field restores pending news and accepts older saves without that field. Escape / Talk later leaves a message pending; Understood records acknowledgment. The map opens the report archive without moving time or treating reading as a conversation. No manuscript text or source assets enter the runtime.
+
+The first-person river review uses a narrower, downward-facing view from the same real tower elevation. The southern-country panorama retains its wider field of view; neither change loads additional regions. Run `node scripts/run-tests.cjs tests/corris-weatherwise.test.js tests/taleth-correspondence.test.js tests/lookout-panorama.test.js` and `node scripts/launch.cjs --exploration --world-war --smoke-test --corris-checks` for the focused checks and captured views.
+
+### Surrounding political chart (10 October 2026)
+
+`content/scenarios/lizeem-surroundings.js` records the author's neighboring factions, territorial control, disputed claims and relationships. `worldWarProjection()` exposes this as a separate read-only `reference` object. Its live `regions` and `factions` still contain only the five-region Lizeem campaign. No outside recruitment, marching, diplomacy, conquest or 3D-region loading is enabled. Completed lookout knowledge determines what appears; older saves pick up the new chart without a simulation migration. The original adventure's faction roster is unchanged.
+
+Ambron has nine secure provinces and disputed claims to both Lotharn ranges. Feradom remains a separately colored vassal duchy. Izol controls both Izols and South/West Suval. The Nylon siege leaves Eer under Nylon; the Pyrosi civil war divides regional control and explicitly leaves Pyra contested. Selemis uses the established city spelling while its atlas island key remains `Selemi`. Telemonia's military oligarchy is a provisional description, not a finalized constitution. Unspecified territory and Iscare's unspecified claimants stay unspecified.
+
+Yunethre's centaurs have a separate selectable encampment marker and no territorial ownership. The presence record carries a region and a local anchor; a future authored relocation can move that record without recoloring the region. It has no invented migration schedule, army strength, conquest rules, permanent capital, or resource simulation. Future nomad design should settle camp relocation, access agreements and conflict eligibility before connecting it to the campaign clock. Lake Town remains the council-governed territorial faction.
+
+Check with `node scripts/run-tests.cjs tests/lizeem-surroundings.test.js tests/campaign-map.test.js tests/lookout-chart.test.js`. For a save-free visual and discovery check, run `node scripts/launch.cjs --exploration --world-war --smoke-test --lookout-preview-checks --surrounding-map-checks`; captures and results go under `tests/artifacts/surrounding-map-*`.
+
+Verification: the focused model suites, source layout and module-link checks pass. Native Corris checks covered tower introduction, safe arrival, waiting, physical contact, conversation pause, postponed/acknowledged save restoration, archives and portrait/landscape phone layouts. Native map checks covered pre-conclusion hiding, post-conclusion saved chart knowledge, faction assignments, disputed hatching, the centaur inspector and stability/region view switching without campaign mutation. Visually inspected the river framing, Corris conversation layouts, the full political chart and the enlarged Yunethre marker. West autoplay completed four battles/eight phases and the full lookout tour on day 22 with no game-frame errors. Native runs recorded passing results before Electron emitted its existing GPU teardown warning and returned nonzero; this is not a clean process-exit claim. Changes remain local, without a commit or push.
+
+### Raven messenger and bird scale (10 October 2026)
+
+Corris is now a common raven who speaks, retaining his human-language name and existing report receipts. His low-poly body is about 62 cm bill-to-tail, with a 117 cm extended wingspan, folded wings, a wedge tail and an animated bill. Talking frames the bird at ground level; portrait screens reserve the upper view for him. Ground contact uses a bird-sized footprint. The normal camera returns after conversation. No clothes, humanoid limbs or new campaign mechanics.
+
+The lookout rock doves are about 33 cm long. Birding species, woodland thrushes and regional waterbirds/raptors now use adult species dimensions rather than enlarged display sizes. Body size and extended wingspan are calibrated separately so long-winged birds retain plausible flight proportions. Existing fictional bird body sizes remain authored; the bone-bird uses its authored 2.5 m span. Populations, streaming limits, AI and observation interactions remain in place.
+
+Verification: `tests/bird-scale.test.js` measures rendered geometry, wing attachment and folded-wing symmetry. Existing bird behavior and messenger save tests cover the unchanged interaction paths. Native `--corris-checks` covers arrival, conversation, save/Continue, portrait/landscape dialogue and lookout pigeons; append `--corris-model-only` for the short chamber/phone visual check.
+
+### Opening champion duel (10 October 2026)
+
+Fresh `lizeem-world-v9` campaigns offer **Challenge their champion** in the first Caricas battlefield, alongside the ordinary reinforcement interception. The player chooses a league, hears the opposing captain's cause, and confirms before committing. Captain Serevan Dain of Nesdor represents East; Captain Meret Voss of Ovesos represents West. Both are new scenario characters. The challenge is optional, replaces interception, and can be accepted once per campaign. Backing out before acceptance costs nothing. Starting the ordinary interception commits that battle to its original opening.
+
+The duel uses one officer in the existing battlefield, with normal staff, dodge, targeting and fireball controls. The captain uses thrust, sweep and a slower overhead strike with a distinct pose, warning and recovery window. Fireball damages the captain without cancelling a committed attack. The captain yields alive at zero resolve. Victory makes two final-assault guards fall back without killing them or deducting strategic troops; allied support is retained. Yielding or reaching the two-minute limit forfeits that advantage but leaves the assault available. Death uses the existing Reaper, whose retry restores the same duel and whose before-choice option restores the uncommitted invitation.
+
+`simulation/champion-duel.js` owns eligibility and result accounting; the campaign records the choice and outcome as replayable commands. The opening victory leads to three guards versus three allied soldiers plus Teresod, and the final assault still determines the field. Corris, council consequence text and the Chronoscope retain the recorded duel result. Existing v3-v8 saves retain their original rules: start a fresh Lizeemi War to test this option. Ordinary campaign autoplay continues to choose interception.
+
+Focused checks: `node scripts/run-tests.cjs tests/champion-duel.test.js tests/afterlife.test.js tests/campaign-chronicle.test.js`. The rendered sequence is `node scripts/launch.cjs --exploration --world-war --smoke-test --champion-duel-checks`, with isolated saves and captures in `tests/artifacts/champion-duel-*`. It covers opening choices, both captains, normal-input victory, the overhead warning, the allied follow-up, save restoration, surrender, actual combat death, repeated retry and return to the original decision. It also checks compact layouts and the existing allied-assault Reaper path.
+
+Verification: all eight duel model tests and focused combat/campaign/recovery regressions passed. The final native run passed all twelve stages, reported no renderer errors, and exited zero. Visually reviewed the choice and challenge panels, champion name and attack cue, overhead pose, central victory report, Reaper dialogue and compact choice layout. A repeated-death check caught the restored battlefield reopening its next entry prompt before death resolution; closing an encounter now suppresses automatic re-entry until the player leaves and returns. Source layout, module linking and whitespace checks pass. The automated driver used ordinary inputs with accelerated test frames; this verifies function, not human difficulty balance. Changes remain local without a commit or push.
+
+### Caricas market-town polish (11 October 2026)
+
+The existing eight-building settlement now uses limewash and warm stone, muted clay/slate roofs, street-facing windows and shutters, timber doors, shallow awnings, lantern fittings and flower boxes. The granary has a louvred cupola and grain emblem. Its court has terrain-following paving, two striped produce stalls, four planted lime trees and a covered well. The main street and combat staging remain open. These are static details in `content/regions/minora-frontier/caricas-town-detail.js`, appended to the existing building and ground batches. There are no additional actors, simulation updates, textures or dynamic lights. The three ownership standards still recolor independently.
+
+Geometry rises from 9,720 to 27,256 triangles (about 1.8 MiB more attribute data), while remaining two meshes. Five small prop colliders protect the tree planters and well; the eight original building bounds and map records remain intact. Construction continues to yield, with at most 128 terrain queries between steps. The regression test caps the town at 30,000 triangles and checks road, guard, civilian shelter and central combat clearance.
+
+The isolated native comparison at 1424x921 used identical approach, court, granary and overview cameras. Draw calls were unchanged at 211/314/204/265. Median frame intervals changed from 16.7/17.8/16.9/16.5 ms to 16.6/16.5/16.6/16.6 ms; p95 intervals were 19.0/22.7/23.5/21.7 ms before and 18.9/19.7/19.0/18.2 ms after. Exterior preparation was 28.1 seconds before and 28.0 after. These short local samples show no significant regression; they are not a cross-device FPS guarantee.
+
+Reproduce the matched captures and navigation checks with `node scripts/launch.cjs --exploration --world-war --smoke-test --caricas-polish-checks`; use `--profile-before` on the baseline revision. Results are `tests/artifacts/caricas-before.json` and `caricas-after.json`, alongside four paired screenshots. Visually checked all four views and refined the pavement after spotting ground protrusions. Native walking/riding and prop collision passed; all eighteen civilian conversations, the three shelter/return routes, the opening duel, allied assault, Save/Continue and Reaper recovery also passed. The prepared lookout asset is regenerated from the same regional builders so its Caricas architecture stays consistent.
+
+The long-distance visual pass also replaced the old full-depth corner-timber slabs with four real posts per building: the hidden slabs were nearly coplanar with the plaster and caused broad striped walls at tower-view distances. The offline optimizer retains the town's small architecture batch exactly to protect thin shutters and trim. The rebuilt panorama keeps 3,891 batches and adds 69,439 compressed bytes over the previous asset. The river capture was visually rechecked after this correction; the walls are clean. All five scenery/clearance tests and all five prepared-landscape tests pass, including exact preservation of the layered architecture and a current public-source fingerprint. The native panorama assertions reported no frame errors; one PowerShell-hosted run emitted Electron's existing GPU shutdown warning after writing the successful results.
+The final direct native run exited with code 0 and no renderer-frame errors; the GPU message occurs during shutdown after successful assertions and capture.
+
+### Lizeem countryside and northern terrain follow-up (11 October 2026)
+
+Caricas now has a continuous mitered street that widens into its grain court, with matching paving and connected door approaches. The surface is clipped to the triangles of the displayed terrain instead of sampling only the analytic heightfield: this removes the exposed ground that made the earlier road appear broken. The same draping is used for Nethereum, Nesdor, Ovesos and Isareos country paths and yards, and Yunethre's connected tracks. Footing on these routes follows the displayed surface; existing bridge, promenade, levee and canal supports retain priority.
+
+Twenty-one static fields extend the five Lizeem regions' existing agriculture, with two smaller settled plots at Laketown. Nethereum and Isareos emphasize pasture and hay, Caricas and Nesdor cereal strips and rotation, and Ovesos irrigated grain. Their ground, sparse crop blades and broken boundary hedges are merged into one unshadowed batch per region: six batches altogether. They add no crop simulation, NPCs, textures or save state. The existing playable farm beds remain intact. Field placement excludes roads, water, authored buildings and working farm infrastructure. The review also cleared random trees from Nesdor's lanes and authored coppice.
+
+The main Lizeem is now approximately 32–72 metres wide, while tributaries retain their smaller widths. Authored local constrictions preserve the Velsorten intake and Enbilulu's original bank-side position; the lower reach narrows to the existing 38-metre harbor channel at Nylon. Water, terrain, map widths and coarse river bounds use the same profile. Walking and riding across the White Bridge, ordinary/developer horse swimming, returning to dry land and safe dismounts passed in the native game.
+
+Yunethre retains its existing town, centaur camp, lake approach, wildlife and quest scope. Its common has joined paths, buildings face the common, and modest window/eave details use the existing architecture batch. Meneth, Vastos and West Lotharn are terrain-only refinements: meadow/woodland variation follows Meneth's ridges, Vastos distinguishes dry heath from damp hollows and mineral ground, and Lotharn gains varied limestone, scree, weathering and lichen. These last three changes bake vertex colours into existing ground and add no terrain triangles, rendering batches, characters or infrastructure.
+
+Focused model checks cover draped surfaces, field budgets, river hierarchy, town and farm clearance, Yunethre routes/wildlife, Minora and Nylon crossings, and West Lotharn's shared ground loading. Native captures are under `tests/artifacts/countryside-after-*` and `frontier-after-*`; repeat with `--countryside-polish-checks` in world-war mode or `--frontier-terrain-checks` in exploration mode. The broad farm audit also found two Ambron allotment-clearance failures outside this regional pass; those remain open rather than being hidden by narrowing assertions.
+
+The final five countryside views used 171/228/125/396/211 draw calls versus 170/226/124/402/210 in the earlier captures. Current median frame intervals were 18.5/19.1/17.7/23.4/19.2 ms, with exterior preparation at 29.4 seconds on this PC. Earlier timing samples overlapped other verification work, so they are not a controlled timing comparison. Draw counts and static batch budgets provide the firmer evidence that this pass adds little rendering work. General exploration still has substantial existing region-preparation costs; this is visual polish, not a loading-system optimization.
+
+The tower's prepared landscape was rebuilt from the updated regional builders. It contains 3,890 batches and 11,772,324 triangles; the compressed geometry is 24,437,210 bytes, about 101 KB larger than before this follow-up. It continues to load independently of the walkable surrounding world.
+
+Final native frontier checks passed at Laketown, the centaur camp, Meneth, Vastos and West Lotharn, including player-camera and aerial captures of the last three. Player-camera medians were 18.5/20.6/19.3 ms respectively. The high Lotharn aerial camera still measured 67.7 ms (the earlier baseline was approximately 66 ms), despite identical draw and triangle counts; that broader exploration-view bottleneck remains. The opening champion duel, default allied assault, withdrawal, Save/Continue, death and retry passed on the revised Caricas surface. The prepared-landscape model tests and its public-source fingerprint also passed, as did source-layout and module-link checks.
+
+The final isolated lookout run opened in 7.84 seconds, exited successfully and recorded no renderer-frame errors. River, Ambron and northern views were visually inspected after rebuilding: the widened Lizeem, farms and changed ground palettes are present in the real regional scenery. River/Ambron/Pyra medians were 33.3 ms; the dense northern view remains heavier at 66.6 ms. These are local current measurements, not claims of a performance improvement. Electron emitted its known GPU-process shutdown warning after the successful capture and assertions.
+
+### Five-region settlement finish and battle dome (11 October 2026)
+
+The five-region review uses Minora and Caricas as the reference finish. Nethereum's reed-roof houses now have readable timber frames, shutters, herb boxes, sheltered doors and finished gables. Nesdor's farmsteads and Counted Water inn gain framed windows, roof details, door fittings and an edged common. Ovesos keeps its limewash and working watermills, with shaded doorways, teal shutters, masonry corners and a coordinated square. Isareos's cheese-maker hamlet retains drystone, natural timber and turf-pinned thatch with clearer openings and detailing. These additions reuse each settlement's existing static scenery batches. Building footprints, residents, farm interactions, roads and navigation colliders are unchanged.
+
+`lizeem-settlement-detail.js` supplies the shared construction details and regional palettes. Recessed glass and small fittings omit buried faces; projecting frames, sills and roof timbers retain depth. The common surfaces follow the displayed terrain and remain clear for riding and combat. The lookout exporter preserves the layered architectural batches so simplification cannot move their closely spaced surfaces through one another.
+
+The active battlefield exclusion veil is now a closed charcoal dome, with a 70-metre ground radius and a crown at least 42 metres above its centre. Its rim follows loaded ground or water. The single outward-facing transparent mesh avoids doubled opacity; the ground ribbon and gold pennants still identify the opt-in boundary. It uses 2,208 triangles and the same four rendering objects as the former open wall. Combat hides the entire boundary display, and resolving a battle removes it. Entry, refusal and travel constraints retain the existing rules.
+
+Repeat native visual checks with `--settlement-quality-checks` (add `--profile-before` for a baseline) and `--battlefield-checks`, using exploration/world-war smoke-test mode. Comparable ground and overview captures and rendering counts are written under `tests/artifacts/settlement-*`; the dome flight and ground captures are `battlefield-dome-flight.png` and `battlefield-dome-ground.png`.
+
+The final ten settlement captures retained identical draw counts. Triangle increases were 0% in the two reference views, 0.50–1.31% in Nethereum, 0.78–0.98% in Nesdor, 1.32–1.96% in Ovesos, and 0.61% in the Isareos hamlet. No additional textures, dynamic lights or scenery-update loops were introduced. Nethereum remains below its existing 60,000-vertex fixture budget after removing hidden faces. Local timing varied with other PC activity, so these counts are stronger evidence than the measured frame intervals for estimating cost.
+
+All four affected farm/hamlet model suites pass, including actor stands, road clearance, working infrastructure and scenery batch budgets. The dome tests check sloping ground, rays hitting the closed roof, a bounded triangle count, geometry reuse, hiding during combat and removal at resolution. The final native battlefield run passed all 26 checks: dragon view, walking/riding entry, refusal, re-entry, partial withdrawal, Save/Continue, both combat phases and immediate resolution, with no renderer errors and exit code zero. The rehearsal now restores test-window focus after frame yields; an earlier run had paused when another window stole focus. This changes only the automated check, not combat behavior.
+
+The rebuilt lookout keeps 3,890 spatial batches, with 11,808,502 triangles and 24,644,313 compressed geometry bytes: 36,178 triangles and 207,103 bytes above the previous prepared landscape. Its fingerprint matches the current public regional sources.
+
+The five prepared-landscape model tests pass. The final native panorama run opened in 11.2 seconds, exited zero and recorded no renderer errors; the river capture was visually inspected for the updated rural buildings and clean architecture. River/Pyra frame medians were about 33 ms, Ambron 50 ms and the dense northern view 83 ms on this run. These distant views remain an existing performance limitation, separate from the small settlement-detail increase. Source layout, module linking and whitespace checks also pass. This revision is local; no commit or push was made.
+
+### Irregular Lizeem banks and named lookout actions (11 October 2026)
+
+The Lizeem now softens the repeated atlas hex bends into unequal sweeps, with smoothly varying broad and narrow reaches. This reshapes the actual shared river course before terrain, water, scenery and local-map construction; the lookout uses a fresh export of that same world. The existing atlas corridor, White Bridge, four tributary connections, Velsorten intake and warden's bank are retained. Tributaries keep their smaller courses and widths, and Nylon's harbor retains its established channel. The shape is calculated once during construction, with no new per-frame simulation or effects.
+
+Taleth's forward actions name the next subject or country: reviewing the player's impact, beginning the tour toward Ambron, then the southern countries, Pyros, Ibenwood, Yunethre/Laketown and West Lotharn. Campaign completion and finishing the optional tour remain distinct actions. Dialogue, ordering and saved campaign state are unchanged by this copy pass.
+
+All 39 focused model checks pass across river continuity/confluences, regional polish, Ovesos's working canal, Minora's crossings, panorama views and the prepared landscape. Native countryside checks pass for walking/riding across the White Bridge, horse swimming, safe dismounts and settlement navigation. The regenerated landscape fingerprint matches its sources. It contains 3,891 batches, 1,249 geometry resources and 11,810,342 triangles; compressed geometry is 24,649,388 bytes. Against the preceding revision this adds one batch, 1,840 triangles (about 0.016%) and 5,075 download bytes, with no increase in geometry-resource count.
+
+Visually checked the closer river bank, Taleth's first-person river panorama and the Ambron dialogue's named next action. Comparable tower captures are `tests/artifacts/lizeem-river-before.png` and `tests/artifacts/lookout-tour-river.png`; the updated Ambron action is visible in `tests/artifacts/lookout-tour-ambron.png`.
+
+The complete native lookout tour also passes with no recorded renderer/frame errors and exit code 0: all destination labels, forward/back navigation, interruption/resumption, map scope, campaign completion, Save/Continue and reachable controls at 1024x600 and 390x844. The host emitted its existing GPU shutdown warning after the successful checks and captures. Source layout and module linking pass. Changes remain local; no commit or push was made.
+
+
+### Army commanders (12 October 2026)
+
+New Lizeemi War campaigns use `lizeem-world-v10`. Captain Meret Voss leads the Ovesos Free Company from Nethereum; Captain Serevan Dain leads the Nesdor River Guard stationed at Caricas. The opening attack on day three includes both armies, so either allegiance can test its opposing commander immediately. Dain's initial 24 soldiers are drawn from the existing Caricas garrison. Other armies do not inherit either captain. Voss has a broad silhouette, copper hair, green armor, cream mantle and oak badge; Dain is taller and leaner, with red and ivory dress, a crested bronze-trimmed helmet and sun clasp. Both retain the animated sword-and-shield rig.
+
+A captain belongs to one persistent army ID. Winning an opening duel routes that army's captain and two ordinary guards; choosing interception instead leaves the captain in the combined final assault. Losing or yielding the duel also leaves that captain in command. The final victory cannot be recorded while an opposing captain remains active. Combined formations add at most one captain per side to the bounded existing soldiers. A captain has 200 health and may rout when wounded and isolated. Slaying or routing a captain shifts morale by -20/+20 across the two sides; a failed duel shifts it by -10/+10 against the player. Local losses also reduce morale and can produce a rout. Campaign morale affects ordinary unresolved battle odds; a completed final assault remains decisive.
+
+Withdrawal preserves captain health and fate. Routed captains can recover with a surviving army after the battle; slain captains never respawn in another levy, and captains whose army is destroyed are captured. These facts appear in army information, battle results, Corris's reports and the Chronoscope. Saves replay the actual commander reports and validate identity, health, casualties and morale; Reaper retries restore the preceding checkpoint. Existing v3-v9 saves retain their original scenario rules, so start a new campaign to use army commanders.
+
+Validation: 168 model checks cover both factions, real combat inputs, required commander defeat, declining, withdrawal, morale, casualty conservation, replay, death, and complete intervened/unattended campaigns. Additional campaign continuity, pacing, history, soldier conversation and correspondence checks pass. `--champion-duel-checks` passes native duels, combined West/East assaults, Save/Continue, death and retry with no recorded frame errors. Source layout and module linking pass. New geometry is limited to the two captain rigs; this pass does not create full armies or introduce world-scale AI. No comparative frame-time benchmark was performed.
+
+
+### Full-war adventure clock
+
+New playable Lizeemi War campaigns now use elapsed adventure time through both
+factions' victory paths. See [adventure clock](../shared-clock-opening.md) for
+pause rules, dawn departure, waiting forecasts, save compatibility and native
+checks. The campaign core still uses integer strategic order ticks; the elapsed
+adapter presents one tick per minute and settles played battles without skipping
+time for other armies. Existing saved campaigns and older autoplay rehearsals
+keep their original timing; the temporary Caricas-only clock rehearsal remains
+available separately.
+
+
+## Matched combat swing experiment (21 October 2026)
+
+Standalone Combat Testing defaults to **Matched swing speed**, with **Previous
+slower tempo** available in the exercise menu for comparison. Campaign encounters
+and Taleth's training keep their existing timing pending player feedback. The
+selection carries through retries and allied/solo comparisons without reloading
+the camp or writing campaign saves.
+
+`gameplay/combat/encounter-timing.js` owns the shared player clock. The matched
+profile in `encounter-attacks.js` uses 0.10 seconds of preparation followed by
+0.25 seconds of striking, with first contact at 0.15 seconds: the same contact
+and 0.35-second motion as Teresod. Previous NPC contact was 0.97 seconds for a
+thrust, 1.20 for a sweep and 1.48 for an overhead. Guards, captains and allied
+soldiers use the selected profile; animation, damage timing, warning fill and
+counter cues all read that profile. Reach and damage are unchanged.
+
+Recovery is deliberately separate: 0.65 seconds versus the previous
+1.15-1.65 seconds. An initial full-cooldown match gave NPCs only 0.20 seconds of
+recovery; the ordinary dodge/counter controller could evade one soldier for 90
+seconds but could not return to staff range in time to counter. That version was
+rejected. The player's dodge and damage grace are unchanged; a perfectly timed
+dodge now covers the faster sweep's entire active window, so directional attack
+differences need further human playtesting alongside reaction difficulty.
+
+Validation: 76 focused model tests passed, including timing equality, warnings,
+animation, actual dodge/counter victories, allied/captain timing, collision and
+classic campaign/training regressions. Layout and module linking passed. The
+native check completed all five exercises at both speeds with ordinary automated
+movement/attack inputs, verified retries, cue disposal and save isolation, and
+recorded no renderer/frame errors. In that run, the solo assault ended at 20
+health with matched speed versus 80 with classic; the allied assault ended at
+80 versus 100, with two allied casualties versus none. Warning, counter and menu
+captures were visually reviewed. These are automated comparisons, not human
+playtest results.
+
+`node scripts/analyze-combat-tempo.mjs` runs 40 deterministic flat-ground trials
+across five fixtures, both tempos and four control policies. The immediate
+dodge/counter controller won every matched fixture; a reactive controller with
+150 milliseconds of added observation delay lost all five. This flags the very
+short reaction window without ruling out anticipatory human play. Run the native
+comparison with `node scripts/launch.cjs --exploration --combat-testing
+--smoke-test --internal-review --combat-tempo-checks`. Results and captures use
+`tests/artifacts/combat-tempo-*`. Start a manual demo with **Dodge and counter**,
+then compare **Thrust and sweep**, **Allied assault** and **Solo assault** before
+adopting the experiment in the campaign.
+
+## One-on-one creature trials (21 October 2026)
+
+Combat Testing now features **One-on-one trials**: a small bramble goblin, a grey
+wolf, then a road bandit. The five earlier guard exercises and their tempo selector
+remain available under a collapsed section. Each trial has one opponent, a paused
+briefing and full starting health. Winning advances only on Continue; R retries
+the current round while retaining earlier results. Exit restores the practice
+session, and no campaign save or army outcome is written.
+
+`gameplay/combat/combat-trials.js` owns the opponent profiles, consumed by the
+existing encounter model and warning/animation controllers. The goblin has a
+slow stick jab, 50 health and no guard. The wolf has 75 health and a faster pounce
+that travels 1.15 metres along its committed heading through existing swept
+collision; its warning includes that travel. The 100-health bandit parries and
+alternates cuts, sweeps and overheads. All retain visible preparation and recovery
+windows. These timings are independent of the preserved guard-speed experiment.
+The renderer reuses articulated goblin/wolf assets and a sword-carrying mercenary;
+only one opponent is created at a time. Retries and rounds reuse the prepared arena.
+
+The three trials now take place in **Taleth's Stillroom**, the Spirit and Time
+chamber, using the same mist field and return pavilion as tower training.
+`app/exploration/combat-practice-world.js` selects the arena before construction:
+starting trials builds no Minora terrain or city scenery. The older guard
+exercises still load their camp on demand. Cached arenas share the host's
+renderer; switching restores the selected atmosphere, lights, ground and
+collision queries. All rounds face the opponent toward the distant pavilion.
+The chamber remains three static scenery draws, with no extra particle system,
+world population or campaign clock. This changes the practice venue, not the
+campaign's separate Taleth lesson flow or trial balance.
+
+Arena regression coverage checks pavilion collision at the translated floor,
+guard/trial switching, retries without rebuilding, and initial facing. The
+native `--combat-trials-checks` run starts directly in the Stillroom and captures
+its overview as `tests/artifacts/combat-trials-room.png`.
+
+Validation: 75 focused combat, practice, collision and training tests passed,
+alongside layout and module-link checks. The isolated native run completed all
+three rounds with ordinary movement/attack inputs, checked defeat and a wolf-round
+retry, paused briefings/results, actor disposal, save isolation and both old guard
+tempos, with no renderer errors. Opponent and result/menu captures were visually
+reviewed. Run `node scripts/launch.cjs --exploration --combat-testing --smoke-test
+--internal-review --combat-trials-checks`; results and screenshots use
+`tests/artifacts/combat-trials-*`.
+
+In flat-ground model comparisons, holding attack won against the goblin with 100
+health, beat the wolf with 66, and lost to the bandit's defense. The dodge/counter
+controller could beat all three. This is evidence for an initial progression,
+not a human difficulty or enjoyment assessment; player feedback should guide
+the next tuning pass.
+
+### Combat attributes and trial tuning (21 October 2026)
+
+`gameplay/combat/combat-stats.js` provides validated, immutable encounter
+attributes. Teresod starts at 10 in each attribute. The initial supported range
+is 1-20; fractional creature ratings are allowed. These are combat tuning values,
+not settled lore, experience levels or a save format.
+
+| Attribute | Effect |
+| --- | --- |
+| Vitality | Maximum health is 10 times the rating, rounded to an integer. |
+| Power | Base melee damage is multiplied by rating / 10, rounded with a minimum of 1. |
+| Quickness | Attack rate is `1 + 0.04 * (rating - 10)`; attack durations are divided by this rate. |
+| Mobility | Normal combat movement is rating * 0.4 metres/second; moving during a staff swing is 70% of this. |
+
+Weapon/move definitions still own base damage, reach, attack shape, preparation,
+contact and recovery. Teresod's current weapon is the 25-damage staff. Quickness
+scales the player's swing, contact and attack cooldown; it scales NPC windup,
+strike, contact, active window and recovery together. The model resolves profiles
+once when an encounter starts, and animation and warning progress consume those
+same resolved profiles. `encounterHeroPose` is shared by world encounters, the
+map-only fight and tower training. Dodge distance, invulnerability, damage grace
+and spell damage retain their separate rules.
+
+Trial opponents now derive health, melee damage and movement from their ratings:
+the goblin has Vitality 5, Power 5 and Mobility 4.5; the wolf has 7.5, 8.5 and 8.5;
+the bandit has 10, 10 and 6.75. Quickness starts at 10 for each: their different
+base moves preserve the previous three-round tuning exactly. `heroAttributes`
+and trial-only `opponentAttributes` provide explicit encounter configuration.
+Unmodified guards, allied units and their classic/matched timing remain intact.
+
+The trial card's **Teresod's practice stats** section previews calculated health,
+damage, movement, swing/contact and repeat timing. It validates input before
+starting, captures the settings once for all rounds/retries, and can restore the
+starting ratings. Briefings offer a collapsed comparison with the opponent;
+enemy damage and first-hit time describe its opening move. Health meters, damage
+feedback and round reports use actual resolved values. Practice settings last
+only in the current menu session and do not alter campaign characters or guards.
+
+Validation: 81 focused tests pass, including actual contact/repeat timing at low
+and high Quickness, matching animations/warnings, wolf lunge collision and single
+hits at multiple step sizes, damage/health/movement, invalid input and immutable
+round settings. The native trial check runs the default three rounds, then a
+custom 150-health, 30-damage, Quickness-15, Mobility-12 run. It checks UI validation,
+briefing values, real damage, retry/round continuity, result denominators, reset,
+guard isolation and renderer errors. Both runs passed, and the controls and
+comparison captures were visually reviewed. Layout and module-link checks pass.
+
+## Universal marching columns and roadside interception (13 October 2026)
+
+`war-columns.js` projects every living marching or retreating army from its actual order, including replacement armies and later journeys. `war-column-routes.js` caches routes over dry ground and the authored shallow fords in the active world; `war-columns-view.js` draws a bounded nearby sample. The map, minimap, tracking arrow and physical standard use the same point. Distant armies do not run soldier combat AI. Ordinary regional battle resolution remains authoritative.
+
+Minora grants neither league military passage. `war-column-access.js` excludes
+its authored city outline plus a six-metre wall buffer from route searches,
+straightened segments, standards and individual soldier placement. Cross-river
+columns use the Nethereum–Caricas and Ovesos–Nesdor stone bridges south of
+Minora. The upstream Isa gravel crossing remains for outside Isareos access,
+not for league-to-league marches. Isareos uses an outside assembly point. Player access through
+the city gates and bridges is unchanged. Routes are rebuilt from saved orders,
+so existing campaigns receive the restriction without changing their army IDs,
+strength, supplies or arrival times. While a route is being calculated, navigation
+uses its permitted assembly point rather than a straight line through Minora;
+that temporary position cannot spawn troops or start an interception.
+
+The focused native check is
+`npm run test:unified-war:desktop -- --unified-war-minora`. It passed 135 assertions
+with no renderer errors, checking all fourteen route directions over 14,822
+samples of the loaded scenery, the opening West column at 02:34, a later East
+march and retreat, marker/actor agreement, pending assemblies and Save/Continue.
+Artifacts use `tests/artifacts/unified-war-minora-*`. Route, access and related
+column model checks also pass. These checks predate the two southern bridges;
+the bridge routes retain existing arrival times, strengths and supply rules, and
+the route cache and three-millisecond planning budget remain in use.
+
+The shared crossing definitions and batched scenery live in
+`content/regions/minora-frontier/lizeem-crossings*.js`. Both the reviewed
+food-world countryside and ordinary exploration use their deck profiles, roads
+and minimap spans. Approach clearance reserves existing fields without altering
+their production budgets. The Nethereum riverside granary is set back from the
+new parapet. Open arches preserve the existing trading-barge circuit. Route
+sampling includes a clearance margin so smoothing cannot clip building corners
+between probes. Run `node scripts/launch.cjs --exploration --food-world
+--smoke-test --internal-review --lizeem-bridge-checks` (or replace `--food-world`
+with `--world-war`) for actual scenery routes, foot/horse crossings in both
+directions, later marches, retreats and marker alignment. Artifacts use
+`tests/artifacts/food-lizeem-bridges-*` and `world-lizeem-bridges-*`.
+
+Farm clearance (21 October 2026): Caricas's northern grain parcel overlapped
+the White Bridge's eastern end. Its new-crossing mask did not include Minora's
+older bridges, and soil patches ignored road clearance entirely. All five
+reviewed layouts now carry `lizeem-agriculture-reservations.js`, combining the
+city's bridges and approaches, the southern crossings, timber decks and quays.
+The shared field builder checks whole crop footprints and cuts soil/stripes
+around reserved corridors; hedges, sheep and fences use footprint clearance too.
+Crossing bounds are derived from full road widths rather than fixed coordinates.
+This is build-time presentation only: food capacity and campaign saves are
+unchanged, with the same merged mesh batches and no per-frame clearance work.
+`tests/agriculture-clearance.test.js` checks actual triangles against bridge and
+road footprints in all five regions, plus additional diagonal reservations on
+flat and draped ground. Run `node scripts/launch.cjs --exploration --food-world
+--smoke-test --internal-review --farm-clearance-checks` for native mesh checks
+and White Bridge / southern crossing captures under `tests/artifacts/farm-clearance-*`.
+
+Living farm sheep (21 October 2026): the reviewed farm builder previously baked
+sheep into static scenery, so their grazing poses never changed and they had no
+collision bodies. The shared builder now returns a livestock controller which
+both the campaign countryside and farmland review update. Keep future livestock
+in this life system, not in the field's static geometry. The 102 sheep use three
+instanced batches per pasture (body, head, legs), sharing geometry within each
+region. Nearby flocks graze and walk at 20 updates/second, more distant flocks at
+5, and flocks beyond 140 metres sleep. Pausing or hiding the world stops updates
+without catching up later. Hooves follow terrain; movement respects pasture
+edges, water, slope, roads, bridges, buildings, fences and nearby actors.
+
+Two moving collision circles protect each sheep for both foot and mounted
+movement. They are queried at their current positions, separately from the
+static spatial buckets, so wandering cannot leave stale collision behind.
+World collider rebuilds also refresh the flock's obstacle index. Disposal
+removes the owned bodies and instance buffers. These ambient animals do not
+change food production, campaign timing or saves. Regression coverage in
+`tests/agriculture-livestock.test.js` checks animation, all five regional
+builders, swept foot/horse collision, terrain grounding, pasture constraints,
+sleeping and disposal. Run `node scripts/launch.cjs --exploration --food-world
+--smoke-test --internal-review --livestock-checks` for the actual Caricas flock,
+held movement, moving collision queries and pause/resume checks. Captures and
+results are in `tests/artifacts/livestock-*`.
+
+Bridge validation (21 October 2026): 56 focused model/geometry checks passed,
+including both route directions, trade-barge arch clearance, farm capacity and
+campaign continuity. Both native world layouts passed all seven physical routes,
+foot and mounted crossings at both bridges, opening/later marches, retreat,
+marker agreement and Save/Continue with no recorded renderer/frame errors.
+Bridge overview captures were visually inspected. Module linking and source
+layout checks passed. The crossings add two static mesh batches; no comparative
+frame-time benchmark was performed.
+
+Approaching an enemy marching column within 14 metres offers a roadside encounter for the player's chosen campaign side. Declining changes nothing and suppresses automatic reopening until the hero leaves 22 metres and returns. Friendly and retreating columns are visible but cannot be attacked in this first pass. Wading columns remain visible at the existing shallow fords; interception opens again once they reach a dry bank. Deep rivers still require an actual bridge. Mounted approaches use the normal safe dismount before fighting.
+
+`simulation/roadside-interception.js` owns the replayable `intercept-army` command. The local allied fight uses up to three regular opponents and the army's actual active commander. Up to two scouts are borrowed from an eligible friendly garrison; their losses are charged there. Killed regulars remove a proportional share of at most 12 army strength, with retreats accounted separately. Success delays surviving troops one strategic tick (one adventure minute in the shared-clock campaign). A started fight consumes the opportunity for that order; a subsequent new march is eligible again. Neither joining nor resolving skips the campaign clock or changes territorial ownership. Commander wounds, fate and morale persist into the destination battle. A fractional progress anchor prevents a delayed column from jumping backward.
+
+The standard encounter adapter handles input, result confirmation and afterlife retry. `roadside-contact.js` owns proximity debounce; `roadside-presentation.js` explains the local objective. The result is retained in Taleth's messages, live war reports and the Chronoscope. Runtime checks are in `dev/checks/marching-columns-smoke.js`, launched with `node scripts/launch.cjs --exploration --food-world --smoke-test --internal-review --marching-column-checks`. The `--columns-only` variant checks presentation without combat.
+
+Simultaneous orders on the same route retain stable convoy slots from their historical order snapshots. Their standards are spaced by up to 32 metres, compressing only on the final approach. Removing, settling or culling another force cannot reshuffle a surviving column. The renderer limits nearby columns to three, with 24 pooled ordinary soldiers and two reused commander rigs. Route construction yields between search steps using a soft three-millisecond budget and caches the resulting paths; soldiers do not run separate pathfinding.
+
+Validation: the focused campaign regression suite passed 144 checks before the final convoy polish; the final column/contact/interception subset passed all 22 checks afterward. Actual-terrain tests cover all seven campaign links in both directions in both ordinary and food-world layouts. Source layout and module linking pass. The full isolated food-world native run passed 232 assertions, covering opening and later armies of both sides, replacements, retreats, fractional movement, pause, marker alignment, Save/Continue, friendly approach, foot and horse interception, decline/re-entry, combat and results. A focused follow-up passed 105 assertions for the day-26 three-army retreat convoy, another later-East view and the completed interception result. Both native runs recorded zero renderer/frame errors. Reports and screenshots are in `tests/artifacts/food-world-marching*`. Rendering counts verify bounded actor use; no controlled before/after frame-time comparison was performed. An unrelated legacy `held-battles.test.js` source scan still fails against `src/main.js`; the full repository suite is not claimed clean.
+
+
+### Representative Caricas countryside (22 October 2026)
+
+The reviewed campaign now treats Caricas as an authored place rather than a
+visible census. Its three farmsteads contain ten separated parcels and six farm
+buildings; the river town contains twelve buildings around an open market.
+Population (1,265), housing capacity (1,600), full production (170/day), stores,
+trade, recruitment and shortages retain their existing campaign values.
+`lizeem-food.js` reads Caricas's economic targets directly, with no dependency
+on its building or parcel arrays. No campaign version or save migration is needed.
+
+The town's council/market hall, public granary, watch house, inn, toolsmith,
+stable and quay warehouse have named purposes and distinct physical details.
+Five town households complete the layout. These are scenery roles, not new
+production multipliers or enterable interiors. Existing residents occupy the
+corresponding workplaces through `caricas-resident-placements.js`; the ordinary
+legacy countryside retains its own placements. A graded market terrace connects
+building pads, and the eastern bridge approach meets the bridge at its end.
+The local map uses the same paths and building colliders as the physical town.
+
+Fields, homes and ambient people are representative. Regional crop-condition
+feedback still updates existing mesh buffers as war or shortages affect output.
+It does not claim that a particular parcel supplies a particular number of people.
+`agriculture-land-use.js` reserves building footprints, entrance aprons, farmyards
+and market squares from soil, crops, hedges and livestock; shared road and bridge
+reservations still apply across all five reviewed regions. Decorative civic props
+are one merged static batch, with solid well, tree trunks, anvil and hitching rails.
+
+This is the Caricas pilot, not a redesign of all settlements or the legacy Explore
+layout. Model coverage includes layout/collision, actual planted triangles,
+economic independence from scenery counts, unchanged campaign replay and graded
+terrain. Run `node scripts/launch.cjs --exploration --world-war --smoke-test
+--internal-review --caricas-redesign-checks` for a real new-game journey, Caricas
+entrances and mounted lanes, residents, bridge, Save/Continue, map report and
+opening combat. Standalone visual review: `node scripts/launch.cjs
+--farmland-review --smoke-test --polish-review --region=caricas`.
+
+Validation: 95 distinct focused model checks passed across the economy,
+clearance, livestock, neighboring layouts, opening battles and army routing.
+An obsolete Ovesos assertion ranking its house count against Caricas was removed;
+regional population and economic assertions remain. The isolated native campaign
+and final standalone visual review completed with no recorded renderer errors.
+All authored Caricas lanes support the horse collision radius, each building
+entrance is accessible, the three threatened townspeople retain valid shelter
+routes, and the opening interception stages clear of buildings. Final town,
+bridge, map and combat captures were inspected. Source layout and module linking
+passed. The standalone final view used 28 draw calls; this is a bounded-rendering
+check, not a controlled before/after performance benchmark.
+
+## Direct battlefield entry (22 October 2026)
+
+Fresh battlefield invitations default to **Join battle**: one continuous allied
+fight followed by its campaign result. Reinforcement interception is no longer a
+fresh battlefield-menu option; approaching a hostile marching column still uses
+the existing roadside interception. An optional champion challenge appears only
+when the opposing army has an active commander. The larger field battle follows
+an accepted duel, with the same recorded surrender and morale effects.
+
+`simulation/field-battle.js` derives local formations from committed army strength,
+capped at twelve regular soldiers per side plus one active commander. The combat
+model allows that larger bound only for field battles, using compact ranks on
+clear terrain and a three-minute combat limit. Existing small encounters retain
+their limits. Caricas currently stages thirteen opponents and eleven allies;
+Ovesos stages nine opponents and seven allies for the eastern attack.
+
+A replayable `field-battle` command commits the player's side and skips the old
+interception stage without inventing casualties or advancing time. The existing
+assault accounting records the battle, commander fates, allied losses and routs.
+Withdrawal and re-entry preserve those values. Old command histories and partially
+played interceptions keep their original progression. Briefings, result receipts,
+time notices, live directives and reports distinguish direct battles from those
+legacy encounters. No scenario definitions or old saved command histories change.
+
+Validation: 94 focused model checks passed, including both leagues at both opening
+fronts, real combat results, save/replay, withdrawal and re-entry, optional duels,
+commander availability, roadside contact and older two-stage histories. Source
+layout and module linking passed. The hidden native `--field-battle-checks` pass
+completed eight stages with no renderer errors, including normal-input victories
+in Caricas and Ovesos, Save/Continue, chosen allegiance and the optional duel.
+Artifacts are `tests/artifacts/field-battle-*.png` and `field-battle-checks.json`.
+An additional, unrelated `held-battles.test.js` source audit still reports an
+authored level in the existing `src/main.js`; this pass does not alter that host.
+
+### Minora harbor and Lizeem passage
+
+The reviewed campaign countryside has a small passenger harbor beside the south
+edge of Minora's White Bridge. Its gangway, walking height and parapet opening
+share the dimensions in `content/regions/minora-frontier/minora-harbor.js`.
+`minora-harbor-scenery.js` builds the timber landing and covered boat; the existing
+river traffic steers clear of the mooring. An anchor marks each nearby passenger
+landing on the minimap. Taleth and the opening directives mention this route.
+
+`lizeem-passages.js` defines Minora and the existing quays at Nethereum, Caricas,
+Ovesos and Nesdor. `app/exploration/harbor-host.js` supplies a nearby boatkeeper,
+third-person conversation and free downstream passage. `river-passage.js` follows
+the real river channel, including clearance through the bridge arches. Teresod
+and his owned horse ride the visible boat; its canopy is furled for the bridges.
+Upstream destinations are absent. A checked option includes a
+guide to an active battle's approach; the destination must be dry, clear, outside
+the battlefield and have a walkable path into its boundary. Combat is never
+accepted automatically. The horse unloads on safe ground nearby and stays owned.
+
+Dialogue and corridor loading hold time. Sailing explicitly advances campaign
+time at normal speed; Skip voyage pays exactly the remaining duration through
+the same simulation ticks. A voyage can be paused, and the prior campaign pause
+preference is retained after landing. The guide checks for a surviving battle
+after arrival, since the field can end while traveling. Loading failure keeps
+the player at departure; overlapping passage requests are ignored. Saving is
+unavailable aboard. No campaign economy or save format changes. The service is
+enabled in the reviewed five-region countryside; older legacy scenery retains
+its original travel systems.
+
+Checks: `tests/harbor.test.js`, the existing city/river tests, and
+`node scripts/launch.cjs --exploration --world-war --smoke-test --internal-review --harbor-checks`.
+
+`river-navigation.js` shares the actual quay and berth envelopes between ambient
+traffic and passenger routes. Passenger trips begin and end alongside a quay,
+align before approaching it, slow for tight bends, and include cast-off and
+mooring time. Skipping uses that same duration. The arrived vessel stays moored
+with its crew aboard after Teresod and his horse unload. Low-poly crews row,
+steer and keep watch; oars are shipped around quays and bridges. Crew animation
+is throttled at distance and sleeps with hidden regional scenery.
+
+Passenger boarding also reserves the river against moving trading barges.
+`river-traffic-reservation.js` checks bounded pull-off maneuvers and holding
+positions against the entire passenger route. Traders clear the route while
+the passenger waits at the berth, then return continuously before resuming
+their shared traffic phase. `river-traffic-service.js` owns this state per
+exploration scene, including a pending return before another voyage. Waiting
+is included in the displayed journey time and charged identically when watched
+or skipped; a failed safe-path search leaves the traveler ashore. Planning runs
+once during boarding, with no recurring route search in the rendering loop.
+
+`river-navigation.test.js`, `river-traffic-reservation.test.js`,
+`river-traffic-service.test.js` and `riverboat-crew.test.js` cover complete hull
+and oar clearance, moving traffic, all downstream port pairs, continuous return,
+watched/skipped clock equivalence and crew lifecycle. Native harbor checks also
+verify visible travel, retained moored boats and battles ending during passage.
+
+### Staggered opening and Taleth's recommendation
+
+New `lizeem-adventure-food-v3` campaigns open Caricas at Adventure 00:00 and
+Ovesos at 02:00. Earlier scenario versions retain their original replay rules.
+The eastern opening force marches from Nesdor, conserving its soldiers and
+supplies. The HUD gives one recommendation: unfinished commitments first, then
+the earliest battle deadline and proximity. A player-selected map target takes
+precedence until Follow Taleth is chosen again; this preference survives saving.
+An early victory at Caricas points toward the known Ovesos destination before
+the second battle begins. It does not reveal an unseen army's precise position.
+
+The optional War log records dated orders, battle outcomes, ownership changes,
+casualties and the player's actual interventions. Reading it holds time; closing
+it restores the previous view. Taleth's report no longer demands a conversation
+after each battle. `tests/opening-fronts.test.js`, `tests/war-log.test.js` and
+`--taleth-guidance-checks` cover the schedule, tracking, journal and save replay.
+
+Later battles remain simulated. Recovery, reattack limits, command reviews,
+recruitment, supplies and march distance can combine into a long lull. In an
+unattended new v3 campaign the third battle begins at Nesdor at 04:00, while a
+later recovery gap can last until 13:00. Played outcomes and older saves can
+produce different schedules; there is no universal ten-minute third battle.
+Possible further pacing work: show the next command/recovery time in Taleth's
+advice, offer a clear wait-to-next-development action, or make command reviews
+more frequent in this tutorial campaign. These are proposals, not new rules.
+
+
+### Riverbank planting and fixed farm scenery
+
+The reviewed countryside uses `lizeem-agriculture-trees.js` to place irregular
+riparian strips and sparse field-edge trees. Willows, alders, sycamores and
+poplars occupy wet margins; oaks, walnuts, hawthorns and orchard apples frame
+farms. Nesdor retains its denser authored woodland. Planting leaves regional
+population, agricultural capacity and housing values unchanged.
+
+Clearance uses each complete crown footprint, actual water channels (including
+side braids), crops, roads, buildings and door aprons, farmyard access, quays,
+bridge approaches, battle spaces and army marching corridors. The corridor
+constants are shared through `content/scenarios/lizeem-column-corridors.js`;
+their original route coordinates are unchanged. All rural placements have
+species identities, collision trunks and real visual handles for observation.
+The placement regression independently checks full canopy exclusions and
+retains Nesdor's previous geometry and woodland-density budgets.

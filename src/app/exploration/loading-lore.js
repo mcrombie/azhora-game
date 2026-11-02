@@ -5,8 +5,8 @@ export const WAR_LOADING_PASSAGES=[
   {title:'The Council of Three',text:`Taleth, Wizard Guild Master, governs Minora alongside Mayor ${MINORA_COUNCIL.mayor.name} and High Priest ${MINORA_COUNCIL.temple.name}. Three offices share one independent city.`},
   {title:'Divided loyalties',text:'The Mayor, an Ovesan, favors West Lizeem. The High Priest, from Nesdor, favors East. Taleth remains neutral, but does not forbid Teresod to intervene.'},
   {title:'The standard above the gate',text:'The highest central flag shows who leads Minora\u2019s council: the Guild star, the civic bridge, or the temple sun. Your intervention and the war\u2019s outcome can change its order.'},
-  {title:'Between moments',text:'Taleth\u2019s tower stands between dimensions. The Chronoscope shows the thirty days before the war; the vision cannot rewrite events you have already lived.'},
-  {title:'The guild’s pigeons',text:'Rock doves roost above the Wizard Guild. Their slate wings carry two dark bars; small message tubes bear Taleth’s counsel to Teresod in the field. He wants the war ended before greater troubles spend the people’s remaining strength.'},
+  {title:'Between moments',text:'Taleth is a time wizard. His entire tower, including the lookout, is a refuge where time stands still. Time resumes when you leave. The Chronoscope shows memories without changing the past.'},
+  {title:'A voice in your thoughts',text:'Taleth communicates telepathically. When there is news, choose Listen to Taleth or press V. Reading pauses time; closing the message resumes it, even while standing still. His advice is yours to accept or refuse.'},
 ];
 export function installLoadingLore(mode){
   const screen=document.getElementById('loading-screen');if(mode!=='war')return;

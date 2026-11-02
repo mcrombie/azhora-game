@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
 import { CANERD, CANERD_PATHS } from './canerd-world.js';
+import { createCanerdGardenSteps } from './canerd-garden.js';
 
 const OLD='#777466', STONE='#969184', LIGHT='#b4ad99', MORTAR='#66665c';
 const ASHLAR='#afa998', PALE='#c2bba7', SLATE='#46575b', SLATE_LIGHT='#627274';
@@ -359,6 +360,9 @@ export function* createCanerdScenerySteps({parent,heightAt,renderedGroundHeight=
   lineBlockers(lastA,lastB,.1,Math.min(ground(lastA.x,lastA.z),ground(lastB.x,lastB.z)),Math.max(ground(lastA.x,lastA.z),ground(lastB.x,lastB.z))+1.5,'paddock-rail');
   metrics.paddocks++;feature('canerd-fair-paddock','Canerd fair paddock',137,89,14,22,'paddock');yield* finish(fair);
 
+  const garden=yield* createCanerdGardenSteps({parent:root,heightAt:ground,colliders});
+  metrics.batches+=garden.metrics.batches;metrics.vertices+=garden.metrics.vertices;metrics.colliders+=garden.metrics.colliders;
+  mapFeatures.push(garden.mapFeature);
   root.userData.canerd={summitHeight:summit,highestTowerHeight:metrics.highestTowerHeight};
-  return {root,metrics,mapFeatures,walkSurfaces,walkRoutes};
+  return {root,metrics,mapFeatures,walkSurfaces,walkRoutes,garden,sacredOak:garden.sacredOak};
 }

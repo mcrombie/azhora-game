@@ -86,9 +86,14 @@ export function* createElagosScenerySteps({ parent, heightAt: groundAt, collider
   // Water: one mesh per lake and reach, on one cold northern shader
   // -------------------------------------------------------------------------
   const waterMaterial = new THREE.ShaderMaterial({
-    uniforms: { time: { value: 0 } }, side: THREE.DoubleSide,
-    vertexShader: 'varying vec3 p; void main(){p=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog,{time:{value:0}}]), side: THREE.DoubleSide, fog:true,
+    vertexShader: `varying vec3 p;
+      #include <fog_pars_vertex>
+      void main(){p=position;vec4 mvPosition=modelViewMatrix*vec4(position,1.);gl_Position=projectionMatrix*mvPosition;
+      #include <fog_vertex>
+      }`,
     fragmentShader: `uniform float time; varying vec3 p;
+      #include <fog_pars_fragment>
       void main(){
         float swell = sin(p.x * .06 + time * .55) * sin(p.z * .045 - time * .38);
         float glint = sin(p.x * .31 - time * 1.05 + p.z * .22) * sin(p.x * .11 + p.z * .47 + time * .3);
@@ -96,6 +101,7 @@ export function* createElagosScenerySteps({ parent, heightAt: groundAt, collider
         vec3 c = mix(deep, shallow, clamp(swell * .5 + .5, 0., 1.));
         c += vec3(.28, .33, .30) * pow(max(glint, 0.), 14.);
         gl_FragColor = vec4(c, 1.);
+        #include <fog_fragment>
       }`,
   });
   const waterGroup = new THREE.Group(); waterGroup.name = 'The lakes of Elagos'; district.add(waterGroup);
@@ -912,7 +918,7 @@ export function* createElagosScenerySteps({ parent, heightAt: groundAt, collider
       town.rock(LEAF, spot.x + .6, ground + 3.4, spot.z - .5, 1.4, 1.0, 1.4, 2);
       const collider = colliders.find(c => c.kind === 'garden-tree' && c.x === spot.x && c.z === spot.z);
       registerWorldTree(colliders, { id: worldTreeId('physic-garden-oak', spot.x, spot.z), x: spot.x, z: spot.z, y: ground, species: 'white-oak', radius: .4, harvestable: false,
-        reason: 'This white oak is a protected tree in the Physic Garden.' }, [], collider);
+        reason: 'This white oak is a protected tree in the Physic Garden.' }, [], collider,district);
     }
     // The specimen wall: every stone the city has built with, squared and in order.
     {

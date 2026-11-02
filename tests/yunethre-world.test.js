@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import * as THREE from '../vendor/three.module.js';
 import { sourceModule } from './module-loader.js';
 import { YUNETHRE_CELLS, YUNETHRE_TOWN, YUNETHRE_CAMP, YUNETHRE_ARRIVAL, YUNETHRE_PATHS, YUNETHRE_BOUNDS,
- YUNETHRE_WILDLIFE_ZONES, YUNETHRE_LAKE, YUNETHRE_RAID_ROUTE, yunethreOwns, yunethreGround, yunethreReserved, yunethreFeatures } from '../src/content/regions/minora-frontier/yunethre-world.js';
+ YUNETHRE_WILDLIFE_ZONES, YUNETHRE_LAKE, YUNETHRE_RAID_ROUTE, YUNETHRE_FIELDS, YUNETHRE_ORCHARD, YUNETHRE_TOWN_LOTS,
+ yunethreOwns, yunethreGround, yunethreReserved, yunethreFeatures } from '../src/content/regions/minora-frontier/yunethre-world.js';
 import { REGION_IDS, REGION_CELLS, REGION_ORDER, regionAt } from '../src/world/terrain/region-world.js';
 import { westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
 import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
@@ -38,12 +39,47 @@ test('The town, camp and open passage keep broad walkable common ground',()=>{
   const a=path.points[k-1],b=path.points[k],n=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z));
   for(let i=0;i<=n;i++){const x=a.x+(b.x-a.x)*i/n,z=a.z+(b.z-a.z)*i/n;assert.ok(canStand(x,z,world),`${path.id} blocked at ${x},${z}`);}
  }
- assert.equal(scenery.metrics.buildings,6);assert.equal(scenery.metrics.tents,7);assert.equal(scenery.metrics.wagons,3);
- assert.ok(scenery.buildings.some(b=>b.style==='elf'));assert.ok(scenery.buildings.some(b=>b.style==='centaur'));
+ assert.equal(scenery.metrics.buildings,17);assert.equal(scenery.metrics.tents,7);assert.equal(scenery.metrics.wagons,3);
+ assert.deepEqual(new Set(scenery.buildings.map(b=>b.style)),new Set(['human','elf','centaur','satyr','dwarf']));
+});
+
+test('Polished scenery retains the actual chapter walking approaches and both speaking circles',()=>{
+ const T=YUNETHRE_TOWN,C=YUNETHRE_CAMP;
+ const paths=[
+  [{x:T.x+104,z:T.z+13},{x:T.x+29,z:T.z},{x:T.x+4,z:T.z+6}],
+  [{x:C.x-100,z:C.z-9},{x:C.x-40,z:C.z-5},{x:C.x-10,z:C.z-5},{x:C.x-5,z:C.z+6}],
+ ];
+ for(const path of paths)for(let k=1;k<path.length;k++){
+  const a=path[k-1],b=path[k],n=Math.ceil(Math.hypot(b.x-a.x,b.z-a.z));
+  for(let i=0;i<=n;i++){const x=a.x+(b.x-a.x)*i/n,z=a.z+(b.z-a.z)*i/n;
+   assert.ok(canStand(x,z,world,.85),`Chapter approach blocked at ${x},${z}`);}
+ }
+ for(const p of [{x:T.x+4,z:T.z+4},{x:C.x-5,z:C.z+4}])for(let i=0;i<16;i++){
+  const a=i*Math.PI/8;assert.ok(canStand(p.x+Math.cos(a)*2,p.z+Math.sin(a)*2,world,.7));
+ }
+});
+
+test('Laketown farmland, orchard and crafted details stay scenic, finite and batched',()=>{
+ assert.equal(scenery.metrics.fields.fields,5);assert.equal(scenery.metrics.orchardTrees,12);
+ assert.equal(scenery.metrics.marketStalls,4);assert.equal(scenery.metrics.gardenBeds,4);
+ assert.equal(scenery.metrics.lakeBoats,1);assert.equal(scenery.metrics.fishingHuts,1);assert.equal(scenery.metrics.farmyards,1);
+ assert.equal(scenery.trees.filter(t=>t.species==='apple').length,12);
+ for(const p of [...YUNETHRE_FIELDS,YUNETHRE_ORCHARD,...YUNETHRE_TOWN_LOTS]){
+  assert.ok(yunethreOwns(p.x,p.z),`${p.id} outside Yunethre`);
+  for(const key of ['population','production','dailyFood','foodCapacity'])assert.ok(!(key in p));
+ }
+ let meshes=0,vertices=0;
+ scenery.root.traverse(o=>{
+  if(!o.isMesh||o.isInstancedMesh)return;meshes++;
+  const a=o.geometry.attributes.position;vertices+=a.count;
+  for(const value of a.array)assert.ok(Number.isFinite(value),`${o.name} has a nonfinite vertex`);
+ });
+ assert.ok(meshes<12,`${meshes} unbatched scenery meshes`);
+ assert.ok(vertices<300000,`${vertices} static scenery vertices`);
 });
 
 test('The tarn promenade has connected reachable walking support matching its rendered deck',()=>{
- const surfaces=scenery.walkSurfaces,support=createWalkSurfaces(surfaces,terrain);assert.equal(surfaces.length,3);
+ const surfaces=scenery.walkSurfaces.filter(s=>s.id.startsWith('yunethre-tarn-walk-')),support=createWalkSurfaces(scenery.walkSurfaces,terrain);assert.equal(surfaces.length,3);
  assert.ok(Math.abs(surfaces[0].a.y-terrain(surfaces[0].a.x,surfaces[0].a.z))<.2);
  for(let i=0;i<surfaces.length;i++){
   const s=surfaces[i];if(i)assert.deepEqual(s.a,surfaces[i-1].b);

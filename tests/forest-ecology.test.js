@@ -170,7 +170,7 @@ test('moving models keep finite, positive transforms; disposal removes all owned
 test('the real Drent woodland supports the full ecology and keeps original deterministic trees unchanged', async () => {
   const { createWorld } = await sourceModule('../src/world.js');
   const { createWoodlandLife } = await sourceModule('../src/world/life/woodland-life.js');
-  const scene = new THREE.Scene(), world = createWorld(scene), trees = JSON.stringify(world.broadleafTrees);
+  const scene = new THREE.Scene(), world = createWorld(scene,{enabledRegions:['Drent']}), trees = JSON.stringify(world.broadleafTrees);
   const pickups = createWoodlandLife(scene, world).state();
   const colliders = JSON.stringify(world.colliders);
   const exclusions = [...pickups.acorns, ...pickups.sticks, ...pickups.fruits, ...pickups.fruitPatches,

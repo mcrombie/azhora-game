@@ -1,3 +1,4 @@
+import {confirmTowerCampaign} from './tower-smoke.js';
 import {createWorldWar} from '../../app/exploration/world-war.js';
 import {TALETH_SPOT} from '../../app/exploration/tower-state.js';
 const checks=[],assert=(v,m)=>{if(!v)throw Error(m);checks.push(m);console.log('EXPLORATION_CHECK '+m);};
@@ -14,7 +15,7 @@ async function open(a){
 }
 const seek=fn=>{const buttons=[...document.querySelectorAll('#chronicle-timeline button')],b=buttons.find(fn);assert(b,'Recorded event is on the timeline');b.click();};
 export async function ongoing(a){
-  window.dispatchEvent(new Event('focus'));await a.visit({x:TALETH_SPOT.x,z:TALETH_SPOT.z+2});key('KeyF');click('tower-next');a.war.pause();
+  window.dispatchEvent(new Event('focus'));await a.visit({x:TALETH_SPOT.x,z:TALETH_SPOT.z+2});key('KeyF');confirmTowerCampaign(a);a.war.pause();
   const w=createWorldWar();w.advance(3);w.syncRegion('Caricas');const b=w.snapshot().engagements.find(b=>b.region==='caricas');
   assert(w.campaign.joinBattle(b.id,b.location).ok,'Fixture enters actual interception');
   assert(w.campaign.resolveEncounter(b.id,'west','success','vanguard-broken',3).ok,'Fixture records actual interception');

@@ -1,6 +1,12 @@
 /** Persistent homes selected from local habitat, never a ring spawned around the player. */
 import { OUTER_CELLS, OUTER_NAMES, outerCellAt, outerFeatures, outerProfile } from './outer-regions-world.js';
 import { landDistance } from '../../../world/terrain/region-world.js';
+import {nonthTownReserved} from '../nonth/nonth-town-layout.js';
+import {thothTownReserved} from '../thoth/thoth-town-layout.js';
+import {orsaTownReserved} from '../orsa/orsa-town-layout.js';
+import {northernTownReserved} from '../northern-towns/northern-towns-layout.js';
+import {ganunReserved} from '../ganun/ganun-layout.js';
+import {londReserved} from '../lond/lond-country.js';
 const zones=[],F=Object.freeze;
 function add(c,species,sites,traits={}){
   zones.push(F({id:`outer-${c.q}-${c.r}-${species}`,region:c.region,species,keepRegion:true,scale:1,radius:.4,minHeight:1,maxSlope:.65,
@@ -12,7 +18,7 @@ for(const [i,c] of OUTER_CELLS.entries()){
   const sites=[];
   for(let j=0;j<12;j++){
     const a=j*2.399963+c.q*.13,r=37*Math.sqrt((j+1)/12),x=c.x+Math.cos(a)*r,z=c.z+Math.sin(a)*r;
-    if(outerCellAt(x,z)!==c)continue;const f=outerFeatures(x,z);
+    if(nonthTownReserved(x,z,20)||thothTownReserved(x,z,20)||orsaTownReserved(x,z,20)||northernTownReserved(x,z,20)||ganunReserved(x,z,20)||outerCellAt(x,z)!==c||londReserved(x,z,6))continue;const f=outerFeatures(x,z);
     if(f.water!==null||f.grade>.48||f.height<2||f.pathDistance<10||f.shoreDistance<5)continue;
     sites.push({x,z,...f});
   }

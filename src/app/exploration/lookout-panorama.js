@@ -16,7 +16,10 @@ export function lookoutCamera(view,time=0){
     const distance=Math.hypot(dx,dz);
     return {eye,target:{x:eye.x+Math.sin(bearing)*distance,y:page.target.y,z:eye.z+Math.cos(bearing)*distance},fov:page.fov};
   }
-  const bearing=(east?Math.PI/2+.015:.31)+sweep;
+  const bearing=(east?Math.PI/2+.015:.55)+sweep;
   const eye={x:LOOKOUT.x+(east?10.8:5),y:LOOKOUT.y+1.75,z:LOOKOUT.z+(east?5:10.8)};
-  return {eye,target:{x:eye.x+Math.sin(bearing)*1900,y:east?27:-170,z:eye.z+Math.cos(bearing)*1900},fov:east?45:66};
+  // The campaign review looks down into the nearby river country. The separate
+  // southern-countries view retains the broad horizon and distant kingdoms.
+  const reach=east?1900:700;
+  return {eye,target:{x:eye.x+Math.sin(bearing)*reach,y:east?27:-120,z:eye.z+Math.cos(bearing)*reach},fov:east?45:44};
 }

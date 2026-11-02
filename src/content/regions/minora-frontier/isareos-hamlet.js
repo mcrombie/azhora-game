@@ -11,12 +11,11 @@
  *
  * Where it stands, and why there: the top of the shoulder (26 m), because Isareos puts its thorn in every hollow
  * and nothing on the tops (src/content/regions/western-regions/west-regions-scenery.js), so the hamlet sits on open grass with no thorn and no
- * trees to clear; well away from the becks; 120 m from the corner of Wilhelm's camp (src/content/regions/minora-frontier/menora-city.js
- * `MENORA_CAMP`) and farther from its tents; and 145 m from the end of the centaurs' raid route, which keeps to the
- * west of x -2700 (src/content/regions/minora-frontier/yunethre-world.js `YUNETHRE_RAID_ROUTE`). The camp sits across the road out of the Muster
- * Gate, so the track starts where the Muster road ends inside it, by Wilhelm, goes out of the camp's west side
- * between its two rows of tents, wades the middle beck below its head and runs along the shoulder to the yard. The
- * ground south of the camp, toward the river, is broken by banks two to seven metres high; this way has none.
+ * trees to clear; well away from the becks; 120 m from the corner of the open practice field
+ * (`MENORA_PRACTICE_FIELD`); and 145 m from the end of the centaurs' raid route, which keeps to the
+ * west of x -2700 (`YUNETHRE_RAID_ROUTE`). The track starts where the Muster road ends on the
+ * field, crosses its western edge, wades the middle beck below its head and follows the shoulder to
+ * the yard. Ground south of the field, toward the river, has banks two to seven metres high.
  *
  * Nothing here is sown: the hamlet's farm rows are none (`ISAREOS_HAMLET_ROWS`). The buildings sit on plinths
  * that take up the fall of the top, as Haethom's do, so the world's ground is not changed.
@@ -82,8 +81,8 @@ export const ISAREOS_HAMLET_ROWS = freeze([]);
 /** The track, drawn as worn earth and handed to navigation as Haethom's ways are. */
 const path = (id, name, width, points) => freeze({ id, name, width, points: freeze(points.map(([x, z]) => p(x, z))) });
 export const ISAREOS_HAMLET_PATHS = freeze([
-  // From the end of the Muster road in the camp (src/content/regions/minora-frontier/menora-city.js `menora-muster-approach`), out between the tent
-  // rows, over the middle beck below its head, and along the shoulder to the yard.
+  // From the Muster road across the open field, over the middle beck below its
+  // head, and along the shoulder to the yard. The former tents are gone.
   path('isareos-hamlet-track', 'The cheese-maker’s track', 3, [[-2470, 65], [-2500, 62], [-2524, 38], [-2600, 36], [-2619, 30]]),
 ]);
 

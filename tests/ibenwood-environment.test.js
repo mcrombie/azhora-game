@@ -136,7 +136,9 @@ test('Forest renders in bounded local batches, grounds trunks and registers harv
   assert.ok(scene.metrics.triangles<3500000,`triangles ${scene.metrics.triangles}`);
   const geometry=new Set(),materials=new Set();
   scene.root.traverse(m=>{if(m.isInstancedMesh){geometry.add(m.geometry);materials.add(m.material);assert.ok(m.boundingSphere);assert.ok(m.boundingBox);assert.ok(m.boundingBox.max.x-m.boundingBox.min.x<165);}});
-  assert.ok(geometry.size<=7);assert.equal(materials.size,2);
+  const modelSpecies=new Set(scene.trees.map(t=>t.realSpeciesId??t.species));
+  assert.ok(geometry.size<=modelSpecies.size*2+5,'Each species shares one trunk and one crown geometry, alongside existing props');
+  assert.equal(materials.size,3,'Species vertex colours add one shared tree material');
   const trunkById=new Map(colliders.filter(c=>c.id).map(c=>[c.id,c]));
   for(const t of scene.trees) {assert.equal(t.y,ground(t.x,t.z));assert.equal(trunkById.get(t.id)?.species,t.species);}
   assert.equal(env.ibenwoodRegionalGround(0,0,17),17);

@@ -1,3 +1,4 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createCampaign} from '../src/simulation/campaign.js';
@@ -7,7 +8,7 @@ import {createWorldWar,WORLD_WAR_SCENARIO as current,CONTINUITY_WORLD_WAR_SCENAR
 import {talethLetters} from '../src/app/exploration/taleth-correspondence.js';
 import {nextCampaignOpportunity,waitForCampaignDispatch} from '../src/app/exploration/campaign-opportunity.js';
 import {worldWarArmies} from '../src/app/exploration/war-armies.js';
-function fight(c,side){const b=c.snapshot().engagements.find(availableBattleStage);c.locateHero(b.region);assert(c.joinBattle(b.id,b.location).ok);const p=c.snapshot().pending;assert(c.resolveEncounter(p.id,side,'success',p.rally?'rally-secured':'vanguard-broken',p.rally?p.rally.guards:3).ok);}
+function fight(c,side){const b=c.snapshot().engagements.find(availableBattleStage);c.locateHero(b.region);assert(c.joinBattle(b.id,b.location).ok);const p=c.snapshot().pending;assert(c.resolveEncounter(p.id,side,'success',p.rally?'rally-secured':'vanguard-broken',p.rally?p.rally.guards:3,commanderOutcome(c,side,true)).ok);}
 function run(definition,side){const c=createCampaign(definition);while(!c.snapshot().winner&&c.snapshot().day<120){if(c.snapshot().engagements.some(availableBattleStage))fight(c,side);else c.step();}return c;}
 
 test('old v7 campaigns replay exactly with the previous timing and no new recovery promises',()=>{

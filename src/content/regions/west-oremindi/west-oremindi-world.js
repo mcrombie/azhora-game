@@ -1,6 +1,7 @@
 /** The drowned range: exact atlas ownership; continuous surface and quiet, hidden entrances. */
 import {REGION_CELLS,REGION_OUTLINES,hexAt,hexCentre,seamlessTerrainMix,relief} from '../../../world/terrain/region-world.js';
 import {createHexBoundaryDistance} from '../../../world/terrain/hex-boundary-distance.js';
+import {frontierRelief} from '../oremindi-frontier/oremindi-frontier-layout.js';
 const freeze=Object.freeze,clamp=(n,a,b)=>Math.max(a,Math.min(b,n)),smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);};
 const lerp=(a,b,t)=>a+(b-a)*t,key=c=>`${c.q},${c.r}`;
 export const WEST_OREMINDI='West Oremindi Mountains';
@@ -46,6 +47,7 @@ export function westOremindiGround(x,z,base){const original=typeof base==='funct
  // A pass erodes a broad shoulder into the massif, rather than slicing a narrow
  // artificial trench through a peak. The final walking tread stays narrow.
  if(nearest&&nearest.distance<64)h=lerp(h,nearest.y,1-smooth(nearest.width*.5,64,nearest.distance));
+ h=frontierRelief(x,z,h,WEST_OREMINDI);
  for(const e of SEVRON_ENTRANCES){const d=Math.hypot(x-e.x,z-e.z),y=e.id==='sea-breach'?23:e.id==='inspection-passage'?180:119;h=lerp(h,y,1-smooth(6,19,d));}
  const inset=westOremindiInset(x,z);let result=lerp(original,h,smooth(0,35,inset));
  // Narrow walking treads retain their grade through the broad border shoulder.

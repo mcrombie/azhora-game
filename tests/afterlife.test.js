@@ -1,3 +1,4 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorldWar,WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
@@ -14,14 +15,14 @@ test('Death resolves the remaining battle normally; the retry checkpoint preserv
     if(stage==='rally'){w.campaign.resolveEncounter(b.id,side,'defeat','runner-arrived',2,{escaped:1});w.campaign.joinBattle(b.id,b.location);}
     const before=save(w),pending=w.snapshot().pending;
     assert(validateWorldWarSave(before));
-    w.campaign.resolveEncounter(pending.id,side,'defeat','driven-back',0);if(b.endsOn>w.snapshot().day)w.advance(b.endsOn-w.snapshot().day);
+    w.campaign.resolveEncounter(pending.id,side,'defeat','driven-back',0,commanderOutcome(w.campaign,side));if(b.endsOn>w.snapshot().day)w.advance(b.endsOn-w.snapshot().day);
     const report=deathReport(w.snapshot(),b.id,WORLD_WAR_SCENARIO),data={...save(w),afterlife:{version:1,form:'living',inLimbo:true,death:{battleId:b.id,stage,side,previousForm:'living',fallen:exploration.position,before,report}}};
     assert(validateWorldWarSave(data));assert.match(report,/armies finished their battle/);assert.match(report,/day 6/);
     const restored=createWorldWar(data);assert.deepEqual(restored.snapshot(),w.snapshot());
     const retry=createWorldWar(data.afterlife.death.before);assert.equal(retry.snapshot().day,stage==='rally'?4:3);assert.equal(retry.snapshot().pending.id,pending.id);
     assert.equal(retry.snapshot().events.filter(e=>e.type==='rally-result').length,0,'No failed rally casualty retained in the rewind');
     if(stage==='rally')assert.equal(retry.snapshot().engagements.find(b=>b.region==='caricas').heroResult.objective.blocked,8);
-    retry.campaign.resolveEncounter(pending.id,side,'defeat','driven-back',0);if(b.endsOn>retry.snapshot().day)retry.advance(b.endsOn-retry.snapshot().day);
+    retry.campaign.resolveEncounter(pending.id,side,'defeat','driven-back',0,commanderOutcome(retry.campaign,side));if(b.endsOn>retry.snapshot().day)retry.advance(b.endsOn-retry.snapshot().day);
     assert.deepEqual(retry.snapshot(),w.snapshot(),'Repeated death cannot accumulate an earlier failed attempt');
     for(const form of ['ghost','undead'])assert(validateWorldWarSave({...data,afterlife:{...data.afterlife,form,inLimbo:false}}));
     const bad=structuredClone(data);bad.afterlife.death.before.afterlife=data.afterlife;

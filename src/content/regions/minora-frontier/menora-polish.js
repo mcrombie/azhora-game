@@ -1,3 +1,4 @@
+import {menoraWallDatum} from './menora-river-walls.js';
 import {createMinoraTrees} from './minora-trees.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
@@ -196,7 +197,7 @@ export function* createMenoraPolishSteps({root,heightAt,ground,push,metrics,coll
   const walls=createSceneryBuilder('Minora polish — wall walk');
   for(const E of EDGES) { if(tick())yield;
     const step=E.len/E.steps,at=s=>pt(E.a.x+E.dir.x*s,E.a.z+E.dir.z*s),o=E.o;
-    const heights=Array.from({length:E.steps},(_,i)=>{const p=at((i+.5)*step);return heightAt(p.x,p.z);});
+    const heights=Array.from({length:E.steps},(_,i)=>{const p=at((i+.5)*step);return menoraWallDatum(heightAt,p.x,p.z);});
     const trims=[[0,turreted(E.a)?3:0],[E.len-(turreted(E.c)?3:0),E.len],...(E.gate?[[E.gate.along-10,E.gate.along+10]]:[])];
     const runs=[];
     for(let i=0;i<E.steps;i++){let s0=i*step,s1=s0+step;
@@ -237,7 +238,7 @@ export function* createMenoraPolishSteps({root,heightAt,ground,push,metrics,coll
   }
   for(const p of plan.bartizans) { if(tick())yield;
     const A=EDGES[(p.corner+EDGES.length-1)%EDGES.length],B=EDGES[p.corner],c=MENORA_OUTLINE[p.corner];
-    const top=Math.max(heightAt(c.x-A.dir.x*1.5,c.z-A.dir.z*1.5),heightAt(c.x+B.dir.x*1.5,c.z+B.dir.z*1.5))+18,r=2.05,face0=Math.atan2(p.x-c.x,p.z-c.z);
+    const top=Math.max(menoraWallDatum(heightAt,c.x-A.dir.x*1.5,c.z-A.dir.z*1.5),menoraWallDatum(heightAt,c.x+B.dir.x*1.5,c.z+B.dir.z*1.5))+18,r=2.05,face0=Math.atan2(p.x-c.x,p.z-c.z);
     walls.cylinder(WHITE,p.x,top-1.4,p.z,r,4);walls.cylinder(SHADE,p.x,top-1.75,p.z,r+.18,.4);walls.cylinder(IVORY,p.x,top+2.5,p.z,r+.25,.35);
     for(let i=0;i<6;i++){const t=face0+i*TAU/6;walls.block(WHITE,p.x+Math.sin(t)*r,top+2.8,p.z+Math.cos(t)*r,.7,1.1,.7,t);}
     walls.cone(SLATE,p.x,top+2.85,p.z,r*.82,3.4);walls.cone(GOLD,p.x,top+6.2,p.z,.18,.9,0,4);
@@ -247,7 +248,7 @@ export function* createMenoraPolishSteps({root,heightAt,ground,push,metrics,coll
     polish.bartizans++;
   }
   for(const g of MENORA_GATES) { if(tick())yield;
-    const E=EDGES[g.edge],o=E.o,y=heightAt(g.x,g.z);
+    const E=EDGES[g.edge],o=E.o,y=menoraWallDatum(heightAt,g.x,g.z);
     // Two hanging banners on each face of the gatehouse above the passage, red with a gold lozenge.
     walls.frame(g.x,y,g.z,E.yaw,()=>{for(const f of [-1,1])for(const v of [-4.2,4.2]){const X=f*o*2.69,X2=f*o*2.72,X3=f*o*2.75;
       face(walls,RED,[[X,20.4,v-.75],[X,20.4,v+.75],[X,15.9,v+.75],[X,15.9,v-.75]],[f*o,0,0]);
@@ -255,7 +256,7 @@ export function* createMenoraPolishSteps({root,heightAt,ground,push,metrics,coll
       face(walls,GOLD,[[X2,18.2,v-.42],[X2,17.78,v],[X2,18.2,v+.42],[X2,18.62,v]],[f*o,0,0]);
       walls.box(IRON,X3,20.5,v,.08,.08,1.85);polish.banners++;}});
     // Torches on the drums of the flanking towers, each side of the passage, inside and out.
-    for(const side of [-1,1]){const tc=pt(g.x+E.dir.x*side*11,g.z+E.dir.z*side*11),ty=heightAt(tc.x,tc.z);
+    for(const side of [-1,1]){const tc=pt(g.x+E.dir.x*side*11,g.z+E.dir.z*side*11),ty=menoraWallDatum(heightAt,tc.x,tc.z);
       for(const f of [-1,1]){let dx=f*E.out.x-side*E.dir.x*.8,dz=f*E.out.z-side*E.dir.z*.8;const l=Math.hypot(dx,dz);dx/=l;dz/=l;
         const px=tc.x+dx*5.22,pz=tc.z+dz*5.22,qx=px+dx*.45,qz=pz+dz*.45;
         walls.beam(IRON,[px,ty+3.3,pz],[qx,ty+3.3,qz],.07);walls.cylinder(WOOD,qx,ty+3.05,qz,.07,.55,0,4);

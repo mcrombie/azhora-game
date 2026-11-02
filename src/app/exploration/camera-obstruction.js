@@ -2,12 +2,12 @@
 // sample points. Terrain/material reads occur once per unique nearby collider.
 export function createCameraObstruction(world){
   const seen=new Set(),candidates=[];
-  return function clip(focus,desired){
+  return function clip(focus,desired,{ignoreCollider=null}={}){
     const dx=desired.x-focus.x,dy=desired.y-focus.y,dz=desired.z-focus.z;
     seen.clear();candidates.length=0;
     const nearby=world.nearColliders(focus.x+dx/2,focus.z+dz/2,Math.hypot(dx,dz)/2+.12);
     for(const c of nearby){
-      if(seen.has(c)||c.kind==='river-water'||c.kind==='pond-water')continue;seen.add(c);
+      if(seen.has(c)||c.kind==='river-water'||c.kind==='pond-water'||ignoreCollider?.(c))continue;seen.add(c);
       const bottom=c.minY??world.heightAt(c.x,c.z);
       candidates.push({c,bottom,top:c.maxY??bottom+2});
     }

@@ -61,3 +61,15 @@ test('Keyboard focus stays on the two launch choices and is released after selec
   tab();assert.equal(h.document.activeElement,h.elements.get('loading-full'));
   h.elements.get('loading-full').click();await result;assert.equal(tab().defaultPrevented,false);
 });
+
+test('Explore can reuse the choice with its own loading status and screen',async()=>{
+  const h=harness(),status=h.elements.get('loading-status'),screen=h.elements.get('loading');
+  h.elements.set('loading-message',status);h.elements.delete('loading-status');
+  h.elements.set('loading-screen',screen);h.elements.delete('loading');
+  const result=chooseLoadingMode({...h.options,ids:{status:'loading-message',loading:'loading-screen'}});
+  assert.equal(status.textContent,'Choose how to load Azhora');
+  assert.equal(screen.classList.contains('choosing-mode'),true);
+  h.elements.get('loading-fast').click();assert.equal(await result,'fast');
+  assert.equal(status.textContent,'Preparing your starting region');
+  assert.equal(screen.classList.contains('choosing-mode'),false);
+});

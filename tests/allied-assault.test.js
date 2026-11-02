@@ -3,13 +3,21 @@ import assert from 'node:assert/strict';
 import {createLizeemEncounter,ENCOUNTER_TIMING} from '../src/gameplay/combat/lizeem-encounter.js';
 import {encounterAutoplayInput} from '../src/gameplay/autoplay/encounter-input.js';
 import {createCampaign,replayCampaign} from '../src/simulation/campaign.js';
-import {WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
+import {DUEL_WORLD_WAR_SCENARIO as WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
 import {sourceModule} from './module-loader.js';
 import {createAlliedAssault,ALLIED_ASSAULT} from '../src/gameplay/combat/allied-assault.js';
 import {encounterAttack} from '../src/gameplay/combat/encounter-attacks.js';
 import {encounterCue} from '../src/gameplay/combat/encounter-cue.js';
 import {encounterInstruction} from '../src/gameplay/combat/encounter-lesson.js';
 const arena=()=>createLizeemEncounter({heroStart:{x:0,z:3},guardStarts:[-4.05,-1.35,1.35,4.05].map(x=>({x,z:-8})),allyStarts:[-3,0,3].map(x=>({x,z:0})),rallyPoint:{x:0,z:-3},move:(p,x,z)=>({x:p.x+x,z:p.z+z})});
+test('a last allied casualty is counted when both lines lose soldiers in the closing step',()=>{
+  const state={time:5,hero:{x:0,z:0,hp:100},guards:[{id:0,x:0,z:2,hp:0}],objective:{rally:{x:0,z:0}}};
+  const squad=createAlliedAssault(state,{starts:[{x:1,z:0}],walk:()=>{},canHit:()=>true});
+  // Enemy damage resolves before the squad checks whether it should regroup.
+  state.allies[0].hp=0;state.allies[0].phase='down';squad.tick(1/60);
+  assert.equal(state.squad.alliesLost,1);assert(state.squad.regrouped);
+  squad.aftermath(1/60);assert.equal(state.squad.alliesLost,1);
+});
 function play(model,active){let s=model.snapshot(),closest=Infinity;for(let i=0;i<5401&&!s.outcome;i++){s=model.tick(1/60,active?encounterAutoplayInput(s):{});const bodies=[s.hero,...s.guards,...s.allies].filter(a=>a.hp&&!a.escaped);for(let a=0;a<bodies.length;a++)for(let b=a+1;b<bodies.length;b++)closest=Math.min(closest,Math.hypot(bodies[a].x-bodies[b].x,bodies[a].z-bodies[b].z));}return {s,closest};}
 test('allies fight and take casualties; active Teresod changes a losing passive encounter',()=>{
   const passive=play(arena(),false).s;assert.equal(passive.outcome,'defeat');assert.equal(passive.squad.alliesLost,3);assert(passive.squad.damageByAllies>0);assert.equal(passive.squad.damageByHero,0);
@@ -89,7 +97,7 @@ function rally(){const c=createCampaign(WORLD_WAR_SCENARIO);c.step(3);c.locateHe
 const total=s=>s.armies.reduce((n,a)=>n+a.strength,0)+Object.values(s.regions).reduce((n,r)=>n+r.garrison,0);
 test('allied withdrawal saves losses on both sides, keeps the choice, and never awards routed soldiers as kills',()=>{
   const {c,b,id}=rally();assert(c.chooseAssault(id,'allied').ok);const before=c.snapshot();assert(!c.chooseAssault(id,'solo').ok);
-  for(const progress of [{alliesLost:4},{routed:3},{allyDamage:201}]){assert(!c.resolveEncounter(id,'west','withdraw','withdrew',2,progress).ok);assert.deepEqual(c.snapshot(),before);}
+  for(const progress of [{alliesLost:4},{routed:3},{allyDamage:before.pending.rally.guards*WORLD_WAR_SCENARIO.rules.encounterSoldierHealth+1}]){assert(!c.resolveEncounter(id,'west','withdraw','withdrew',2,progress).ok);assert.deepEqual(c.snapshot(),before);}
   assert(c.resolveEncounter(id,'west','withdraw','withdrew',2,{escaped:0,alliesLost:1,routed:1,allyDamage:38}).ok);
   assert.equal(total(before)-total(c.snapshot()),2);assert.equal(c.snapshot().day,4);assert(c.joinBattle(b.id,b.location).ok);
   const p=c.snapshot().pending;assert.equal(p.rally.guards,2);assert.deepEqual(p.rally.allied,{totalAllies:3,lost:1,routed:1,damage:38});assert.equal(p.rally.style,'allied');

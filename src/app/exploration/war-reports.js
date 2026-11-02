@@ -1,5 +1,10 @@
+import {isElapsedWorldWar} from './world-war.js';
+import {commanderReport} from './commander-report.js';
+import {duelEffect} from '../../content/scenarios/lizeem-champions.js';
 import {interceptionReason} from './interception-feedback.js';
 import {battleConsequence} from './battle-consequences.js';
+import {adventureTimeLabel} from '../../experiments/day-night/opening-time-label.js';
+import {roadsideReport} from './roadside-report.js';
 // Keep personal consequences first, then battles, then the soonest known march.
 export function selectWarReport(reports,armies){
   const imminent=[...armies].filter(a=>a.report&&Number.isFinite(a.arrives))
@@ -11,9 +16,12 @@ export function worldWarReports(state,scenario,known){
   const faction=id=>scenario.factions.find(f=>f.id===id)?.short??id;
   const region=id=>scenario.regions.find(r=>r.id===id)?.name??id;
   const percent=value=>`${Math.round(value*100)}%`;
+  const elapsed=isElapsedWorldWar(state.scenario);
+  const times=elapsed?new Map(state.events.map(e=>[e.id,e.elapsedSeconds])):null;
+  const roadReports=state.events.filter(e=>e.type==='roadside-result'&&known(e.location)).map(e=>roadsideReport(e,{region,faction,elapsed}));
   return state.engagements.filter(b=>known(b.location)).map(b=>{
     const hero=state.events.findLast(e=>e.type==='hero-result'&&e.battleId===b.id);
-    const base={battleId:b.id,hero:!!hero};
+    const base={battleId:b.id,hero:!!hero||!!b.rally?.direct&&!!b.participation?.faction};
     const rally=state.events.findLast(e=>e.type==='rally-result'&&e.battleId===b.id);
     if(b.status==='resolved'){
       if(b.participation)base.summary=battleConsequence(state,b);
@@ -21,12 +29,18 @@ export function worldWarReports(state,scenario,known){
       const winner=result.captured?result.attacker:result.defender;
       let detail=result.captured?`Control changed from ${faction(result.defender)} to ${faction(result.attacker)}.`:`${faction(result.defender)} kept control; the attack was repelled.`;
       detail+=` ${faction(result.attacker)} lost ${result.attackLoss} strength; ${faction(result.defender)} lost ${result.defenseLoss}.`;
+      if(b.commanders)detail+=' '+commanderReport(b);
       if(b.rally?.allied)detail+=` In the local assault, ${b.rally.allied.lost} allied soldiers fell and ${b.rally.allied.routed} enemies fled. These casualties are separate from the battle losses above; fleeing soldiers are not counted as kills.`;
+      if(b.duel){detail+=' '+duelEffect(b.duel)+` The assault removed ${b.rally?.removed??0} enemy strength.`;return {...base,id:result.id,title:`${faction(winner)} ${result.captured?'captured':'held'} ${region(b.region)}`,detail};}
+      if(b.rally?.direct){
+        detail+=` Your battle removed ${b.rally.removed} enemy strength.${result.resolution==='rally-rout'?' You broke the enemy line and forced their retreat.':' The armies decided the remaining fighting.'} Open M to review the frontier and choose your next move.`;
+        return {...base,id:result.id,title:`${faction(winner)} ${result.captured?'captured':'held'} ${region(b.region)}`,detail};
+      }
       if(result.resolution==='rally-rout'){
         detail+=` You broke the enemy rally and forced their retreat, securing this victory for ${faction(winner)}. Your earlier interception removed ${hero?.objective?.blocked??0} reinforcement strength; the rally assault removed ${b.rally?.removed??rally?.removed??0} more. These are separate from the battle losses above. Surviving forces are regrouping. Open M to review the frontier and choose your next move.`;
         return {...base,id:result.id,title:`${faction(winner)} ${result.captured?'captured':'held'} ${region(b.region)} / your rally victory`,detail};
       }
-      if(rally)detail+=` The rally assault ${rally.outcome==='withdraw'?'was left unfinished':'was repelled'}; it removed ${b.rally?.removed??rally.removed} additional enemy strength. The armies decided the outcome at the deadline.`;
+      if(rally)detail+=` The rally assault ${rally.outcome==='withdraw'?'was left unfinished':'was repelled'}; it removed ${b.rally?.removed??rally.removed} additional enemy strength. The armies decided the outcome ${elapsed?'at '+adventureTimeLabel(result.elapsedSeconds):'at the deadline'}.`;
       if(hero?.objective){
         const o=hero.objective;
         if(o.blocked){
@@ -47,7 +61,9 @@ export function worldWarReports(state,scenario,known){
     }
     if(b.participation&&(hero||rally)){
       const phase=b.participation.intercept,assault=b.rally?.status==='available',removed=b.rally?.removed??0;
-      if(!b.reinforcements)return {...base,id:hero?.id??0,title:'Skirmish unfinished at '+region(b.region),detail:`You defeated ${phase.stopped} soldiers. Return to the battlefield to finish the remaining opposition. Your progress is preserved; completing the skirmish advances to the regional result on day ${b.endsOn}.`};
+      if(b.rally?.direct)return {...base,id:rally?.id??hero?.id,title:'Battle continues at '+region(b.region),detail:`Your battle removed ${removed} enemy strength. Rejoin your allies to break the remaining enemy line. Casualties and commander wounds are preserved. The battle remains active until ${elapsed?adventureTimeLabel(b.endsOn*60):'day '+b.endsOn}.`};
+      if(b.duel)return {...base,id:Math.max(hero?.id??0,rally?.id??0),title:'Final assault available at '+region(b.region),detail:duelEffect(b.duel)+` Lead the assault with allies before day ${b.endsOn} to decide this field.`};
+      if(!b.reinforcements)return {...base,id:hero?.id??0,title:'Skirmish unfinished at '+region(b.region),detail:`You defeated ${phase.stopped} soldiers. Return to the battlefield to finish the remaining opposition. Your progress is preserved; completing the skirmish ${elapsed?'records the regional result without advancing adventure time':'advances to the regional result on day '+b.endsOn}.`};
       return {...base,id:Math.max(hero?.id??0,rally?.id??0),title:assault?'Final assault available at '+region(b.region):'Interception unfinished at '+region(b.region),
         detail:`You stopped ${phase.stopped} soldiers and removed ${b.heroResult?.objective?.blocked??0} reinforcement strength; ${phase.escaped} escaped. ${removed?`The assault removed ${removed} more enemy strength. `:''}${assault?'Re-enter the battlefield to fight the remaining rally guards and secure the objective. Completing that phase advances to the battle result.':'Re-enter the battlefield to finish intercepting the remaining soldiers.'} Your previous contribution is preserved. The battle remains active until day ${b.endsOn}.`};
     }
@@ -65,5 +81,5 @@ export function worldWarReports(state,scenario,known){
     }
     const opening=state.events.find(e=>e.type==='battle-start'&&e.engagement.id===b.id);
     return {...base,id:opening.id,title:`Battle underway in ${region(b.region)}`,detail:`${faction(b.attacker)} is attacking ${faction(b.defender)}. ${b.entryRadius?'Walk or ride into the marked battlefield':b.region==='ovesos'?'Meet a captain at the battlefield':'Reach the gold flag'} before day ${b.endsOn} to join, or let the battle unfold without you.${b.reinforcements?' You can intercept either side\'s approaching reinforcements.':''}`};
-  }).sort((a,b)=>a.id-b.id);
+  }).concat(roadReports).map(report=>elapsed&&Number.isFinite(times.get(report.id))?{...report,elapsedSeconds:times.get(report.id)}:report).sort((a,b)=>a.id-b.id);
 }

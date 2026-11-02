@@ -325,8 +325,8 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
 
   // Both quest destinations use the same filled gold diamond. A player-pinned
   // place keeps its separate green ring because it is not a quest category.
-  const drawTarget = (target, optional) => {
-    const p = project(target, { clampToRing: true, inset: 7 }); if (!p || !entered(target)) return null;
+  const drawTarget = (target, optional, directionsKnown=false) => {
+    const p = project(target, { clampToRing: true, inset: 7 }); if (!p || !directionsKnown&&!entered(target)) return null;
     const color = optional ? '#8acfc2' : questMapColour(target.markerKind);
     ctx.lineWidth = 2;
     dot(ctx, p.x, p.y, optional ? 9 : 6.5, MINIMAP_PALETTE.targetRing);
@@ -347,8 +347,8 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     return { ...p, id: target.id || null };
   };
   result.optional = drawTarget(tracked, true);
-  result.openGoal = drawTarget(openGoal, false);
-  result.goal = drawTarget(goal, false);
+  result.openGoal = openGoal?.directionsKnown?null:drawTarget(openGoal, false);
+  result.goal = goal?.directionsKnown?null:drawTarget(goal, false);
   // The bird the traveler is watching, handed in by the host from src/bird-finder.js.
   // A pair of wings rather than a pin, because it is not a place and will not wait;
   // and the chart reaches 62 m while a bird can be seen at 18 to 30, so it is almost
@@ -376,6 +376,10 @@ export function drawMinimap(ctx, { world = {}, position, goal = null, openGoal =
     result.bird = { ...p, id: bird.id || null };
   }
   if (fog) ctx.restore(); // The player remains visible even before their first tile is charted.
+  // A speaker may give the direction to a quest before the traveler has been
+  // there. Only its gold bearing escapes the terrain clip, not unseen scenery.
+  if(openGoal?.directionsKnown)result.openGoal=drawTarget(openGoal,false,true);
+  if(goal?.directionsKnown)result.goal=drawTarget(goal,false,true);
   // Angle zero faces +Z, matching the actual character (south on this chart).
   const yaw = Number.isFinite(angle) ? angle : 0, dx = Math.sin(yaw), dy = Math.cos(yaw);
   const tip = { x: center + dx * 8, y: center + dy * 8 };

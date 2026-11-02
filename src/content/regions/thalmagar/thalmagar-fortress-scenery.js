@@ -1,5 +1,5 @@
 import { createThalmagarWorld } from './thalmagar-world.js';
-import { THALMAGAR_FORTRESS as site } from './thalmagar-fortress-site.js';
+import { THALMAGAR_FORTRESS as site, THALMAGAR_CURTAIN_LOCAL } from './thalmagar-fortress-site.js';
 
 /** Reuse the authored architecture, without the isolated study's sea, sky or terrain. */
 export function* createThalmagarFortressSteps({parent,colliders}) {
@@ -13,7 +13,7 @@ export function* createThalmagarFortressSteps({parent,colliders}) {
     const n=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/2);
     for(let i=0;i<=n;i++)push(a[0]+(b[0]-a[0])*i/n,a[1]+(b[1]-a[1])*i/n,{r:2.15,maxY:site.floor+height});
   };
-  const corners=Array.from({length:10},(_,i)=>{const a=(i+.5)/10*Math.PI*2;return[Math.sin(a)*67,-174+Math.cos(a)*58];});
+  const corners=THALMAGAR_CURTAIN_LOCAL;
   for(let i=0;i<10;i++){
     const a=corners[i],b=corners[(i+1)%10];
     if(i===9){wall(a,[-12,-118.84],24);wall([12,-118.84],b,24);}else wall(a,b,22+i%2*3);

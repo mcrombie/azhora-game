@@ -1,3 +1,4 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorldWar,WORLD_WAR_SCENARIO,RALLY_WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
@@ -7,25 +8,28 @@ import {battleConsequence,latestPersonalBattle,councilBattleResponse,councilBala
 import {worldWarReports} from '../src/app/exploration/war-reports.js';
 import {councilInfluence} from '../src/app/exploration/council-state.js';
 import {openingWarGuidance} from '../src/app/exploration/war-guidance.js';
+import {battleResultTime,openingBattleTime} from '../src/experiments/day-night/opening-battle-time.js';
 
 function enter(){const w=createWorldWar();w.advance(3);w.syncRegion('Caricas');const c=w.campaign,b=c.snapshot().engagements[0];assert(c.joinBattle(b.id,b.location).ok);return {c,b};}
 function complete(side='west',success=true){
   const {c,b}=enter();assert(c.resolveEncounter(b.id,side,'withdraw','withdrew',1,{escaped:1}).ok);
   assert(c.joinBattle(b.id,b.location).ok);assert(c.resolveEncounter(b.id,side,'success','vanguard-broken',1,{escaped:0}).ok);
   assert(c.joinBattle(b.id,b.location).ok);let p=c.snapshot().pending;
-  assert(c.resolveEncounter(p.id,side,'withdraw','withdrew',2).ok);assert(c.joinBattle(b.id,b.location).ok);p=c.snapshot().pending;
-  assert(c.resolveEncounter(p.id,side,success?'success':'defeat',success?'rally-secured':'time-expired',success?p.rally.guards:0).ok);
+  assert(c.resolveEncounter(p.id,side,'withdraw','withdrew',2,commanderOutcome(c,side)).ok);assert(c.joinBattle(b.id,b.location).ok);p=c.snapshot().pending;
+  assert(c.resolveEncounter(p.id,side,success?'success':'defeat',success?'rally-secured':'time-expired',success?p.rally.guards:0,commanderOutcome(c,side,success)).ok);
   return {c,b};
 }
 test('phase presentation retains partial progress and shows the actual next opposition',()=>{
   const {c,b}=enter();let p=c.snapshot().pending;
-  assert.equal(battlePhase(p).total,2);assert.match(battlePhase(p).path,/Interception.*Final assault.*Battle result/);
+  assert.equal(battlePhase(p).total,1);assert.match(battlePhase(p).path,/Battle with allies.*Battle result/);
   assert(c.resolveEncounter(b.id,'west','withdraw','withdrew',1,{escaped:1}).ok);assert(c.joinBattle(b.id,b.location).ok);p=c.snapshot().pending;
+  assert.equal(battlePhase(p).total,2,'A saved partial interception keeps its original two-stage flow');
   const field={guards:[{hp:0}],outcome:'success'},before=c.snapshot();
   assert.match(battleProgress(p,field).detail,/2 stopped.*1 escaped.*0 remaining/);
   const review=phaseDebrief(p,field,{regionName:'Caricas',allyName:'West Lizeem',strength:12});
   assert.deepEqual(review.facts[1],['Your effect','8 / 12 enemy strength removed']);
   assert.match(review.facts[2][1],/4 rally guards/);assert.match(review.detail,/control of Caricas has not changed/);
+  assert.match(review.facts[2][1],/Captain Serevan Dain/,'The next opposition includes the mandatory enemy captain');
   assert.deepEqual(c.snapshot(),before,'Reading feedback has no simulation effect');
   assert(c.resolveEncounter(p.id,'west','success','vanguard-broken',1,{escaped:0}).ok);assert(c.joinBattle(b.id,b.location).ok);p=c.snapshot().pending;
   assert.equal(p.rally.guards,4);assert.equal(battlePhase(p).number,2);
@@ -64,4 +68,34 @@ test('old rally saves and one-phase sites retain their distinct flow',()=>{
   c.resolveEncounter(b.id,'west','success','vanguard-broken',3);c.joinBattle(b.id,b.location);const last=c.snapshot().pending;
   c.resolveEncounter(last.id,'west','success','rally-secured',last.rally.guards);assert.equal(latestPersonalBattle(c.snapshot()).region,'Ovesos');
   assert.equal(battlePhase({participation:{guards:3}}).total,1);
+});
+
+test('battle reports preview the scheduled finish without charging time for reading',()=>{
+  const pending={region:'caricas',endsOn:3,participation:{},rally:{direct:true}},field={guards:[],outcome:'success'};
+  const clock={sharedOpening:true,localBattleTiming:'scheduled',elapsedSeconds:57,secondsPerDay:60};
+  const before=structuredClone({pending,field,clock});
+  const report=phaseDebrief(pending,field,{regionName:'Caricas',allyName:'West Lizeem',clock});
+  assert.deepEqual(report.facts.at(-1),['Campaign time','00:57 → 03:00 on Continue']);
+  assert.match(report.next,/Other armies, supplies and battles progress/);
+  assert.match(battleResultTime(pending,clock,field.outcome).review,/Campaign time: 00:57 → 03:00.*Reading this report does not spend time/);
+  assert.deepEqual({pending,field,clock},before,'Rendering the report must not settle the battle or change time');
+  const late={...clock,elapsedSeconds:160};
+  assert.deepEqual(battleResultTime(pending,late,'defeat').fact,['Campaign time','02:40 → 03:00 on Continue']);
+  assert.match(openingBattleTime(pending,{endsAt:180},clock),/scheduled end.*Other armies, supplies and battles progress/);
+});
+
+test('timing previews distinguish intermediate fights, withdrawal and historical immediate rules',()=>{
+  const pending={region:'caricas',endsOn:3,participation:{},rally:{direct:true}},clock={sharedOpening:true,localBattleTiming:'scheduled',elapsedSeconds:57,secondsPerDay:60};
+  for(const [p,outcome] of [
+    [pending,'withdraw'],[{...pending,kind:'roadside'},'success'],
+    [{...pending,duel:{status:'accepted'}},'success'],
+    [{endsOn:3,reinforcements:{}},'success']
+  ]){
+    const preview=battleResultTime(p,clock,outcome);
+    assert.equal(preview.to,57);assert.equal(preview.advances,false);assert.match(preview.review,/Continue adds no time/);
+  }
+  for(const mode of ['immediate',undefined])assert.equal(battleResultTime(pending,{...clock,localBattleTiming:mode},'success').to,57);
+  assert.match(openingBattleTime(pending,{region:'caricas'},{...clock,localBattleTiming:'immediate'}),/current adventure time.*Other armies do not advance/);
+  assert.equal(battleResultTime(pending,{sharedOpening:false},'success'),null,'Legacy day-based reports keep their own units');
+  assert.equal(battleResultTime(pending,{...clock,elapsedSeconds:181},'success').to,181,'A stale deadline can never move time backwards');
 });

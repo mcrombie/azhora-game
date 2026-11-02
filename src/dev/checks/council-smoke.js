@@ -13,7 +13,7 @@ export async function checkTemple(a){
  await a.visit(MINORA_COUNCIL.temple.exit);assert(a.groundProbe(MINORA_COUNCIL.temple.exit.x,MINORA_COUNCIL.temple.exit.z).clear,'Temple exterior doorway is clear');await doorway(a);
  assert(a.tower.state().room==='temple','Temple opens as a separate room');a.war.run();const before=JSON.stringify(a.war.state().clock);for(let i=0;i<800;i++)a.step(.04);assert(JSON.stringify(a.war.state().clock)===before,'Time remains held in the temple');a.war.pause();
  a.hold('KeyW',true);for(let i=0;i<200;i++)a.step(.02);a.hold('KeyW',false);
- const p=councilPerson('temple');await a.visit({x:p.x+1.7,z:p.z+2.2});a.look({yaw:-.5,pitch:.17,distance:5});f();
+ const p=councilPerson('temple');await a.visit({x:p.x+1.7,y:p.y,z:p.z+2.2});a.look({yaw:-.5,pitch:.17,distance:5});f();
  assert(a.council.state().met.includes('temple'),'High Priest met through F');assert(document.getElementById('council-words').textContent.includes('East Lizeem'),'Priest favors East');await frame();
  return {checks:['Neutral standards at all four gates','Loading screen contains scenario history','Temple doorway opens a separate navigable room','Temple holds campaign time','High Priest conversation and authored appearance']};
 }
@@ -21,7 +21,7 @@ export async function checkMayor(a){
  document.getElementById('council-close').click();assert(a.save().ok,'Save inside temple succeeds');const saved=a.store.read().data;await a.loadSaved();assert(a.tower.state().room==='temple','Temple Save/Continue restores its space');assert(a.council.state().met.includes('temple'),'Met priest persists');
  await a.visit({...councilDoor('temple'),z:councilDoor('temple').z-1});await doorway(a);assert(!a.tower.state().inside,'Temple has a two-way doorway');
  await a.visit(MINORA_COUNCIL.mayor.exit);assert(a.groundProbe(MINORA_COUNCIL.mayor.exit.x,MINORA_COUNCIL.mayor.exit.z).clear,'Hall exterior door is clear');await doorway(a);assert(a.tower.state().room==='mayor','Mayor Hall opens separately');
- const p=councilPerson('mayor');await a.visit({x:p.x+1.7,z:p.z+2.2});a.look({yaw:-.5,pitch:.17,distance:5});f();
+ const p=councilPerson('mayor');await a.visit({x:p.x+1.7,y:p.y,z:p.z+2.2});a.look({yaw:-.5,pitch:.17,distance:5});f();
  assert(document.getElementById('council-words').textContent.includes('West Lizeem'),'Mayor favors West');const before=JSON.stringify(a.war.state().campaign);document.getElementById('council-peace').click();
  assert(document.getElementById('council-words').textContent.includes('You have heard both'),'Talking to both gives the joint audience hint');assert(document.getElementById('council-balance').textContent.includes('Placeholder'),'Peace branch is clearly provisional');assert(JSON.stringify(a.war.state().campaign)===before,'Peace placeholder changes no campaign state');await frame();
  return {checks:['Save/Continue preserves temple and council meetings','Temple returns to its exterior doorway','Mayor Hall opens at River Hall','Mayor favors West','Peace placeholder acknowledges both conversations without altering war'],saved};

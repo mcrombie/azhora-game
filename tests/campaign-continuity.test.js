@@ -1,3 +1,4 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorldWar,WORLD_WAR_SCENARIO as scenario,ENTRY_WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
@@ -13,7 +14,7 @@ function finish(w,side){
   const s=w.snapshot(),b=s.engagements.find(b=>availableBattleStage(b));
   assert(b);w.campaign.locateHero(b.region);assert(w.campaign.joinBattle(b.id,b.location).ok);
   const p=w.snapshot().pending;assert(p);
-  assert(w.campaign.resolveEncounter(p.id,side,'success',p.rally?'rally-secured':'vanguard-broken',p.rally?p.rally.guards:p.participation?.guards??3).ok);
+  assert(w.campaign.resolveEncounter(p.id,side,'success',p.rally?'rally-secured':'vanguard-broken',p.rally?p.rally.guards:p.participation?.guards??3,commanderOutcome(w.campaign,side,true)).ok);
   return b.region;
 }
 
@@ -57,7 +58,7 @@ test('fresh assault support fits the opposition without changing old squads or r
     const expected=definition===scenario&&stopped===3?2:3;
     if(definition===scenario)assert.equal(p.rally.supportAllies,expected);else assert.equal(p.rally.supportAllies,undefined);
     assert(c.chooseAssault(p.id,'allied').ok);assert.equal(c.snapshot().pending.rally.allied.totalAllies,expected);
-    assert(c.resolveEncounter(p.id,'west','withdraw','withdrew',1,{alliesLost:1}).ok);
+    assert(c.resolveEncounter(p.id,'west','withdraw','withdrew',1,{alliesLost:1,...commanderOutcome(c,'west')}).ok);
     assert(c.joinBattle(b.id,b.location).ok);p=c.snapshot().pending;
     assert.equal(p.rally.allied.totalAllies-p.rally.allied.lost,expected-1);
     const w=createWorldWar({simulation:c.snapshot(),fraction:0,speed:1});assert.deepEqual(w.snapshot(),c.snapshot());

@@ -1,5 +1,7 @@
 import {parseCells,unionCells,labelAnchor} from '../../ui/map/campaign-map-geometry.js';
 import {isAlive,isMoving,defendingStrength} from '../../simulation/forces.js';
+import {foodRouteStatus} from '../../simulation/food.js';
+import {armyMapRegion} from './army-map-state.js';
 const NS='http://www.w3.org/2000/svg';
 function node(tag,attrs={}){const el=document.createElementNS(NS,tag);for(const [key,value]of Object.entries(attrs))el.setAttribute(key,value);return el;}
 export async function createScenarioMap(root,scenario,onSelect,onSelectArmy){
@@ -19,8 +21,8 @@ export async function createScenarioMap(root,scenario,onSelect,onSelectArmy){
   terrain.append(node('rect',{x:0,y:0,width:4000,height:5000,fill:'#e3d1a5'}));
   // Exact existing terrain/river artwork, clipped to five regions. No 3D imports.
   for(const id of ['terrain','relief','rivers']){const original=source.getElementById(id);if(original){const group=document.importNode(original,true);group.removeAttribute('clip-path');group.removeAttribute('id');terrain.append(group);}}
-  const territories=node('g'),hits=node('g'),labels=node('g'),armies=node('g');
-  svg.append(terrain,territories,hits,labels,armies);root.replaceChildren(svg);
+  const territories=node('g'),supply=node('g'),hits=node('g'),labels=node('g'),armies=node('g');
+  svg.append(terrain,territories,supply,hits,labels,armies);root.replaceChildren(svg);
   const points=[...data.values()].flatMap(r=>r.loops.flat());
   const minX=Math.min(...points.map(p=>p[0])),maxX=Math.max(...points.map(p=>p[0])),minY=Math.min(...points.map(p=>p[1])),maxY=Math.max(...points.map(p=>p[1]));
   let viewBox,drag=null,lastState,layer='geopolitical',selected='isareos',selectedArmy=null;
@@ -30,7 +32,7 @@ export async function createScenarioMap(root,scenario,onSelect,onSelectArmy){
   for(const region of scenario.regions){const p=node('path',{d:data.get(region.id).path,class:'region-hit','data-region-id':region.id});hits.append(p);}
   function text(parent,at,label,cls){const el=node('text',{x:at.x,y:at.y,class:cls});el.textContent=label;parent.append(el);return el;}
   function render(state,nextLayer=layer,nextSelected=selected,nextArmy=selectedArmy){
-    lastState=state;layer=nextLayer;selected=nextSelected;selectedArmy=nextArmy;territories.replaceChildren();labels.replaceChildren();armies.replaceChildren();
+    lastState=state;layer=nextLayer;selected=nextSelected;selectedArmy=nextArmy;territories.replaceChildren();supply.replaceChildren();labels.replaceChildren();armies.replaceChildren();
     for(const f of scenario.factions){
       const owned=scenario.regions.filter(r=>state.regions[r.id].owner===f.id);if(!owned.length)continue;
       const cells=owned.flatMap(r=>data.get(r.id).cells),outline=unionCells(cells),anchor=labelAnchor(cells,outline.loops);
@@ -48,12 +50,21 @@ export async function createScenarioMap(root,scenario,onSelect,onSelectArmy){
         text(labels,d.anchor,region.name,'region-name');text(labels,{x:d.anchor.x,y:d.anchor.y+14},`${defendingStrength(state,region.id)} defending`,'hero-label');
       }
     }
+    if(scenario.food&&scenario.rules.autonomousOrders)for(const route of scenario.food.routes.filter(r=>r.regions.includes(selected))){
+      const [from,to]=route.regions,a=data.get(from).anchor,b=data.get(to).anchor,status=foodRouteStatus(scenario,state,from,to);
+      supply.append(node('path',{d:`M${a.x},${a.y}L${b.x},${b.y}`,class:`supply-route ${status.open?'open':'closed'}`,'data-supply-route':route.regions.join('|'),'data-open':status.open}));
+    }
+    for(const battle of state.engagements.filter(b=>b.status==='active')){
+      const d=data.get(battle.region);
+      territories.append(node('path',{d:d.path,class:'active-battle-region','data-battle-region':battle.region}));
+      text(labels,{x:d.anchor.x,y:d.anchor.y-20},`Battle · ends day ${battle.endsOn}`,'battle-label');
+    }
     const hero=state.hero,home=data.get(hero.region).anchor,destination=hero.journey?data.get(hero.journey.to).anchor:home;
     const progress=hero.journey?Math.min(1,(state.day-hero.journey.departed)/(hero.journey.arrives-hero.journey.departed)):0;
     text(labels,{x:home.x+(destination.x-home.x)*progress,y:home.y+(destination.y-home.y)*progress+32},`${hero.name}${hero.journey?' (traveling)':''}`,'hero-label');
     const localCounts=new Map(),usedPositions=new Map();
     for(const army of state.armies.filter(isAlive)){
-      const moving=isMoving(army),from=data.get(moving?army.from:army.region).anchor,to=data.get(moving?army.to:army.region).anchor;
+      const moving=isMoving(army),region=armyMapRegion(state,army),from=data.get(moving?army.from:region).anchor,to=data.get(moving?army.to:region).anchor;
       const t=moving?Math.max(.18,Math.min(.86,(state.day-army.departed+.5)/(army.arrives-army.departed))):0;
       let x=from.x+(to.x-from.x)*t,y=from.y+(to.y-from.y)*t;
       if(moving){
@@ -61,10 +72,10 @@ export async function createScenarioMap(root,scenario,onSelect,onSelectArmy){
         x-=(to.y-from.y)/length*offset;y+=(to.x-from.x)/length*offset;
         armies.append(node('path',{d:`M${from.x},${from.y}L${to.x},${to.y}`,class:'army-route'+(army.status==='retreating'?' retreat-route':'')}));
       }else{
-        const count=localCounts.get(army.region)??0;localCounts.set(army.region,count+1);
-        const used=usedPositions.get(army.region)??new Set();usedPositions.set(army.region,used);
+        const count=localCounts.get(region)??0;localCounts.set(region,count+1);
+        const used=usedPositions.get(region)??new Set();usedPositions.set(region,used);
         const desired={x:from.x+count*27-14,y:from.y+22};
-        const candidates=data.get(army.region).cells.map(c=>({x:c.reduce((n,p)=>n+p[0],0)/c.length,y:c.reduce((n,p)=>n+p[1],0)/c.length}));
+        const candidates=data.get(region).cells.map(c=>({x:c.reduce((n,p)=>n+p[0],0)/c.length,y:c.reduce((n,p)=>n+p[1],0)/c.length}));
         const at=candidates.filter(p=>!used.has(`${p.x},${p.y}`)).sort((a,b)=>Math.hypot(a.x-desired.x,a.y-desired.y)-Math.hypot(b.x-desired.x,b.y-desired.y))[0]??from;
         x=at.x;y=at.y;used.add(`${x},${y}`);
       }

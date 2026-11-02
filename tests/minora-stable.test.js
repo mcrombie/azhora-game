@@ -8,8 +8,51 @@ import {createWorldWar} from '../src/app/exploration/world-war.js';
 import {WORLD_WAR_KEY,validateWorldWarSave,worldWarStore} from '../src/app/exploration/war-checkpoint.js';
 import {TOWER_SPAWN} from '../src/app/exploration/tower-state.js';
 import {createWalkSurfaces} from '../src/world/collision/walk-surfaces.js';
+import {horseSummonSpot} from '../src/app/exploration/horse-summon.js';
 
 const checkpoint=()=>({version:1,format:WORLD_WAR_KEY,...createWorldWar().checkpoint(),exploration:{version:1,character:'teresod',position:TOWER_SPAWN,heading:0,camera:{yaw:0,pitch:.27,distance:8},elapsed:0,cells:[]}});
+const summonWorld=()=>({bounds:{minX:-100,maxX:100,minZ:-100,maxZ:100},heightAt:()=>2,waterAt:()=>0,readyAt:()=>true,canExploreAt:()=>true,nearColliders:()=>[]});
+
+test('magical horse call checks ownership and mounting, lands immediately and retains its saved position',()=>{
+  const riding=createRiding(),player={x:0,y:2,z:0},at=horseSummonSpot(player,0,summonWorld());
+  assert(at);assert(Math.hypot(at.x,at.z)<=RIDE.reach);assert(!riding.summon(at,at.yaw).ok);
+  riding.grant({x:200,z:300});riding.teach();const original=riding.snapshot();
+  assert(!riding.summon(null).ok);assert.deepEqual(riding.snapshot(),original);
+  assert(riding.summon(at,at.yaw).ok);assert.equal(riding.called,false);assert.equal(riding.pace,0);
+  assert.deepEqual(riding.horse,{x:at.x,z:at.z,yaw:at.yaw});
+  const restored=createRiding();assert(restored.restore(riding.snapshot()));assert.deepEqual(restored.snapshot(),riding.snapshot());
+  assert(riding.mount(player).ok);const mounted=riding.snapshot();assert(!riding.summon({x:80,z:80},0).ok);assert.deepEqual(riding.snapshot(),mounted);
+});
+
+test('magical arrival avoids water, unloaded terrain, obstacles, cliffs and occupied stable stalls',()=>{
+  const player={x:0,y:2,z:0},world=summonWorld();
+  assert.equal(horseSummonSpot(player,0,{...world,waterAt:()=>3}),null);
+  assert.equal(horseSummonSpot(player,0,{...world,readyAt:()=>false}),null);
+  assert.equal(horseSummonSpot(player,0,{...world,canExploreAt:()=>false}),null);
+  assert.equal(horseSummonSpot(player,0,{...world,heightAt:()=>8}),null);
+  assert.equal(horseSummonSpot(player,0,world,{clearAt:()=>false}),null);
+  const blocked={...world,nearColliders:()=>[{x:0,z:0,hx:10,hz:10}]};assert.equal(horseSummonSpot(player,0,blocked),null);
+  // A narrow dry patch under only the saddle is too small for the entire horse.
+  assert.equal(horseSummonSpot(player,0,{...world,readyAt:(x,z)=>Math.abs(x)<.2&&Math.abs(z-2.3)<.2}),null);
+  const spot=horseSummonSpot(player,0,world,{clearAt:x=>x>1});assert(spot?.x>1,'Finds a safe side when the path ahead is occupied');
+});
+
+test('summoned horse shares a reachable deck and cannot jump up from beneath a bridge',()=>{
+  const ground=()=>-4,walks=createWalkSurfaces([{id:'summon-deck',kind:'deck',a:{x:-5,y:6,z:0},b:{x:5,y:6,z:0},width:8}],ground);
+  const world={...summonWorld(),heightAt:ground,waterAt:()=>1,supportAt:walks.supportAt};
+  assert.equal(horseSummonSpot({x:0,y:6,z:0},0,world)?.y,6);
+  assert.equal(horseSummonSpot({x:0,y:.15,z:0},0,world),null);
+});
+
+test('blue horse wisps expire, cancel, and dispose without adding dynamic lights',async()=>{
+  const THREE=await sourceModule('../vendor/three.module.js');
+  const {createHorseSummonEffect}=await sourceModule('../src/app/exploration/horse-summon-effect.js');
+  const scene=new THREE.Scene(),effect=createHorseSummonEffect(scene);
+  effect.start({x:2,y:6,z:3});assert(effect.active);let lights=0;scene.traverse(o=>{if(o.isLight)lights++;});assert.equal(lights,0);
+  effect.update(.4);assert(effect.active);effect.update(1);assert(!effect.active);
+  effect.start({x:0,y:0,z:0});effect.cancel();assert(!effect.active);
+  effect.start({x:0,y:0,z:0});effect.dispose();assert.equal(scene.children.length,0);effect.dispose();effect.start({x:0,y:0,z:0});assert(!effect.active);
+});
 test('Bear reuses the child appearance; ownership is separate and can only be granted once',()=>{
   assert.equal(MINORA_STABLE.look,BARRETT.look);assert(MINORA_STABLE.look.child);assert.equal(MINORA_STABLE.look.hairStyle,'short-cropped');
   const riding=createRiding();assert(riding.grant(MINORA_STABLE.horse).ok);riding.teach();assert(!riding.grant({x:0,z:0}).ok);
@@ -78,6 +121,10 @@ test('minimap uses local colliders, handles a road crossing with both ends offsc
   const {ISAREOS_BECKS}=await sourceModule('../src/content/regions/western-regions/west-regions.js');
   let query;const world={nearColliders:(x,z,r)=>{query={x,z,r};return [{kind:'building',x:0,z:0,hx:3,hz:4},{kind:'tree',x:2,z:2,r:.4}];}};
   assert.equal(localMapColliders(world,{x:0,z:0},20)[0].kind,'house');assert(query.r<30);
+  const study={kind:'senro-folded-study',x:0,z:-9,hx:3.35,hz:2.7,minY:10.5,maxY:17.7},caseAbove={kind:'senro-suspended-luggage',x:9,z:10.8,hx:1.1,hz:.65,minY:16,maxY:17.4};
+  const room={nearColliders:()=>[study,caseAbove]};
+  assert.deepEqual(localMapColliders(room,{x:0,y:10.5,z:0},22,true),[{...study,kind:'house'}],'The minimap shows the blocked study footprint without projecting overhead luggage onto the walking floor');
+  assert.deepEqual(localMapColliders(room,{x:0,y:21.3,z:0},22,true),[],'Snero furniture does not appear on Taleth\'s floor');
   const crossing=[{x:-100,z:0},{x:100,z:0}],distant=[{x:200,z:0},{x:300,z:0}];
   assert.deepEqual(localMapShapes([crossing,distant],{x:0,z:0},20),[crossing]);
   const p=ISAREOS_BECKS[0].samples[Math.floor(ISAREOS_BECKS[0].samples.length/2)];const rivers=localRivers(p,60);

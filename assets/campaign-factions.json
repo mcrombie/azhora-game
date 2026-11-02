@@ -212,14 +212,13 @@
   {
     "id": "mountain-elfland",
     "name": "Mountain Elfland",
-    "regions": [
-      "West Oremindi Mountains",
-      "East Oremindi Mountains",
-      "South Oremindi Mountains",
-      "North Oreminidi Mountains"
-    ],
+    "regions": [],
     "capital": "Sevron, West Oremindi Mountains",
-    "relationship": "Separate elven realm centered on Sevron, with a campaign system broadly closer to human settled states."
+    "relationship": "A small hidden elven kingdom survives within Sevron beneath West Oremindi. The orc chieftains occupy the mountain surface but have not found the city. It does not control the four surface regions.",
+    "hiddenHoldings": [
+      "Sevron"
+    ],
+    "hidden": true
   },
   {
     "id": "wood-elfland",
@@ -258,13 +257,13 @@
     "name": "Thalmagar's Empire",
     "regions": [
       "Cape Thalmagar",
-      "Urubond",
-      "Narcosh",
-      "Cudon",
-      "Lesser Oremindi Mountains"
+      "Urubond"
     ],
     "capital": "Public seat: Black Fortress, Cape Thalmagar. Secret true capital: Urubond.",
-    "relationship": "Overarching antagonist on the default resistance path; siding with him remains a reserved future option. Early/middle mustering, fortification and limited expansion lead to a major middle-to-late offensive. Seeks partners or subjects among the older peoples."
+    "relationship": "Thalmagar rules Cape Thalmagar and the concealed land of Urubond. His independent neighbor Kudan fears and opposes him; its conquest is an intended campaign development, not an opening possession. Narcosh is friendly and considering alignment, but has not joined him. Existing secret vassals remain separate political actors.",
+    "disputedRegions": [
+      "Acor Wetlands"
+    ]
   },
   {
     "id": "caricas-independence",
@@ -327,7 +326,10 @@
       "West Endevor"
     ],
     "capital": "Not specified in the request; Stroven is an existing lore candidate",
-    "relationship": "Lower kingdom / vassal of Stonefist"
+    "relationship": "Lower kingdom / vassal of Stonefist",
+    "disputedRegions": [
+      "Acor Wetlands"
+    ]
   },
   {
     "id": "nonoth",
@@ -415,7 +417,10 @@
       "South Acordwood"
     ],
     "capital": "Not specified",
-    "relationship": "Independent Acorwood polity allied to Stonefist; honorary lower kingship, not an ordinary human vassal"
+    "relationship": "Independent Acorwood polity allied to Stonefist; honorary lower kingship, not an ordinary human vassal",
+    "disputedRegions": [
+      "Acor Wetlands"
+    ]
   },
   {
     "id": "west-baldro-dwarves",
@@ -524,5 +529,83 @@
     "relationship": "Second northern undead faction, ruled by the Blood Prince and secretly subordinate to Thalmagar. Contests Ithzel against the returned human lower king.",
     "actualOverlord": "thalmagars-empire",
     "ruler": "prince-wilhelm"
+  },
+  {
+    "id": "kudan",
+    "name": "Kudan",
+    "regions": [
+      "Cudon"
+    ],
+    "capital": "Kudan Town, southwest Cudon coast",
+    "people": "Human",
+    "relationship": "Independent human coastal kingdom. Its only major settlement is Kudan Town, with farms in the surrounding countryside. Hostile to and afraid of Thalmagar; his conquest of Kudan belongs to later campaign progression."
+  },
+  {
+    "id": "narcosh",
+    "name": "Narcosh",
+    "regions": [
+      "Narcosh",
+      "Lesser Oremindi Mountains"
+    ],
+    "disputedRegions": [
+      "Acor Wetlands"
+    ],
+    "capital": "Seat not yet specified",
+    "people": "People of mixed human and goblin ancestry",
+    "relationship": "Independent country, friendly toward Thalmagar and considering alignment without having decided. Allows northern orc warbands passage through its lands toward the Oremindi, via the Orthakar woodland corridor. Disputes Acor Wetlands with Acreland and Endevor."
+  },
+  {
+    "id": "oremindi-west-orcs",
+    "name": "West Oremindi Clan",
+    "regions": [
+      "West Oremindi Mountains"
+    ],
+    "capital": "Broken Horn Hold",
+    "people": "Orcs",
+    "relationship": "An independent orc chieftainship occupying the mountain surface and former human settlements. Rivals the other three chieftains; there is no united orc state or settled allegiance to Thalmagar. Its chief’s personal name is undecided."
+  },
+  {
+    "id": "oremindi-east-orcs",
+    "name": "East Oremindi Clan",
+    "regions": [
+      "East Oremindi Mountains"
+    ],
+    "capital": "Ashen Stair Hold",
+    "people": "Orcs",
+    "relationship": "An independent orc chieftainship occupying the mountain surface and former human settlements. Rivals the other three chieftains; there is no united orc state or settled allegiance to Thalmagar. Its chief’s personal name is undecided."
+  },
+  {
+    "id": "oremindi-north-orcs",
+    "name": "North Oremindi Clan",
+    "regions": [
+      "North Oreminidi Mountains"
+    ],
+    "capital": "White Anvil Hold",
+    "people": "Orcs",
+    "relationship": "An independent orc chieftainship occupying the mountain surface and former human settlements. Rivals the other three chieftains; there is no united orc state or settled allegiance to Thalmagar. Its chief’s personal name is undecided."
+  },
+  {
+    "id": "oremindi-south-orcs",
+    "name": "South Oremindi Clan",
+    "regions": [
+      "South Oremindi Mountains"
+    ],
+    "capital": "Red Tarn Hold",
+    "people": "Orcs",
+    "relationship": "An independent orc chieftainship occupying the mountain surface and former human settlements. Rivals the other three chieftains; there is no united orc state or settled allegiance to Thalmagar. Its chief’s personal name is undecided."
+  },
+  {
+    "id": "oremindi-kingdom",
+    "name": "Oremindi Kingdom",
+    "regions": [],
+    "disputedRegions": [
+      "West Oremindi Mountains",
+      "East Oremindi Mountains",
+      "North Oreminidi Mountains",
+      "South Oremindi Mountains"
+    ],
+    "capital": "A refugee camp; the old royal seat is lost",
+    "people": "Human",
+    "relationship": "Nearly destroyed human kingdom. Once an ineffective claim over isolated mountain communities, the monarchy became a rallying point against the orc invasions. Ruined settlements and a small surviving refuge remain; the king has no sole region-wide control. The four orc chiefs now occupy the surface."
   }
 ]

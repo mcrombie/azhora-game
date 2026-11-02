@@ -1,6 +1,6 @@
 import { finishBuild } from '../loading/build-steps.js';
 import * as THREE from 'three';
-import { registerWorldTree, worldTreeId } from './tree-registry.js';
+import { createSpeciesTreesSteps } from './species-trees.js';
 import { createSceneryBuilder } from './scenery-builder.js';
 import { FARMSTEADS, FARM_LANES, inFarmPolygon } from './regional-farmland.js';
 
@@ -26,7 +26,7 @@ const hash = (a, b = 0) => {
 export function createRegionalFarmlandScenery(...args) { return finishBuild(createRegionalFarmlandScenerySteps(...args)); }
 
 export function* createRegionalFarmlandScenerySteps({ root, groundHeight, colliders = [], canPlace = () => true }) {
-  let buildWork = 0;
+  let buildWork = 0;const orchardTrees=[];
   const group = new THREE.Group(); group.name = 'Regional farmland'; root.add(group);
   const metrics = { farms: 0, fields: 0, grainFields: 0, vegetableFields: 0, meadows: 0,
     orchards: 0, orchardTrees: 0, gardenBeds: 0, seedStations: 0, shelters: 0,
@@ -112,25 +112,6 @@ export function* createRegionalFarmlandScenerySteps({ root, groundHeight, collid
       }
     }
   }
-  function orchardTree(tree, props, index) {
-    const py = y(tree.x, tree.z), h = tree.height, lean = (index % 3 - 1) * .2;
-    props.cylinder(C.timber, tree.x, py, tree.z, .2, h * .67, .2);
-    props.beam(C.timber, [tree.x, py + h * .5, tree.z], [tree.x + .95, py + h * .76, tree.z + .3], .17);
-    props.beam(C.timber, [tree.x, py + h * .4, tree.z], [tree.x - .8, py + h * .68, tree.z - .3], .15);
-    for (const [dx, dz, dh, tint] of [[-.72, -.1, .71, C.leaf], [.64, .24, .77, C.leafLight], [lean, -.35, .91, C.leaf]]) {
-      props.rock(tint, tree.x + dx, py + h * dh, tree.z + dz, 1.18, .97, 1.2, index * .6);
-    }
-    // A few restrained fruit flecks distinguish the orchard from ordinary woods.
-    for (let n = 0; n < 5; n++) {
-      const a = n * 2.4 + index, radius = .95 + hash(n, index) * .35;
-      props.rock(index % 2 ? '#b28d49' : '#a47650', tree.x + Math.cos(a) * radius, py + h * (.65 + (n % 3) * .065),
-        tree.z + Math.sin(a) * radius, .095, .11, .095);
-    }
-    const collider = { x: tree.x, z: tree.z, r: .26, kind: 'farm-orchard-tree', farmTreeId: tree.id }; addCollider(collider);
-    registerWorldTree(colliders, { id: tree.id, x: tree.x, z: tree.z, y: py, species: 'apple', radius: .26, harvestable: false,
-      reason: 'This cultivated apple tree is kept for its orchard fruit.' }, [], collider);
-    metrics.orchardTrees++;
-  }
   function workyard(farm, props, earth) {
     const s = farm.shed, w = s.w / 2, d = s.d / 2;
     const corners = [[-w, -d], [w, -d], [w, d], [-w, d]].map(([dx, dz]) => ({ x: s.x + dx, z: s.z + dz }));
@@ -206,7 +187,13 @@ export function* createRegionalFarmlandScenerySteps({ root, groundHeight, collid
         metrics.meadows++;
       } else metrics.orchards++;
     }
-    for (const tree of farm.orchardTrees) { if (++buildWork % 32 === 0) yield; if (canPlace(tree, 'tree')) orchardTree(tree, props, farm.index); }
+    for (const tree of farm.orchardTrees) { if (++buildWork % 32 === 0) yield;
+      if(!canPlace(tree,'tree'))continue;
+      orchardTrees.push({...tree,species:'apple',y:y(tree.x,tree.z),crownRadius:1.9,trunkRadius:.2,collisionRadius:.26,rotation:farm.index*.6,
+        colliderKind:'farm-orchard-tree',farmId:farm.id,region:farm.region,habitat:'orchard',locationName:farm.name,harvestable:false,
+        reason:'This cultivated apple tree is kept for its orchard fruit.'});
+      metrics.orchardTrees++;
+    }
     for (const edge of farm.hedgeEdges) { if (++buildWork % 32 === 0) yield;
       const a = farm.boundary[edge], b = farm.boundary[(edge + 1) % farm.boundary.length];
       const count = Math.floor(distance(a, b) / 2.1);
@@ -248,5 +235,8 @@ export function* createRegionalFarmlandScenerySteps({ root, groundHeight, collid
     }
     metrics.farms++; metrics.gardenBeds += farm.rows.length;
   }
+  const treeView=yield* createSpeciesTreesSteps({parent:group,colliders,trees:orchardTrees,heightAt:groundHeight,name:'Regional farmland / identified orchard trees'});
+  metrics.orchardBatches=treeView.batches;metrics.batches+=treeView.batches;metrics.vertices+=treeView.vertices;metrics.colliders+=orchardTrees.length;
+  for(const c of colliders)if(c.kind==='farm-orchard-tree'&&c.id)c.farmTreeId=c.id;
   return { group, metrics };
 }

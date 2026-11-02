@@ -5,7 +5,7 @@
 import { hexAtlasCorners, TRANSFORM as HEX_WORLD_TRANSFORM } from '../../world/terrain/region-world.js';
 import { PLAYABLE_SURVEY } from '../../dev/tools/region-survey.js';
 import { createCampaignMapLayer } from './campaign-map-layer.js';
-import {createAtlasScope,scopeMinimumZoom,clampScopeOffset} from './atlas-scope.js';
+import {createAtlasScope,scopeMinimumZoom,clampScopeOffset,atlasObjectiveFrame} from './atlas-scope.js';
 import { createMapArmies } from './world-map-armies.js';
 import { atlasLocalDetail, atlasCityBoundaries, atlasPlaceMarks, atlasMarkKnown, atlasRegionLabelKnown, atlasExplorationScope, splitAtlasRegionLabels, GLIMPSED_TERRAIN } from './world-map-detail.js';
 
@@ -66,7 +66,7 @@ export function createWorldMap({includeQuests=true,regionScope=null}={}) {
       }
       if(x<0||y<0||x>width||y>height)continue;
       const button=document.createElement('button');button.className='atlas-battlefield';button.dataset.battleId=mark.id;
-      button.textContent=`${tracked?.kind==='battle'&&tracked.id===mark.id?'Stop tracking':'Track battle'}: ${mark.name} / until day ${mark.endsOn}`;button.style.left=x+'px';button.style.top=y+'px';
+      button.textContent=`${tracked?.kind==='battle'&&tracked.id===mark.id?'Stop tracking':'Track battle'}: ${mark.name} / until ${mark.deadlineLabel??'day '+mark.endsOn}`;button.style.left=x+'px';button.style.top=y+'px';
       button.onclick=()=>{focusBattle(mark.id);onTrack?.({kind:'battle',id:mark.id});};battleLayer.append(button);
     }
   }
@@ -85,18 +85,19 @@ export function createWorldMap({includeQuests=true,regionScope=null}={}) {
   // inside them wait until the traveler has zoomed in far enough to read them.
   const placeShown = place => (!scenarioScope||scenarioScope.contains(place)) && atlasMarkKnown(place, visited, chart.reveal)
     && (['quest', 'tracked', 'capital', 'city', 'area'].includes(place.kind) || zoom >= (place.kind === 'local' ? DETAIL_ZOOM : 3.5));
-  const placeNamed = place => ['quest', 'tracked'].includes(place.kind) ? zoom >= 3.5 : ['area', 'capital', 'city'].includes(place.kind) ? zoom >= 1.8 : zoom >= 5.5;
+  const placeNamed = place => place.kind==='quest'&&place.directionsKnown ? true : ['quest', 'tracked'].includes(place.kind) ? zoom >= 3.5 : ['area', 'capital', 'city'].includes(place.kind) ? zoom >= 1.8 : zoom >= 5.5;
   function drawPlaces() {
     placeLayer.replaceChildren();
     renderedPlaces = atlasPlaceMarks(places, localDetail.markers);
     for (const place of renderedPlaces) {
       const mark = document.createElement('div');
       mark.className = `atlas-place ${place.kind}`;
+      if(place.kind==='quest'&&place.directionsKnown)mark.classList.add('known-objective');
       if (place.colour) mark.style.setProperty('--quest-colour', place.colour);
       const dot = document.createElement('i'), label = document.createElement('span');
       label.textContent = place.name;
       if (place.subtitle) { const subtitle = document.createElement('small'); subtitle.textContent = place.subtitle; label.append(subtitle); }
-      if (['capital', 'city'].includes(place.kind)) mark.dataset.placeId = place.id;
+      mark.dataset.placeId = place.id;
       mark.append(dot, label);
       place.mark = mark; place.label = label; placeLayer.append(mark);
     }
@@ -444,20 +445,27 @@ export function createWorldMap({includeQuests=true,regionScope=null}={}) {
     zoom = Math.max(zoom, localZoom());
     centreOnTraveler(); return true;
   }
+  function focusObjective(){
+    const goal=places.find(p=>p.kind==='quest'&&p.directionsKnown);
+    const frame=atlasObjectiveFrame(travelerPoint,goal,{width,height,fitScale,localZoom:localZoom(),minimumZoom:scopeMinimumZoom(scenarioScope,width,height,fitScale)});
+    if(!frame)return false;
+    zoom=frame.zoom;offsetX=frame.x;offsetY=frame.y;render();return true;
+  }
   $('atlas-traveler-button').onclick = () => focusTraveler();
   /** Opening the chart: always on the traveler; the first time, close enough to read the country round about. */
-  function open({view='regions',regions=null}={}) {
+  function open({view='regions',regions=null,objective=false}={}) {
     campaignLayer.setView(view);
     ready.then(() => requestAnimationFrame(() => {
       resize();
       if (!metadata || !travelerPoint || !width || !height) return;
       if (!opened) { zoom = localZoom(); opened = true; }
-      if(regions)focusRegions(regions);else centreOnTraveler();
+      if(regions)focusRegions(regions);else if(!objective||!focusObjective())centreOnTraveler();
     }));
   }
   return {ready, setRegionScope, setTrackingHandler:fn=>{onTrack=fn;},setTrackedTarget:value=>{tracked=value;armyLayer.setTracked(value);drawBattles();}, focus:focusRegion, focusTraveler, focusBattle, focusArmy, setArmyMarkers:armyLayer.set, setBattleMarkers:marks=>{battleMarks=marks.map(m=>({...m}));drawBattles();},setTraveler, setChart, setLocalMap, open, setChapter:campaignLayer.setChapter, setSimulation:campaignLayer.setSimulation, setView:campaignLayer.setView,
     state: () => ({zoom, offsetX, offsetY, width, height,scope:scenarioScope?{names:scenarioScope.names,bounds:scenarioScope.bounds,clipped:true}:null, source: metadata?.source,battleMarkers:battleMarks.filter(m=>atlasMarkKnown(m,visited,chart.reveal)).map(m=>m.id),campaign:campaignLayer.state(), traveler: travelerPoint ? { ...travelerPoint } : null,
       armies:armyLayer.state(),
+      objectives:renderedPlaces.filter(p=>p.kind==='quest'&&placeShown(p)).map(({id,targetId,name,x,y,mark})=>({id,targetId,name,x,y,visible:!mark.hidden})),
       detail: { roads: localDetail.paths.length, buildings: localDetail.buildings.length, marks: localDetail.markers.length, visible: zoom > DETAIL_ZOOM },
       chart: { charted: chart.cells.length, glimpsed: chart.glimpsed.length, reveal: chart.reveal, shapes: overlay.querySelectorAll('polygon').length,
         silhouettes: chart.silhouettes.length, silhouetteCells: overlay.querySelectorAll('[data-role="silhouettes"] polygon').length,

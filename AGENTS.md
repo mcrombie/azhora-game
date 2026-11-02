@@ -27,3 +27,21 @@ five-region Lizeem scenario. Keep it free of rendering, platform and legacy ques
 dependencies. The authored campaign and frontier experiment remain separate.
 See `docs/architecture/lizeem-simulation.md` for its current scope.
 Do not include `reference-private/` or its contents in indexes or backup tooling.
+
+# Character appearance
+
+Women must have full scalp coverage unless the user explicitly requests a bald,
+shaved, or thinning hairstyle. Do not leave exposed crown patches between a fringe
+and rear hair. Check hair from above and from the third-person camera, not just
+from the front. Prefer fixing shared hairstyle geometry so future characters do
+not inherit the same defect.
+
+# Environmental signs
+
+World signs should look made by the world's inhabitants: carved timber,
+incised stone, painted cloth or worked metal, with physical thickness and
+believable supports. Match the building's materials and local craft. Prefer
+an emblem and a short name; put explanations in nearby interaction text.
+Avoid floating title cards, flat UI-like plaques and decorative font changes
+as a substitute for a designed object. A distinctive doorway may need only
+its architecture and a symbol, with no literal sign at all.

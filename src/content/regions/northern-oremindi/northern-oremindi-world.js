@@ -5,6 +5,7 @@ import { REGION_CELLS, REGION_IDS, hexAt, hexCentre, TRANSFORM, SURVEY, landDist
 import { regionOutline, pointInPolygon } from '../../../world/terrain/region-layout.js';
 import { createHexBoundaryDistance } from '../../../world/terrain/hex-boundary-distance.js';
 import { NORTHERN_CLIMATE } from './northern-oremindi-climate.js';
+import {frontierRelief} from '../oremindi-frontier/oremindi-frontier-layout.js';
 const freeze=Object.freeze,clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t);};
 const lerp=(a,b,t)=>a+(b-a)*t,key=c=>`${c.q},${c.r}`;
@@ -105,6 +106,7 @@ export function northernGround(x,z,base=baseAt(x,z)){
   if(!northernOwns(x,z))return base;
   let y=naturalGround(x,z,base),p=northernPathSample(x,z);
   const wet=northernWaterAt(x,z);if(wet!==null)return y;
+  y=frontierRelief(x,z,y,northernCellAt(x,z).region,Math.min(northernInset(x,z),Math.max(0,landDistance(x,z))));
   if(p.distance<32){let shore=Infinity;for(const l of NORTHERN_LAKES)shore=Math.min(shore,northernLakeDistance(l,x,z));
     y=lerp(y,p.y,(1-smooth(6,32,p.distance))*smooth(0,18,northernInset(x,z))*smooth(2,14,shore));}
   return y;

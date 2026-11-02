@@ -1,6 +1,8 @@
 # Day and night
 
-A design brief. Nothing here is built.
+A design brief. The optional [Lizeemi atmosphere experiment](day-night-experiment.md)
+now implements the sky, sun, two moons, stars and a handful of landmark lanterns.
+The shared world clock and gameplay systems described below remain plans.
 
 **Timing update, 23 September 2026:** the user has replaced the 48-minute day below with **one in-game minute per active real second**, or **24 real minutes per full day**, beginning on **1 April 980**. See [the living main arc plan](living-main-arc-plan.md). The older durations and arrival examples below are historical and must be recalculated before implementation.
 

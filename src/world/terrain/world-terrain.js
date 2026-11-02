@@ -51,6 +51,7 @@ import { southIbenalGround, southIbenalTint, southIbenalShoreTint } from '../../
 import { northIbenalGround, northIbenalTint, northIbenalShoreTint } from '../../content/regions/north-ibenal/north-ibenal-world.js';
 import { henborthGround, henborthTint } from '../../content/regions/henborth/henborth-world.js';
 import { caricasSettlementGround } from '../../content/regions/minora-frontier/caricas-settlement.js';
+import {uplandTerrainTint} from '../../content/regions/western-regions/upland-palette.js';
 import { westOremindiGround, westOremindiTint } from '../../content/regions/west-oremindi/west-oremindi-world.js';
 import { northernGround, northernTint } from '../../content/regions/northern-oremindi/northern-oremindi-world.js';
 import { southOremindiGround, southOremindiTint } from '../../content/regions/south-oremindi/south-oremindi-world.js';
@@ -494,6 +495,7 @@ function groundBeforeTelemonia(x, z) {
 const GROUND_TINTS = Object.freeze([
   Object.freeze({ id: 'gala',
     tint: (x, z, ground) => (inGalaBox(x, z) && ground === REGION_TERRAIN.Gala.ground ? galaGroundColour(x, z) : null) }),
+  Object.freeze({ id: 'uplands', tint: uplandTerrainTint }),
   Object.freeze({ id: 'oves', tint: ovesTint }),
   Object.freeze({ id: 'mithala', tint: mithalaTint }),
   Object.freeze({ id: 'southwest', tint: southwestTint }),

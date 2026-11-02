@@ -1,5 +1,6 @@
 import {presentFaction} from './league-settlement.js';
 import {parseCells,unionCells,labelAnchor} from '../../ui/map/campaign-map-geometry.js';
+import {elapsedTimeLabel,adventureTimeLabel} from '../../experiments/day-night/opening-time-label.js';
 
 const NS='http://www.w3.org/2000/svg';
 const REGIONS=[['isareos','Isareos'],['nethereum','Nethereum'],['ovesos','Ovesos'],['caricas','Caricas'],['nesdor','Nesdor']];
@@ -79,7 +80,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
   }
   function renderFrame(){
     const current=frame();if(!current)return;
-    $('chronicle-day').textContent=`${data.dayLabel??'HISTORICAL DAY'} ${current.day} / ${data.lastDay??30}`;
+    $('chronicle-day').textContent=data.timeline==='elapsed'?`ADVENTURE ${elapsedTimeLabel(current.elapsedSeconds)} / ${elapsedTimeLabel(data.elapsedSeconds)}`:`${data.dayLabel??'HISTORICAL DAY'} ${current.day} / ${data.lastDay??30}`;
     $('chronicle-event-title').textContent=current.title;$('chronicle-caption').textContent=current.caption;
     $('chronicle-present').hidden=!completed;
     for(const [id,path]of shapes){
@@ -105,7 +106,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
     $('chronicle-progress').firstElementChild.style.width=`${value}%`;$('chronicle-progress').setAttribute('aria-valuenow',String(Math.round(value)));
     $('chronicle-duration').textContent=`${Math.min(Math.round(progress()),Math.round(total))} / ${Math.round(total)} sec`;
     $('chronicle-play').textContent=completed?'Replay':playing?'Pause':'Play';$('chronicle-play').setAttribute('aria-label',completed?'Replay the history':playing?'Pause the history':'Play the history');
-    $('chronicle-play-state').textContent=error?(hasBegun?'Your campaign is unchanged. Return to the chamber.':'The campaign can begin without the projection.'):!ready?'The memory is gathering.':completed?(hasBegun?'Your campaign is unchanged. Return whenever you are ready.':'The campaign is still waiting for your choice.'):!focused?'Paused while this window is in the background.':playing?'Taleth lets the days pass through the glass.':'Time is held. Continue whenever you are ready.';
+    $('chronicle-play-state').textContent=error?(hasBegun?'Your campaign is unchanged. Return to the chamber.':'The campaign can begin without the projection.'):!ready?'The memory is gathering.':completed?(hasBegun?'Your campaign is unchanged. Return whenever you are ready.':'The campaign is still waiting for your choice.'):!focused?'Paused while this window is in the background.':playing?(data.timeline==='elapsed'?'Taleth shows the moments of your campaign.':'Taleth lets the days pass through the glass.'):'Time is held. Continue whenever you are ready.';
     $('chronicle-previous').disabled=!ready||index===0;$('chronicle-next').disabled=!ready||index>=data.frames.length-1;$('chronicle-play').disabled=!ready;
   }
   function seek(next,{play=playing}={}){
@@ -135,7 +136,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
       map.replaceChildren();shapes=new Map();labels=new Map();chart=null;marks=null;
       $('chronicle-map-message').hidden=false;$('chronicle-map-message').textContent='Drawing the remembered borders…';
       timeline.replaceChildren();
-      data.frames.forEach((f,i)=>{const button=document.createElement('button');button.textContent=`${f.day}`;button.title=`Day ${f.day}: ${f.title}`;button.setAttribute('aria-label',button.title);button.dataset.chronicleFrame=String(i);button.onclick=()=>seek(i,{play:false});timeline.append(button);});
+      data.frames.forEach((f,i)=>{const button=document.createElement('button');button.textContent=data.timeline==='elapsed'?elapsedTimeLabel(f.elapsedSeconds):`${f.day}`;button.title=`${data.timeline==='elapsed'?adventureTimeLabel(f.elapsedSeconds):'Day '+f.day}: ${f.title}`;button.setAttribute('aria-label',button.title);button.dataset.chronicleFrame=String(i);button.onclick=()=>seek(i,{play:false});timeline.append(button);});
       renderFrame();$('chronicle-start').focus();
       try{const atlas=await loadAtlas();if(disposed||!active||token!==request)return false;buildMap(atlas);$('chronicle-map-message').hidden=true;return true;}
       catch(e){if(disposed||!active||token!==request)return false;error=e.message;playing=false;$('chronicle-map-message').textContent=error;renderProgress();return false;}
@@ -164,7 +165,7 @@ export function createChronicleView({onClose=()=>{},onStart=()=>{},onFrame=()=>{
       }
       return true;
     },
-    state:()=>({id:data?.id,kind:data?.kind??'prelude',frames:data?.frames.length??0,active,index,playing,elapsed,ready,error,completed,day:frame()?.day??null,owners:frame()?{...frame().owners}:{},duration:duration()}),
+    state:()=>({id:data?.id,kind:data?.kind??'prelude',frames:data?.frames.length??0,active,index,playing,elapsed,ready,error,completed,day:frame()?.day??null,...(data?.timeline==='elapsed'?{elapsedSeconds:frame()?.elapsedSeconds}:{}),owners:frame()?{...frame().owners}:{},duration:duration()}),
     dispose(){disposed=true;request++;active=false;playing=false;root.remove();}
   };
 }

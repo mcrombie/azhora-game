@@ -7,9 +7,17 @@ test('first-person river and east eyes clear parapets while keeping the real tow
   for(const view of ['river','east'])for(const t of [0,10,18,90]){
     const {eye,target,fov}=lookoutCamera(view,t);
     assert.equal(eye.y,LOOKOUT.y+1.75);assert.ok(Math.max(Math.abs(eye.x-LOOKOUT.x),Math.abs(eye.z-LOOKOUT.z))>10.5);
-    assert.ok(view==='east'?target.x>LOOKOUT.x+1800:target.z>LOOKOUT.z+1700);assert.ok(fov>=45&&fov<=66);
+    assert.ok(view==='east'?target.x>LOOKOUT.x+1800:target.z>LOOKOUT.z+500);assert.ok(fov>=44&&fov<=66);
     assert.ok(target.x<LOOKOUT_HORIZON.maxX&&target.z<LOOKOUT_HORIZON.maxZ);
   }
+});
+
+test('river review frames the nearby valley more tightly than the southern-country tour',()=>{
+  const river=lookoutCamera('river'),south=lookoutCamera('southern-countries');
+  assert.equal(river.fov,44);assert.ok(river.fov<south.fov);
+  const pitch=p=>Math.atan2(p.eye.y-p.target.y,Math.hypot(p.target.x-p.eye.x,p.target.z-p.eye.z));
+  assert.ok(pitch(river)>.3,'Looking down at farms and river rather than the distant skyline');
+  assert.ok(pitch(river)>pitch(south));
 });
 
 test('the five further views keep the tower elevation and the real geographic bearing',()=>{

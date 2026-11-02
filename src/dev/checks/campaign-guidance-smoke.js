@@ -15,7 +15,7 @@ function layout(){
 }
 export async function opening(a){
   await prepareWarExterior(a);window.dispatchEvent(new Event('focus'));a.war.advance();a.war.pause();tick(a);
-  assert($('world-war-objective-title').textContent==='Meet Bear at the stable','Horse handoff is the first outdoor objective');
+  assert($('world-war-objective-title').textContent==='Bear has a horse for you','Horse handoff is the first outdoor objective');
   assert($('world-war-next').hidden,'No competing army action during the horse handoff');
   a.look({yaw:1.4,pitch:.22,distance:8});baseline=a.war.save();await frame();return {checks:['One clear horse handoff with no competing primary action'],layout:layout()};
 }

@@ -33,7 +33,7 @@ import { southwestGround, southwestSeamWeight } from '../southwest/southwest-wor
 import {
   WEST_RIVERS, WEST_POOLS, WEST_GROUND, VASTOS_SINTER, VASTOS_BRAID, VASTOS_RIVER,
   MENETH_RIDGES, menethRidgePhase, CARICAS_SHELF, WEST_BRAIDS, WEST_REGION_BOXES, inBox,
-  NETHEREUM_HOLLOW, ISAREOS_RIVER, LIZEEM, VAELLIR, ALEZHOR_WATER,
+  NETHEREUM_HOLLOW, ISAREOS_RIVER, LIZEEM, LIZEEM_HEAD, VAELLIR, ALEZHOR_WATER,
   courseDistance, coursePosition, courseHalfAt, courseCutAt,
 } from './west-regions.js';
 
@@ -286,7 +286,7 @@ export function westWaterDepth(x, z) {
   }
   for (const course of WEST_RIVERS) {
     if (courseDistance(course, x, z, course.maxHalf) >= course.maxHalf) continue;
-    const sample = courseSample(course, x, z);
+    const sample = (course.mouthOf || course.fadeBed || (course.blend && course.widthStops)) ? courseBetween(course, x, z) : courseSample(course, x, z);
     if (courseDistance(course, x, z, sample.half) >= sample.half) continue;
     depth = Math.max(depth, sample.surface - westGroundAt(x, z));
   }
@@ -325,6 +325,24 @@ export const WEST_PROFILES = (() => {
     for (let pass = 0; pass < 3; pass++) for (let i = 1; i < surfaces.length - 1; i++)
       surfaces[i] = (surfaces[i - 1] + surfaces[i] * 2 + surfaces[i + 1]) / 4;
     fall();
+    // A tributary must descend to its receiving river. Ease the last 65 metres
+    // down to the actual water level; an independently averaged profile used
+    // to leave the Isareos becks hanging several metres above the Isa.
+    if (course.mouthOf) {
+      const receiver = profiles.get(course.mouthOf), mouth = course.samples.at(-1);
+      if (!receiver) throw new Error(`Missing receiving river: ${course.mouthOf}`);
+      const outlet = receiver.reduce((best, p) =>
+        Math.hypot(p.x - mouth.x, p.z - mouth.z) < Math.hypot(best.x - mouth.x, best.z - mouth.z) ? p : best);
+      const drop = surfaces[last] - outlet.surface;
+      let remaining = 0;
+      for (let i = last; i >= 0; i--) {
+        if (i < last) remaining += Math.hypot(course.samples[i + 1].x - course.samples[i].x, course.samples[i + 1].z - course.samples[i].z);
+        surfaces[i] -= drop * (1 - smooth(0, 65, remaining));
+      }
+      // Smoothing through a shallow hollow can put a feeder below its outlet.
+      // Work upstream from that fixed outlet so the join never flows uphill.
+      for(let i=last-1;i>=0;i--)surfaces[i]=Math.max(surfaces[i],surfaces[i+1]+.01);
+    }
     // Every question about a course is answered off its nearest sample, so the
     // sample carries the width, the taper and the ford as well as the level. A
     // river that widens as it goes has to be asked where along itself you are.
@@ -420,9 +438,24 @@ function channel(x, z, ground) {
       }
     }
     const depth = clamp(ground - sample.surface, 0, 14) * sample.strength;
-    const valley = sample.half + 4 + depth * 2.2;
+    // A seasonal stream gives up its banks as well as its bed when it dries.
+    // Keeping the full valley width at the faded tip cut a dry trench through
+    // the neighbouring Lizeem source, below that source's water level.
+    const valley = sample.half + (4 + depth * 2.2) * (course.fadeBed ? sample.strength : 1);
     if (distance >= valley) continue;
-    const bed = Math.min(sample.surface - course.bed, ground);
+    const cutBed = Math.min(sample.surface - course.bed, ground);
+    const bed = course.fadeBed ? lerp(ground, cutBed, sample.strength) : cutBed;
+    const sourceBank=course===LIZEEM_HEAD?1:course===LIZEEM?1-smooth(.035,.065,sample.along):0;
+    if(sourceBank>0){
+      // The narrow source needs a bank at the drawn water edge. A broad valley
+      // interpolation here would leave exposed underwater ground beside it.
+      const edge=sample.surface+.12;
+      const section=distance<=sample.half+.4
+        ?lerp(bed,edge,smooth(sample.half*.45,sample.half+.4,distance))
+        :lerp(edge,ground,smooth(sample.half+.4,valley,distance));
+      const ordinary=lerp(bed,ground,smooth(sample.half*.8,valley,distance));
+      height=Math.min(height,lerp(ordinary,section,sourceBank));continue;
+    }
     height = Math.min(height, lerp(bed, ground, smooth(sample.half * .8, valley, distance)));
   }
   // A braid thread is shallower than the river it comes off and runs a little
@@ -463,14 +496,25 @@ export function westShaping(x, z) {
  * channels last because a river cuts through whatever it finds.
  * `natural` is the region's own blended relief; everything here only reshapes it.
  */
+function headwaterBanks(x,z,ground){
+  const distance=courseDistance(LIZEEM_HEAD,x,z,LIZEEM_HEAD.maxHalf+18);
+  if(distance>LIZEEM_HEAD.maxHalf+18)return ground;
+  const sample=courseBetween(LIZEEM_HEAD,x,z);
+  // The feeder crosses a shallow hollow before reaching the established river.
+  // Give that hollow a continuous valley floor before carving the water, rather
+  // than leaving an elevated ribbon with daylight beneath its banks.
+  const weight=1-smooth(sample.half+2,sample.half+18,distance);
+  return lerp(ground,Math.max(ground,sample.surface+.2),weight);
+}
+
 export function westGround(x, z, natural, baseCorrection = 0) {
   if (!westShaping(x, z)) return natural;
   // Correct this ridge's physical share in the same tiny dry band. Its default
   // remains the saved scatter/water-profile field used by menethBand and callers.
   const menethMix=baseCorrection>0?{weights:{Meneth:lerp(terrainMix(x,z).weights.Meneth??0,seamlessTerrainMix(x,z).weights.Meneth??0,baseCorrection)}}:null;
-  return channel(x, z, pooled(x, z, southwestGround(x, z, mithalaGround(x, z, westLotharnGround(x, z, lotharnGround(x, z, natural), baseCorrection)
+  return channel(x, z, headwaterBanks(x,z,pooled(x, z, southwestGround(x, z, mithalaGround(x, z, westLotharnGround(x, z, lotharnGround(x, z, natural), baseCorrection)
     + sinterRise(x, z) + menethRidge(x, z, menethMix) + caricasShelf(x, z) - nethereumHollow(x, z) + galaRise(x, z) - galaWash(x, z)
-    + ovesGround(x, z)))));
+    + ovesGround(x, z))))));
 }
 
 /** The western ground of a point on its own, for the scenery and the tests. */
@@ -492,7 +536,7 @@ export function westWaterSurface(x, z) {
   const dry = (x, z, surface) => westGroundAt(x, z) > surface - .03;
   for (const course of WEST_RIVERS) {
     if (courseDistance(course, x, z, course.maxHalf) >= course.maxHalf) continue;
-    const sample = courseSample(course, x, z);
+    const sample = (course.mouthOf || course.fadeBed || (course.blend && course.widthStops)) ? courseBetween(course, x, z) : courseSample(course, x, z);
     if (courseDistance(course, x, z, sample.half) >= sample.half) continue;
     return dry(x, z, sample.surface) ? null : sample.surface;
   }

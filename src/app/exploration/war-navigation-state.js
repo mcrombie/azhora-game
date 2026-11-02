@@ -1,10 +1,14 @@
 // Only a destination is saved. Coordinates and descriptions are resolved from
 // current knowledge on load, so a bookmark cannot reveal an unknown army.
 export const COUNCIL_DESTINATIONS=['council','mayor','temple'];
+export function savedNavigationMode(saved){
+  return saved?.navigationMode??(saved?.navigation&&saved.navigation.id!=='bear'?'manual':'taleth');
+}
+export function followsRecommendation(mode,opening,enabled){return mode==='taleth'&&enabled&&!['bear',...COUNCIL_DESTINATIONS].includes(opening);}
 export function validWarNavigation(value){
   if(value===undefined||value===null)return true;
   if(typeof value!=='object'||Array.isArray(value)||Object.keys(value).some(k=>!['kind','id'].includes(k)))return false;
-  if(value.kind==='opening')return ['bear',...COUNCIL_DESTINATIONS].includes(value.id);
+  if(value.kind==='opening')return ['bear','caricas','ovesos',...COUNCIL_DESTINATIONS].includes(value.id);
   return ['army','battle'].includes(value.kind)&&(typeof value.id==='string'&&value.id.length>0&&value.id.length<=128||Number.isSafeInteger(value.id)&&value.id>=0);
 }
 export function savedWarNavigation(saved){

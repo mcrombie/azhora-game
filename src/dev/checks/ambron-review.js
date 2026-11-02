@@ -34,6 +34,7 @@ async function build(){
   const built=step.value;
   document.getElementById('loading').hidden=true;
   const views={overview:{at:[-1190,25,0],yaw:.53,pitch:.77,distance:910},
+    northwest:{at:[-1230,30,-160],yaw:-2.25,pitch:.72,distance:220},
     palace:{at:[AMBRON_PALACE.x,83,AMBRON_PALACE.z],yaw:.4,pitch:.26,distance:180},
     harbour:{at:[-1010,20,-135],yaw:2.8,pitch:.45,distance:150},
     street:{at:[-1014,21,-68],yaw:1.1,pitch:.65,distance:125},
@@ -46,7 +47,7 @@ async function build(){
     market:{at:[-1140,30,5],yaw:.7,pitch:.65,distance:55}};
   function view(id){const v=views[id];target.set(...v.at);yaw=v.yaw;pitch=v.pitch;distance=v.distance;render();return id;}
   document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>view(b.dataset.view));
-  addEventListener('keydown',e=>{const id=e.key.toLowerCase()==='f'?'market':Object.keys(views)[e.key==='0'?9:Number(e.key)-1];if(id)view(id);});
+  addEventListener('keydown',e=>{const id=e.key.toLowerCase()==='f'?'market':Object.keys(views).filter(v=>v!=='northwest')[e.key==='0'?9:Number(e.key)-1];if(id)view(id);});
   window.__AMBRON_REVIEW__={view,metrics:built.metrics,stats:()=>({...renderer.info.render,geometries:renderer.info.memory.geometries}),harbours:AMBRON_HARBOURS,palaceLevel:ambronGroundLevel(AMBRON_PALACE.x,AMBRON_PALACE.z)};
   renderer.shadowMap.needsUpdate=true;view('overview');
 }

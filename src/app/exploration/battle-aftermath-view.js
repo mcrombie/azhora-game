@@ -1,5 +1,7 @@
+import {createArmyUnit} from '../../content/characters/army-unit-view.js';
+import {militiaWeapon} from '../../gameplay/combat/combat-units.js';
 import * as THREE from 'three';
-import {createCharacter,disposeCharacter} from '../../content/characters/characters.js';
+import {disposeCharacter} from '../../content/characters/characters.js';
 import {canStand} from '../../gameplay/movement/locomotion.js';
 import {defendingStrength} from '../../simulation/forces.js';
 import {LIZEEM_FIELD_SITES} from '../../content/scenarios/lizeem-field-sites.js';
@@ -18,11 +20,12 @@ export function createBattleAftermath(scene,world){
     if(key!==stamp){clear();stamp=key;}
     if(visible&&!actors.length){
       const at=battle.location,color=scenario.factions.find(f=>f.id===owner).color;
-      for(const [dx,dz] of [[-5,-5],[-3,-7],[-1,-5]]){
+      const posts=(battle.region==='caricas'&&world.caricasPosts?.survivors)||[[-5,-5],[-3,-7],[-1,-5]].map(([dx,dz])=>({x:at.x+dx,z:at.z+dz}));
+      for(const {x,z} of posts){
         if(actors.length>=Math.min(3,strength))break;
-        const x=at.x+dx,z=at.z+dz,y=world.heightAt(x,z);
+        const y=world.heightAt(x,z);
         if(!canStand(x,z,world,.45,y))continue;
-        const actor=createCharacter({role:'legion-soldier',tunic:new THREE.Color(color).getHex(),armed:true});
+        const actor=createArmyUnit({weapon:militiaWeapon(actors.length),variant:actors.length,tunic:new THREE.Color(color).getHex()});
         actor.group.position.set(x,y,z);actor.group.rotation.y=-Math.PI/2;scene.add(actor.group);actors.push(actor);
       }
     }

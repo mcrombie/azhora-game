@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import { RIVER_EDGES, RIVER_SOURCE } from '../src/world/terrain/region-rivers.js';
 import { PLAYABLE_SURVEY } from '../src/dev/tools/region-survey.js';
 import { hexCentre, hexOwnerAt } from '../src/world/terrain/region-world.js';
-import { WEST_RIVERS, LIZEEM, CARICA, VASTOS_RIVER, courseDistance } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_RIVERS, LIZEEM, LIZEEM_HEAD, VAELLIR, MITHALA_MAIN, CARICA, VASTOS_RIVER, ISAREOS_RIVER, ISAREOS_BECKS, NETHEREUM_STREAMS, MENETH_BECKS, courseDistance, coursePosition, courseHalfAt } from '../src/content/regions/western-regions/west-regions.js';
+import { WEST_PROFILES, courseSurface, westWaterSurface } from '../src/content/regions/western-regions/west-ground.js';
+import {groundWithRiver} from '../src/world/terrain/world-terrain.js';
 
 /**
  * The west's rivers are chained out of the atlas's own hex edges, and which chains exist
@@ -58,6 +60,72 @@ test('every atlas river edge on the Caricas and Nesdor banks is still under the 
   for (let i = 1; i < LIZEEM.points.length; i++) {
     const a = LIZEEM.points[i - 1], b = LIZEEM.points[i];
     assert.ok(Math.hypot(b.x - a.x, b.z - a.z) < 20, `the Lizeem jumps at point ${i}`);
+  }
+});
+
+test('reshaped Lizeem banks still overlap all four tributary mouths', () => {
+  for (const id of ['isareos-river', 'neth', 'carica', 'oveth-reach']) {
+    const tributary = WEST_RIVERS.find(r => r.id === id), mouth = tributary.points.at(-1);
+    const half = courseHalfAt(LIZEEM, coursePosition(LIZEEM, mouth.x, mouth.z));
+    assert.ok(courseDistance(LIZEEM, mouth.x, mouth.z) < half + tributary.halfWidthEnd,
+      `${id} must join the water instead of ending on a dry bank`);
+  }
+});
+
+test('the Lizeem grows from a narrow descending headwater without a square cutoff or an abrupt reverse bend',()=>{
+  const profile=WEST_PROFILES.get(LIZEEM_HEAD.id),end=profile.at(-1),main=WEST_PROFILES.get(LIZEEM.id);
+  assert.ok(profile[0].half<.15&&end.half>2);
+  assert.ok(Math.hypot(end.x-main[0].x,end.z-main[0].z)<.001);
+  assert.ok(Math.abs(end.surface-main[0].surface)<.001);
+  const a=profile.at(-2),b=LIZEEM.points[1],u=[end.x-a.x,end.z-a.z],v=[b.x-end.x,b.z-end.z];
+  assert.ok((u[0]*v[0]+u[1]*v[1])/(Math.hypot(...u)*Math.hypot(...v))>.95);
+  for(let i=1;i<profile.length;i++)assert.ok(profile[i].surface<profile[i-1].surface);
+  for(const p of profile)for(const sign of [-1,1]){
+    const offset=p.half+3,x=p.x+sign*p.nx*offset,z=p.z+sign*p.nz*offset;
+    if(westWaterSurface(x,z)===null)assert.ok(groundWithRiver(x,z)>p.surface-.1,'the water has banks: '+JSON.stringify({x,z,ground:groundWithRiver(x,z),surface:p.surface}));
+  }
+});
+
+test('Pyros and Mithala carry broad rivers while the Lizeem remains larger',()=>{
+  const average=course=>Array.from({length:11},(_,i)=>courseHalfAt(course,i/10)).reduce((a,b)=>a+b)/11;
+  const pyros=average(VAELLIR),mithala=average(MITHALA_MAIN),lizeem=average(LIZEEM);
+  assert.ok(pyros>=20&&mithala>=20);
+  assert.ok(Math.abs(pyros-mithala)<5);
+  assert.ok(lizeem>pyros&&lizeem>mithala);
+});
+
+test('Isareos streams carry continuous water down to the Isa at its actual level', () => {
+  for (const beck of ISAREOS_BECKS) {
+    const profile = WEST_PROFILES.get(beck.id), mouth = profile.at(-1);
+    assert.ok(courseDistance(ISAREOS_RIVER, mouth.x, mouth.z) < .01, `${beck.id}: no dry gap to the receiver`);
+    assert.ok(Math.abs(mouth.surface - courseSurface(ISAREOS_RIVER, mouth.x, mouth.z)) < .001,
+      `${beck.id}: no water hanging above the receiver`);
+    assert.ok(profile[0].half < .25 && profile[5].half > profile[0].half * 2, 'a narrow source grows into the beck');
+    for (let i = 1; i < profile.length; i++) {
+      assert.ok(profile[i].surface < profile[i - 1].surface, `${beck.id}: water must descend`);
+      for (let step = 0; step <= 4; step++) {
+        const a = profile[i - 1], b = profile[i], t = step / 4;
+        const x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
+        assert.notEqual(westWaterSurface(x, z), null, `${beck.id}: dry break at segment ${i}`);
+      }
+    }
+  }
+});
+
+test('seasonal streams fade into meadow without blunt ends or detached puddles', () => {
+  for (const course of [...NETHEREUM_STREAMS, ...MENETH_BECKS]) {
+    const profile = WEST_PROFILES.get(course.id);
+    let ended = false, lastWet = null;
+    for (let i = 0; i < profile.length; i++) {
+      const p = profile[i], wet = westWaterSurface(p.x, p.z) !== null;
+      if (i) assert.ok(p.surface < profile[i - 1].surface, course.id + ' flows downhill');
+      if (!wet) ended = true;
+      else { assert.ok(!ended, course.id + ' must not reappear as a detached strip'); lastWet = p; }
+    }
+    assert.ok(lastWet?.along > .65 && lastWet.half < .4, course.id + ' narrows before drying');
+    assert.ok(profile[0].half < .2, course.id + ' begins as a narrow spring');
+    assert.ok(profile.some(p => p.half > 1), course.id + ' retains a readable middle reach');
+    assert.ok(ended, course.id + ' gives up its channel on the meadow');
   }
 });
 

@@ -4,6 +4,8 @@ import { REGION_CELLS, REGION_IDS, hexAt, hexCentre, TRANSFORM, SURVEY, landDist
 import { regionOutline, pointInPolygon } from '../../../world/terrain/region-layout.js';
 import { createHexBoundaryDistance } from '../../../world/terrain/hex-boundary-distance.js';
 import { thalmagarFortressGround, thalmagarFortressReserved, THALMAGAR_FORTRESS_LANDMARK } from '../thalmagar/thalmagar-fortress-site.js';
+import {endevorWaterAt,endevorRiverSample,endevorChannelGround} from '../endevor/endevor-river.js';
+import {endevorTownGround,ENDEVOR_TOWN} from '../endevor/endevor-layout.js';
 import { ACOR_CLIMATE } from './acor-climate.js';
 const F=Object.freeze, clamp=(v)=>Math.max(0,Math.min(1,v));
 const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a));return t*t*(3-2*t);};
@@ -53,7 +55,7 @@ export const ACOR_WATERS=F([
 ]);
 function near(l,x,z,pad=0){const b=l.bounds;return x>=b.minX-pad&&x<=b.maxX+pad&&z>=b.minZ-pad&&z<=b.maxZ+pad;}
 export function acorWaterDistance(l,x,z){if(!near(l,x,z,40))return Infinity;let d=Infinity;for(let i=0;i<l.shore.length;i++)d=Math.min(d,acorSegment(x,z,l.shore[i],l.shore[(i+1)%l.shore.length]).distance);return pointInPolygon(l.shore,x,z)?-d:d;}
-export function acorWaterAt(x,z){if(!acorOwns(x,z))return null;for(const l of ACOR_WATERS)if(near(l,x,z)&&pointInPolygon(l.shore,x,z))return l.surface;return null;}
+export function acorWaterAt(x,z){const river=endevorWaterAt(x,z);if(river!==null)return river;if(!acorOwns(x,z))return null;for(const l of ACOR_WATERS)if(near(l,x,z)&&pointInPolygon(l.shore,x,z))return l.surface;return null;}
 const baseAt=(x,z)=>{const t=seamlessTerrainMix(x,z);return t.base+relief(x,z,t.amp,t.wave);};
 function countryRelief(region,x,z){
   if(region===ACOR_NAMES[1])return 11.6+1.2*Math.sin(x*.017)*Math.cos(z*.014);
@@ -66,9 +68,9 @@ function countryRelief(region,x,z){
 export function acorGround(x,z,base=baseAt(x,z)){
   if(acorCellAt(x,z)?.terrain==='ocean'){
     let shore=Infinity;for(const l of inletLoops)for(let i=0;i<l.length;i++)shore=Math.min(shore,acorSegment(x,z,l[i],l[(i+1)%l.length]).distance);
-    return mix(base,-4,smooth(0,24,shore));
+    return endevorChannelGround(x,z,mix(base,-4,smooth(0,24,shore)));
   }
-  if(!acorOwns(x,z))return base;
+  if(!acorOwns(x,z))return endevorChannelGround(x,z,base);
   const c=acorCellAt(x,z),inset=acorInset(x,z),sea=landDistance(x,z);
   // Long shallow swells, with small drainage folds rather than conical hills.
   let sum=0,total=0;
@@ -84,12 +86,12 @@ export function acorGround(x,z,base=baseAt(x,z)){
     const floor=d<0?l.surface-.4-l.depth*smooth(0,15,-d):mix(l.surface-.4+d*.18,y,smooth(0,35,d));
     y=Math.min(y,mix(y,floor,smooth(0,15,inset)));
   }
-  return thalmagarFortressGround(x,z,y,sea);
+  return thalmagarFortressGround(x,z,endevorTownGround(x,z,y,sea),sea);
 }
 export function acorFeatures(x,z,height){
   const c=acorCellAt(x,z);if(!c||c.terrain==='ocean')return null;
   const h=height??acorGround(x,z),grade=Math.hypot(acorGround(x+1,z)-acorGround(x-1,z),acorGround(x,z+1)-acorGround(x,z-1))/2;
-  let shore=Infinity;for(const l of ACOR_WATERS)shore=Math.min(shore,Math.abs(acorWaterDistance(l,x,z)));
+  let shore=Math.abs(endevorRiverSample(x,z)?.distance??Infinity);for(const l of ACOR_WATERS)shore=Math.min(shore,Math.abs(acorWaterDistance(l,x,z)));
   const forest=c.terrain==='forest'||c.terrain==='deep_forest',wet=c.region===ACOR_NAMES[1];
   return {region:c.region,terrain:c.terrain,climate:c.climate,height:h,grade,forest,wet,deep:c.terrain==='deep_forest',shoreDistance:shore,seaDistance:landDistance(x,z),water:acorWaterAt(x,z),pathDistance:acorPathDistance(x,z),snow:0,treeline:500,rock:clamp((grade-.18)*2)};
 }
@@ -101,5 +103,5 @@ export function acorTint(x,z){
   const i=ACOR_NAMES.indexOf(c.region),tones=[['#929c79','#7b876b'],['#758653','#8a9070'],['#677a50','#7a885c'],['#7b8854','#687d4b'],['#5c7048','#6b8052'],['#7c925d','#708557'],['#8d9c65','#9eaa78'],['#929275','#80876b'],['#8e9d70','#9eaa7f'],['#829460','#95a170']];
   return tones[i][stripe>.1?0:1];
 }
-export const ACOR_LANDMARKS=F([THALMAGAR_FORTRESS_LANDMARK,...ACOR_PATHS.map(p=>F({id:p.id,name:p.name,region:p.region,...p.points[0],description:'A natural, open route through the local vegetation.'})),...ACOR_WATERS.map(l=>F({id:l.id,name:l.name,region:l.region,...l.centre,description:'Permanent water with reeds, damp margins and firm ground beyond the bank.'}))]);
+export const ACOR_LANDMARKS=F([THALMAGAR_FORTRESS_LANDMARK,ENDEVOR_TOWN,...ACOR_PATHS.map(p=>F({id:p.id,name:p.name,region:p.region,...p.points[0],description:'A natural, open route through the local vegetation.'})),...ACOR_WATERS.map(l=>F({id:l.id,name:l.name,region:l.region,...l.centre,description:'Permanent water with reeds, damp margins and firm ground beyond the bank.'}))]);
 export const acorProfile=region=>({name:region,id:REGION_IDS[region],index:ACOR_NAMES.indexOf(region),cells:ACOR_CELLS.filter(c=>c.region===region),bounds:bounds(regionOutline(SURVEY,region,TRANSFORM).flat()),owns:(x,z)=>acorOwns(x,z)&&acorCellAt(x,z).region===region,lakes:ACOR_WATERS.filter(l=>l.region===region)});

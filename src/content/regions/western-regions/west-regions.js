@@ -42,6 +42,7 @@ import { hexOwnerAt, REGION_CELLS, METRES_PER_HEX, landDistance } from '../../..
 import { ELAGOS_REACHES } from '../ambron/elagos-world.js';
 import { LOTHARN_WATER_LINES, LOTHARN_BOX } from '../east-lotharn/east-lotharn-world.js';
 import { WEST_LOTHARN_WATER_LINES, WEST_LOTHARN_BOX } from '../west-lotharn/west-lotharn-world.js';
+import { shapeLizeem } from './lizeem-river-shape.js';
 
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const point = (x, z) => Object.freeze({ x, z });
@@ -89,8 +90,10 @@ function resample(points, spacing) {
  * was asked for, because a confluence with a river nobody asked for is not a
  * confluence: it is one river going past. When the six southern countries were
  * added to `RIVER_REGIONS` the Lizeem gained four new tributaries and its two
- * chains became five, so `joinAtlas` below puts the Lizeem back together. Every
- * point of it is the same point it was; `tests/west-rivers.test.js` holds it.
+ * chains became five, so `joinAtlas` below puts the Lizeem back together.
+ * Its later bank polish softens the repeating hex bends while preserving the
+ * crossings, tributary junctions and atlas corridor; `tests/west-rivers.test.js`
+ * holds that continuity.
  */
 const ATLAS_CHAINS = Object.freeze(riverCourses(PLAYABLE_SURVEY, RIVER_EDGES, undefined, { soften: 0 })
   .map(course => Object.freeze({ points: Object.freeze(course.points.map(p => point(p.x, p.z))), edges: course.edges })));
@@ -194,26 +197,52 @@ function chainBreak(key, region) {
  * `WEST_RIVERS` in order, so a course with `headOf` must come after the one it
  * names.
  *
+ * `mouthOf` joins a tributary to an earlier course's sampled water level. Its
+ * authored endpoint must lie on that receiver; only the final descent is eased.
+ *
  * `blend` has `west-ground.js` cut the course's channel to its level between its
  * two nearest samples rather than to the nearer one's (`courseBetween`). A course
  * that falls a centimetre or two a sample cannot tell the difference; one that
  * falls half a metre a sample steps its banks by about that much wherever one
  * sample hands over to the next. Only the Treloss's mouth sets it.
  */
-function river(id, name, course, { halfWidth, cut, bed = .55, halfWidthEnd, cutEnd, fordUntil = 1, taper = 0, head = null, headOf = null, blend = false }) {
-  const points = Object.freeze(soften(course).map(p => point(p.x, p.z)));
+function river(id, name, course, { halfWidth, cut, bed = .55, halfWidthEnd, cutEnd, fordUntil = 1, taper = 0, fadeBed = false, head = null, headOf = null, mouthOf = null, blend = false, widthStops = null, shape = null }) {
+  const softened = soften(course);
+  const points = Object.freeze((shape ? shape(softened) : softened).map(p => point(p.x, p.z)));
   const samples = Object.freeze(resample(points, 5).map(sample => Object.freeze(sample)));
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
   for (const p of points) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z); }
-  return Object.freeze({ id, name, points, samples, halfWidth, cut, bed, taper, fordUntil, head, headOf, blend,
+  return Object.freeze({ id, name, points, samples, halfWidth, cut, bed, taper, fadeBed, fordUntil, head, headOf, mouthOf, blend, widthStops,
     halfWidthEnd: halfWidthEnd ?? halfWidth, cutEnd: cutEnd ?? cut,
-    maxHalf: Math.max(halfWidth, halfWidthEnd ?? halfWidth),
+    maxHalf: Math.max(halfWidth, halfWidthEnd ?? halfWidth, ...(widthStops??[]).map(p=>p[1])),
     bounds: Object.freeze({ minX, maxX, minZ, maxZ }) });
 }
 
 /** How wide and how deeply cut a course is at a point of its length, 0 at the source. */
-export const courseHalfAt = (course, along) => course.halfWidth + (course.halfWidthEnd - course.halfWidth) * along;
+export const courseHalfAt = (course, along) => {
+  if(course.widthStops){
+    for(let i=1;i<course.widthStops.length;i++){
+      const [a,wa]=course.widthStops[i-1],[b,wb]=course.widthStops[i];
+      if(along<=b){const t=Math.max(0,(along-a)/(b-a));return wa+(wb-wa)*t*t*(3-2*t);}
+    }
+  }
+  return course.halfWidth + (course.halfWidthEnd - course.halfWidth) * along;
+};
 export const courseCutAt = (course, along) => course.cut + (course.cutEnd - course.cut) * along;
+
+// Seasonal hill streams narrow into a wet meadow. Width and bed both fade;
+// keeping a full-width cut until the last sample leaves a detached blue bar.
+function meadowBeck(id, name, line, options) {
+  return river(id, name, line, {...options, bed: .6, blend: true, fadeBed: true,
+    widthStops: options.widthStops ?? [[0, .12], [.12, .9], [.3, 1.55], [.48, 1.35], [.6, 1.1], [.76, .36], [.9, .06], [1, .015]],
+    shape: options.shape === false ? null : points => points.map((p, i) => {
+      const t = i / (points.length - 1), a = points[Math.max(0, i - 1)], b = points[Math.min(points.length - 1, i + 1)];
+      const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      const bend = Math.sin(Math.PI * t) ** 2 * (Math.sin(t * Math.PI * 4) * 6 + Math.sin(t * Math.PI * 7) * 2);
+      return point(p.x - (b.z - a.z) / length * bend, p.z + (b.x - a.x) / length * bend);
+    }),
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Vastos: the cold tableland
@@ -367,8 +396,11 @@ export const MENETH_BECKS = Object.freeze(MENETH_VALLEYS.map(valley => {
   const line = [];
   for (let x = valley.headX; x >= valley.footX; x -= 30) line.push(point(x, menethTroughZ(valley.index, x)));
   line.push(point(valley.footX, menethTroughZ(valley.index, valley.footX)));
-  return river(`meneth-beck-${valley.index}`, `The ${['first', 'second', 'third', 'fourth'][valley.index]} valley beck`,
-    line, { halfWidth: 1.6, cut: 1, bed: .3, taper: valley.taper ?? 55 });
+  return meadowBeck(`meneth-beck-${valley.index}`, `The ${['first', 'second', 'third', 'fourth'][valley.index]} valley beck`,
+    line, { halfWidth: 1.6, cut: 1, bed: .3, taper: valley.taper ?? 55, shape: valley.index !== 0,
+      // This short valley closes against a mountain front. End its wet thread
+      // before the rising toe can expose a second isolated puddle.
+      widthStops: valley.index === 0 ? [[0, .12], [.15, .9], [.4, 1.55], [.6, .8], [.7, .22], [.75, .02], [.78, 0], [1, 0]] : null });
 }));
 
 // ---------------------------------------------------------------------------
@@ -380,11 +412,14 @@ export const MENETH_BECKS = Object.freeze(MENETH_VALLEYS.map(valley => {
  * chains that meet where the Carica joins it; `riverCourses` breaks a chain at
  * any corner three edges meet, so the confluence is rejoined here. The map marks
  * its head medium and the rest of it large, and the river is built that way:
- * five metres of water either side at the head and fifteen at the mouth.
+ * sixteen metres of water either side at the head and thirty-six below Nesdor.
+ * The lower reach narrows at Nylon’s established harbor; the tributaries retain
+ * their smaller channels. Unequal sweeps and broad/narrow reaches interrupt the
+ * repeated hex-edge scallops. These shapes drive terrain, water and the local map.
  *
  * This is the biggest water in the playable world and the drain for the whole
  * western quarter of it. The lore of the branch countries has it navigable for
- * light boats with a predictable annual rise; nobody has bridged it here, and
+ * boats with a predictable annual rise; Minora guards its bridge, and
  * nothing here can be waded.
  */
 export const LIZEEM = river('lizeem', 'The Lizeem', (() => {
@@ -398,7 +433,20 @@ export const LIZEEM = river('lizeem', 'The Lizeem', (() => {
   const lower = joinAtlas('Nesdor,Ovesos', chainWithin('Eer,Gala,Nesdor,Northern Ascarth', 'Nesdor'));
   // The two halves share the junction corner; drop the duplicate.
   return [...upper, ...lower.slice(1)];
-})(), { halfWidth: 5, halfWidthEnd: 15, cut: 2.6, cutEnd: 3.4, bed: 2.2, fordUntil: 0 });
+// Broad pools alternate with narrower runs; a short fixed constriction preserves
+// Velsorten's existing intake and warden's hut.
+})(), { halfWidth: 16, halfWidthEnd: 36, shape: shapeLizeem,
+  widthStops: Object.freeze([[0,2.4],[.012,5],[.035,16],[.065,20],[.12,16.8],[.18,22],[.235,21],
+    [.29,29],[.345,21],[.395,27],[.45,24],[.48,25.4],[.515,17.5],[.566,17.5],
+    [.605,30],[.66,26],[.72,34],[.79,25],[.86,32],[.94,30],[1,36]].map(Object.freeze)),
+  cut: 2.6, cutEnd: 3.4, bed: 2.2, fordUntil: 0 });
+
+// A shallow feeder emerges beneath the foothills and grows into the broad
+// navigable reach. The large river no longer begins with a square sheet.
+export const LIZEEM_HEAD = river('lizeem-head', 'The Lizeem headwater',
+  [point(-2048,-222),point(-2067,-199),point(-2089,-171),point(-2125,-130),LIZEEM.points[0]],
+  {halfWidth:.08,halfWidthEnd:2.4,cut:.55,cutEnd:1.1,bed:.45,blend:true,mouthOf:LIZEEM.id,
+    widthStops:[[0,.08],[.12,.65],[.4,1.2],[.7,1.7],[1,2.4]]});
 
 /**
  * The Carica, and with it the whole of what Caricas is. The lore gives the river
@@ -494,14 +542,14 @@ export const NESDOR_BECK = river('nesdor-beck', 'The Flats Beck', [
  * which is what the Ela-South Reach does where the atlas hands Elagos's drainage
  * into Nesdor. Two courses, one river, one water level.
  *
- * Wider and less deeply cut than the channel above it: a river at its mouth
- * spreads and stops digging. Still `fordUntil: 0` — the Lizeem is the wall that
+ * The upper reach keeps the broad main channel, narrowing smoothly at Nylon's
+ * established harbor frontage. Still `fordUntil: 0` — the Lizeem is the wall that
  * puts Gala on the far bank, and the lore of Eer says so in as many words: "it
  * cannot be crossed anywhere along the Eer bank".
  */
 export const LIZEEM_REACH = river('lizeem-reach', 'The Lizeem',
   chainBeyond('Eer,Gala,Nesdor,Northern Ascarth', 'Nesdor'),
-  { halfWidth: 15, halfWidthEnd: 19, cut: 3.4, cutEnd: 1.9, bed: 2.2, fordUntil: 0, headOf: 'lizeem' });
+  { halfWidth: 36, halfWidthEnd: 19, widthStops: Object.freeze([[0,36],[.45,36],[.75,19],[1,19]].map(Object.freeze)), cut: 3.4, cutEnd: 1.9, bed: 2.2, fordUntil: 0, headOf: 'lizeem' });
 
 /**
  * Eer's own water. The atlas draws none inside the region — every river edge it
@@ -596,16 +644,34 @@ export const ISAREOS_RIVER = river('isareos-river', 'The Isa',
  */
 export const ISAMOUTH_GROUND = Object.freeze({ x: -2250, z: 231, radius: 62 });
 
+// Join an actual sampled point of the Isa, not a nearby dry bank. The same
+// receiver supplies the mouth's water level in west-ground.js.
+function isaBeck(id, name, line) {
+  const end = line.at(-1);
+  const mouth = ISAREOS_RIVER.samples.reduce((best, p) =>
+    Math.hypot(p.x - end.x, p.z - end.z) < Math.hypot(best.x - end.x, best.z - end.z) ? p : best);
+  return river(id, name, [...line, point(mouth.x, mouth.z)], {
+    halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .6,
+    mouthOf: ISAREOS_RIVER.id, blend: true,
+    widthStops: [[0, .16], [.1, 1.1], [.28, 1.65], [.48, 1.35], [.7, 1.85], [.9, 2.25], [1, 2.2]],
+    shape: points => points.map((p, i) => {
+      const t = i / (points.length - 1), a = points[Math.max(0, i - 1)], b = points[Math.min(points.length - 1, i + 1)];
+      const length = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+      const bend = Math.sin(Math.PI * t) ** 2 * (Math.sin(t * Math.PI * 5) * 3.2 + Math.sin(t * Math.PI * 9) * 1.1);
+      return point(p.x - (b.z - a.z) / length * bend, p.z + (b.x - a.x) / length * bend);
+    }),
+  });
+}
 export const ISAREOS_BECKS = Object.freeze([
-  river('isareos-beck-west', 'The west beck', [
+  isaBeck('isareos-beck-west', 'The west beck', [
     point(-2698, -8), point(-2706, 38), point(-2704, 82), point(-2694, 118), point(-2686, 142),
-  ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
-  river('isareos-beck-middle', 'The middle beck', [
+  ]),
+  isaBeck('isareos-beck-middle', 'The middle beck', [
     point(-2522, -28), point(-2530, 24), point(-2538, 78), point(-2544, 128), point(-2548, 162),
-  ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
-  river('isareos-beck-east', 'The east beck', [
+  ]),
+  isaBeck('isareos-beck-east', 'The east beck', [
     point(-2362, 22), point(-2372, 74), point(-2380, 124), point(-2390, 172), point(-2400, 218), point(-2410, 244),
-  ], { halfWidth: 1.5, halfWidthEnd: 2.2, cut: 1, cutEnd: .8, bed: .3 }),
+  ]),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -711,13 +777,13 @@ export const NETHEREUM_OUTLET = river('nethereum-outlet', 'The outlet', [
 ], { halfWidth: 1.6, halfWidthEnd: 2.4, cut: .55, cutEnd: .9, bed: .3 });
 
 export const NETHEREUM_STREAMS = Object.freeze([
-  river('nethereum-stream-north', 'The north-west thread', [
+  meadowBeck('nethereum-stream-north', 'The north-west thread', [
     point(-2700, 248), point(-2688, 288), point(-2670, 324), point(-2646, 352), point(-2620, 370),
   ], { halfWidth: 1.4, halfWidthEnd: 1.9, cut: .95, cutEnd: .7, bed: .3, taper: 60 }),
-  river('nethereum-stream-east', 'The north-east thread', [
+  meadowBeck('nethereum-stream-east', 'The north-east thread', [
     point(-2352, 284), point(-2372, 316), point(-2394, 344), point(-2420, 364), point(-2448, 376),
   ], { halfWidth: 1.4, halfWidthEnd: 1.9, cut: .95, cutEnd: .7, bed: .3, taper: 60 }),
-  river('nethereum-stream-south', 'The south-west thread', [
+  meadowBeck('nethereum-stream-south', 'The south-west thread', [
     point(-2734, 486), point(-2700, 466), point(-2664, 444), point(-2628, 424), point(-2600, 410),
   ], { halfWidth: 1.4, halfWidthEnd: 1.9, cut: .95, cutEnd: .7, bed: .3, taper: 60 }),
 ]);
@@ -1078,7 +1144,8 @@ const MITHALA_MEET = Object.freeze({ x: -1700, z: -1414 });
 /** The main channel, from the meeting of the arms east to the sea, cut off where the beach starts. */
 export const MITHALA_MAIN = river('mithala-main-channel', 'The Main Channel',
   shoreward(chainBetween(MITHALA_MEET.x, MITHALA_MEET.z, -1000, -1414)),
-  { halfWidth: 5, halfWidthEnd: 11, cut: 1.9, cutEnd: 2.5, bed: .9, fordUntil: .30, headOf: 'mithala-west-arm' });
+  { halfWidth: 8, halfWidthEnd: 28, cut: 1.9, cutEnd: 2.5, bed: .9, fordUntil: .30, headOf: 'mithala-west-arm', blend:true,
+    widthStops:[[0,8],[.16,16],[.25,22],[1,28]] });
 /**
  * **The west arm**, four atlas chains end to end: down the Celder margin from the plain's
  * north-western corner, south-east to the junction at (-1950, -1155) where the Celder water comes
@@ -1332,7 +1399,8 @@ export const WEST_LOTHARN_WATERS = Object.freeze([KEMRATH_REACH, WEST_LOTHARN_NO
  * no way across it on foot, and there is nothing to cross to, because East Pyros is not built.
  */
 export const VAELLIR = river('vaellir', 'The Vaellir', shoreward(atlasCourse('East Pyros,West Pyros')),
-  { halfWidth: 3, halfWidthEnd: 14, cut: 1.5, cutEnd: 3.1, bed: 1.6, fordUntil: .24 });
+  { halfWidth: 3, halfWidthEnd: 28, cut: 1.5, cutEnd: 3.1, bed: 1.6, fordUntil: .24, blend:true,
+    widthStops:[[0,.15],[.025,3],[.12,13],[.3,21],[.55,23],[.75,25],[1,28]] });
 /**
  * The Alezhor water, out of the green country on the north and away west to the gulf. Small on the
  * atlas over all eight of its edges and small here: two metres of water either side at the head and
@@ -1388,7 +1456,7 @@ export const SOUTHWEST_RIVERS = Object.freeze([VAELLIR, ALEZHOR_WATER, MAROSH_NA
  * profiles down this list and reads the earlier one's last sample. The Lizeem's
  * reach is therefore after the Lizeem.
  */
-export const WEST_RIVERS = Object.freeze([VASTOS_RIVER, VASTOS_BECK, ...MENETH_BECKS, LIZEEM, CARICA,
+export const WEST_RIVERS = Object.freeze([VASTOS_RIVER, VASTOS_BECK, ...MENETH_BECKS, LIZEEM, LIZEEM_HEAD, CARICA,
   ELA_SOUTH_REACH, NESDOR_BECK, LIZEEM_REACH, ...EER_CHANNELS, ISAREOS_RIVER, ...ISAREOS_BECKS,
   NETH_HEAD, NETH, NETHEREUM_OUTLET, ...NETHEREUM_STREAMS, ...LOTHARN_WATERS, ...WEST_LOTHARN_WATERS, ...OVES_RIVERS, ...GALA_RIVERS, ...MITHALA_RIVERS, ...SOUTHWEST_RIVERS]);
 /** Standing water: pans, basins and the warm pool, as circles with their own depth. */

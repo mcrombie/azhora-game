@@ -45,7 +45,8 @@ test('the Izol seam correction leaves other built countries, deep island interio
     assert.equal(regionBase(cell.x, cell.z), legacyIzolGroundHeight(cell.x, cell.z));
   }
   const hash = value => createHash('sha256').update(JSON.stringify(value)).digest('hex');
-  assert.equal(hash([...WEST_PROFILES]), '85f2bd3a7d948e2aa9a6c18d6e337cfa0d8c0339a4038e7cd15c650eff4b0f5d');
+  // Baseline includes natural headwaters, meadow stream fades, and the widened Pyros/Mithala rivers.
+  assert.equal(hash([...WEST_PROFILES]), '6a6466a8760f3ff9c1f9d4cab80727a62cfc2414cb18d9310deb58fbbbc178a7');
   assert.equal(hash([...WEST_POOL_LEVELS]), '39a84620cdb95c58b09b6423b184389c41ffdf2950cd231d76ffc4c6ac9c9093');
 });
 

@@ -450,7 +450,7 @@ export function* createMithalaCityScenerySteps({ parent, heightAt, groundHeight 
       for (let i = 0; i <= 6; i++) { const x = p.x + (q.x - p.x) * i / 6 + n.x * out, z = p.z + (q.z - p.z) * i / 6 + n.z * out; low = Math.min(low, ground(x, z)); }
       return low;
     };
-    const mooring = [];
+    const mooring = [];let quayRun=0;
     for (const [i, F] of segs.entries()) {
       yield;
       const n = { x: F.nx * ws, z: F.nz * ws }, nOut = [n.x, 0, n.z], nIn = [-n.x, 0, -n.z];
@@ -479,7 +479,7 @@ export function* createMithalaCityScenerySteps({ parent, heightAt, groundHeight 
       const r = hw, count = Math.max(1, Math.ceil(F.len / 1.6));
       for (let c = 0; c <= count; c++) { const p = F.at(F.len * c / count); push({ x: p.x, z: p.z, r, minY: Math.min(foot, footIn), maxY: D - .4, kind: 'mithala-quay', id: `${Q.id}-body-${i}-${c}` }); }
       // Bollards along the outer edge, clear of the stair's head and the crane.
-      for (let s = 2.2; s < F.len - 1; s += 5.5) {
+      for (let s = (2.2-quayRun%5.5+5.5)%5.5; s < F.len; s += 5.5) {
         const p = F.at(s, ws * (hw - .65));
         if (buildingGap(p.x, p.z) < 1 || STREET_SEGMENTS.some(t => mithalaSegmentDistance(p.x, p.z, t.a, t.b) < t.half + .5)) continue;
         drum(b, FOOT_DARK, p.x, D, p.z, .3, D + .55, .26, 8);
@@ -499,7 +499,7 @@ export function* createMithalaCityScenerySteps({ parent, heightAt, groundHeight 
           quadToward(b, pick([FOOT_DARK, '#6c6352', FOOT], seed, i, s, k), pitch(s, o00), pitch(s1, o10), pitch(s1, o11), pitch(s, o01), [0, 1, 0]);
         }
       }
-      for (let s = 3; s < F.len - 1; s += 7) {
+      for (let s = (3-quayRun%7+7)%7; s < F.len; s += 7) {
         let o = null, water = null;
         for (let t = hw + .5; t < hw + 14; t += .25) { const p = F.at(s, ws * t); water = westWaterSurface(p.x, p.z); if (water !== null) { o = t - .3; break; } }
         if (o === null) continue;
@@ -510,6 +510,7 @@ export function* createMithalaCityScenerySteps({ parent, heightAt, groundHeight 
         mooring.push({ x: p.x, y: top - .3, z: p.z });
         metrics.mooringPosts++;
       }
+      quayRun+=F.len;
     }
     metrics.quays++;
     // The barges: a flat bottom, slab sides and swim ends raked up out of the water, a floor of boards under the load,

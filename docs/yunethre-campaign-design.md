@@ -1,176 +1,287 @@
-# Yunethre: a place in the League
+# Chapter 2: Yunethre
 
-Design plan, 9 October 2026. This document defines the next playable campaign after the Lizeemi War. It does not describe an implemented quest.
+Revised 22 October 2026 from the author's Chapter 2 and 3 outline. This replaces the
+9 October diplomacy-first, untimed proposal. Chapter 1 is the Lizeemi War; its
+ongoing refinement remains independent of this continuation. "UF3" in the spoken
+outline is read as Yunethre, not as another region or campaign.
 
-The user's story direction establishes Laketown's conditions, the centaur conflict with Celder, the three possible allegiances, and Yunethre's place in the larger story. The compact, encounter staging, working character roles and implementation sequence below are proposed ways to make that direction playable. They remain editable; they are not additional manuscript canon.
+## Chapter 2's purpose
 
-## Purpose and first playable scope
+Taleth sends Teresod to ask autonomous Laketown to join the Lizeemi League. The
+town values its relations with elves, centaurs and dwarves. While the centaur
+community survives, membership requires its protection. Active hostility to
+elves always prevents membership; there is no mandatory elf-help quest.
 
-The first complete route is a diplomatic mission: **Taleth → Laketown → Centaur Camp → Canerd → verify the withdrawal → Laketown's accession → Minora's response.** The player should finish having changed a political relationship, seen that change on the ground, and understood both the benefit and the obligation they accepted.
+The visit order is Taleth, Laketown, Centaur Camp, then Canerd, with earlier visits
+remembered rather than invalidated. Celder offers a military alliance in return
+for assistance against the centaurs. Hearing an offer commits the player to
+nothing. A military commitment occurs when joining a side in the battle.
 
-Ambron remains Taleth's greatest strategic concern. Laketown is his immediate assignment because a stronger League will be better prepared for uncertainty in the east. This resolves the apparent conflict between an urgent Ambron story and a recommended Yunethre route. Taleth does not name Thalmagar or explain the eventual main threat at this stage.
+Taleth advises avoiding the battle and remaining neutral. That advice may cost
+allies; it is not a forced optimal route. Thalmagar is not yet identified as the
+overarching enemy. Premonitions can be present without exposing hidden allegiances.
 
-Aim for a first playthrough of roughly 25–40 minutes, including travel and conversation. This is a pacing target, not a measured duration. Build one complete diplomatic route before the military alternatives. Reuse the horse, settlements, dialogue, tracking, saves and campaign history already available. New combat mechanics, interiors, skills, an economy and a general diplomacy engine are outside this first milestone.
+## Time and decisions
 
-## What survives from the Lizeemi War
+The battle starts after **15 minutes of active Chapter 2 adventure time**, measured
+from departure from the tower. Time stops in the tower, conversations, loading,
+pause menus and an inactive window. The deadline and remaining time are visible
+once the conflict is known. Do not reuse the ended Chapter 1 attack schedule.
 
-Either victorious faction produces the **Lizeemi League**, retaining its colors. West's victory leaves the Mayor leading Minora's council; East's leaves the High Priest leading it. Taleth remains neutral. The Yunethre mission is available after either outcome, including a war the player did not fight in.
+A provisional two-minute participation window allows the player to reach an
+ongoing battle. If not joined, a seeded 50/50 outcome decides its winner. Saving
+and reloading must not reroll that result. An active hero encounter supplies its
+actual result; statistical resolution must not override the fight mid-encounter.
+The two-minute window is an implementation pacing assumption, open to adjustment.
 
-Teresod acts as an envoy under Minora's Council of Three. He is authorized to offer the defined compact, not to dispose of someone else's territory. Taleth explains the commission on the council's behalf, avoiding an obligatory second briefing at another building. The Mayor and High Priest can offer optional commentary reflecting their established priorities.
+**Confirmed by the author:** successful diplomacy before the deadline prevents
+the battle and immediately opens the aftermath conversation at Laketown.
+A compact requires consent from the centaurs and Celder, not one conversation
+that silently signs on everyone's behalf. The existing proposed reciprocal
+safe-passage/withdrawal compact is a suitable first authored agreement.
 
-The mission becomes available after the existing river review concludes the Lizeemi War. The optional geographical tour and Chronoscope replay are not prerequisites. Accepting the mission begins the continuation; deferring it leaves the completed campaign intact. Prior battles, casualties, letters, council leadership and the war's ending remain historical facts.
+## Outcome rules
 
-## Places and people
-
-Reuse the [authored Yunethre environment](yunethre-environment.md). Its western settlement, currently called **Lakeside Free Town** in source, becomes **Laketown** in this campaign's player-facing text. Its established mixed community and lakeside setting support the user's premise. Its stable content ID can remain unchanged. The eastern **Bane's Camp** supplies the Centaur Camp location; that name alone does not establish who its current leader is.
-
-Canerd already has a castle, court and supporting settlement in North Celder. Stage the first negotiation in its existing court. Laketown's public meeting place and the camp's existing communal space are sufficient for their conversations.
-
-Use these working roles until names and appearances are authored:
-
-| Role | Wants | What the player must understand |
-| --- | --- | --- |
-| Laketown Speaker | Security without surrendering the town's local government or its ties to the old races | Membership requires centaur protection and no active hostility to elves. |
-| Centaur Envoy | Independent territory and an end to incursions by Celder's knights | Town membership cannot sign away the camp's freedom. The centaurs must consent for themselves. |
-| Celder representative at Canerd | A secure frontier and a tangible reason to accept a settlement | Withdrawal needs reciprocal commitments; Celder's assertions of authority are contested claims. |
-| Patrol captain | An unambiguous, credible order | The negotiated agreement has to reach the armed people enforcing the frontier. |
-
-These are new scenario roles, not claims about unnamed manuscript characters. Reuse suitable existing human and centaur models, with readable occupations and individual dialogue. Avoid importing the old frontier cast wholesale: its princes, raiders and older civil-war logic do not belong to this continuation.
-
-## The first route
-
-### 1. Taleth gives a limited commission
-
-Taleth asks Teresod to seek Laketown's willing accession. He explains that strength can come from reliable neighbors as well as conquest, and that Ambron's unsettled position makes delay unwise. He does not attach a hidden invasion deadline to the mission.
-
-The player can accept, ask about the authority they carry, or return later. Acceptance supplies a short written mandate accessible alongside the current objective. Taleth's pigeon correspondence remains the channel for later advice and confirmation.
-
-### 2. Laketown states its conditions
-
-The Speaker explains the town's relationships with elves, centaurs and dwarves. Joining the League offers protection and cooperation while retaining local government. It is not annexation by personal decree.
-
-The two conditions appear together: secure protection for the centaurs, and do not be hostile to elves. Neutrality toward elves is enough; there is no compulsory Ibenwood quest. Any hostility check must read an actual recorded action or relationship and explain the reason for refusal. Neither the Lizeemi victor nor missing legacy quest progress counts as elf hostility.
-
-The Speaker directs Teresod to hear the centaurs' terms. This conversation establishes the political problem and a concrete destination, without a chain of minor fetch objectives.
-
-### 3. The centaurs authorize terms
-
-The Envoy describes where Celder's knights are exerting pressure and what must stop. The camp demands independent territory, safe access to Laketown, and no forced disarmament, removal or compulsory League membership.
-
-For the first route, the Envoy will accept reciprocal safe passage and a prohibition on raids across the agreed boundary. These are proposed treaty terms; they do not excuse dispossession or assume that every centaur is a raider. Teresod leaves knowing exactly which commitments the camp has consented to.
-
-An early visit to the camp can establish its position. Binding negotiations still require the council mandate and the town's terms. Track what the player knows and what each party has authorized, rather than demanding an inflexible conversation order.
-
-### 4. Negotiate at Canerd
-
-Use one complete, authored compact for the initial implementation:
-
-| Party | Agrees to give | Receives |
-| --- | --- | --- |
-| Celder | Withdraw knights from the agreed centaur territory and recognize the camp's protected independence | Reciprocal frontier security, safe conduct for peaceful travelers and access to Laketown's trade. |
-| Centaur Camp | Respect the agreed boundary and peaceful passage; bring disputes to the agreed meeting place | Independent territory and an end to Celder's incursions. |
-| Laketown | Host dispute meetings and honor agreed civilian trade access | League membership with local government intact and protection for its neighbors. |
-| Lizeemi League | Guarantee the compact and assist in protecting the agreed routes | A willing member and a more secure northern approach. |
-
-The obligations are explicit commitments recorded for future stories. The prototype does not pretend to simulate commercial profits, patrol budgets or automatic treaty enforcement.
-
-The representative should have reasons to bargain: armed pressure has costs, and secure passage and recognition of an agreed frontier offer something useful. Let the player ask about those interests, challenge the representative's claims, review the compact, agree, or leave. Diplomacy succeeds through informed consent to a specific agreement, rather than a hidden persuasion roll or a single flattering answer.
-
-Celder's proposed alternative allegiance belongs here in the eventual full arc. Until its conquest route is playable, it can be discussed as an offer but cannot be accepted through a button that strands the player in an unfinished campaign. No destructive commitment is made during a casual inquiry.
-
-### 5. Verify the agreement on the ground
-
-Place a small Celder patrol at the disputed crossing on the return route. Teresod presents the agreed order, with a centaur witness present. The captain acknowledges it; the knights lower their weapons and withdraw to the agreed side, opening the crossing.
-
-This short scene is the playable proof that negotiations mattered. Reuse a bounded walk route and existing character behavior; it does not need a new army simulation. The peace route does not require a surprise saboteur fight to manufacture action.
-
-The objective completes only after the withdrawal is visibly carried out. Walking away, saving or interrupting the scene must leave it resumable. Replaying the conversation cannot spawn extra soldiers or award protection twice. Place the crossing after checking the actual terrain and horse route; do not invent a location from map labels alone.
-
-### 6. Ratify at Laketown
-
-The Speaker and Envoy attend a compact public confirmation. The player sees the agreed terms, the verified withdrawal and the consequences before signing. Laketown joins the League immediately on ratification, retaining its local government. The centaurs remain independent and protected. Celder has a treaty with the League; it has not automatically become a military ally.
-
-Show the result through a League-colored banner beside the town's own civic identity, changed conversations, the map's settlement information and a pigeon from Taleth. The centaur camp keeps its own identity. Do not paint every person and plot of land in Yunethre as League property merely because Laketown joined.
-
-### 7. Return to Minora
-
-Taleth explains what Laketown's accession contributes and what the League has promised in return. The Mayor and High Priest react through optional conversations without silently changing which of them leads the council. Add the mission's actual agreement and outcome to the Chronoscope's campaign record.
-
-The report closes this chapter. Ambron remains the next strategic concern; later northern travel can expose signs of the wider danger. There is no premature revelation of Thalmagar, automatic new war, or unsupported claim that Laketown has already sent an army.
-
-## Alternate outcomes to implement afterward
-
-| Route | Laketown and Yunethre | Centaur Camp | Relationship with Celder |
+| Outcome | Laketown | Centaurs | Celder |
 | --- | --- | --- | --- |
-| Negotiate the compact | Laketown joins the League with local autonomy; the region retains distinct political interests | Independent and protected | Peace under reciprocal obligations |
-| Defend the centaurs militarily | Laketown joins once its conditions are satisfied | Independent and protected | War with a human faction; meaningful military cost |
-| Accept Celder's offer | Celder conquers Laketown and annexes Yunethre; no League annexation | Camp defeated or destroyed, with the consequences represented | Celder becomes the player's military ally and gains strength |
+| Negotiated peace | May join if the elf condition is satisfied | Protected, independent ally | Peace under the compact, not automatically a military ally |
+| Player helps centaurs win | May join under the same condition | Protected ally | Hostile; future raids remain a consequence to build later |
+| Player helps Celder win, then takes Laketown | Conquered by Celder | Camp destroyed | Military ally; Celder annexes Yunethre, not the player |
+| Player remains neutral; Celder wins | Still autonomous until its own decision; may voluntarily join after a return visit | Camp destroyed | No automatic war or military alliance |
+| Player remains neutral; centaurs win | Still requires a protection agreement with the surviving centaurs | Survives; allegiance must be earned | No automatic hostility from simply observing |
+| Player intervenes and loses | No unearned alliance or territorial reward | Actual battle outcome applies | Actual relationship commitment remains |
 
-The military routes need their own encounters, aftermath and conditions before acceptance becomes available. Use allied participants in battles, consistent with the Lizeemi improvements; Teresod should not single-handedly stand in for a whole army.
+The Celder-supported conquest row is a design contract, not a playable conquest
+mission yet. In the current build, fighting for Celder closes Laketown's peaceful
+accession route whether that side wins or loses. After a field victory, the town
+remains autonomous and Celder is not yet a military ally. Return to Rowan and
+accept Laketown's independence to continue the chapter.
 
-Celder's route is a costly, viable alternative, not a disguised game-over. Its territorial benefit belongs to Celder and its alliance benefit must become usable when that route ships. Laketown and the old races remember the betrayal. Those consequences close some relationships without making the eventual main plot impossible to finish.
+Celder winning an unattended battle does not automatically annex Laketown: the
+outline explicitly allows its subsequent voluntary accession. Celder annexation
+belongs to the player-supported conquest branch and requires a separate capture
+or surrender after the field victory. Conquest must not be inferred from merely
+accepting Celder's offer. Outcomes remain viable paths to the later main story.
 
-## Navigation and pacing
+After settlement or battle, visit Laketown for its decision, including a refusal.
+Return toward Minora to report. The chapter ends at the return event, rather than
+requiring entry into a city that has just fallen.
 
-Use one optional marker for the current destination, leaving travel decisions to the player. Keep the horse useful between settlements. During conversations, give a short explanation of the current dispute and let repeated visits skip material already heard.
+## Minora's fall and Chapter 3 handoff
 
-Show requirements and commitments plainly. Rejection, leaving a conversation and deferring the mission do not silently fail it. Reserve confirmation for binding political decisions. After each material change, make the next useful action clear without pausing for a string of skill announcements or minor updates.
+A speaking messenger bird from the Wizard's Guild intercepts Teresod. Prince
+Wilhelm's army has taken Minora and replaced the three council banners. The Guild
+has moved its tower to the lakeside cottage vicinity in South Oremindi. The bird,
+not Bear, delivers the final version of this message.
 
-The first route has no background countdown that destroys Mithala, resolves Ambron or punishes exploration of this mission before those arcs are introduced. Its diplomacy has obligations and consequences; pacing does not depend on an unseen disaster timer.
+The five original League provinces are lost in the chapter transition. This is a
+new historical event; do not rewrite Chapter 1's winner, casualties or choices.
+The Wizards' League inherits applicable alliances and voluntary Yunethre ties.
+A Celder military alliance remains an alliance, never player ownership of Celder.
 
-## Integration and loading boundaries
+**Confirmed by the author:** the relocated tower is initially an enclave/refuge
+inside orc-controlled South Oremindi. Arrival does not paint the region as Wizard
+territory. The tower retains its rooms, Taleth, and its timeless behavior.
 
-Keep the initial scenario's five-region startup. The wider lookout chart is knowledge, not permission to construct all the charted regions. Accepting this mission should enable a bounded continuation, provisionally **Yunethre, South Celder and North Celder**, with detail prepared as the player approaches. Verify their actual connection before committing the travel route.
+## Chapter 3: the mountain alliance
 
-Laketown adjoins the Forest Tarn shoreline authored with South Oremindi. Audit whether its promenade needs adjacent ground or shoreline data, and supply only what the route requires. The Canerd ground/scenery jobs currently register for both Celders: verify that a journey does not trigger duplicate work or unnecessarily prepare both complete regions at once. These are implementation checks, not evidence that expansion is already cheap.
+1. Reach the relocated tower and hear Taleth's account of the disaster.
+2. Meet the North Ibenwood Rangers in the southern foothills. The North, East,
+   West and South ranger factions are separate vassals of Elfland. This does not
+   make the Central Ibenwood portal an ordinary owned human territory.
+3. Climb to an investigation site in northern South Oremindi. Three orc raiders
+   ambush Teresod. After two fall, the last retreats. Loot a head as the requested
+   proof; this is an explicit inventory objective, not an automatic kill reward.
+4. Return to the rangers. They agree to alliance and arrange a rendezvous six
+   active minutes later. At the rendezvous a "Wait here" option advances the same
+   chapter clock to the event. Exploration and birding remain optional activities.
+5. Fight alongside outnumbered elves holding high ground against the South
+   Oremindi chief's larger force. Include archers and sword-bearing elves, common
+   raiders, more athletic armored warriors, and a chief at veteran-warrior level.
+   Terrain, descending enemies and the chief's defeat should matter to the battle.
+6. Report to Taleth. Chapter 4 remains outside this design pass.
 
-Use existing exterior scenery. Budget at most eight additional active story actors in the occupied scene for this first route; distant quest actors remain dormant. Measure existing wildlife and town residents together with the new actors. The actor budget alone is not a frame-rate guarantee.
+The ambush should use existing combat foundations rather than duplicate combat
+logic. Retreat, proof collection, waiting and report completion must persist and
+be idempotent. A failed fight needs retry/withdrawal behavior, not an unmarked
+completed quest. The existing Oremindi occupation supplies its physical setting.
 
-Keep authored mission content and pure state transitions together in a new `src/content/chapters/yunethre/` family. A feature-owned host in `src/app/exploration/` should connect that content to NPCs, interaction, loading and presentation. Do not add a continent-wide diplomacy subsystem to the entry point or restart the completed Lizeem simulation.
+## Loading and architecture
 
-The current [world adapter](../src/app/exploration/world-adapter.js) constructs its allowed-region boundary at startup. Continuation scope therefore needs an explicit interface and save validation; revealing map cells is not sufficient. Restore the permitted continuation before restoring a player saved beyond the original five regions.
+Expose **Chapter 2: Yunethre** prominently at startup, separately from **Chapter 1:
+Lizeemi War**, and offer continuation after Chapter 1. A direct Chapter 2 start
+uses an explicitly defined completed-war premise, preserving the separate Chapter
+1 save. Continuing an actual Chapter 1 carries its real history and chosen colors.
 
-The current [League settlement projection](../src/app/exploration/league-settlement.js) assigns the victorious side to every owner key supplied to its settlement helper. Scope that historical operation to the original five regions before introducing new political records. Otherwise an expanded owner set could accidentally annex independent neighbors.
+Load only the current chapter's playable locations. Yunethre is the main outdoor
+region; reaching Canerd necessarily needs its Celder location or an explicit
+bounded travel transition. The tower is a separate lightweight interior. Distant
+terrain can remain silhouettes behind mist, without constructing distant towns,
+actors or collision. The Sky Lookout is the exception: retain the full panorama.
+Loading time never consumes the battle deadline.
 
-Represent **membership, territorial ownership, protection, hostility and military alliance separately**. For the first route, a regional tooltip and distinct town/camp markers are enough to explain Yunethre's status; a detailed cadastral map is unnecessary.
+Keep chapter facts and transitions in `src/content/chapters/yunethre/`, with a
+feature-owned host connecting the existing exploration, dialogue and combat
+systems. Keep territorial ownership, voluntary membership, protection and military
+alliance as different fields. In the campaign core, chapter commands/events are
+the authoritative inputs; scenery and UI project those facts. Do not create a
+second independent continent simulation or hard-code this story into world.js.
 
-## Persistence and campaign memory
+Before expanding the live political projection, scope the old League unification
+helper to the original five provinces. Save a versioned continuation record and
+validate it before restoring new chapter regions or a relocated tower. Failed
+restores must leave the existing save intact. Check every route through reload,
+pauses and repeated conversations, including elf hostility and nonintervention.
 
-Add a versioned continuation record containing the commission, known conditions, authorized terms, party consent, withdrawal verification, ratification, political relationships and chronological events. Derive objectives from those facts. Signing is one atomic transition: it cannot grant membership without the treaty record or duplicate an outcome when a conversation repeats.
+## First playable implementation (22 October)
 
-Older completed-war saves make the mission available but not accepted. Preserve the existing hero, horse, sorcery, afterlife state, war history and council outcome. Maintain isolation between normal play and developer rehearsals. Check checkpoint restoration and death/retry paths so that they cannot preserve half a treaty or count the same accession twice.
+Run `npm start` and choose **Begin Chapter 2** for a fresh start. Use
+`npm run start:yunethre` to open Chapter 2 directly, resuming its save if present.
+Chapter 1's completed lookout conversation also offers
+**Continue / Chapter 2: Yunethre**. It saves Chapter 1 first and carries its full
+checkpoint as historical data. A direct start runs the current default Lizeemi War
+to completion without hero intervention and preserves that result as history.
+It does not substitute an invented victory or overwrite the Chapter 1 save.
 
-Chronoscope history should distinguish the Lizeemi War from this later mission. Record what the player actually did, including a negotiated outcome without kills. The ended war clock must not resume its old attack schedule just because this continuation is active. Broader campaign time and autonomous treaty enforcement can follow after the authored route works.
+Implemented now:
 
-## Build order and acceptance
+- Start beside Taleth at the full Sky Lookout, with a new diplomatic assignment.
+  The shared Chapter 1 main quest panel and minimap guide the journey.
+- All five Lizeem regions remain accessible, alongside Yunethre and North/South Celder.
+- Ordinary Lizeem residents and optional Guild wizards retain their F conversations.
+  Residents and Bear use a cached snapshot of the completed war; conversation does
+  not restart it. Townspeople can be spoken to on foot or on the owned horse.
+- The left-hand quest card explains the current purpose, explicit next action,
+  checklist and deadline. **Shift+J / Quest journal** opens Chapter 1 and Chapter 2 logs
+  while holding time. Completed, missed and unresolved tasks remain distinct;
+  an unattended opening is recorded as world history, not invented hero successes.
+  Logs derive from the saved chapter facts and carried history, so existing saves
+  need no migration.
+- Teresod retains his owned horse. H summons it onto clear ground in blue wisps; G mounts.
+- P toggles an autoplay of the actual main-quest conversations and walking routes.
+  Movement or manual interactions take control; P resumes from current progress.
+  Dismount before starting it; the current automatic route travels on foot.
+  It seeks peace or follows the neutral aftermath; it does not fight a joined battle.
+  It shows the political map after Laketown's decision and after the messenger.
+- Four original instrumental themes accompany Laketown, the centaur camp, Celder
+  and Yunethre's open country; area changes crossfade and preserve musical progress.
+- Physical Laketown, centaur and Canerd speakers, with F interactions and a small
+  objective marker. The existing terrain, movement and developer mounts are reused.
+- A gold destination pointer gives direction and direct distance outdoors. The
+  minimap and all three M-map views follow the same objective, starting at Laketown.
+  Directions given by a speaker remain visible over fog without revealing terrain.
+- Laketown has 17 buildings, markets, gardens, five surrounding farm plots, an
+  orchard, a stone lake promenade and fishing boats. These scenic fields do not
+  invent production figures; campaign food remains simulation-owned.
+- Local deer, hares, boar, sheep and birds load when Yunethre is visited. The camp
+  has leonine centaur residents; Canerd has mail-clad Celder knights and gate guards.
+- A 15-minute deadline, reciprocal consent, immediate peace aftermath, deterministic
+  neutral battle resolution, Laketown's decision, and political-map consequences.
+- A playable cavalry encounter in the meadow south of Bane's Camp: four centaur
+  archers, three Celder knights and Teresod, supporting either side on foot or
+  horseback. These are the current local combatants, not whole campaign armies.
+  The F interaction offers a side; the briefing's start action commits it.
+  Telegraphs, physical arrows, committed charges and recovery openings govern
+  the fight. The joined chapter clock is held; the separate field timer allows
+  up to three minutes before remaining fighting strength decides the result.
+  Victory, defeat and withdrawal show a report before returning to exploration.
+- A witnessed assault on the return road: Wilhelm's column attacks the Muster
+  Gate, council standards are replaced, and the Guild's speaking bird arrives.
+  A labelled skip reaches the same messenger. The return records Minora's fall
+  and offers continuation into Chapter 3 without changing South Oremindi's owner.
+- An isolated `azhora-yunethre-v1` checkpoint (desktop: `saves/yunethre/`). F5 saves;
+  the pause menu restores it. Chapter 1 and exploration saves remain separate.
+- F8 offers **Chapter 2 test / Resolve the neutral battle** for testing without
+  waiting 17 minutes. The normal clock still runs from departure and respects holds.
+- F8 also offers **Chapter 2 / Advance to the battle opening**, which opens the
+  normal participation window without choosing a side. **Cavalry rehearsal /
+  Defend the centaurs** and **Computer rehearsal / Centaurs versus Celder** test
+  combat separately, without changing chapter outcomes.
 
-1. **Establish the continuation contract.** Implement its state transitions, older-save defaults and bounded region access. Audit the ride between all three settlements and the disputed crossing, including lakeshore ground and centaur clearance.
-2. **Finish the diplomatic route.** Add the four speaking roles, bounded withdrawal scene, joint ratification, political presentation and Minora response. Every introduced visible person should have an appropriate interaction.
-3. **Verify and polish the whole journey.** Test acceptance, deferral, different visit orders, interrupted withdrawal, rejection/revisit, ratification and Save/Continue. Run both Lizeemi victor states and a nonintervention history. Check a recorded elf-hostile case without inventing a mandatory elf quest.
-4. **Add the defense route.** Build a complete allied battle and its political aftermath before offering military protection as a playable commitment.
-5. **Add the Celder route.** Build the camp and town conflict, Celder annexation, usable alliance and remembered consequences before enabling that allegiance.
+Chapter 2 supports diplomacy, nonintervention and local cavalry battle. The
+separate Celder-supported conquest of Laketown still remains to build. A field
+victory does not silently complete that conquest or grant a Celder alliance.
+The mountain continuation described below is now playable.
 
-The diplomatic milestone passes when a player can complete the mission without developer intervention, understand every condition, see the knights withdraw, and return to a correctly changed world. No conversation may award an unseen victory or leave the next action unexplained. Confirm that the old frontier raiding plot and unrelated regional quests never activate.
+Battle controls are **WASD / arrows** to move, **Shift** to run or canter, hold
+**R** to draw and release to shoot, **click / F** for a staff strike, **Space**
+for a foot sidestep or mounted surge, **G** to mount or dismount when stopped,
+**Tab** to change target, and **Escape** for tactics/pause. A mounted surge is
+speed, not an invulnerability window. Right-drag turns the camera.
 
-Measure initial five-region loading before and after, transitions into each new region, steady play near the town/camp/court, active actor counts and region build jobs on the same machine and settings. Check both foot and mounted navigation. Inspect the agreement UI at compact sizes and verify every result's map/banner/dialogue presentation. Report measured costs and remaining limitations; do not infer performance from the low-poly art or model tests alone.
+The lookout and tower remain separate spaces. Leaving the tower opens onto Minora;
+the journey through its streets and northwest to Yunethre uses ordinary movement.
+The camp-to-Canerd conversation offers a bounded passage consuming 90 active seconds
+while negotiations are open. Loading and reading consume none. The world builder
+still registers global region definitions, so this is not a stripped chapter-only loader.
+Passage buttons identify their destination and 1m 30s journey cost. Consent buttons
+only record agreement, confirm it visibly, and disappear once that party has agreed;
+the separate return-passage action actually travels back to the centaur camp.
 
-## The surrounding arcs remain reserved
+Code: `src/content/chapters/yunethre/chapter.js` owns authored facts and rules;
+`host.js` connects conversations and scenery; `checkpoint.js` validates the combined
+save; `map.js` projects ownership separately from alliances and nomadic presence.
+`src/simulation/campaign.js` exports `createAuthoredCampaign`, whose transactional
+driver in `authored-campaign.js` owns state mutation. This does not restart the ended
+five-region war or run another autonomous continent simulation.
 
-| Area | Established direction to preserve | Boundary for this milestone |
-| --- | --- | --- |
-| Ambron | Taleth's most urgent strategic uncertainty; Laketown's support helps prepare the League | No new Ambron campaign or invasion timer |
-| Ibenwood | Taleth advises caution and recommends the Woods Wizard at East Ibenwood's edge; elves distrust strangers | No compulsory elf detour; keep the later Elfland route separate |
-| Pyros | Its own civil war | Mention only; develop its campaign later |
-| Telemonia, Ascarth and Eer | Isolationist Telemonia can eventually be courted or challenged through Legemum's enslaved people; Ascarth besieges Nylon | Preserve the choices without beginning those conflicts here |
-| West Lotharn | Wilderness and orc scouts; thwart an attempt to encircle and sack Mithala, earning its favor | Introduce actionable warning before any later failure deadline; no unseen punishment now |
+Checks: `npm run test:yunethre` covers deadlines, both neutral winners, peace,
+military-result contracts, elf hostility, handoff, history and save rejection.
+`npm run test:yunethre:desktop` follows the actual conversation buttons, bounded
+travel, map change and application reload in an isolated test save profile.
 
-This route is the recommended continuation because it gives the League a purpose after victory and tests meaningful political choices at a manageable scale. The future military branches and distant threats should grow from its recorded consequences.
+`npm run test:yunethre:autoplay` checks the P-driven route using ordinary movement,
+conversations and the political map in an isolated native test. Autoplay never
+changes saved chapter outcomes directly or resets a completed chapter.
 
-## Source references
+`npm run review:yunethre` opens a scenery-only viewer for Laketown, the camp and
+the new character models. The isolated native `--yunethre-art-checks` option on
+the exploration/Yunethre smoke launcher checks actual navigation, wildlife and
+the four playable locations, capturing screenshots in `tests/artifacts/`.
 
-- [Yunethre environment](yunethre-environment.md), [settlement anchors](../src/content/regions/minora-frontier/yunethre-world.js) and [existing scenery](../src/content/regions/minora-frontier/yunethre-scenery.js).
-- [Canerd layout](../src/content/regions/canerd/canerd-world.js) and [world assembly](../src/world.js).
-- [Current Lizeemi scenario](architecture/lizeem-simulation.md), [mode boundaries](../src/app/exploration/modes.js) and [checkpoint ownership](../src/app/exploration/war-checkpoint.js).
-- [Existing postwar responses](../src/app/exploration/postwar-conversations.js) and [independent simulation scope](../src/simulation/README.md).
+## Playable Chapter 3 / The Mountain Alliance
 
-This plan uses the user's supplied story direction and public project sources. It does not modify, extract or import private manuscript material.
+Run `npm run start:oremindi`, or select **Chapter 3 / The Mountain Alliance**
+at startup. Continuing through the messenger in Chapter 2 carries that actual
+checkpoint into a separate `azhora-oremindi-v1` save (`saves/oremindi/` on desktop).
+A direct new Chapter 3 start uses an explicitly labelled unattended Chapter 2
+background. Neither path rewrites the old war or invents completed hero quests.
+
+The player begins on the return road outside occupied Minora, with the owned
+horse, minimap, directional objective and Shift+J journal. All earlier scenario
+regions remain accessible, with South Oremindi and North Ibenwood added. The
+relocated tower stands on a dry shelf beside the long tarn, near the existing
+cottage. Its rooms retain their established interior coordinates; the exterior
+door and lookout landscape are relocated. Entering the tower holds time.
+
+Taleth's assignment, ranger meeting, three-raider ambush, explicit head collection,
+alliance, six-active-minute rendezvous, high-ground battle and final report are
+separate persistent steps. The head appears in the journal's quest inventory
+only after collection. At the rendezvous **Wait here** advances the same chapter
+clock. Failed or withdrawn attempts can be retried; stale result callbacks cannot
+complete a later attempt. A victory requires the veteran chief's defeat and the
+opposing formation's collapse. Four elven defenders face eight orcs, with two
+finite-ammunition archers, sword-bearers, ordinary raiders and armored warriors.
+
+The surface remains under orc occupation. The tower is an enclave and the North
+Ibenwood Rangers are allies, not annexed subjects. All three chapters'
+records, the player's horse, and applicable Yunethre agreements persist.
+
+F8 provides separate manual and computer rehearsals for both mountain encounters.
+These restore the prior position, horse and chapter state. Chapter 3 uses the
+existing staff combat: **click/X** attack, **F** guard, **Space** dodge and **Tab**
+target. Each encounter has a briefing and a result screen before exploration resumes.
+
+Implementation lives in `src/content/chapters/oremindi/`. `chapter.js` submits
+rules through the authored driver exported by `simulation/campaign.js`;
+`host.js` connects physical interactions and presentation, `checkpoint.js`
+preserves history, and `encounter.js` reuses the existing combat model. Terrain
+and wildlife remain region-owned in `src/content/regions/south-oremindi/`, independent
+of quest state. Broader graded paths and terraces retain the range's tall peaks,
+while the exploration adapter now loads its regional wildlife lazily.
+
+`npm run test:oremindi` checks state, history, inventory and continuation.
+`npm run test:oremindi:desktop` exercises the actual chapter, both computer
+encounters, explicit collection, save/reload, the three-chapter journal and map
+in an isolated native profile. This is a first playable implementation; combat
+balance and the occupation sequence still need player feedback.

@@ -1280,9 +1280,9 @@ const REGION_TEXT = {
     npcIds: [], landmarks: ['nylon', 'nylon-library', 'nylon-palace', 'eer-loam', 'eer-braids', 'eer-bays', 'eer-olives', 'lizeem-reach'] },
   // Minora guards the real Isa-Lizeem fork; its holy city is stable while the outer frontier is raided.
   Isareos: { subtitle: 'Minora and the Imperial frontier', spawn: point(-2308, -7),
-    description: 'Minora rises over the Isa-Lizeem fork: great white walls, an immense Sorcerers’ Guild tower and a sacred Imperial temple. Cedric keeps his claim to the crown here; Wilhelm and his army camp outside. Beyond the protected city, northern and western hills are exposed to centaur raids from Yunethre.',
+    description: 'Minora rises over the Isa-Lizeem fork: great white walls, an immense Sorcerers’ Guild tower and a sacred Imperial temple. Cedric keeps his claim to the crown here. Beyond the protected city, northern and western hills are exposed to centaur raids from Yunethre.',
     palette: { ground: '#6f9150', accent: '#d3dca6', fog: '#b7c8ac', sky: 0xaacfd3, haze: 0xb3d3d0, hazeDensity: .0020 },
-    npcIds: ['prince-cedric', 'prince-wilhelm'], landmarks: ['menora', 'menora-grand-temple', 'menora-sorcerers-guild', 'menora-army-muster', 'isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim', 'isareos-hamlet'/* Amalthea's, 6 October 2026 */] },
+    npcIds: ['prince-cedric', 'prince-wilhelm'], landmarks: ['menora', 'menora-grand-temple', 'menora-sorcerers-guild', 'isareos-shoulders', 'isareos-hollows', 'isareos-gallery', 'isareos-becks', 'isareos-west-rim', 'isareos-hamlet'/* Amalthea's, 6 October 2026 */] },
   // **Haethom** (the Farmlands of the Lizeem, Build 2: the design of 5 October 2026, built 6 October 2026): the ridge hamlet
   // on the north-east rim, the levee and its hatch, the flood meadow, Liban's house below the line, and Gwyddno's weir and
   // smoke-house on the Neth (src/content/regions/nethereum/nethereum-farm.js), with Haethom's seven people (src/content/quests/lizeem-farmlands/lizeem-nethereum-people.js), stood

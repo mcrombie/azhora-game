@@ -1,10 +1,18 @@
 import { forEachBuild } from '../../../world/loading/build-each.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
-import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-registry.js';
-import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
-import { outerFeatures, outerWaterAt, OUTER_RIVERS } from './outer-regions-world.js';
+import { worldTreeId } from '../../../world/scenery/tree-registry.js';
+import { createSpeciesTreesSteps } from '../../../world/scenery/species-trees.js';
+import { outerFeatures, outerWaterAt, outerGround, OUTER_RIVERS } from './outer-regions-world.js';
 import { outerWildlifeClear } from './outer-regions-wildlife.js';
+import {LOND_REGIONS} from '../lond/lond-layout.js';
+import {nonthTownReserved} from '../nonth/nonth-town-layout.js';
+import {thothTownReserved} from '../thoth/thoth-town-layout.js';
+import {orsaTownReserved} from '../orsa/orsa-town-layout.js';
+import {northernTownReserved} from '../northern-towns/northern-towns-layout.js';
+import {ganunReserved} from '../ganun/ganun-layout.js';
+import {londReserved} from '../lond/lond-country.js';
+import {createLondScenerySteps} from '../lond/lond-scenery.js';
 
 const CHUNK = 110;
 const makeGeometry = () => ({
@@ -14,16 +22,7 @@ const makeGeometry = () => ({
   stone: new THREE.IcosahedronGeometry(1, 0),
   blade: new THREE.ConeGeometry(1, 1, 3),
 });
-const tones = {
-  'white-oak':['#77674d','#6e864c'], 'common-hazel':['#7b7050','#78934f'], 'black-willow':['#807558','#7f9864'], 'holm-oak':['#746c58','#5b7454'], 'mahogany':['#776350','#4b7852'], 'kapok':['#8e927b','#517957'], 'strangler-fig':['#939883','#4e7052'], 'coconut-palm':['#928576','#719863'], 'red-mangrove':['#7a7566','#65845b'],
-  beech: ['#8a8876','#719058'],
-  'black-alder': ['#696248','#617d48'],
-  'black-willow': ['#807558','#7f9864'],
-  'silver-fir': ['#6e6553', '#385c50'],
-  'stone-pine': ['#78624b', '#506956'],
-  'silver-birch': ['#c3c4ae', '#82905b'],
-  'common-juniper': ['#7a705b', '#5a705c'],
-};
+
 
 /** One stable, batched regional landscape. No artificial cliff collision hulls:
  * the visible heightfield supplies all ridges, passes and climbing surfaces. */
@@ -34,7 +33,7 @@ export function* createOuterScenerySteps({ parent, heightAt, renderedGroundHeigh
   const geometry=makeGeometry();
   const regionName=profile.name, regionBounds=profile.bounds, regionLakes=profile.lakes??[];
   const owns=profile.owns, featuresAt=outerFeatures, waterAt=outerWaterAt;
-  const isReserved=(x,z,r=0)=>outerWildlifeClear(x,z,r)||outerFeatures(x,z)?.pathDistance<5+r;
+  const isReserved=(x,z,r=0)=>nonthTownReserved(x,z,r)||thothTownReserved(x,z,r)||orsaTownReserved(x,z,r)||northernTownReserved(x,z,r)||ganunReserved(x,z,r)||londReserved(x,z,r)||outerWildlifeClear(x,z,r)||outerFeatures(x,z)?.pathDistance<5+r;
   let buildWork = 0;
   const root = new THREE.Group(); root.name = profile.name+' wilderness'; parent.add(root);
   const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .98, flatShading: true });
@@ -49,35 +48,13 @@ export function* createOuterScenerySteps({ parent, heightAt, renderedGroundHeigh
     dummy.position.set(x, y, z); dummy.scale.set(sx, sy, sz); dummy.rotation.set(0, ry, rz); dummy.updateMatrix();
     const p = { matrix: dummy.matrix.clone(), tint, x, z, radius: Math.max(sx, sz) }; batches.get(key).pieces.push(p); return p;
   }
-  function tree(x, z, species, height) {
-    const y = renderedGroundHeight(x, z), [bark, leaf] = tones[species], pieces = [];
-    const r = height * (species === 'acor' ? .052 : species === 'silver-birch' ? .021 : .032), bole = height * .73;
-    const trunk = part('trunk', bark, x, y + bole / 2, z, r, bole, r);
-    const offset = treeGroundingOffset(trunk.matrix, renderedGroundHeight, { radius: 1, segments: 7, embed: .06 });
-    trunk.matrix.elements[13] += offset; pieces.push(trunk);
-    if(species==='coconut-palm'){
-      for(let i=0;i<7;i++){const a=i*Math.PI*2/7;pieces.push(part('crown',leaf,x+Math.sin(a)*height*.12,y+offset+height*.87,z+Math.cos(a)*height*.12,height*.06,height*.035,height*.28,a));}
-    } else if (species === 'silver-fir') {
-      for (let i = 0; i < 4; i++) pieces.push(part('fir', leaf, x, y + offset + height * (.36 + i * .16), z,
-        height * (.23 - i * .044), height * .38, height * (.23 - i * .044), range(0, 6)));
-    } else {
-      const pine = species === 'stone-pine', low = species === 'common-juniper', acor = species === 'acor', willow = species === 'black-willow';
-      for (let i = 0; i < (acor?5:3); i++) {
-        const a = i * Math.PI * 2 / (acor?5:3) + x * .019, spread = height * (acor ? .29 : pine ? .20 : .13);
-        pieces.push(part('crown', leaf, x + Math.cos(a) * spread, y + offset + height * (low ? .63 : .76) + i * height * .055,
-          z + Math.sin(a) * spread, height * (acor ? .31 : pine ? .25 : .21), height * (acor ? .16 : willow ? .29 : pine ? .13 : .24), height * (acor ? .27 : .21), a));
-      }
-      if (species === 'silver-birch') for (let i = 0; i < 3; i++) pieces.push(part('trunk', '#6e7466', x, y + offset + bole * (.2 + i * .23), z, r * .96, .09, r * .96));
-    }
-    // Consume the same random draws before omitting a whole tree, so reserving
-    // a cottage does not move the surrounding woodland or shoreline erratics.
-    if(['kapok','strangler-fig','red-mangrove'].includes(species)){for(let i=0;i<4;i++){const a=i*Math.PI/2;pieces.push(part('stone',bark,x+Math.cos(a)*r,y+offset+.8,z+Math.sin(a)*r,r*1.6,1.6,r*.65,a));}}
-    const omitted = isReserved(x, z, height * .20);
-    for (const piece of pieces) { piece.tree = true; piece.omitted = omitted; }
-    if (omitted) return;
-    const collider = { x, z, r, kind: 'tree' }; colliders.push(collider);
-    pendingTrees.push({ descriptor: { id: worldTreeId('outer-country-'+profile.id, x, z), region: regionName,
-      species, x, z, y, height, radius: r, base: { x, y: y + offset, z } }, pieces, collider });
+  function tree(x,z,species,height) {
+    // Fir tiers formerly drew four random yaw values. Preserve the placement
+    // stream so this model change does not relocate trees or later scenery.
+    if(species==='silver-fir')for(let i=0;i<4;i++)range(0,6);
+    if(isReserved(x,z,height*.20))return;
+    pendingTrees.push({id:worldTreeId('outer-country-'+profile.id,x,z),region:regionName,species,x,z,height,
+      trunkRadius:height*(species==='acor'?.052:species==='silver-birch'?.021:.032),rotation:x*.019});
   }
 
   const b = regionBounds;
@@ -164,8 +141,9 @@ export function* createOuterScenerySteps({ parent, heightAt, renderedGroundHeigh
     yield* forEachBuild(batch.pieces, function* (p, index) { mesh.setMatrixAt(index, p.matrix); mesh.setColorAt(index, color.set(p.tint)); p.handle = { mesh, index }; });
     mesh.computeBoundingBox(); mesh.computeBoundingSphere(); root.add(mesh);
   }
-  const trees = pendingTrees.map(t => registerWorldTree(colliders, t.descriptor, t.pieces.map(p => p.handle), t.collider));
-  metrics.trees = trees.length; metrics.batches = batches.size;
+  const forest=yield* createSpeciesTreesSteps({parent:root,colliders,trees:pendingTrees,heightAt:renderedGroundHeight,name:regionName+' trees'});
+  const trees=forest.trees;
+  metrics.trees=trees.length;metrics.batches=batches.size+forest.batches;
 
   const waterRoot = new THREE.Group(); waterRoot.name = profile.name+' lakes and springs'; root.add(waterRoot);
   const waterMaterial = new THREE.ShaderMaterial({ side: THREE.DoubleSide, fog: true,
@@ -217,6 +195,8 @@ vec3 colour=vec3(.13,.34,.36)+vec3(.18,.22,.21)*pow(max(ripple,0.),12.);gl_FragC
     const mat=new THREE.MeshBasicMaterial({color:'#d9e7e0',transparent:true,opacity:.16,depthWrite:false});
     for(let i=0;i<7;i++){const puff=new THREE.Mesh(geometry.crown,mat);puff.position.set(lake.centre.x+Math.sin(i*2.4)*3,lake.surface+1+i*.8,lake.centre.z+Math.cos(i*2.4)*2);puff.scale.set(1.2+i*.18,.4+i*.12,1.2);waterRoot.add(puff);steam.push(puff);}
   }
-  return { root, terrainRoot, waterRoot, waterMeshes, trees, metrics,
+  const lond=LOND_REGIONS.includes(profile.name)?yield* createLondScenerySteps({parent:root,heightAt:profile.name==='South Lond'?heightAt:outerGround,colliders,region:profile.name}):null;
+  if(lond)metrics.lond=lond.metrics;
+  return { root, terrainRoot, waterRoot, waterMeshes, trees, metrics, lond,
     renderedGroundHeight, update: time => { waterMaterial.uniforms.time.value = time;steam.forEach((p,i)=>{p.rotation.y=time*.12+i;p.position.y=regionLakes.find(l=>l.thermal).surface+1+(i*.8+time*.22)%6;}); } };
 }

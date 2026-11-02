@@ -164,7 +164,7 @@ test('unavailable and held dodges explain recovery and the required release with
 test('dodge obstruction reports distinguish a soldier from terrain and clear on the next dodge',()=>{
   for(const terrain of [false,true]){
     const m=createLizeemEncounter({heroStart:{x:0,z:0},guardStarts:[{x:0,z:terrain?-8:-1.2}],move:terrain?(a,x,z)=>({x:a.x+x,z:Math.max(-.15,a.z+z)}):null});
-    let s=m.tick(.1,{z:-1,dodge:true});assert.equal(s.hero.lastDodge.kind,terrain?'terrain-blocked':'body-blocked');assert.match(encounterFeedback(s).text,terrain?/scenery/:/soldier/);
+    let s=m.tick(.1,{z:-1,dodge:true});assert.equal(s.hero.lastDodge.kind,terrain?'terrain-blocked':'body-blocked');assert.match(encounterFeedback(s).text,terrain?/scenery/:/body/);
     step(m,60);s=m.tick(.1,{z:1,dodge:true});assert.equal(s.hero.dodgeObstruction,null);assert.equal(s.hero.lastDodge.kind,'started');
   }
 });

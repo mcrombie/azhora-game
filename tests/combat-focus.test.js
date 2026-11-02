@@ -42,6 +42,16 @@ test('local sight respects walls and elevation while permitting conversation ove
  assert.equal(localSight(world,{x:0,z:0},{x:0,z:3}),true);
 });
 
+test('Fireball can clear ground hazards directly underfoot while respecting a deliberate enemy lock',()=>{
+ for(const kind of ['web','binding','trap']){
+ const origin={x:0,y:1.5,z:0},dir={x:0,z:-1},web={id:-1,kind,radius:1.5,x:0,y:1,z:0,hp:1},enemy=guard(0,0,-5);
+ assert.equal(selectFireballTarget(origin,dir,[enemy,web]),web);
+ assert.equal(selectFireballTarget(origin,dir,[enemy,web],{lockedId:0}),enemy);
+ assert.equal(selectFireballTarget(origin,dir,[web],{visible:()=>false}),null);
+ assert.equal(selectFireballTarget(origin,dir,[{...web,hp:0}]),null);
+ }
+});
+
 
 test('Fireball feedback reports the actual hit rather than a melee miss',async()=>{
  const {encounterFeedback}=await import('../src/gameplay/combat/encounter-feedback.js');

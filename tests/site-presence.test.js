@@ -1,12 +1,16 @@
+import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorldWar,WORLD_WAR_SCENARIO,LEGACY_WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
 import {createCampaign} from '../src/simulation/campaign.js';
 import {caricasPresence} from '../src/app/exploration/site-presence.js';
+import {CARICAS_AGRICULTURE_POSTS,CARICAS_AGRICULTURE_LANES} from '../src/content/regions/minora-frontier/caricas-agriculture.js';
 import {sourceModule} from './module-loader.js';
 const THREE=await import('../vendor/three.module.js');
 const {createSitePresence}=await sourceModule('../src/app/exploration/site-presence-view.js');
 const {createCaricasSettlement}=await sourceModule('../src/content/regions/minora-frontier/caricas-settlement-scenery.js');
+const {agricultureLaneDistance}=await sourceModule('../src/world/scenery/agriculture-scenery.js');
+const {createBattleAftermath}=await sourceModule('../src/app/exploration/battle-aftermath-view.js');
 
 function legacyWar(){const c=createCampaign(LEGACY_WORLD_WAR_SCENARIO);c.watchBattles(true);const {scenario,seed,day,commands}=c.snapshot();return createWorldWar({simulation:{scenario,seed,day,commands}});}
 function conquered(){const w=legacyWar();w.advance(10);w.syncRegion('Caricas');const b=w.snapshot().engagements.find(b=>b.status==='active');w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id,'west','success');return w;}
@@ -30,7 +34,7 @@ test('current day-three Caricas presence changes only after the final assault re
   assert.equal(caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO).owner,'east');
   w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id,'west','success','vanguard-broken',3);
   assert.equal(caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO).owner,'east','Interception alone cannot recolor the town');
-  w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id+':rally','west','success','rally-secured',3);
+  w.campaign.joinBattle(b.id,b.location);w.campaign.resolveEncounter(b.id+':rally','west','success','rally-secured',3,commanderOutcome(w.campaign,'west',true));
   const p=caricasPresence(w.snapshot(),WORLD_WAR_SCENARIO);
   assert.equal(w.snapshot().day,6);assert.equal(p.owner,'west');assert.ok(p.guards>0&&p.guards<=2);assert.match(p.status,/recovering/);
   assert.deepEqual(caricasPresence(createWorldWar(w.checkpoint()).snapshot(),WORLD_WAR_SCENARIO),p);
@@ -59,4 +63,16 @@ test('unloaded or obstructed terrain creates no misplaced guards',()=>{
   assert(!view.update(p,()=>true,at));assert.equal(scene.children.length,0);
   world.readyAt=()=>true;world.waterAt=()=>3;view.update(p,()=>true,at);assert.equal(scene.children.length,0);
   view.dispose();
+});
+
+test('reviewed Caricas sentries and survivors leave passing room for riders',()=>{
+  const scene=new THREE.Group(),world={bounds:{minX:-3000,maxX:-1000,minZ:0,maxZ:1000},heightAt:()=>18,waterAt:()=>0,readyAt:()=>true,nearColliders:()=>[],caricasPosts:CARICAS_AGRICULTURE_POSTS};
+  const view=createSitePresence(scene,world);
+  view.update({owner:'east',color:'#bf7969',guards:2},()=>true,{x:-2098,y:18,z:235});
+  const people=view.people();assert.equal(people.length,2);
+  const aftermath=createBattleAftermath(scene,world),state=createWorldWar().advance(6);state.regions.caricas.garrison=10;
+  aftermath.update(state,WORLD_WAR_SCENARIO,()=>true,{x:-2098,y:18,z:235},true,0);
+  assert.equal(aftermath.people().length,3);
+  for(const p of [...people,...aftermath.people()])assert(agricultureLaneDistance(CARICAS_AGRICULTURE_LANES,p.x,p.z)>2.2+1.45,'Soldiers leave the whole cart road clear for horses');
+  view.dispose();aftermath.dispose();
 });

@@ -7,7 +7,8 @@ export function presentFaction(faction,state){
   return hasSettlement(state)&&faction.id===state.winner?{...faction,name:UNITED_LEAGUE,short:UNITED_LEAGUE}: {...faction};
 }
 export function settledOwners(owners,winner){
-  return ['west','east'].includes(winner)?Object.fromEntries(Object.keys(owners).map(id=>[id,winner])):{...owners};
+  const provinces=new Set(['isareos','nethereum','ovesos','caricas','nesdor']);
+  return ['west','east'].includes(winner)?Object.fromEntries(Object.entries(owners).map(([id,owner])=>[id,provinces.has(id)?winner:owner])):{...owners};
 }
 export function councilPeaceWords(id,state){
   if(!hasSettlement(state))return null;

@@ -9,6 +9,27 @@ const compressed=readFileSync(new URL('../assets/lookout/landscape.bin.gz',impor
 const bytes=gunzipSync(compressed),buffer=bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength);
 const types={Float32Array,Float64Array,Uint32Array,Uint16Array,Uint8Array,Int8Array,Int16Array,Int32Array};
 const values=a=>readLookoutAttribute(buffer,a);
+test('distant instanced scenery is simplified within the nearest instance error bound',async()=>{
+  const THREE=await import('../vendor/three.module.js');
+  const {simplifyLookout}=await import('../scripts/optimize-lookout.mjs');
+  const {LOOKOUT}=await import('../src/app/exploration/tower-state.js');
+  const geometry=new THREE.SphereGeometry(1,8,6);geometry.computeBoundingSphere();
+  const placements=[[800,30,-2500],[900,50,-2700]],instances=new Float32Array(32);
+  placements.forEach((p,i)=>instances.set(new THREE.Matrix4().makeTranslation(...p).elements,i*16));
+  const colors=new Float32Array([.2,.5,.1,.1,.4,.2]);
+  const source={geometries:[{attributes:Object.fromEntries(Object.entries(geometry.attributes).map(([k,a])=>[k,{array:a.array,itemSize:a.itemSize,normalized:a.normalized}])),index:{array:geometry.index.array,itemSize:1},groups:[],sphere:[0,0,0,geometry.boundingSphere.radius]}],
+    materials:[{type:'standard',flatShading:true}],
+    meshes:[{name:'Distant tree crowns',geometry:0,material:0,matrix:new THREE.Matrix4().elements,instances,instanceColors:colors}]};
+  const result=await simplifyLookout(source),reduced=result.geometries[0];
+  assert.ok(geometry.attributes.position.count<100,'Small shared crowns must not bypass optimization');
+  assert.ok(reduced.index.array.length<geometry.index.count);
+  const distance=Math.min(...placements.map(([x,y,z])=>Math.hypot(x-LOOKOUT.x,y-LOOKOUT.y,z-LOOKOUT.z)-geometry.boundingSphere.radius-20));
+  assert.ok(reduced.simplificationError<=distance*.75/869);
+  assert.ok(reduced.attributes.normal.array.every(Number.isFinite));
+  assert.deepEqual(result.meshes[0].instances,instances,'No trees move or disappear');
+  assert.deepEqual(result.meshes[0].instanceColors,colors,'Authored forest colours remain intact');
+  geometry.dispose();
+});
 test('padded compressed attributes retain signed values exactly',async()=>{
   const {MeshoptEncoder}=await import('meshoptimizer');await MeshoptEncoder.ready;
   const expected=new Int8Array([-127,0,127,40,-40,1,-1,126,-126,3,2,1]);
@@ -36,6 +57,9 @@ test('actual-scene export has finite geometry and valid shared instances',()=>{
 test('the real Pyra, Ibenwood, Telemonia and upgraded capital builders are represented',()=>{
   for(const name of ['East Ibenwood','North Ibenwood','South Ibenwood','West Ibenwood','Central Ibenwood','East Pyros','West Pyros','Telemonia','Elagos'])assert.ok(manifest.regions.some(r=>r.name===name),name);
   for(const name of ['Ibenwood regional forest','Loading pyra','Loading telemoniaTown','Loading elagos'])assert.ok(manifest.meshes.some(m=>[m.name,...(m.sources??[])].some(s=>s.includes(name))),name);
+  assert.ok(manifest.meshes.some(m=>[m.name,...(m.sources??[])].some(s=>s.endsWith('/ The Sea Lions of Nylon'))),'The lookout uses the actual seated lion and lioness');
+  for(const old of ['The Founders of Nylon','The Beacon of Inquiry'])
+    assert.ok(!manifest.meshes.some(m=>[m.name,...(m.sources??[])].some(s=>s.endsWith('/ '+old))),'No previous Nylon statue remains in the distant view: '+old);
   assert.ok(!manifest.meshes.some(m=>/woodland masses|distant halls/.test(m.name)),'No invented regional proxy layout');
   assert.ok(manifest.optimization.maxOmittedDiameterPixels<1);
 });
@@ -45,9 +69,15 @@ test('the public asset restores renderable scenery without gameplay state',()=>{
   assert.ok(instances>1000,'Authored tree distributions survive instancing');
   assert.ok(built.entries.some(e=>e.part.name.endsWith('/ The Stills')),'The complete panorama includes the ocean without a second world');
   assert.ok(!manifest.meshes.some(p=>[p.name,...p.sources??[]].some(n=>n.includes('Minora legacy gate flags'))),'Council flags stay dynamic instead of being baked into city walls');
+  assert.ok(!manifest.meshes.some(p=>[p.name,...p.sources??[]].some(n=>n.includes('Minora live river traffic'))),'River vessels remain live instead of becoming stationary baked duplicates');
   built.update(12.5);
   const sea=built.entries.find(e=>e.part.name.endsWith('/ The Stills')).mesh;
   assert.equal(sea.material.uniforms.time.value,12.5,'Water animation continues without terrain or simulation updates');
+  for(const name of ['The Caloss','The Thelas chain']){
+    const water=built.entries.find(e=>e.part.name.endsWith('/ '+name))?.mesh;
+    assert.ok(water,name+' is present in the prepared landscape');
+    assert.ok(water.material.fog&&water.material.uniforms.fogColor,name+' keeps its fog uniforms in the offline export');
+  }
   assert.ok(!Object.keys(built).includes('colliders'));built.dispose();
 });
 
@@ -70,6 +100,10 @@ test('opening and revisiting the lookout does not prepare the walkable world',as
     assert.equal(world.heightAt(LOOKOUT.x,LOOKOUT.z),LOOKOUT.y);
     assert.equal(world.state().councilFlags.leader,'taleth');
     const root=scene.getObjectByName('Guild lookout / prepared surrounding landscape');
+    world.update(4,.04,LOOKOUT);
+    const traffic=world.riverTrafficState();assert.equal(traffic.ships,3);assert.equal(traffic.drawCalls,6,'Each vessel has one hull and one animated crew batch');
+    assert.deepEqual(traffic.crews.map(crew=>crew.crew),[3,2,2],'Lookout vessels retain their working crews');
+    world.update(12,.04,LOOKOUT);assert.notEqual(world.riverTrafficState().positions[1].z,traffic.positions[1].z,'Lookout boats keep moving without loading the exterior');
     world.update(4,.04,LOOKOUT);
     assert.equal(root.getObjectByName('Drent and the road to the Moros / The Stills').material.uniforms.time.value,4);
     world.show('tower');assert.equal(root.visible,false);

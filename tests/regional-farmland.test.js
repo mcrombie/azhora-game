@@ -101,7 +101,8 @@ test('scenery follows real terrain, keeps access clear, and batches rather than 
   assert.equal(metrics.lanes, 15);
   assert.ok(metrics.grainFields >= 5 && metrics.vegetableFields >= 4 && metrics.orchards >= 4 && metrics.meadows >= 10);
   assert.ok(metrics.cropTufts > 2000, 'the open fields have readable crops, not just brown ground patches');
-  assert.equal(metrics.batches, 45, 'three merged scenery batches per farm');
+  assert.equal(metrics.batches,45+metrics.orchardBatches,'three farm batches plus independently identifiable orchard instances');
+  assert(metrics.orchardBatches<=30,'Orchards share spatial batches rather than individual tree meshes');
   assert.ok(metrics.vertices < 675_000, 'bounded scenery complexity');
   const world = { colliders, heightAt: groundWithRiver, bounds: WORLD_BOUNDS };
   for (const farm of FARMSTEADS) {

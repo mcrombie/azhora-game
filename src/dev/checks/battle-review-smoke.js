@@ -12,9 +12,9 @@ export async function stable(a){
   assert(a.testWorld.nearColliders(-2426,60,15).some(c=>c.id?.startsWith('guild-stable-')),'Guild stable has physical structure in the actual world');
   assert(a.groundProbe(STABLE.horse.x,STABLE.horse.z).clear,'Starting horse retains clear mounting ground');
   key('KeyF');assert(a.state().mode==='briefing','Bear remains reachable beside the stable');
-  assert(document.getElementById('stable-words').textContent.includes('guild stable'),'Bear introduces his workplace');
-  for(let i=0;i<3;i++)document.getElementById('stable-next').click();
-  await a.visit({x:STABLE.horse.x+1.3,z:STABLE.horse.z});key('KeyG');assert(a.stable.mounted,'Starting horse mounts beside the open stalls');
+  assert(document.getElementById('stable-words').textContent.includes('horse'),'Bear offers the horse');
+  document.getElementById('stable-next').click();
+  await a.visit({x:a.stable.state().horse.x+1.3,z:a.stable.state().horse.z});key('KeyG');assert(a.stable.mounted,'Starting horse mounts beside the open stalls');
   a.look({yaw:Math.PI,pitch:.25,distance:10});a.hold('KeyW',true);for(let i=0;i<20;i++)a.step(.04);clearCombatKeys(a);
   assert(a.state().position[2]>69,'Mounted player rides clear of the stable onto the Guild Way');key('KeyG');
   await a.visit({x:-2420,z:69});a.look({yaw:.45,pitch:.27,distance:11});a.step(.04);window.dispatchEvent(new Event('blur'));await frames();return {checks:[...checks]};

@@ -2,16 +2,11 @@ import { forEachBuild } from '../../../world/loading/build-each.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
-import { registerWorldTree } from '../../../world/scenery/tree-registry.js';
+import { createSpeciesTreesSteps, SPECIES_TREE_PROFILES } from '../../../world/scenery/species-trees.js';
+import { treeSpecies } from '../../../world/life/tree-species.js';
 import { createGroveGroundSteps } from './ibenwood-ground.js';
-import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
 import { IBENWOOD, grovePoint, groveTrees, routeDistance, GROVE_PROTECTION } from './ibenwood-pilot.js';
 
-const TONES = {
-  'grey-vault':['#696653','#446446'], 'pale-witness':['#c0bb9e','#6b8053'],
-  bloodoak:['#70432e','#688247'], 'midnight-elm':['#5c5140','#2c5048'],
-  ridgeback:['#82715a','#537348'], deeproot:['#645743','#3b6650'],
-};
 export function createIbenwoodScenery(...args) { return finishBuild(createIbenwoodScenerySteps(...args)); }
 
 export function* createIbenwoodScenerySteps({parent,heightAt,colliders,terrain,terrainRoot}) {
@@ -30,22 +25,7 @@ export function* createIbenwoodScenerySteps({parent,heightAt,colliders,terrain,t
   }
   const descriptors=[];
   for(const tree of trees){ if (++buildWork % 32 === 0) yield;
-    const y=heightAt(tree.x,tree.z),[bark,leaf]=TONES[tree.species],h=tree.height,r=tree.radius,pieces=[];
-    const bole=h*(tree.species==='pale-witness'?.91:.83);
-    const trunk=part('trunk',bark,tree.x,y+bole/2-.12,tree.z,r,bole,r);
-    trunk.matrix.elements[13]+=treeGroundingOffset(trunk.matrix,heightAt,{radius:1,segments:9,embed:.08});pieces.push(trunk);
-    // Pale Witness keeps a high open bole; Grey Vault has a broad, low spreading crown.
-    const crownY=tree.species==='pale-witness'?.88:.78,spread=tree.species==='grey-vault'?.38:tree.species==='midnight-elm'?.3:.27;
-    for(let j=0;j<3;j++){ if (++buildWork % 32 === 0) yield;
-      const a=j*2.094+Number(tree.id.slice(-1))*.3,dx=Math.sin(a)*h*.14,dz=Math.cos(a)*h*.14;
-      pieces.push(part('crown',leaf,tree.x+dx,y+h*crownY+j*.6,tree.z+dz,h*spread,h*.18,h*spread));
-      if(tree.age==='veteran'){
-        const start=new THREE.Vector3(tree.x,y+h*.62,tree.z),end=new THREE.Vector3(tree.x+dx,y+h*.82,tree.z+dz),vector=end.clone().sub(start);
-        const limb=part('branch',bark,0,0,0,1,1,1);
-        limb.matrix.compose(start.clone().add(end).multiplyScalar(.5),new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0),vector.clone().normalize()),new THREE.Vector3(r*.55,vector.length(),r*.55));pieces.push(limb);
-      }
-    }
-    const collider={x:tree.x,z:tree.z,r,kind:'tree'};colliders.push(collider);
+    const y=heightAt(tree.x,tree.z),bark=SPECIES_TREE_PROFILES[treeSpecies(tree.species).id].bark,h=tree.height,r=tree.radius,pieces=[];
     // Buttress toes are individually draped, never floating spokes on a level plane.
     if(tree.age==='veteran')for(let j=0;j<5;j++){ if (++buildWork % 32 === 0) yield;
       const a=j*Math.PI*2/5+.35,len=tree.species==='ridgeback'?8:tree.species==='deeproot'?9:5;
@@ -58,14 +38,15 @@ export function* createIbenwoodScenerySteps({parent,heightAt,colliders,terrain,t
         if(width>.55)colliders.push({x,z,r:width*.7,kind:'root'});
       }
     }
-    descriptors.push({tree:{...tree,y,base:{x:tree.x,y,z:tree.z},harvestable:false,protectedReason:GROVE_PROTECTION},pieces,collider});
+    descriptors.push({tree:{...tree,y,trunkRadius:r,trunkHeight:h*(tree.species==='pale-witness'?.91:.83),harvestable:false,protectedReason:GROVE_PROTECTION},pieces});
   }
   for(const batch of batches.values()){ if (++buildWork % 32 === 0) yield;
     const mesh=new THREE.InstancedMesh(geometries[batch.type],new THREE.MeshStandardMaterial({color:batch.tint,roughness:.96,flatShading:true}),batch.parts.length);
     mesh.name=`Ibenwood ${batch.type} ${batch.tint}`;mesh.castShadow=true;mesh.receiveShadow=true;root.add(mesh);
     yield* forEachBuild(batch.parts, function* (p, index) {mesh.setMatrixAt(index,p.matrix);p.handle={mesh,index};});mesh.computeBoundingSphere();
   }
-  for(const d of descriptors){ if (++buildWork % 32 === 0) yield; registerWorldTree(colliders,d.tree,d.pieces.map(p=>p.handle),d.collider); }
+  const woodland=yield* createSpeciesTreesSteps({parent:root,colliders,trees:descriptors.map(d=>({...d.tree,additionalHandles:d.pieces.map(p=>p.handle)})),
+    heightAt,chunkSize:Infinity,name:'Ibenwood grove species trees'});
 
   const s=createSceneryBuilder(); const stone='#9b9d80',wood='#776047',roof='#435c50',dark='#26382e',gold='#dbc18a';
   const buildings=[];
@@ -143,5 +124,5 @@ export function* createIbenwoodScenerySteps({parent,heightAt,colliders,terrain,t
   }
   floor.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));floor.receiveShadow=true;root.add(floor,apron);
   let triangles=0;root.traverse(mesh=>{if(mesh.isMesh)triangles+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3*(mesh.isInstancedMesh?mesh.count:1);});
-  return {root,trees:descriptors.map(d=>d.tree),buildings,floor,apron,logs,supports,platform:{...v,y:platformY},metrics:{trees:trees.length,treeBatches:batches.size,staticMeshes:3,triangles},detail};
+  return {root,trees:woodland.trees,buildings,floor,apron,logs,supports,platform:{...v,y:platformY},metrics:{trees:trees.length,treeBatches:batches.size+woodland.batches,staticMeshes:3,triangles},detail};
 }

@@ -1,3 +1,4 @@
+import {legacyHumanProfile} from './combat-units.js';
 import { ARMY_BATTLE_ID, createArmyExchanges } from './army-battle.js';
 import { canStand, moveCharacter } from '../movement/game-state.js';
 import { BODY, bodyWorld } from './bodies.js';
@@ -278,7 +279,7 @@ function encounterConfig(config) {
     // Somebody who goes down on her knees at one instead of dying (Subtractidaughter).
     if (enemy.yields !== undefined && typeof enemy.yields !== 'boolean') return null;
     if (enemy.currentHp !== undefined && (!Number.isFinite(enemy.currentHp) || enemy.currentHp < 0 || enemy.currentHp > 100000)) return null;
-    const hp = enemy.hp ?? 75, entry = enemy.entry ?? 0;
+    const hp = enemy.hp ?? legacyHumanProfile(enemy)?.hp ?? 75, entry = enemy.entry ?? 0;
     if (!Number.isFinite(hp) || hp <= 0 || hp > 10000 || !Number.isFinite(entry) || entry < 0 || entry > 60
       || Math.abs(enemy[across] - config.center[across]) > (config.id===ARMY_BATTLE_ID?38:12) || along(enemy) < (config.id===ARMY_BATTLE_ID?-38:-21)
       || along(enemy) > (config.id===ARMY_BATTLE_ID?38:18) || beyond(enemy)) return null;
@@ -491,7 +492,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function enemyOnGuard(enemy) {
-    const profile=ENEMY_KINDS[enemy.kind],timers=enemyTimers.get(enemy.id);
+    const profile=legacyHumanProfile(enemy)??ENEMY_KINDS[enemy.kind],timers=enemyTimers.get(enemy.id);
     return !!(profile?.guard&&enemy.active!==false&&enemy.hp>0&&enemy.action==='idle'
       &&timers?.entry<=0&&(profile.poise||timers.cooldown<=0));
   }
@@ -1039,12 +1040,12 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
       emit('hit', { targetId: enemy.id, x: enemy.x, z: enemy.z, damage: 0, ...attribution });
       return;
     }
-    const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
+    const profile = legacyHumanProfile(enemy) ?? ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
     // A soldier on guard, facing the blow, turns most of it on his shield and is not rocked.
     const guarded = enemy.guarded
       && Math.abs(angleDifference(enemy.yaw ?? 0, yaw + Math.PI)) < Math.PI / 3;   // on guard, and the blow comes at his shield
     if (guarded) damage *= 1 - profile.guard;
-    damage = Math.max(1, Math.round(damage * (1 - (profile.armor ?? 0))));
+    damage = damage === 0 ? 0 : Math.max(1, Math.round(damage * (1 - (profile.armor ?? 0))));
     // In a bout nobody's health goes below one: he is beaten, and he says so, and he gets up. Nor
     // does anybody who `yields` in an ordinary fight: at one she goes down on her knees and is out
     // of it, and nobody's victory branch ever has a body to count for her.
@@ -1522,7 +1523,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
     // Yielded: on her knees, and out of it until the fight is over.
     if (enemy.yielded) { enemy.action = 'idle'; enemy.progress = 0; return; }
     if (enemy.kind === 'dummy' || state.phase !== 'active') return;
-    const profile = ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
+    const profile = legacyHumanProfile(enemy) ?? ENEMY_KINDS[enemy.kind] ?? ENEMY_KINDS.goblin;
     // A cast is a swing with its own timings and a spell at the end of it instead of a blade.
     const casting = enemy.casting && profile.spell ? profile.spell : null;
     // A charge has its own tell, its own rush and its own narrow lane; everything else about it
@@ -1681,7 +1682,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   // Allies: Army soldiers who join an encounter, close on the nearest enemy and
   // strike with the same tell-then-swing rhythm. Enemies treat them as targets.
   function makeAlly(spec, index) {
-    const profile = ALLY_KINDS[spec.kind];
+    const profile = legacyHumanProfile(spec) ?? ALLY_KINDS[spec.kind];
     // His own level, and nothing of the country's. A companion is handed one from what he knows
     // (MERCENARY_ARMS in src/gameplay/company/companions.js); a side's soldier has his kind's. Health is worked
     // out once, here, exactly as the enemy's is.
@@ -1798,7 +1799,7 @@ export function createCombat({ world, position, onEvent = () => {}, getWeapon, o
   }
 
   function updateAlly(ally, dt) {
-    const timers = allyTimers.get(ally.id), profile = ALLY_KINDS[ally.kind];
+    const timers = allyTimers.get(ally.id), profile = legacyHumanProfile(ally) ?? ALLY_KINDS[ally.kind];
     timers.actionTime += dt;
     timers.cooldown = Math.max(0, timers.cooldown - dt);
     ally.speed = 0;

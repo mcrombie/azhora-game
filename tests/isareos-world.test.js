@@ -13,7 +13,7 @@ import {
 import {
   LIZEEM, ISAREOS_RIVER, ISAREOS_BECKS, ISAMOUTH_GROUND, WEST_REGION_LANDMARKS, courseDistance, westBareGround,
 } from '../src/content/regions/western-regions/west-regions.js';
-import { WEST_PROFILES, westGroundAt, westWaterSurface, isareosLie } from '../src/content/regions/western-regions/west-ground.js';
+import { WEST_PROFILES, westGroundAt, westWaterSurface, courseSurface, isareosLie } from '../src/content/regions/western-regions/west-ground.js';
 import { DEFAULT_SKY, regionSky } from '../src/world/environment/region-sky.js';
 import { groundWithRiver } from '../src/world/terrain/world-terrain.js';
 import { menoraReserved } from '../src/content/regions/minora-frontier/menora-city.js';
@@ -205,14 +205,17 @@ test('the Isa, the three becks that feed it, and the ground kept clear where it 
     const profile = WEST_PROFILES.get(beck.id);
     for (let i = 1; i < profile.length; i++) assert.ok(profile[i].surface < profile[i - 1].surface, `${beck.id} climbs at ${i}`);
     for (const sample of profile) {
-      assert.equal(hexOwnerAt(sample.x, sample.z), 'Isareos', `${beck.id} leaves the country at (${sample.x.toFixed(0)}, ${sample.z.toFixed(0)})`);
+      assert.ok(hexOwnerAt(sample.x, sample.z) === 'Isareos' || courseDistance(ISAREOS_RIVER, sample.x, sample.z) < 7,
+        `${beck.id} leaves the country away from its border-river confluence`);
       const surface = westWaterSurface(sample.x, sample.z);
       if (surface !== null) assert.ok(westGroundAt(sample.x, sample.z) <= surface + .01, `${beck.id} floats at ${sample.x.toFixed(0)}`);
     }
     // Each one finds the course that takes it.
     const mouthAt = profile.at(-1);
-    assert.ok(courseDistance(ISAREOS_RIVER, mouthAt.x, mouthAt.z, 90) < 40,
+    assert.ok(courseDistance(ISAREOS_RIVER, mouthAt.x, mouthAt.z, 90) < .01,
       `${beck.id} ends ${courseDistance(ISAREOS_RIVER, mouthAt.x, mouthAt.z, 90).toFixed(0)} m from the river`);
+    assert.ok(Math.abs(mouthAt.surface - courseSurface(ISAREOS_RIVER, mouthAt.x, mouthAt.z)) < .001,
+      `${beck.id} meets the receiving water without a hanging mouth`);
   }
 });
 

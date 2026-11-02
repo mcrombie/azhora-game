@@ -12,6 +12,15 @@ import { questMapColour } from '../src/ui/map/world-map-detail.js';
 const at = (x, z) => toWorld(x, z);
 import { sourceModule } from './module-loader.js';
 import * as THREE from '../vendor/three.module.js';
+import {horizontalHeading} from '../src/gameplay/movement/facing.js';
+
+test('rider compass follows forward direction through all bearings and riding tilts',()=>{
+  for(let yaw=-Math.PI;yaw<=Math.PI;yaw+=Math.PI/16)for(const tilt of [-.2,0,.2]){
+    const actor=new THREE.Object3D();actor.rotation.set(0,yaw,0);actor.rotateX(tilt);
+    const heading=horizontalHeading(actor.quaternion),error=Math.atan2(Math.sin(heading-yaw),Math.cos(heading-yaw));
+    assert.ok(Math.abs(error)<1e-8,`heading ${yaw} with riding pitch ${tilt}`);
+  }
+});
 
 function context() {
   const calls = [], ctx = { calls };
@@ -64,6 +73,19 @@ test('independent bearings retain both targets even on opposite map edges', () =
   assert.equal(view.optional.id, 'village');
   const nearby = drawMinimap(context(), { world, position, goal: { x: -75, z: 29 }, tracked: { x: -80, z: 28 } });
   assert.ok(!nearby.goal.clamped && !nearby.optional.clamped);
+});
+
+test('spoken quest directions retain a gold edge bearing through fog without exposing places or terrain',()=>{
+  const position={x:0,z:0},goal={id:'town',x:600,z:-800,directionsKnown:true},chart={cells:[],glimpsed:[],reveal:false};
+  const world={landmarks:[goal],colliders:[{...goal,kind:'house',width:5,depth:5}]},ctx=context();
+  const view=drawMinimap(ctx,{position,world,goal,tracked:goal,chart});
+  assert.equal(view.goal.id,'town');assert.equal(view.goal.distance,1000);assert.equal(view.goal.clamped,true);
+  assert.ok(Math.abs(Math.hypot(view.goal.x-150,view.goal.y-150)-133)<1e-8);
+  assert.ok(view.goal.x>150&&view.goal.y<150,'the edge arrow points northeast');
+  assert.equal(view.optional,null,'an optional pin cannot inherit quest knowledge');
+  assert.equal(view.counts.landmarks,0);assert.equal(view.counts.buildings,0);assert.deepEqual(chart.cells,[]);
+  assert.equal(ctx.calls.filter(c=>c.method==='fill'&&c.fill===questMapColour('main')).length,1);
+  assert.equal(drawMinimap(context(),{position,goal:{...goal,directionsKnown:false},chart}).goal,null,'unspoken destinations still obey discovery');
 });
 
 test('the long road’s next stop is a second, ringed target beside the arc’s own', () => {

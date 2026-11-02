@@ -42,6 +42,55 @@ test('centaurs remain one connected, four-legged creature while walking and draw
   }
 });
 
+test('beastfolk faces, dress and weapons remain readable within a bounded animated model', () => {
+  for (const options of [{variant:0},{variant:1,archer:true},{variant:2,envoy:true}]) {
+    const actor=createCentaur(options),head=actor.group.children[1].getObjectByName('Head');
+    for (const name of ['Broad animal muzzle','Left attentive animal ear','Right attentive animal ear',
+      'Left watchful eye','Right watchful eye','Layered crown and neck mane','Backfall mane',
+      'Worked leather and woven sash','Left stitched bracer','Centaur woven flankcloths'])
+      assert.ok(actor.group.getObjectByName(name),name);
+    if(options.envoy)assert.ok(actor.group.getObjectByName('Envoy document case'));
+    actor.setArmed(true);actor.setWeapon(options.archer?'bow':'spear');
+    actor.animate(1,3,true,{armed:true,draw:options.archer?.8:0});actor.group.updateMatrixWorld(true);
+    const headBounds=new THREE.Box3(),headInverse=head.matrixWorld.clone().invert();
+    let meshes=0,triangles=0;
+    actor.group.traverseVisible(object=>{
+      if(!object.isMesh)return;
+      meshes++;triangles+=(object.geometry.index?.count??object.geometry.attributes.position.count)/3;
+      assert.ok(object.geometry.attributes.position.array.every(Number.isFinite));
+    });
+    head.traverseVisible(object=>{
+      if(!object.isMesh)return;
+      object.geometry.computeBoundingBox();
+      headBounds.union(object.geometry.boundingBox.clone().applyMatrix4(headInverse.clone().multiply(object.matrixWorld)));
+    });
+    assert.ok(headBounds.max.z>.25&&headBounds.max.z<.34,'short, broad feline muzzle rather than an elongated horse face');
+    assert.ok(headBounds.max.y>.4&&headBounds.max.y<.55,'rounded ears stay within the mane silhouette');
+    assert.ok(headBounds.min.y<-.2,'mane falls below the jaw');
+    assert.ok(meshes<45,`rigid ornaments are batched (${meshes} visible meshes)`);
+    assert.ok(triangles<18000,`three nearby camp figures remain modest (${triangles} triangles each)`);
+    actor.dispose();
+  }
+});
+
+test('disposing one centaur is idempotent and leaves other actors shared rig resources alive', () => {
+  const first=createCentaur(),second=createCentaur({variant:2,envoy:true});
+  const scene=new THREE.Group();scene.add(first.group,second.group);
+  const geometry=new Set(),materials=new Set();
+  second.group.traverse(o=>{if(o.isMesh){geometry.add(o.geometry);materials.add(o.material);}});
+  let sharedDisposals=0,ownedDisposals=0;
+  for(const resource of [...geometry,...materials])resource.addEventListener('dispose',()=>sharedDisposals++);
+  const owned=new Set();first.group.traverse(o=>{if(o.isMesh&&o.name==='Rigid character batch')owned.add(o.geometry);});
+  for(const resource of owned)resource.addEventListener('dispose',()=>ownedDisposals++);
+  first.dispose();first.dispose();
+  assert.equal(first.group.parent,null);assert.equal(second.group.parent,scene);
+  assert.equal(sharedDisposals,0,'cached materials and shared sphere/cylinder primitives must survive');
+  assert.equal(ownedDisposals,owned.size,'each per-instance batch is released exactly once');
+  second.animate(3,4,true,{armed:true});second.group.updateMatrixWorld(true);
+  second.group.traverseVisible(o=>{if(o.isMesh)assert.ok(o.matrixWorld.elements.every(Number.isFinite));});
+  second.dispose();
+});
+
 function hairBounds(head, color) {
   const bounds = new THREE.Box3(), wanted = new THREE.Color(color), point = new THREE.Vector3();
   head.updateWorldMatrix(true, true);

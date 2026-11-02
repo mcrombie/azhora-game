@@ -6,7 +6,7 @@ import {LOOKOUT} from '../../../app/exploration/tower-state.js';
 export function createLookoutPigeons(parent){
   let clock=0,observing=null;
   const birds=[-8,-7,-6].map((x,i)=>{
-    const model=createCourierPigeon(parent);model.root.scale.setScalar(.6);
+    const model=createCourierPigeon(parent);
     const perch={x,y:1.34,z:4.02};model.root.position.set(x,perch.y,perch.z);
     return {id:'guild-dove-'+i,model,perch,next:18+i*24,flight:null,feedingUntil:0};
   });

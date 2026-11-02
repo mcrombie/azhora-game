@@ -1,3 +1,5 @@
+import {settlementFacade,settlementCourt} from '../minora-frontier/lizeem-settlement-detail.js';
+import {groundPatch} from '../../../world/scenery/ground-face.js';
 import { finishBuild } from '../../../world/loading/build-steps.js';
 import * as THREE from 'three';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
@@ -50,7 +52,7 @@ const STYLE = freeze({
 });
 const hash = (a, b = 0) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
 
-export function* createOvesosFarmScenerySteps({ parent, heightAt, colliders = [] }) {
+export function* createOvesosFarmScenerySteps({ parent, heightAt, colliders = [], terrainSurface }) {
   let work = 0;
   const tick = () => ++work % 8 === 0;
   const root = new THREE.Group(); root.name = 'Ovesos farm country'; parent.add(root);
@@ -95,14 +97,6 @@ export function* createOvesosFarmScenerySteps({ parent, heightAt, colliders = []
     const step = { x: b.x + n.x * (b.w / 2 + .5), z: b.z + n.z * (b.d / 2 + .5) }, sy = y(step.x, step.z);
     if (floor - sy > .18) kit.block(C.stone, step.x, sy - .1, step.z, n.x ? .8 : wide + .4, floor - sy + .1 - .02, n.x ? wide + .4 : .8);
     if (tick()) yield;
-    // Small high windows with shutters on the long faces: a hot country keeps its rooms dark.
-    for (const side of [-1, 1]) for (const u of [-.28, .28]) {
-      const wy = floor + 1.45, sx = along ? b.x + u * b.w : b.x + side * (b.w / 2 + .04), sz = along ? b.z + side * (b.d / 2 + .04) : b.z + u * b.d;
-      if (Math.hypot(sx - dx, sz - dz) < wide / 2 + .9) continue;
-      if (along) { kit.block(C.glass, sx, wy, sz, .6, .5, .06); kit.block(C.shutter, sx - .46, wy - .02, sz, .3, .55, .07); kit.block(C.shutter, sx + .46, wy - .02, sz, .3, .55, .07); }
-      else { kit.block(C.glass, sx, wy, sz, .06, .5, .6); kit.block(C.shutter, sx, wy - .02, sz - .46, .07, .55, .3); kit.block(C.shutter, sx, wy - .02, sz + .46, .07, .55, .3); }
-    }
-    if (tick()) yield;
     if (s.chimney) {
       const cx = along ? b.x - Math.sign(dx - b.x || 1) * (b.w / 2 - .8) : b.x, cz = along ? b.z : b.z - Math.sign(dz - b.z || 1) * (b.d / 2 - .8);
       kit.block(C.brick, cx, top - .4, cz, .8, s.rise + 1, .8);
@@ -125,6 +119,7 @@ export function* createOvesosFarmScenerySteps({ parent, heightAt, colliders = []
       if (n.x) kit.roof(s.roof, dx + n.x * .95, floor + 2.7, dz, 2.2, 4.8, .45, 0, s.wall);
       else kit.roof(s.roof, dx, floor + 2.7, dz + n.z * .95, 2.2, 4.8, .45, Math.PI / 2, s.wall);
     }
+    settlementFacade(kit,b,floor,{region:'ovesos',rise:s.rise,door:b.door,ridgeAlongX:along,doorWidth:wide,doorHeight:high,porch:s.porch});
     collide({ x: b.x, z: b.z, hx: b.w / 2, hz: b.d / 2, minY: low - .5, maxY: top + s.rise + 1, kind: 'building', id: b.id });
     metrics.buildings++;
   }
@@ -345,7 +340,7 @@ export function* createOvesosFarmScenerySteps({ parent, heightAt, colliders = []
   // -------------------------------------------------------------------------
   {
     const q = OVESOS_SQUARE;
-    (yield* patch(C.square, y, (q.minX + q.maxX) / 2, (q.minZ + q.maxZ) / 2, q.maxX - q.minX, q.maxZ - q.minZ, 0, .045, 6));
+    yield* settlementCourt(ground,terrainSurface,y,{x:(q.minX+q.maxX)/2,z:(q.minZ+q.maxZ)/2,w:q.maxX-q.minX,d:q.maxZ-q.minZ,region:'ovesos'});
     // Nisaba's board: two posts, the board with the week's orders and the turns, a little roof. Its face is to the square.
     const b = OVESOS_ORDER_BOARD, by = y(b.x, b.z);
     village.frame(b.x, by, b.z, b.yaw, () => {
@@ -475,7 +470,7 @@ export function* createOvesosFarmScenerySteps({ parent, heightAt, colliders = []
         yield;
         const t = (j + .5) / n, x = a.x + (b.x - a.x) * t, z = a.z + (b.z - a.z) * t;
         if (underWater(x, z) || ovesosCanalFrame(x, z).distance < K.crestOut + 1.4) continue;
-        (yield* patch(ROAD_TINT[road.id] ?? C.way, y, x, z, road.width, len / n + .25, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
+        (yield* groundPatch(ground,terrainSurface,ROAD_TINT[road.id] ?? C.way, y, x, z, road.width, len / n + .25, Math.atan2(b.x - a.x, b.z - a.z), .06, 3));
         metrics.roadPatches++;
       }
     }

@@ -1,0 +1,33 @@
+#world-war-report #opening-world-time{position:static;inset:auto;transform:none;z-index:auto;width:auto;box-sizing:border-box;flex-shrink:0;margin:0 0 14px;padding:0 0 12px;background:none;color:#f4e5c7;border:0;border-bottom:1px solid #bba47055;border-radius:0;font:12px/1.45 system-ui}
+#opening-world-time[hidden],#opening-world-time [hidden],#opening-time-dialog [hidden],#opening-time-transition[hidden]{display:none}
+#opening-world-time .opening-time-heading,#opening-world-time .opening-time-action{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#opening-world-time .opening-time-heading{margin-bottom:3px;flex-wrap:wrap}
+#opening-world-time .opening-time-heading strong{font-size:14px;font-variant-numeric:tabular-nums;letter-spacing:.1px}
+#opening-world-time .opening-time-state{font-size:10px;color:#d2ddcd;white-space:nowrap}
+#opening-world-time .opening-time-state::before{content:'';display:inline-block;width:5px;height:5px;margin-right:5px;border-radius:50%;background:#a9c797;vertical-align:middle}
+#opening-world-time[data-time-state=held] .opening-time-state::before{background:#f4d995}
+#world-war-report #opening-world-time p{font-size:11px;line-height:1.5;color:#c5d1c8;margin:6px 0 0}
+#world-war-report #opening-world-time .opening-time-countdown{font-size:12px;color:#f4d995;margin:0;font-variant-numeric:tabular-nums}
+#opening-world-time .opening-time-action:has([data-countdown][hidden]):has([data-wait][hidden]){display:none}
+#opening-time-help{margin-top:7px;font:11px/1.5 system-ui}
+#opening-time-help summary{width:fit-content;cursor:pointer;color:#c5d1c8}
+#opening-time-help summary:hover{color:#f4d995}
+#opening-time-help summary:focus-visible{outline:2px solid #efce86;outline-offset:3px}
+#world-war-report #opening-world-time .opening-time-daylight{color:#adbfaa}
+#world-war-report #opening-world-time [data-wait]{flex-shrink:0;min-height:30px;padding:5px 8px;font-size:11px;background:#ecd197;color:#203629;border-color:#ecd197}
+#opening-time-transition{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);z-index:22;box-sizing:border-box;max-width:calc(100vw - 32px);margin:0;padding:10px 15px;background:#152f3bf2;color:#f4d995;border:1px solid #bba470;border-radius:4px;font:12px/1.5 system-ui;text-align:center;pointer-events:none}
+#opening-world-time button,#opening-time-dialog button{font:12px/1.35 system-ui;padding:8px 11px;min-height:36px;color:#f4e5c7;background:#284b45;border:1px solid #82988a;border-radius:3px;cursor:pointer}
+#opening-world-time button:focus-visible,#opening-time-dialog button:focus-visible{outline:2px solid #efce86;outline-offset:3px}
+#opening-time-dialog{width:min(570px,calc(100vw - 40px));max-height:calc(100dvh - 48px);box-sizing:border-box;overflow:auto;padding:26px;background:#18363b;color:#f4e5c7;border:1px solid #bba470;border-radius:8px;font:14px/1.65 system-ui;box-shadow:0 12px 60px #0007}
+#opening-time-dialog::backdrop{background:#091916b8}
+#opening-time-dialog h2{font:29px/1.2 Georgia,serif;margin:8px 0 14px;color:#f4d995}
+#opening-time-dialog p{margin:12px 0}
+#opening-time-dialog .opening-time-eyebrow{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin:0;color:#cbd6c5}
+#opening-time-dialog .opening-time-destination{padding:10px 0;border-block:1px solid #a8b09c55;color:#f4d995}
+#opening-time-dialog ul{padding-left:22px;margin:14px 0}
+#opening-time-dialog li+li{margin-top:8px}
+#opening-time-dialog .opening-time-buttons{display:flex;flex-wrap:wrap;gap:10px;margin-top:23px}
+#opening-time-dialog .opening-time-primary{background:#ecd197;color:#203629;border-color:#ecd197}
+#opening-time-dialog button:disabled{opacity:.5;cursor:default}
+#opening-time-dialog .opening-time-error{color:#ffd0aa}
+@media(max-width:760px){#opening-time-dialog{padding:20px}#opening-time-dialog h2{font-size:25px}#opening-time-dialog button{min-height:44px}#world-war-report #opening-world-time [data-wait]{min-height:36px}#opening-time-help summary{padding-block:4px}}

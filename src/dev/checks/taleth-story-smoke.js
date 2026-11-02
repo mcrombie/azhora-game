@@ -13,20 +13,22 @@ async function capture(a){for(let i=0;i<25;i++)a.step(.04);window.dispatchEvent(
 export async function battle(a){
   window.dispatchEvent(new Event('focus'));await prepareWarExterior(a);await prepareRally(a);await a.war.help('west');
   for(let i=0;i<5401&&!a.war.state().encounter.encounter.outcome;i++){driveWorldEncounter(a,a.war.state().encounter.encounter);a.step(1/60);}clearCombatKeys(a);
-  assert(a.war.state().encounter.encounter.outcome==='success','Real allied assault reaches victory before Taleth writes');click('world-skirmish-continue');a.war.pause();a.step(.04);
-  assert(a.war.state().letters[0].hero,'First letter recognizes the player’s real battle');assert(document.getElementById('world-war-report-source').textContent.includes('PIGEON'),'Pigeon dispatch replaces the ordinary battle report');
-  for(let i=0;i<110;i++)a.step(.04);assert(a.war.state().courier.visible,'One visible pigeon delivers the report');
+  assert(a.war.state().encounter.encounter.outcome==='success','Real allied assault reaches victory before Taleth speaks');click('world-skirmish-continue');a.war.pause();a.step(.04);
+  assert(a.war.state().letters[0].hero,'First message recognizes the player’s real battle');assert(document.getElementById('world-war-report-source').textContent==='TALETH / TELEPATHIC MESSAGE','Taleth identifies his telepathic battle report');
+  for(let i=0;i<110;i++)a.step(.04);const message=a.war.state().courier;
+  assert(message.delivery&&message.telepathic&&!message.visible&&!message.landed&&!message.people.length&&message.destination===null,'Taleth offers news without spawning or landing a messenger');
+  assert(!document.getElementById('corris-arrival').hidden&&document.getElementById('corris-call').textContent.includes('Listen to Taleth'),'The notice explains how to hear Taleth');
   a.look({yaw:0,pitch:.18,distance:7});return capture(a);
 }
 export async function letter(a){
-  window.dispatchEvent(new Event('focus'));click('taleth-read-letter');const before=a.war.state().campaign.day;for(let i=0;i<60;i++)a.step(.04);
-  assert(a.state().mode==='briefing'&&a.war.state().campaign.day===before,'Reading the letter pauses campaign time');
-  assert(document.getElementById('taleth-letter-words').textContent.includes('final assault secured'),'Letter credits the decisive victory accurately');
-  assert(document.getElementById('taleth-letter-note').textContent.includes('greater troubles'),'Letter links strategy to the wider story');return capture(a);
+  window.dispatchEvent(new Event('focus'));click('corris-call');assert(a.war.state().courier.conversation,'Listen opens Taleth speaking directly');const before=a.war.state().campaign.day;for(let i=0;i<60;i++)a.step(.04);
+  assert(a.state().mode==='briefing'&&a.war.state().campaign.day===before,'Listening to Taleth holds campaign time');
+  assert(document.getElementById('taleth-letter-words').textContent.includes('final assault secured'),'Taleth credits the decisive victory accurately');
+  assert(document.getElementById('taleth-letter-note').textContent.includes('greater troubles'),'The message links strategy to the wider story');return capture(a);
 }
 export async function summons(a){
-  window.dispatchEvent(new Event('focus'));click('taleth-letter-close');click('world-war-report-dismiss');assert(a.save().ok,'Dismissed letter and campaign save together');await a.loadSaved();a.step(.04);
-  assert(!a.war.state().courier.visible,'Continue does not redeliver a dismissed dispatch');a.openMap();click('taleth-letters');assert(document.querySelectorAll('#taleth-letter-select option').length>0,'Map archive keeps dismissed letters');click('taleth-letter-close');a.resume();
+  window.dispatchEvent(new Event('focus'));click('taleth-letter-close');click('world-war-report-dismiss');assert(a.save().ok,'Dismissed message and campaign save together');await a.loadSaved();a.step(.04);
+  assert(a.war.state().courier.delivery!==null,'Taleth keeps unheard news when only the report card was dismissed');a.openMap();click('taleth-letters');assert(document.querySelectorAll('#taleth-letter-select option').length>0,'Map archive keeps previous reports');click('taleth-letter-close');a.resume();
   a.war.advance(200);assert(!!a.war.state().campaign.winner,'The existing simulation settles the war');assert(a.war.state().letters.at(-1).finale,'Victory delivers the tower invitation');
   assert(!document.getElementById('world-war-next').disabled&&document.getElementById('world-war-next').textContent==='Return to Taleth','Invitation offers tracking back to the tower');return capture(a);
 }
@@ -43,7 +45,7 @@ export async function complete(a){
   window.dispatchEvent(new Event('focus'));for(let i=0;i<10&&a.state().mode==='briefing';i++)click('tower-next');assert(a.tower.state().concluded,'Completing the conversation concludes the scenario');assert(a.store.read().data.tower.concluded&&validateWorldWarSave(a.store.read().data),'Conclusion saves in the isolated campaign slot');
   const campaign=JSON.stringify(a.war.state().campaign);await a.loadSaved();assert(a.tower.state().room==='lookout'&&a.tower.state().concluded,'Continue restores the completed lookout');
   await a.visit({...LOOKOUT_DOOR,z:LOOKOUT_DOOR.z-1});f();await ready(a);assert(a.tower.state().room==='tower','Stair door returns to the chamber');assert(JSON.stringify(a.war.state().campaign)===campaign,'Finale and doorway preserve simulation history');
-  assert(!a.state().frameErrors.length,'Pigeons, archive, panorama and Continue have no frame errors');return capture(a);
+  assert(!a.state().frameErrors.length,'Telepathy, archive, panorama and Continue have no frame errors');return capture(a);
 }
 
 export async function continued(a){assert(a.tower.state().room==='lookout'&&a.tower.state().concluded,'Fresh main-menu Continue restores the completed lookout');assert(a.state().position[1]===LOOKOUT.y,'Fresh Continue restores high lookout footing');assert(a.tower.state().exteriorLoaded,'Fresh Continue prepares the panorama');assert(!a.state().frameErrors.length,'Fresh lookout renderer has no errors');return capture(a);}

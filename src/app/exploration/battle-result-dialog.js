@@ -10,7 +10,11 @@ export function createBattleResultDialog(panel,result){
   const resultHome=document.createComment('battle result'),retryHome=document.createComment('practice retry');
   result.before(resultHome);retry.before(retryHome);
   const primary=()=>document.getElementById('world-skirmish-continue');
+  let waiting=false;
   function keydown(event){
+    // A held attack, dodge or Enter must not skip the visible defeat beat or
+    // restart/leave the round before its report is ready.
+    if(waiting){event.preventDefault();event.stopImmediatePropagation();return;}
     if(!dialog.open)return;
     event.stopImmediatePropagation();
     const key=event.key||event.code;
@@ -23,7 +27,8 @@ export function createBattleResultDialog(panel,result){
   document.addEventListener('keydown',keydown,true);
   dialog.addEventListener('cancel',event=>{event.preventDefault();primary().focus();});
   return {
-    open(){panel.hidden=true;result.hidden=false;dialog.append(result);actions.append(retry);dialog.showModal();primary().focus();},
+    waitForAnimation(){waiting=true;panel.hidden=true;result.hidden=true;},
+    open(){waiting=false;panel.hidden=true;result.hidden=false;dialog.append(result);actions.append(retry);dialog.showModal();primary().focus();},
     dispose(){if(dialog.open)dialog.close();result.hidden=true;resultHome.replaceWith(result);retryHome.replaceWith(retry);document.removeEventListener('keydown',keydown,true);dialog.remove();}
   };
 }

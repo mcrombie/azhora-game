@@ -5,6 +5,7 @@ import { registerWorldTree, worldTreeId } from '../../../world/scenery/tree-regi
 import { treeGroundingOffset } from '../../../world/scenery/tree-grounding.js';
 import { northernFeatures, northernWaterAt } from './northern-oremindi-world.js';
 import { northernWildlifeClear } from './northern-oremindi-wildlife.js';
+import {frontierReserved} from '../oremindi-frontier/oremindi-frontier-layout.js';
 
 const CHUNK = 110;
 const geometry = {
@@ -28,7 +29,7 @@ export function createNorthernScenery(...args) { return finishBuild(createNorthe
 export function* createNorthernScenerySteps({ parent, heightAt, renderedGroundHeight = heightAt, colliders, terrainRoot, profile }) {
   const regionName=profile.name, regionBounds=profile.bounds, regionLakes=profile.lakes;
   const owns=profile.owns, featuresAt=northernFeatures, waterAt=northernWaterAt;
-  const isReserved=(x,z,r=0)=>northernWildlifeClear(x,z,r)||northernFeatures(x,z)?.pathDistance<5+r;
+  const isReserved=(x,z,r=0)=>frontierReserved(x,z,r)||northernWildlifeClear(x,z,r)||northernFeatures(x,z)?.pathDistance<5+r;
   let buildWork = 0;
   const root = new THREE.Group(); root.name = profile.name+' alpine country'; parent.add(root);
   const material = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: .98, flatShading: true });

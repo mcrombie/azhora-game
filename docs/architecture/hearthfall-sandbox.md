@@ -1,8 +1,8 @@
 # Hearthfall Feradom sandbox
 
-Hearthfall now has an isolated integration workspace on the current exploration foundation. The three startup choices are **Explore the World**, **Lizeemi War Scenario**, and **Hearthfall Integration**. Each has an independent Continue option and save slot. The old Hearthfall PR has not been merged. Its settlement simulation and chronicle remain work for the replacement PR.
+Hearthfall retains an isolated integration workspace on the current exploration foundation, but is hidden from the launcher for now. The public menu offers **Explore**, **Combat Testing**, and **Lizeem War Scenario** in one column. Hearthfall's separate save slot and underlying integration remain intact. The old Hearthfall PR has not been merged. Its settlement simulation and chronicle remain work for the replacement PR.
 
-Run `npm start` or **Play Azhora.cmd** for the shared menu. `npm run start:hearthfall` and **Test Hearthfall.cmd** open the same menu; select Hearthfall Integration. The original adventure remains available through `npm run start:adventure`. The independent map-only war test still uses `npm run start:lizeem`.
+Run `npm start` or **Play Azhora.cmd** for the shared menu. Use `npm run test:hearthfall:desktop` to verify the hidden workspace with an isolated profile. Browser development checks open `/?test=1&mode=hearthfall&load=fast` directly; this entry starts Feradom or resumes its existing browser save without adding a public launcher option. The original adventure remains available through `npm run start:adventure`. The independent map-only war test still uses `npm run start:lizeem`.
 
 The shared menu is also the package default (`electron .`) and the public `index.html`. `npm run build:web` includes it in the Render artifact; `exploration.html` preserves older bookmarks by redirecting to the main entry. The original adventure is preserved at `adventure.html`. Render deployment remains manual. Browser saves use localStorage on that site's origin and do not automatically transfer from desktop saves.
 

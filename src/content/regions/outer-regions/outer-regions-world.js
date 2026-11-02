@@ -1,6 +1,9 @@
 /** Continuous northern relief and island habitats, bounded by the authored atlas.
  * Region names never act as cliff edges. Ordinary passes and mountain faces share
  * the same heightfield, so walking, climbing and falling see the drawn landscape. */
+import {NONTH_TOWN,inNonthFine,nonthTownGround} from '../nonth/nonth-town-layout.js';
+import {THOTH_TOWN,inThothFine,thothTownGround} from '../thoth/thoth-town-layout.js';
+import {ORSA_TOWN,inOrsaFine,orsaTownGround} from '../orsa/orsa-town-layout.js';
 import {orsaRiverProfile} from './orsa-river.js';
 import { OUTER_PROFILES, OUTER_NAMES } from './outer-regions-data.js';
 import { OUTER_CLIMATE, OUTER_RIVER_EDGES } from './outer-regions-atlas.js';
@@ -8,6 +11,9 @@ import { REGION_CELLS, REGION_IDS, hexAt, SURVEY, TRANSFORM, landDistance, seaml
 import { regionOutline, riverCourses, pointInPolygon } from '../../../world/terrain/region-layout.js';
 import { eshtorLandform } from '../eshtor/eshtor-landform.js';
 import { createHexBoundaryDistance } from '../../../world/terrain/hex-boundary-distance.js';
+import {NORTHERN_TOWNS,inNorthernTownFine,northernTownGround,northernTownRiverProfile,northernTownOutlet} from '../northern-towns/northern-towns-layout.js';
+import {inGanunFine,ganunMadeGround,ganunRiverProfile,ganunOutletGround,GANUN_TOWN} from '../ganun/ganun-layout.js';
+import {londGround,LOND_LANDMARKS} from '../lond/lond-layout.js';
 export { OUTER_NAMES };
 const F=Object.freeze, key=c=>`${c.q},${c.r}`, clamp=v=>Math.max(0,Math.min(1,v));
 const smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a));return t*t*(3-2*t);}, mix=(a,b,t)=>a+(b-a)*t;
@@ -82,7 +88,7 @@ const makePool=(c,i)=>{
 };
 export const OUTER_LAKES=F([...OUTER_CELLS.filter(c=>c.terrain==='lake'),...[...profiles.values()].filter(p=>['dark','boreal','tundra','highland','jungle','plateau'].includes(p.kind)).map(p=>p.kind==='plateau'?plateauPoolSite(p):p.cells.find(c=>Math.hypot(c.x-p.anchor.x,c.z-p.anchor.z)>105&&landDistance(c.x,c.z)>60)).filter(Boolean)].map(makePool));
 const rawCourses=riverCourses(SURVEY,OUTER_RIVER_EDGES,TRANSFORM,{soften:2});
-export const OUTER_RIVERS=F(rawCourses.map((c,i)=>{const orsa=orsaRiverProfile(c,p=>Math.max(.5,naturalAt(p.x,p.z)-3));return F({id:'outer-river-'+i,name:orsa?.name??'Northern watercourse',orsa:!!orsa,width:orsa?.width??(c.size==='large'?13:c.size==='medium'?8:4),depth:orsa?.depth??1.8,points:F((orsa?.points??c.points.map(p=>({...p,y:Math.max(.5,naturalAt(p.x,p.z)-3)}))).map(F))});}));
+export const OUTER_RIVERS=F(rawCourses.map((c,i)=>{const ganun=ganunRiverProfile(c),orsa=orsaRiverProfile(c,p=>Math.max(.5,naturalAt(p.x,p.z)-3)),port=ganun??northernTownRiverProfile(c)??orsa;return F({id:'outer-river-'+i,name:port?.name??'Northern watercourse',ganun:!!ganun,orsa:!!orsa,depth:orsa?.depth??1.8,town:port?.town??null,width:port?.width??(c.size==='large'?13:c.size==='medium'?8:4),points:F((port?.points??c.points.map(p=>({...p,y:Math.max(.5,naturalAt(p.x,p.z)-3)}))).map(F))});}));
 // Carry the new outlet through the tiny unowned coastal fringe to open sea.
 const orsaMouth=OUTER_RIVERS.find(r=>r.orsa)?.points[0];
 function orsaOutletGround(x,z,base){
@@ -105,10 +111,16 @@ export function outerWaterSample(x,z){
 }
 export const outerWaterAt=(x,z)=>{const s=outerWaterSample(x,z);return s&&s.distance<0?s.surface:null;};
 export function outerGround(x,z,base){
-  if(!outerOwns(x,z))return orsaOutletGround(x,z,base);
-  let h=naturalAt(x,z,base);const w=outerWaterSample(x,z);
+  if(!outerOwns(x,z))return orsaOutletGround(x,z,northernTownOutlet(x,z,ganunOutletGround(x,z,base)));
+  let h=naturalAt(x,z,base);
+  if(inNonthFine(x,z))h=nonthTownGround(x,z,h);
+  if(inThothFine(x,z))h=thothTownGround(x,z,h);
+  if(inOrsaFine(x,z))h=orsaTownGround(x,z,h,landDistance(x,z));
+  if(inGanunFine(x,z))h=ganunMadeGround(x,z,h,landDistance(x,z));
+  if(inNorthernTownFine(x,z))h=northernTownGround(x,z,h,landDistance(x,z));
+  const w=outerWaterSample(x,z);
   if(w&&w.distance<26){const bed=w.surface-(w.lake?3.4:w.river.depth),bank=mix(bed,h,smooth(w.river?.orsa ? .4 : 4,26,w.distance));h=Math.min(h,bank);}
-  return orsaOutletGround(x,z,h);
+  return orsaOutletGround(x,z,northernTownOutlet(x,z,ganunOutletGround(x,z,londGround(x,z,h))));
 }
 export function outerFeatures(x,z){
   const c=outerCellAt(x,z);if(!c||c.terrain==='ocean')return null;
@@ -126,4 +138,4 @@ export const OUTER_LANDMARKS=F([...profiles.values()].flatMap(p=>{
     const c=used.has(key(preferred))?p.cells.find(c=>!used.has(key(c))):preferred;used.add(key(c));
     return F({id:`outer-${p.id}-${i}`,name,region:p.name,x:c.x,z:c.z,description:name+' lies in '+p.name+', amid the surrounding wilderness.'});
   });
-}));
+}).concat(LOND_LANDMARKS,GANUN_TOWN,NORTHERN_TOWNS,ORSA_TOWN,THOTH_TOWN,NONTH_TOWN));
