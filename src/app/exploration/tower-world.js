@@ -69,7 +69,7 @@ export async function createTowerWorld(scene,onProgress,{inside,room=null,positi
     const id=value===true?'tower':value===false||value==null?null:value;
     if(id)ensureRoom(id);inLimbo=false;current=id;
     for(const [key,r]of rooms)r.view.root.visible=key===id;
-    outside.visible=!id||((reviewedCountryside||relocatedTower)&&id==='lookout');
+    outside.visible=!id||((reviewedCountryside||!!relocatedTower)&&id==='lookout');
     if(relocatedTower&&id==='lookout')outside.position.set(TOWER.x-relocatedTower.x,TOWER.y-exterior.heightAt(relocatedTower.x,relocatedTower.z),TOWER.z-relocatedTower.z);else outside.position.set(0,0,0);
     if(panorama)panorama.root.visible=id==='lookout';countrysideMask?.setActive(id==='lookout');exterior?.setLookout?.(id==='lookout');exterior?.stop();
   }

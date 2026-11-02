@@ -28,7 +28,9 @@ test('authored quest directions mark an unsurveyed destination without revealing
 });
 
 test('newly built settlements appear once in the chart with ordinary discovery and tracking rules', () => {
-  const ids = ['stonefist', 'lond-town', 'nonth-town', 'thoth-town', 'orsa-town', 'riesov-town', 'witherst-town', 'ganun-town', 'endevor-town', 'alezhor-town', 'iben-town', 'ibenal-north-mouth-hamlet', 'ibenal-middle-mouth-hamlet', 'ibenal-south-mouth-hamlet'];
+  const ids = ['stonefist', 'lond-town', 'nonth-town', 'thoth-town', 'orsa-town', 'riesov-town', 'witherst-town', 'ganun-town', 'endevor-town', 'alezhor-town', 'iben-town', 'ibenal-north-mouth-hamlet', 'ibenal-middle-mouth-hamlet', 'ibenal-south-mouth-hamlet',
+    'oremindi-west-hold', 'oremindi-east-hold', 'oremindi-north-hold', 'oremindi-south-hold', 'kudan-town', 'oremindi-last-refuge',
+    'oremindi-west-ruins', 'oremindi-east-ruins', 'oremindi-north-ruins', 'oremindi-south-ruins'];
   assert.deepEqual(ATLAS_SETTLEMENTS.map(p => p.id), ids);
   const marks = atlasPlaceMarks(SUBREGIONS.map(p => ({ id: p.id, name: p.name, kind: 'area', ...TRANSFORM.worldToAtlas(p.x, p.z) })));
   for (const site of ATLAS_SETTLEMENTS) {
