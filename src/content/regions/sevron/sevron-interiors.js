@@ -21,13 +21,15 @@ const solids=[...[-18,0,18].flatMap(z=>[-1,1].map(s=>({x:s*25,z,w:.25,d:17,y:8,h
  {x:0,z:-79,w:7,d:3,y:14,h:.6},
  ...[-22,22].map(x=>({x,z:-66,w:4.2,d:2.5,y:14,h:1.1})),
  {x:-50,z:-69,w:5,d:5,y:14,h:.65},
+ ...[-80,-58].map(z=>({x:-46.3,z,w:.55,d:.55,y:14,h:6})),
+ {x:-39.2,z:-75,w:1.8,d:3.2,y:14,h:.9},
  {x:58,z:10,w:2,d:2,y:8,h:1.1},
 ];
 export const SEVRON_STOPS=Object.freeze([
- {id:'watcher',name:'Elven watcher',x:-5,z:29,guard:true},
- {id:'keeper',name:'Gallery keeper',x:7,z:-62},
- {id:'resident',name:'Sevron resident',x:26,z:-69},
- {id:'gardener',name:'Terrace tender',x:-45,z:-72},
+ {id:'watcher',name:'Night Elf watcher',x:-5,z:29,guard:true},
+ {id:'keeper',name:'Night Elf gallery keeper',x:7,z:-62},
+ {id:'resident',name:'Night Elf resident',x:26,z:-69},
+ {id:'gardener',name:'Night Elf terrace tender',x:-43,z:-72},
 ]);
 export function createSevronWalk({secretOpen=()=>false}={}){
  const floorLocal=(x,z)=>{if(inside(ramp,x,z))return 8+6*Math.max(0,Math.min(1,(-z-35.5)/17));for(const r of SEVRON_ROOMS)if(inside(r,x,z))return r.y;return null;};
@@ -115,6 +117,10 @@ export function buildSevronInterior(parent,{walk=createSevronWalk()}={}){
  b.block('#475d3d',-50,14,-69,5,.35,5);for(let i=0;i<12;i++)b.rock('#768e50',-51.7+(i%4)*1.1,14.6,-70.5+Math.floor(i/4)*1.3,.43,.46,.45);
  b.block('#758e85',-58,14.05,-69,.8,.1,21);b.block(trim,-59,14,-69,.35,.4,21);
  for(const x of [-61,-39])b.block(stone,x,30,-69,1,65,26);
+ // The beds keep their light well; residents work beneath this solid arcade.
+ // Its roof is above the camera clearance and does not obstruct the garden route.
+ b.block(stone,-42.5,20,-69,9,.45,25);
+ for(const z of [-80,-58])b.beam(light,[-46.3,19.7,z],[-38.4,19.7,z],.22);
  // Side chamber tools and damaged civic inscriptions remain after the coins are taken.
  b.block(stone,58,8,10,2,1.1,2);
  for(const z of [3,17]){b.block(trim,55,8,z,9,.8,1.6);for(let j=0;j<5;j++){const x=51.5+j*1.6;b.box('#8b9588',x,8.88,z,.16,.08,1);b.box(wood,x,8.9,z+.42,.3,.12,.3);}}
@@ -125,6 +131,8 @@ export function buildSevronInterior(parent,{walk=createSevronWalk()}={}){
  for(const z of [-19,7])b.block(trim,-35,-9,z,1.1,13,2.2);
  b.block(trim,-35,4,-6,1.1,2,28);
  const mesh=b.finish(group);mesh.position.set(SEVRON_ORIGIN.x,0,SEVRON_ORIGIN.z);
+ group.userData.elvenCulture='night';
+ group.userData.gardenShelter={minX:-47,maxX:-38,minZ:-81.5,maxZ:-56.5,roofY:20};
  const water=new THREE.Mesh(new THREE.PlaneGeometry(48,50),new THREE.MeshStandardMaterial({color:0x205052,transparent:true,opacity:.78,roughness:.26,metalness:.2,side:THREE.DoubleSide}));
  water.rotation.x=-Math.PI/2;water.position.set(SEVRON_ORIGIN.x,SEA_LEVEL,SEVRON_ORIGIN.z-2);group.add(water);
  const ambient=new THREE.AmbientLight(0xa0bab0,1.8);group.add(ambient);

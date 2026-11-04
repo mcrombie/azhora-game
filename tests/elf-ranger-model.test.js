@@ -1,9 +1,30 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { sourceModule } from './module-loader.js';
+import { ELVEN_CULTURES } from '../src/content/characters/elven-cultures.js';
 
 const THREE = await sourceModule('../vendor/three.module.js');
 const { createElvenRanger } = await sourceModule('../src/content/regions/ibenwood/ibenwood-defense-view.js');
+
+function headHasColour(actor,hex){
+  const wanted=new THREE.Color(hex);let found=false;
+  actor.group.getObjectByName('Head').traverse(mesh=>{
+    const colors=mesh.geometry?.attributes.color;if(!colors)return;
+    for(let i=0;i<colors.count;i++)if(Math.abs(colors.getX(i)-wanted.r)<.00001&&Math.abs(colors.getY(i)-wanted.g)<.00001&&Math.abs(colors.getZ(i)-wanted.b)<.00001){found=true;break;}
+  });
+  return found;
+}
+
+test('Night Elf watchers have pale skin and red eyes while Day Elf rangers retain their woodland appearance',()=>{
+  const night=createElvenRanger(1,{culture:'night'}),day=createElvenRanger(1);
+  assert.equal(night.group.userData.elvenCulture,'night');assert.equal(day.group.userData.elvenCulture,'day');
+  for(const [actor,culture]of [[night,ELVEN_CULTURES.night],[day,ELVEN_CULTURES.day]]){
+    assert.ok(headHasColour(actor,culture.skin),'skin colour survives head batching');
+    assert.ok(headHasColour(actor,culture.eyes),'eye colour survives head batching');
+    assert.equal(actor.group.getObjectByName('Head').userData.elven,true);
+  }
+  assert.equal(headHasColour(day,ELVEN_CULTURES.night.eyes),false,'the new eye colour does not recolour existing wood elves');
+});
 
 test('elven rangers retain visible pointed ears, short hair and bare heads after geometry batching', () => {
   const ranger = createElvenRanger(), head = ranger.group.getObjectByName('Head');

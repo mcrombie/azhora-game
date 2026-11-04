@@ -1,15 +1,17 @@
 import * as THREE from 'three';
 import { createCharacter } from '../../characters/characters.js';
 import { createSceneryBuilder } from '../../../world/scenery/scenery-builder.js';
+import { ELVEN_CULTURES } from '../../characters/elven-cultures.js';
 
 export const ELVEN_BOUNDARY_TEXT='Elfland. Turn back. Trespassers face lethal arrows beyond the white stones.';
 
-export function createElvenRanger(index=0) {
-  const actor=createCharacter({role:'mercenary',armed:true,hat:false,tunic:index%2?0x46533c:0x374a40,skin:0xc9af87,
-    look:{weapon:'bow',hair:0x342e23,hairStyle:'short-cropped',headgear:'bare',facialHair:'clean',garment:'jerkin',elven:true}});
-  actor.group.name='Elven ranger';actor.group.scale.set(.92,1.09,.92);
+export function createElvenRanger(index=0,{culture='day'}={}) {
+  const people=ELVEN_CULTURES[culture]??ELVEN_CULTURES.day;
+  const actor=createCharacter({role:'mercenary',armed:true,hat:false,tunic:people.tunics[Math.abs(index)%2],skin:people.skin,
+    look:{weapon:'bow',hair:people.hair,eyeColor:people.eyes,hairStyle:'short-cropped',headgear:'bare',facialHair:'clean',garment:'jerkin',elven:true}});
+  actor.group.name=people.id==='night'?'Night Elf ranger':'Day Elf ranger';actor.group.userData.elvenCulture=people.id;actor.group.scale.set(.92,1.09,.92);
   const cloak=createSceneryBuilder('Leaf cut ranger mantle');
-  cloak.sheet('#394b3b',[-.28,1.33,-.10],[.28,1.33,-.10],[.23,.72,-.23],[-.22,.78,-.23]);
+  cloak.sheet(people.mantle,[-.28,1.33,-.10],[.28,1.33,-.10],[.23,.72,-.23],[-.22,.78,-.23]);
   cloak.finish(actor.group);
   return actor;
 }

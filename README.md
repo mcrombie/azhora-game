@@ -17,7 +17,9 @@ are recommended. Explore's first load can take about a minute; Story is the
 quicker introduction. This is a prototype, not a finished commercial game. Render
 publishing is manual: the browser link may run an older version until the next
 approved deployment. See the [release review](docs/portfolio-release-review.md)
-and [preparation record](docs/portfolio-preparation.md).
+and [preparation record](docs/portfolio-preparation.md). The subsequent
+[development integration review](docs/portfolio-integration-review.md) records
+the combined Night Elf and portfolio candidate.
 
 ## Engineering worth exploring
 
@@ -391,7 +393,12 @@ dangerous at early levels. Follow the southern approach and look for repaired
 stone passages to find Sevron; the ordinary map does not disclose the hidden city.
 
 Press F at a passage to enter its dry galleries above a sea-level drowned dwarf
-city. Anonymous elven residents inhabit the upper court. A concealed inspection
+city. Pale-skinned, red-eyed Night Elves inhabit the upper court. They shun
+sunlight and venture onto the surface only at night, unlike the woodland way
+of life of the wood elves, also called Day Elves. A covered garden arcade
+shelters Sevron's terrace tender while the plants retain their light well.
+These residents currently stay inside; scheduled surface travel is not yet implemented.
+A concealed inspection
 store contains coins that can only be recovered once. Discovery, the opened
 store and defeated threats persist; saves made inside return safely to the
 exterior entrance. Flooded lower districts remain visible ruins, without diving.

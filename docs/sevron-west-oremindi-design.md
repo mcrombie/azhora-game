@@ -4,6 +4,14 @@
 
 Use the atlas spelling **West Oremindi Mountains** and the existing spelling **Sevron** as working names for the user's spoken variations. Sevron names the later elven settlement. The ancient dwarven capital had a different name; its name and language remain deliberately undecided.
 
+## Night Elves: confirmed November 1, 2026
+
+Sevron's inhabitants are **Night Elves**: living elves with pale skin and red eyes who shun sunlight, live underground, and venture onto the surface only at night. The **wood elves**, also called **Day Elves**, are a distinct people. Night Elves are not the undead Dark Elves who serve Thalmagar; their appearance and nocturnal life do not imply necromancy or allegiance to him.
+
+The existing history of the drowned dwarf capital and the later hidden settlement remains. Light wells still sustain plants, but Night Elves work the exposed beds at night and use covered walks during the day. This supersedes earlier descriptions of residents working in sunlight. No sunlight damage rule, new religion, ruler, origin story, language, or diplomatic relationship is established by this change.
+
+The playable first pass gives all four residents the Night Elf appearance, updates their dialogue and discovered map label, and shelters the terrace tender beneath a stone arcade. All current residents remain inside the underground city; surface foraging and patrol schedules are not implemented. Wood Elf ranger appearances remain unchanged and are identified as Day Elves in their culture data. Shared definitions live in `src/content/characters/elven-cultures.js`.
+
 ## Confirmed history and present premise
 
 The greatest ancient dwarf kingdom was centered here, with its capital inside the mountains. Centuries ago, human armies besieged the capital for years, killed the dwarf king and destroyed the kingdom. They brought the sea into the mountain and drowned the city's population. Dwarves were driven from the Oremindi, especially the western range. Dwarves elsewhere survived; the destruction of this city's population does not mean the extinction of all dwarves.

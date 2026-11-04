@@ -98,7 +98,7 @@ test('established cities share a designation badge without turning towns, ruins 
   assert.equal(marks.some(p => p.name === 'Sevron'), false, 'The secret settlement is not revealed by a global registry.');
   assert.deepEqual(atlasRevealedCityMarks(), []);
   const hidden = atlasRevealedCityMarks({ sevron: true });
-  assert.equal(hidden.length, 1); assert.equal(hidden[0].name, 'Sevron'); assert.equal(hidden[0].subtitle, 'Elven city');
+  assert.equal(hidden.length, 1); assert.equal(hidden[0].name, 'Sevron'); assert.equal(hidden[0].subtitle, 'Night Elf city');
   assert.equal(atlasPlaceMarks([...areas, ...hidden]).filter(p => p.id === 'sevron-city').length, 1);
   for (const kind of ['quest', 'tracked']) {
     const objective = { ...areas.find(p => p.id === 'varn'), name: 'Reach the Pass Gate', kind };

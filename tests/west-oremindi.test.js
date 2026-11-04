@@ -6,6 +6,7 @@ import {WEST_OREMINDI_WILDLIFE_ZONES as zones} from '../src/content/regions/west
 import {canWalkSlope,createClimbing,sampleClimbSurface} from '../src/gameplay/movement/climbing.js';
 import {moveCharacter} from '../src/gameplay/movement/game-state.js';
 import {createSevronState} from '../src/content/regions/sevron/sevron-state.js';
+import {ELVEN_CULTURES} from '../src/content/characters/elven-cultures.js';
 const THREE=await import('../vendor/three.module.js');
 const {createWestOremindiScenery}=await sourceModule('../src/content/regions/west-oremindi/west-oremindi-scenery.js',import.meta.url);
 const {createSevronWalk,buildSevronInterior}=await sourceModule('../src/content/regions/sevron/sevron-interiors.js',import.meta.url);
@@ -57,6 +58,32 @@ function hostFixture(){
  const host=createSevronHost({scene,world:{heightAt:ground},player,toast:()=>{},openDialogue:(...args)=>dialogues.push(args),closeDialogue:()=>{},available:()=>allowed,reward:r=>rewards.push(r),onThreat:s=>{threats.push(s.id);combat={phase:'active',encounterId:s.id};return true;},combatState:()=>combat});
  return {host,scene,player,rewards,dialogues,threats,set allowed(v){allowed=v;},set combat(v){combat=v;},at:p=>player.group.position.set(p.x,p.y??ground(p.x,p.z),p.z)};
 }
+
+test('Sevron residents share the Night Elf appearance, explain their night-only travel, and shelter the gardener',()=>{
+ const f=hostFixture();f.host.enter();
+ const skin=new THREE.Color(ELVEN_CULTURES.night.skin),eyes=new THREE.Color(ELVEN_CULTURES.night.eyes);
+ for(const person of f.host.people){
+  assert.equal(person.actor.group.userData.elvenCulture,'night');
+  let pale=false,red=false;
+  person.actor.group.getObjectByName('Head').traverse(mesh=>{
+   const c=mesh.geometry?.attributes.color;if(!c)return;
+   const matches=(i,target)=>Math.abs(c.getX(i)-target.r)<.00001&&Math.abs(c.getY(i)-target.g)<.00001&&Math.abs(c.getZ(i)-target.b)<.00001;
+   for(let i=0;i<c.count;i++){pale||=matches(i,skin);red||=matches(i,eyes);}
+  });
+  assert.ok(pale&&red,`${person.id} has pale skin and red irises in rendered geometry`);
+  f.at(person.actor.group.position);assert.equal(f.host.interact(),true);
+ }
+ const text=f.dialogues.flatMap(d=>d[1]).join(' ');
+ assert.match(text,/Night Elves/);assert.match(text,/Day Elves/);assert.match(text,/only after nightfall/);assert.match(text,/before sunrise/);
+ const gardener=f.host.people.find(p=>p.id==='gardener'),at=gardener.actor.group.position;
+ f.host.interior.group.updateWorldMatrix(true,true);
+ const ray=new THREE.Raycaster(new THREE.Vector3(at.x,21,at.z),new THREE.Vector3(0,-1,0));
+ const roof=ray.intersectObject(f.host.interior.group,true).find(hit=>hit.point.y>=20&&hit.point.y<=20.5);
+ assert.ok(roof,'a physical stone roof shields the terrace tender; the garden still has an open light well');
+ const plant=f.host.walk.toWorld({x:-50,z:-69});
+ ray.set(new THREE.Vector3(plant.x,21,plant.z),new THREE.Vector3(0,-1,0));
+ assert.equal(ray.intersectObject(f.host.interior.group,true).some(hit=>hit.point.y>=20&&hit.point.y<=20.5),false,'the beds are not roofed over');
+});
 test('Sevron is lazy, each real entrance returns outdoors, and recovered coins survive portal reloads',()=>{
  const f=hostFixture();assert.equal(f.host.interior,null);f.allowed=false;assert.equal(f.host.enter(),false);assert.equal(f.host.interior,null);f.allowed=true;
  for(const e of entrances){assert.equal(f.host.enter(e.id),true);assert.equal(f.player.group.position.y,f.host.walk.toWorld(e.local).y);assert.equal(f.host.nearby().kind,'exit');assert.equal(f.host.interact(),true);assert.equal(f.host.active,false);assert.equal(f.player.group.position.y,ground(f.player.group.position.x,f.player.group.position.z));}

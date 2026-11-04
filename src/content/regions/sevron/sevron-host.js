@@ -4,6 +4,7 @@ import {createElvenRanger} from '../ibenwood/ibenwood-defense-view.js';
 import {createSevronState} from './sevron-state.js';
 import {buildSevronInterior,createSevronWalk,SEVRON_STOPS} from './sevron-interiors.js';
 import {SEVRON_ENTRANCES} from '../west-oremindi/west-oremindi-world.js';
+import {ELVEN_CULTURES} from '../../characters/elven-cultures.js';
 const gap=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 export const WEST_OREMINDI_ENCOUNTERS=Object.freeze([
  {id:'west-oremindi-pass-goblins',center:{x:-3480,z:-915},checkpoint:{x:-3510,z:-914},retreatAxis:'x',retreatSign:-1,retreatLine:-3525,level:7,
@@ -12,19 +13,24 @@ export const WEST_OREMINDI_ENCOUNTERS=Object.freeze([
  enemies:[{id:'oremindi-ruin-scout-a',kind:'goblin',name:'Mountain goblin',x:-3688,z:-1370,hp:95,entry:.2},{id:'oremindi-ruin-scout-b',kind:'goblin',name:'Mountain goblin',x:-3684,z:-1373,hp:95,entry:.8}]},
 ]);
 const stories={
- watcher:['Stop there. If you came to take from the living, turn around. If you came without violence, you may walk our upper galleries. Keep to the railings. The sea owns the streets beneath them.'],
- keeper:['This is Sevron. We built our homes in a city that was already ancient when our forebears found it. Our settlement is small; most of those old doors remain closed.',
+ watcher:['Stop there. If you came to take from the living, turn around. If you came without violence, you may walk our upper galleries. Keep to the railings. The sea owns the streets beneath them.',
+ 'We are Night Elves. We keep our watch beneath the mountain during the day; our people go out only after nightfall and return before sunrise.'],
+ keeper:['This is Sevron, home of the Night Elves. We built our homes in a city that was already ancient when our forebears found it. Our settlement is small; most of those old doors remain closed.',
  'The greatest dwarf kingdom once lay within this mountain. After years of siege, human armies brought the sea into its depths. Its king and the people trapped inside were lost. We came centuries later.',
- 'The upper galleries are dry. The terraces receive daylight; the spring above us brings fresh water. Salt water still fills the lower city. Do not confuse those two waters.'],
- resident:['We live among the old stones without pretending they were made for us. A repaired stair, a garden in a shaft of sunlight, a little warmth behind a screen: that is home.'],
- gardener:['These beds have soil and daylight. The channel beside them carries fresh spring water down from the upper rock. Nothing here grows by drinking the sea.'],
+ 'Our pale skin and red eyes are familiar here. The wood elves are also called Day Elves; they make their homes in the forests. We shun sunlight and live below it.',
+ 'The upper galleries are dry. Light wells feed our plants; covered walks shelter us. The spring brings fresh water, while salt water fills the lower city. Do not confuse those two waters.'],
+ resident:['We live among the old stones without pretending they were made for us. A repaired stair, a sheltered garden, a little warmth behind a screen: that is home.',
+ 'When we need the open mountains, we wait for night. We are back beneath the stone before sunrise.'],
+ gardener:['The plants need daylight; we do not stand in it with them. I sort seeds and tend the spring under this covered walk. We work the open beds after nightfall.',
+ 'The channel carries fresh spring water down from the upper rock. Nothing here grows by drinking the sea.'],
 };
 export function createSevronHost({scene,world,player,openDialogue,closeDialogue,toast,save=()=>{},transition=()=>{},available=()=>true,reward=()=>{},onThreat=()=>false,combatState=()=>null}){
  const model=createSevronState(),walk=createSevronWalk({secretOpen:()=>model.state().secretOpen});let interior=null,active=false,clock=0,lastEntrance=SEVRON_ENTRANCES[0],cooldown=0;
  const people=[],scouts=[];
  const place=(actor,p)=>actor.group.position.set(p.x,p.y,p.z);
  function prepare(){if(interior)return;interior=buildSevronInterior(scene,{walk});
-  for(const stop of SEVRON_STOPS){const actor=stop.guard?createElvenRanger(1):createCharacter({role:'villager',hat:false,armed:false,tunic:stop.id==='keeper'?0x737b65:0x566c59,skin:0xc9af87,look:{hair:0x493c2c,hairStyle:'long',headgear:'bare',facialHair:'clean',elven:true}});actor.group.scale.set(.92,1.09,.92);place(actor,walk.toWorld(stop));interior.group.add(actor.group);people.push({...stop,actor});}
+  const culture=ELVEN_CULTURES.night;
+  for(const stop of SEVRON_STOPS){const actor=stop.guard?createElvenRanger(1,{culture:'night'}):createCharacter({role:'villager',hat:false,armed:false,tunic:culture.tunics[stop.id==='keeper'?1:0],skin:culture.skin,look:{hair:culture.hair,eyeColor:culture.eyes,hairStyle:'long',headgear:'bare',facialHair:'clean',elven:true}});actor.group.userData.elvenCulture=culture.id;actor.group.name=stop.name;actor.group.scale.set(.92,1.09,.92);place(actor,walk.toWorld(stop));interior.group.add(actor.group);people.push({...stop,actor});}
   refresh();
  }
  function refresh(){if(interior){interior.group.visible=active;interior.setSecretOpen(model.state().secretOpen);interior.setTaken(model.state().treasureTaken);}}
@@ -49,7 +55,7 @@ export function createSevronHost({scene,world,player,openDialogue,closeDialogue,
  }
  function frame(dt){clock+=dt;cooldown=Math.max(0,cooldown-dt);const p=player.group.position;
   if(active&&(walk.floorAt(p.x,p.z)===null||Math.abs(p.y-(walk.floorAt(p.x,p.z)??0))>7))leave({relocate:false});
-  if(active){if(p.z<walk.origin.z-51&&model.discoverCity()){save();toast('A living elven settlement occupies the upper galleries. You have found Sevron.','SEVRON');}for(const person of people)person.actor.animate(clock,0,true);}
+  if(active){if(p.z<walk.origin.z-51&&model.discoverCity()){save();toast('A living Night Elf settlement occupies the upper galleries. You have found Sevron.','SEVRON');}for(const person of people)person.actor.animate(clock,0,true);}
   const combat=combatState();if(combat?.phase==='won'&&model.defeat(combat.encounterId)){save();cooldown=10;}
   for(const spec of WEST_OREMINDI_ENCOUNTERS){const done=model.state().defeatedThreats.includes(spec.id),near=!active&&gap(p,spec.center)<110;
    for(const [i,e] of spec.enemies.entries()){let scout=scouts.find(s=>s.id===e.id);if(!scout&&near&&!done){const actor=createGoblin({variant:i});scene.add(actor.group);scout={id:e.id,actor};scouts.push(scout);}if(scout){scout.actor.group.visible=near&&!done&&combat?.encounterId!==spec.id;if(scout.actor.group.visible){place(scout.actor,{...e,y:world.heightAt(e.x,e.z)});scout.actor.animate(clock,0,true);}}}

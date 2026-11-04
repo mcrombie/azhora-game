@@ -212,7 +212,7 @@ export const REGION_DESIGN = Object.freeze([
   region('Lesser Oremindi Mountains', 5, 'wild', 'Mountains north of the Oremindi.', ['orc', 'mountain-goblin', 'giant'], 'The northern Oremindi barrier.', { provisional: true }),
   region('North Oreminidi Mountains', 5, 'wild', 'High mountains.', ['orc', 'mountain-goblin', 'giant'], 'The northern Oremindi barrier.', { provisional: true }),
   region('East Oremindi Mountains', 4, 'wild', 'High mountains and hills.', ['mountain-goblin', 'orc', 'giant'], 'Oremindi range.', { provisional: true }),
-  region('West Oremindi Mountains', 4, 'wild', 'Dangerous seaward mountain cliffs, sheltered woods and high icy passes.', ['mountain-goblin', 'orc', 'giant'], 'An ancient dwarf capital was drowned by human siege works. Centuries later the hidden elven kingdom of Sevron occupied its dry upper galleries. Most outsiders do not know whether it exists.', { provisional: true }),
+  region('West Oremindi Mountains', 4, 'wild', 'Dangerous seaward mountain cliffs, sheltered woods and high icy passes.', ['mountain-goblin', 'orc', 'giant'], 'An ancient dwarf capital was drowned by human siege works. Centuries later Sevron’s Night Elves occupied its dry upper galleries. Pale-skinned and red-eyed, they shun sunlight and leave their underground home only at night. Most outsiders do not know whether the city exists.', { provisional: true }),
 ]);
 
 /** Spellings heard through voice-to-text, mapped to authored region ids. */

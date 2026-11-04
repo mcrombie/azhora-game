@@ -31,7 +31,7 @@ export const ATLAS_CITY_DESIGNATIONS = Object.freeze({
   'east-baldro-gate': Object.freeze({ name: 'East Hold', subtitle: 'Dwarven city' }),
   imlamdris: Object.freeze({ name: 'Imlamdris', subtitle: 'City ruins' }),
   'zecron-ruins': Object.freeze({ name: 'Zecron', subtitle: 'City ruins' }),
-  'sevron-city': Object.freeze({ name: 'Sevron', subtitle: 'Elven city' }),
+  'sevron-city': Object.freeze({ name: 'Sevron', subtitle: 'Night Elf city' }),
 });
 
 export const questMapColour = kind => `#${(Object.hasOwn(MARKER_STYLE, kind) ? MARKER_STYLE[kind] : MARKER_STYLE.main).colour.toString(16).padStart(6, '0')}`;

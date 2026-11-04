@@ -14,7 +14,7 @@ holds below are working names, not newly established named chieftains.
 | North Oremindi Clan | North Oreminidi Mountains | White Anvil Hold; a rival chief. |
 | South Oremindi Clan | South Oremindi Mountains | Red Tarn Hold; a rival chief. |
 | Oremindi Kingdom | No whole region | Almost destroyed human kingdom. A small refuge survives among ruined communities. |
-| Mountain Elfland | Concealed Sevron, no surface region | The occupying orcs have not found the city. |
+| Mountain Elfland | Concealed Sevron, no surface region | The Night Elves live underground and venture out only at night. The occupying orcs have not found the city. |
 | Thalmagar's Empire | Cape Thalmagar; hidden Urubond | Direct domain only. Existing concealed vassals remain separate polities. |
 
 Narcosh claims the Acor Wetlands without owning the whole region. The earlier

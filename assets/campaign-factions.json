@@ -214,7 +214,7 @@
     "name": "Mountain Elfland",
     "regions": [],
     "capital": "Sevron, West Oremindi Mountains",
-    "relationship": "A small hidden elven kingdom survives within Sevron beneath West Oremindi. The orc chieftains occupy the mountain surface but have not found the city. It does not control the four surface regions.",
+    "relationship": "Sevron's Night Elves are pale-skinned and red-eyed. They live underground, shun sunlight and venture onto the surface only at night. Their small hidden kingdom survives beneath West Oremindi. The orc chieftains occupy the mountain surface but have not found the city. It does not control the four surface regions.",
     "hiddenHoldings": [
       "Sevron"
     ],
@@ -231,7 +231,7 @@
       "West Ibenwood"
     ],
     "capital": "Royal heart in Central Ibenwood; settlement name undecided",
-    "relationship": "Elven realm claiming all five Ibenwood regions; cooperative trade with Ibenal and Alezhor."
+    "relationship": "Realm of the wood elves, also known as Day Elves, claiming all five Ibenwood regions; cooperative trade with Ibenal and Alezhor. They are distinct from Sevron's underground Night Elves."
   },
   {
     "id": "ibenal",

@@ -1483,6 +1483,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
   const hairColors = hairStyle === 'long-tied' && Array.isArray(look?.hairColors)
     ? look.hairColors.filter(Number.isInteger).map(color => material(color)) : [];
   const dark = material(0x282d23);
+  const iris = Number.isInteger(look?.eyeColor) ? material(look.eyeColor) : dark;
   const whites = material(0xf3e9cc);
   const gold = isTraveler || isCook || isDoomsayer || isPondFisher || isRoadWorker ? bootMat : material(0xc8a250, { metalness: 0.28, roughness: 0.52 });
   const bagMat = material(0xa17a4b);
@@ -1656,7 +1657,7 @@ export function createCharacter({ role = 'traveler', tunic = tunicForRole(role),
     round(head, noseMat, [side * 0.212, 0.186, 0.027], [0.018, 0.032, 0.014]);
     if (!isTraveler && !isCook && !isSoldier && !hairColors.length) box(head, templeMat, [side * 0.169, 0.251, -0.009], [0.06, 0.132, 0.127]);
     round(head, whites, [side * 0.068, 0.226, 0.177], [0.046, isAvrelFarmer ? 0.021 : 0.031, 0.016]);
-    round(head, dark, [side * 0.065, 0.226, 0.191], [0.018, isAvrelFarmer ? 0.018 : 0.025, 0.011]);
+    round(head, iris, [side * 0.065, 0.226, 0.191], [0.018, isAvrelFarmer ? 0.018 : 0.025, 0.011]);
     round(head, whites, [side * 0.065 - 0.006, 0.235, 0.2], [0.006, 0.007, 0.004]);
     const brow = box(head, hairMat, [side * 0.069, 0.273, 0.167], [0.078, isCook || slight || isDyer ? 0.013 : 0.018, 0.02]);
     brow.rotation.z = look?.expression === 'twisted' ? (side < 0 ? -.32 : .16) : side * -0.075;

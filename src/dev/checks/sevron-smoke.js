@@ -21,6 +21,7 @@ export async function runSevronChecks({world,host,player,travel,frames=async()=>
  go(0,28);go(30,28);go(30,-32);go(0,-32);go(0,-58);host.frame(.01);
  check(host.snapshot().cityDiscovered,'Entering the upper occupied court discovers Sevron');
  check(host.people.length===4&&host.people.every(p=>p.actor.group.visible),'Four anonymous elven residents inhabit the upper galleries');
+ check(host.people.every(p=>p.actor.group.userData.elvenCulture==='night'),'Sevron’s watcher and civilians all use the Night Elf appearance');
  const before=host.snapshot();go(0,-32);go(30,-32);go(30,10);go(38,10);
  check(host.nearby()?.kind==='secret'&&host.interact(),'The mismatched masonry is reachable through ordinary gallery movement');
  host.frame(0);check(host.snapshot().secretOpen,'The inspection store opens persistently');
