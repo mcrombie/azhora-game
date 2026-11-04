@@ -6,10 +6,10 @@ const root=path.resolve(__dirname,'..'),published=path.join(root,'public'),artif
 if(!process.env.AZHORA_TEST_PROFILE)throw Error('Run through npm run test:web:desktop for an isolated profile.');
 app.setPath('userData',process.env.AZHORA_TEST_PROFILE);app.setPath('sessionData',process.env.AZHORA_TEST_PROFILE);
 for(const flag of ['disable-renderer-backgrounding','disable-background-timer-throttling','disable-backgrounding-occluded-windows'])app.commandLine.appendSwitch(flag);
-let server;
+let server,failedPath=null;
 app.on('window-all-closed',()=>app.quit());app.on('will-quit',()=>server?.close());
 app.whenReady().then(async()=>{
-  const checks=[],errors=[],requests=[];
+  const checks=[],errors=[],requests=[],failures=[];
   const check=(value,label)=>{assert.ok(value,label);checks.push(label);};
   for(const excluded of ['reference-private','.git','saves','docs','scripts','tests'])check(!fs.existsSync(path.join(published,excluded)),`Static build excludes ${excluded}`);
   server=http.createServer((req,res)=>{
@@ -25,19 +25,37 @@ app.whenReady().then(async()=>{
   win.once('ready-to-show',()=>win.showInactive());
   win.webContents.on('console-message',(_event,level,message)=>{if(level>=3)errors.push(message);if(message.startsWith('EXPLORATION_CHECK')||message.startsWith('EXPLORATION_READY'))console.log(message);});
   win.webContents.on('render-process-gone',(_event,details)=>{console.error(details);app.exit(1);});
-  win.webContents.session.webRequest.onBeforeRequest((details,callback)=>{requests.push(details.url);callback({});});
+  win.webContents.session.webRequest.onBeforeRequest((details,callback)=>{requests.push(details.url);callback({cancel:failedPath!==null&&new URL(details.url).pathname===failedPath});});
   const run=code=>win.webContents.executeJavaScript(code);
   const wait=condition=>run(`new Promise((resolve,reject)=>{const end=Date.now()+180000;const poll=()=>{if(window.__EXPLORATION_ERROR__)return reject(Error(window.__EXPLORATION_ERROR__));if(${condition})return resolve(true);if(Date.now()>end)return reject(Error('Timed out: '+${JSON.stringify(condition)}));setTimeout(poll,100);};poll();})`);
-  const menu=async()=>{await wait(`document.querySelector('[data-continue-mode="explore"]')?.onclick&&document.querySelector('[data-continue-mode="war"]')?.onclick&&document.querySelector('[data-continue-mode="food-world"]')?.onclick`);return run(`({visible:!document.getElementById('start-screen').hidden,starts:[...document.querySelectorAll('.launch-options>article>.menu-actions>[data-start-mode]')].map(b=>({mode:b.dataset.startMode,ready:!!b.onclick,visible:b.getBoundingClientRect().width>0})),titles:[...document.querySelectorAll('.launch-options>article>h2')].map(h=>h.textContent),hearthfallHidden:!document.querySelector('[data-start-mode="hearthfall"],[data-continue-mode="hearthfall"]'),continues:[...document.querySelectorAll('[data-continue-mode]')].map(b=>({mode:b.dataset.continueMode,enabled:!b.disabled})),bridge:!!window.azhoraExplorationStorage,legacy:!!window.__AZHORA__})`);};
+  const menu=async()=>{await wait(`document.querySelector('[data-continue-mode="explore"]')?.onclick&&document.querySelector('[data-continue-mode="war"]')?.onclick&&document.querySelector('[data-continue-mode="food-world"]')?.onclick`);return run(`({visible:!document.getElementById('start-screen').hidden,starts:[...document.querySelectorAll('.launch-options>article>.menu-actions>[data-start-mode]')].map(b=>({mode:b.dataset.startMode,ready:!!b.onclick,visible:b.getBoundingClientRect().width>0})),titles:[...document.querySelectorAll('.launch-options>article>h2')].map(h=>h.textContent),hearthfallHidden:!document.querySelector('[data-start-mode="hearthfall"],[data-continue-mode="hearthfall"]'),continues:[...document.querySelectorAll('[data-continue-mode]')].map(b=>({mode:b.dataset.continueMode,enabled:!b.disabled,visible:b.getBoundingClientRect().width>0})),bridge:!!window.azhoraExplorationStorage,legacy:!!window.__AZHORA__})`);};
   fs.mkdirSync(artifacts,{recursive:true});
   await win.loadURL(origin+'/?test=1&menu=1');
   const initial=await menu();
-  check(initial.visible&&initial.starts.map(b=>b.mode).join(',')==='explore,combat,war'&&initial.starts.every(b=>b.ready&&b.visible)&&initial.titles.join(',')==='Explore,Combat Testing,Lizeem War Scenario','Public root opens exactly three working top-level options in Explore, Combat Testing, Lizeem War Scenario order');
+  check(initial.visible&&initial.starts.filter(b=>b.visible).map(b=>b.mode).sort().join(',')==='explore,war'&&initial.starts.filter(b=>b.visible).every(b=>b.ready),'Public root opens only Story and Explore');
+  check(await run(`document.querySelector('[data-launch-choice=war]').getBoundingClientRect().top<document.querySelector('[data-launch-choice=explore]').getBoundingClientRect().top`),'Story is the first public choice');
+  check(initial.starts.filter(b=>b.visible).map(b=>b.mode).join(',')==='war,explore','Public keyboard order matches Story then Explore');
+  check(initial.continues.every(b=>!b.visible),'Fresh public launcher hides unavailable Continue actions');
   check(initial.hearthfallHidden,'Hearthfall remains absent from the public launcher');
   check(initial.continues.every(b=>!b.enabled)&&!initial.bridge&&!initial.legacy,'Fresh browser has no saves or legacy/Electron host');
   fs.writeFileSync(path.join(artifacts,'web-main-menu.png'),(await win.webContents.capturePage()).toPNG());
   await win.loadURL(origin+'/exploration.html?test=1&menu=1#menu');await menu();
   check(new URL(win.webContents.getURL()).pathname==='/index.html'&&new URL(win.webContents.getURL()).searchParams.get('menu')==='1'&&new URL(win.webContents.getURL()).hash==='#menu','Old exploration URL reaches the canonical menu with query and fragment intact');
+  if(process.argv.includes('--portfolio-only')||process.argv.includes('--portfolio-checks')){
+    await require('./portfolio-web-checks.cjs')({win,run,wait,menu,check,artifacts,origin,errors,setFailure:value=>{failedPath=value;}});
+    check(!errors.length,'No unexpected browser console errors');
+    check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
+    fs.writeFileSync(path.join(artifacts,'portfolio-web-checks.json'),JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors},null,2));if(process.argv.includes('--portfolio-only')){app.exit(0);return;}
+  }
+  await win.loadURL(origin+'/?test=1&menu=1&launcher=developer');await menu();
+  if(process.argv.includes('--developer-chapters-only')){
+    const reload=async search=>{await win.loadURL(origin+'/?test=1&menu=1'+search);return menu();};
+    await require('./portfolio-web-checks.cjs').checkDeveloperChapters({run,wait,check,reload});
+    check(!errors.length,'No browser console errors');
+    check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
+    fs.writeFileSync(path.join(artifacts,'developer-chapter-checks.json'),JSON.stringify({checks,errors},null,2));
+    console.log(JSON.stringify({checks,errors},null,2));app.exit(0);return;
+  }
   if(process.argv.includes('--war-only')){
     await require('./war-web-checks.cjs')({win,run,wait,menu,check,artifacts});check(!errors.length,'No browser console errors');
     check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
@@ -60,12 +78,19 @@ app.whenReady().then(async()=>{
   await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatHelp(window.__EXPLORATION__))`);
   fs.writeFileSync(path.join(artifacts,'web-combat-help.png'),(await win.webContents.capturePage()).toPNG());
   await run(`document.getElementById('world-skirmish-help').click()`);
-  const combat=await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatExercises(window.__EXPLORATION__))`);
-  checks.push(...combat.checks);
+  try{
+    const combat=await run(`import('./src/dev/checks/combat-testing-smoke.js').then(m=>m.checkCombatExercises(window.__EXPLORATION__))`);
+    checks.push(...combat.checks);
+    const combatReturn=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
+    await run(`document.getElementById('combat-testing-back').click()`);await combatReturn;await menu();
+    check((await menu()).visible,'Combat exercise menu can return to the main menu after playing');
+  }catch(error){
+    // Keep failures fatal, but still exercise the independent legacy entry/save route.
+    const state=await run(`(()=>{const h=window.__EXPLORATION__,p=h?.practice?.state(),e=p?.encounter;return {exercise:p?.exercise,outcome:e?.outcome,hp:e?.hero?.hp,remaining:e?.guards?.filter(g=>g.hp>0).length,frameErrors:h?.state().frameErrors};})()`);
+    failures.push({check:'Developer combat exercises',message:error.message,state});
+    fs.writeFileSync(path.join(artifacts,'web-combat-failure.png'),(await win.webContents.capturePage()).toPNG());
+  }
   check(await run(`JSON.stringify({...localStorage})`)===beforeCombat,'All combat exercises leave browser saves untouched');
-  const combatReturn=new Promise(resolve=>win.webContents.once('did-finish-load',resolve));
-  await run(`document.getElementById('combat-testing-back').click()`);await combatReturn;await menu();
-  check((await menu()).visible,'Combat exercise menu can return to the main menu after playing');
   const hearthfallURL=origin+'/?test=1&mode=hearthfall&load=fast';
   await win.loadURL(hearthfallURL);await wait('window.__EXPLORATION__');
   const saved=await run(`(()=>{const h=window.__EXPLORATION__,s=h.state();if(s.launch!=='hearthfall'||s.region!==21||s.enabledRegions.join()!=='21'||h.war)throw Error('Wrong sandbox mode');if(!h.save().ok)throw Error('Browser save failed');return h.store.read().data;})()`);
@@ -84,6 +109,6 @@ app.whenReady().then(async()=>{
   if(process.argv.includes('--war-release-checks'))await require('./war-web-checks.cjs')({win,run,wait,menu,check,artifacts});
   check(requests.every(url=>url.startsWith(origin+'/')||/^(data|blob):/.test(url)),'No remote services requested');
   check(!errors.length,'No browser console errors');
-  fs.writeFileSync(path.join(artifacts,'web-entry-checks.json'),JSON.stringify({checks,errors},null,2));
-  console.log(JSON.stringify({checks,errors},null,2));app.exit(0);
+  fs.writeFileSync(path.join(artifacts,'web-entry-checks.json'),JSON.stringify({checks,errors,failures},null,2));
+  console.log(JSON.stringify({checks,errors,failures},null,2));app.exit(failures.length?1:0);
 }).catch(error=>{console.error(error);app.exit(1);});

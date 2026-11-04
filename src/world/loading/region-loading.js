@@ -175,7 +175,7 @@ export function createRegionLoading({ initialRegions = [], regionAt = () => null
       completed: [...jobs.values()].filter(job => job.status === 'ready').length,
       total: jobs.size, pending: [...jobs.values()].filter(job => job.status === 'pending').length,
       ready: [...new Set([...initial, ...[...jobs.values()].flatMap(job => job.regions)])].filter(isReady),
-      jobs: [...jobs.values()].map(job => ({ id: job.id, regions: [...job.regions], status: job.status, error: job.error?.message ?? null,
+      jobs: [...jobs.values()].map(job => ({ id: job.id, regions: [...job.regions], dependencies: [...job.dependencies], status: job.status, error: job.error?.message ?? null,
         longestSliceMs: job.longestSliceMs, buildMs: job.buildMs, stepsRun: job.stepsRun })), longestSliceMs };
   }
   const api = { register, isReady, hasRegion: value => initial.has(identity(value)) || regionJobs(identity(value)).length > 0,

@@ -2,7 +2,7 @@ import {commanderOutcome} from './fixtures/commander-outcomes.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorldWar,WORLD_WAR_SCENARIO,OPENING_WORLD_WAR_SCENARIO} from '../src/app/exploration/world-war.js';
-import {createAdventureWar} from '../src/experiments/day-night/opening-war.js';
+import {createAdventureWar,createOpeningWar} from '../src/experiments/day-night/opening-war.js';
 import {CARICAS_TOWN} from '../src/content/regions/minora-frontier/caricas-settlement.js';
 import {withColumnPosition,worldWarArmies} from '../src/app/exploration/war-armies.js';
 import {openingWarGuidance,openingArmyTarget,guidanceScreenPoint} from '../src/app/exploration/war-guidance.js';
@@ -33,8 +33,8 @@ test('Continue restores the chosen destination or an explicitly stopped guide',(
   for(const invalid of [{kind:'army',id:3,x:4},{kind:'opening',id:'unknown'},{kind:'battle',id:''},{kind:'battle',id:-1},[]])assert.equal(validWarNavigation(invalid),false);
 });
 
-test('elapsed opening has an honest fixed destination before the real army and battlefield exist',()=>{
-  const war=createAdventureWar();war.begin();
+test('legacy opening rehearsal has an honest fixed destination before the real army and battlefield exist',()=>{
+  const war=createOpeningWar();war.begin();
   for(let i=0;i<41;i++)war.tick(1,true);
   const marks=()=>worldWarArmies(war.snapshot(),OPENING_WORLD_WAR_SCENARIO,()=>true,war.clock());
   const before=war.snapshot(),checkpoint=war.checkpoint();
@@ -51,7 +51,7 @@ test('elapsed opening has an honest fixed destination before the real army and b
   war.pause();for(let i=0;i<10;i++)war.tick(1,true);
   assert.equal(war.clock().elapsedSeconds,41);
   assert.deepEqual(openingWarGuidance('caricas',{owned:true,mounted:true}),destination);
-  const restored=createAdventureWar(checkpoint);
+  const restored=createOpeningWar(checkpoint);
   assert.equal(restored.clock().elapsedSeconds,41);
   assert.equal(savedWarNavigation({...checkpoint,navigation:null,riding:{owned:true}}),null,'Save/reload preserves explicitly stopped navigation');
   assert.deepEqual(savedWarNavigation({...checkpoint,navigation:{kind:'opening',id:'caricas'},riding:{owned:true}}),{kind:'opening',id:'caricas'});

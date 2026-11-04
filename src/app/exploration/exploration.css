@@ -152,3 +152,5 @@ body:has(#battle-result-dialog[open]) #world-autoplay{visibility:visible}
 
 .combat-trial-exercises label:has(select){display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:14px system-ui}
 .combat-trial-exercises select{min-width:220px;padding:9px 12px;border:1px solid #82998c;border-radius:4px;background:#18382e;color:#f3e9ca;font:inherit}
+
+#loading-screen .loading-line{height:4px;overflow:hidden;background:#65796b66;animation:none}#loading-screen .loading-line span{display:block;width:35%;height:100%;background:#edcf89;transform:translateX(-100%)}#loading-screen.loading-active .loading-line span{animation:loading-travel 1.8s ease-in-out infinite alternate;will-change:transform}#loading-elapsed{font:13px system-ui;color:#d2d8bd;margin:-16px 0 24px}@keyframes loading-travel{to{transform:translateX(285%)}}@media(prefers-reduced-motion:reduce){#loading-screen.loading-active .loading-line span{animation:none;transform:translateX(95%)}}

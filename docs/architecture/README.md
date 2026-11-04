@@ -1,6 +1,14 @@
 # Azhora codebase guide
 
-Azhora is a JavaScript game running in a browser inside Electron. This guide explains where features live, how they connect, and which architectural work is still ahead. The October 6, 2026 cleanup organized existing code without changing gameplay or implementing the proposed autonomous campaign simulation.
+Azhora is a JavaScript game running in a browser, with an optional Electron host.
+For the November 2026 portfolio entry points, start with the [README](../../README.md)
+and [Lizeemi source trace](../portfolio-demo.md#engineering-source-trace).
+The current Story uses the implemented independent campaign in `src/simulation/`;
+the original Drent/Solis adventure remains a separate development route.
+
+The sections below retain the October 6 reorganization record and subsequent
+development notes. The Solis walkthrough refers to the original adventure's
+chapter numbering, not the current launcher’s Chapter 1: Lizeemi War.
 
 Start with the folder table, then follow [the conquest of Solis](chapter-one-walkthrough.md). Use the [source index](source-index.md) to find a familiar filename. The [move manifest](source-moves.json) records every old and new source path.
 

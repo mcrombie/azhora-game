@@ -1,8 +1,107 @@
-﻿# Azhora: An Adventure Game
+# Azhora
 
-**Current development menu:** The public homepage, `npm start`, `electron .`, and **Play Azhora.cmd** offer one column of three choices: Explore, Combat Testing, and Lizeem War Scenario. Explore offers Full loading by default, preparing the world before entry, or Fast loading, preparing nearby regions as you travel. New Lizeemi campaigns combine reviewed countryside, regional food and army supplies with the adventure clock. Earlier campaign rehearsals and the separate food world test remain under a folded menu; existing saves keep their original rules. Combat exercises do not save. The Feradom-only Hearthfall workspace is hidden from the launcher while its systems and saves remain available for development; see the [Hearthfall handoff](docs/architecture/hearthfall-sandbox.md). Use `npm run start:adventure` (or `adventure.html` in the web build) for the original adventure described below.
+A playable **3D adventure and strategic campaign simulation prototype**. In the
+Lizeemi War, the player is a wizard inside a war that continues without them:
+armies move, supplies change, battles resolve and regions change hands. Joining a
+3D tactical encounter feeds its outcome back into that campaign.
 
-**Render:** `npm run build:web` publishes the same menu at `public/index.html`. Deploys remain manual in Render; pushing alone does not update the live site. `npm run test:web:desktop` tests the built site without a desktop save bridge, including the three-option menu, all combat exercises, impact/audio feedback, menu returns, save isolation, and hidden Hearthfall save restoration through an explicit test URL. Browser saves stay in that browser/site; they are separate from desktop saves.
+**Start here:** [Browser version](https://azhora.onrender.com/) ·
+[Demo 7: recorded playthrough](https://www.youtube.com/watch?v=7-BWZjqXetg) ·
+[Development post](https://www.mcrombie.com/cromblog/azhora-iii) ·
+[Short local demo](docs/portfolio-demo.md)
+
+The current local release candidate offers **Story** (the Lizeemi War) and
+**Explore** (free exploration with progressive loading). **Continue** appears when
+compatible progress is saved. A desktop keyboard, mouse and WebGL-capable browser
+are recommended. Explore's first load can take about a minute; Story is the
+quicker introduction. This is a prototype, not a finished commercial game. Render
+publishing is manual: the browser link may run an older version until the next
+approved deployment. See the [release review](docs/portfolio-release-review.md)
+and [preparation record](docs/portfolio-preparation.md).
+
+## Engineering worth exploring
+
+- **Independent simulation:** a seeded campaign core, validated commands, army
+  orders, resource accounting and battle resolution in [src/simulation](src/simulation).
+  Rendering and player input consume this state rather than owning the war.
+- **Tactical/strategic integration:** player battles apply casualties and results
+  to the shared campaign, including its event log and clock. The simulation can
+  also resolve unattended battles. See the [Lizeemi source trace](docs/portfolio-demo.md#engineering-source-trace).
+- **World construction:** authored atlas data drives procedural terrain, towns,
+  vegetation and collision geometry; cooperative regional jobs support progressive
+  loading. The full world is expensive to construct and remains a developer option.
+- **Persistence and verification:** mode-specific saves, validation and migration,
+  isolated test profiles, pure-model tests and native Chromium checks of built web
+  assets. Coverage is substantial but not a guarantee that every prototype is stable.
+- **Local rendering and audio:** JavaScript ES modules, vendored Three.js/WebGL,
+  Canvas interfaces and synthesized Web Audio; an Electron desktop host shares the
+  browser game. The game needs no AI API calls or keys at runtime.
+
+The [architecture guide](docs/architecture/README.md) maps source responsibilities.
+The [simulation design](docs/architecture/lizeem-simulation.md) includes historical
+experiments as well as the playable campaign. Chapters Two/Three, combat exercises,
+older adventures and economic rehearsals remain development features. Campaign
+food, housing and population are abstract values over fixed scenery; they do not
+claim a one-building-per-household simulation. Broader skills and story plans are
+not prerequisites for demonstrating the working Lizeemi loop.
+
+## Run and verify
+
+Use **Node.js 22.15 or newer**; **24.15.0** was used for the portfolio checks.
+The lookout asset build requires APIs introduced in Node 22.15. Dependencies are
+locked; install with:
+
+```sh
+npm ci
+npm start
+```
+
+The native launcher deliberately retains Chapters 1–3, Explore with Full/Fast
+choices, Combat Testing and folded rehearsals. Choose **Chapter 1: Lizeemi War**
+for the recommended demo. The built browser defaults to Story/Explore; append
+`?launcher=developer` to expose the same developer choices. This is a UI
+presentation distinction, not a security boundary. Existing mode IDs, explicit
+diagnostic routes and save slots are preserved.
+
+```sh
+npm run check:layout
+npm run check:modules
+npm run check:tests
+npm run test:unified-war
+npm run build:web
+npm run test:portfolio:web
+```
+
+See [the demo guide](docs/portfolio-demo.md) for serving `public/` locally.
+`npm test` runs the registered suite sequentially; it can take substantial time.
+[Explicit test exclusions](tests/test-exclusions.json) distinguish known legacy
+failures from manual heavy-world checks. The [verification record](docs/portfolio-preparation.md)
+lists what was actually run and its limits. Browser saves stay in their browser
+and origin; they do not share the native desktop save directory.
+
+## AI-assisted development and authorship
+
+Michael directs the project: requirements, game and systems design, tradeoffs,
+behavioral evaluation, playtesting, and integration decisions. OpenAI Codex and
+Claude Code have produced substantial implementation code and tests under that
+direction. This repository should not be read as a claim that Michael manually
+wrote every implementation detail. It is evidence of designing, evaluating and
+integrating a complex software prototype with coding agents, alongside conventional
+engineering tools and tests.
+
+Concrete interview topics include separating simulation from rendering, preserving
+old scenario rules in saved games, converting tactical outcomes into strategic
+commands, bounding progressive construction work, and checking the shipped web
+artifact rather than assuming a Git push updated production.
+
+---
+
+## Detailed development documentation and historical notes
+
+The material below is retained for contributors. It describes several generations
+of the project, including the original Drent adventure. Controls, prototype status
+and historical launcher descriptions in those sections may differ from current
+Story/Explore; use the introduction and demo guide above for a first visit.
 
 **Testing combat:** Choose **Combat Testing** on the homepage, then pick an exercise. The 3D world loads only after you choose an exercise. **WASD** moves and faces, **X** strikes the gold-ring target, **Space + direction** dodges, **R** retries, and **Esc** returns to exercise selection. **H / Help** pauses the encounter to show the full controls and sound toggle. Press **H** or **Esc** to resume; Esc outside Help returns to exercise selection. The active display keeps health, dodge readiness and one changing instruction. The first exercise prepares a bounded Minora camp with its existing tents and city backdrop; it skips the global world builder and campaign atlas. Subsequent exercises reuse it. `npm run start:combat` opens this selector directly. For the Ovesos ride, armies and geopolitical outcomes, use **Lizeemi War Scenario** and its F8 computer demonstrations.
 

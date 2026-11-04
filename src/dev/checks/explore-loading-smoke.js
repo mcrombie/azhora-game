@@ -11,7 +11,7 @@ export async function menu(){
   await wait(()=>document.getElementById('new-exploration')?.onclick,'Main menu did not become interactive');
   assert(!document.getElementById('start-screen').hidden,'Real launcher is visible before Explore starts');
   const cards=[...document.querySelectorAll('.launch-options > article')],names=cards.map(card=>card.querySelector('h2').textContent);
-  assert(JSON.stringify(names)===JSON.stringify(['Explore','Combat Testing','Lizeem War Scenario']),'Launcher contains only the three requested choices, in order');
+  assert(JSON.stringify(names)===JSON.stringify(['Chapter 2: Yunethre','Chapter 3: The Mountain Alliance','Explore','Combat Testing','Chapter 1: Lizeemi War']),'Developer launcher retains all chapters, exploration and combat');
   const boxes=cards.map(card=>card.getBoundingClientRect());
   assert(boxes.every(box=>Math.abs(box.left-boxes[0].left)<1&&Math.abs(box.width-boxes[0].width)<1)&&boxes.slice(1).every((box,i)=>box.top>=boxes[i].bottom),'Launcher choices form one column');
   assert(!document.querySelector('#start-screen [data-start-mode="hearthfall"]'),'Hearthfall is absent from the launcher');

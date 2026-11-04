@@ -103,7 +103,7 @@ export async function next(){
     const b=a.war.state().campaign.pending;click(b.attacker==='west'?'fight-attacker':'fight-defender');await wait(()=>['skirmish','encounter'].includes(a.state().mode),'Combat preparation');check(a.state().mode==='skirmish','Join button did not start battle');stage='battle';
   }
   else if(stage==='battle'){
-    detail=await fight(a);stage=detail.outcome==='success'?'result':'defeat';
+    detail=await fight(a);stage=detail.outcome==='success'||detail.hp>0?'result':'defeat';
   }
   else if(stage==='defeat'){
     notes.push({kind:'combat-defeat',battle:currentBattle.region});check(retries++<3,'Repeated combat defeats');
@@ -156,3 +156,27 @@ export async function resumeReview(s){
   ({stage,round,currentBattle,lastPort,battleCount,retries}=s);fights.push(...s.fights);notes.push(...s.notes);notes.push({kind:'review-resumed-from-real-save',stage});
 }
 export const diagnostic=()=>({stage,position:host()&&pos(host()),state:host()?.state(),war:host()?.war?.state(),text:text(),fights,notes});
+
+// Bounded portfolio verification: accept the real result, then leave the next
+// front to its armies. Uses the same Continue and map-speed controls as a player.
+export async function finishPortfolioDemo(){
+  const a=host();focus();check(stage==='choose','First result must be recorded before the independent-war check');
+  const before=a.war.state().campaign,clockBefore=a.war.clock().elapsedSeconds;
+  const resolved=c=>c.events.filter(e=>e.type==='battle').length;
+  check(clockBefore>=180,'Battle Continue advances to the scheduled end');
+  check(before.engagements.some(b=>b.region==='caricas'&&b.status!=='active'),'Caricas resolved after participation');
+  a.openMap();document.querySelector('#world-war-map-time [data-speed="20"]').click();
+  for(let i=0;i<3000&&resolved(a.war.state().campaign)<=resolved(before);i++){
+    a.step(.04);if(i%120===119)await frame();
+  }
+  document.querySelector('#world-war-map-time [data-speed="0"]').click();key('KeyM');
+  const after=a.war.state().campaign;
+  check(resolved(after)>resolved(before),'Another battle resolves without player participation');
+  check(a.state().mode==='playing'&&!a.state().frameErrors.length,'World resumes without frame errors');
+  check(a.save().ok,'Post-battle campaign saves');await a.loadSaved();
+  check(a.war.state().campaign.events.length===after.events.length,'Continue preserves the campaign event history');
+  return {done:true,clockBefore,clockAfter:a.war.clock().elapsedSeconds,
+    resolvedBefore:resolved(before),resolvedAfter:resolved(after),fights,notes,
+    checks:['First battle advances to its scheduled end','Real participation resolves Caricas',
+      'Next battle resolves unattended through map time controls','Campaign event history survives save/reload']};
+}

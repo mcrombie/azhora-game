@@ -39,3 +39,16 @@ test('Full reports a distant build failure and stops its background work and pro
   assert.equal(f.loader.state().running,false);assert.equal(f.frames.size,0);assert.deepEqual(f.cancelled,[123]);
   assert(!f.progress.at(-1).endsWith('100%'));
 });
+
+test('Fast progress includes transitive shared work without waiting for unrelated regions',async()=>{
+  const f=fixture();f.add('terrain',[8]);f.add('shared',[9],['terrain']);f.add('home',[1],['shared']);f.add('unrelated',[10]);
+  let report;
+  const ready=prepareExplorationRegions(f.loader,1,{...f.options,schedule:callback=>{report=callback;return 123;}});
+  while(f.loader.state().jobs.find(j=>j.id==='terrain').status!=='ready'){
+    const [id,callback]=f.frames.entries().next().value;f.frames.delete(id);callback();
+  }
+  report();assert.match(f.progress.at(-1),/33%$/,'completed prerequisite counts before the home job starts');
+  f.drain();await ready;
+  assert.deepEqual(f.visits,['terrain','shared','home']);assert.match(f.progress.at(-1),/100%$/);
+  assert.equal(f.loader.isReady(10),false);
+});

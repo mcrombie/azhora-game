@@ -66,9 +66,9 @@ test('allied melee physically strikes allies and the traveler, whose shield stil
   combat.guard(true,Math.PI);combat.update(.25);
   const impact=events.find(event=>event.type==='melee-impact'&&event.source==='ally');
   assert.ok(impact);
-  assert.equal(combat.state.enemies[0].hp,82);
-  assert.equal(combat.state.allies[1].hp,82);
-  assert.equal(combat.state.player.hp,93,'shield catches eleven of the allied eighteen damage');
+  assert.equal(combat.state.enemies[0].hp,78);
+  assert.equal(combat.state.allies[1].hp,78);
+  assert.equal(combat.state.player.hp,91,'shield catches thirteen of the Ambron soldier\'s twenty-two damage');
   assert.equal(attacker.hp,100);
   assert.ok(events.some(event=>event.type==='caught'));
 });
@@ -130,11 +130,15 @@ test('physical contacts exclude walls, rear targets, dead targets, aliases and t
   assert.equal(meleeContacts(impact,[target,{...target,id:'second-rendering',npcId:'target'}]).length,1);
 });
 
-test('officers take less frontal damage than ordinary soldiers',()=>{
-  const hpAfter=kind=>{
-    const {combat,start}=fixture();start([foe('guard',0,1.8,{kind,entry:0,hp:420})]);
+test('raised shields stop frontal blows; officer armor mitigates an unguarded blow',()=>{
+  const hpAfter=(kind,entry)=>{
+    const {combat,start}=fixture();start([foe('guard',0,1.8,{kind,entry,hp:420})]);
     combat.state.enemies[0].yaw=Math.PI;combat.attack(0);combat.update(.2);
     return combat.state.enemies[0].hp;
   };
-  assert.ok(hpAfter('officer')>hpAfter('soldier'));
+  assert.equal(hpAfter('soldier',0),420,'militia shield fully stops the frontal blow');
+  assert.equal(hpAfter('officer',0),420,'veteran shield also fully stops the frontal blow');
+  // Entering actors have not raised their shields: isolate armor from blocking.
+  assert.equal(hpAfter('soldier',10),396,'unarmored militia takes all 24 damage');
+  assert.equal(hpAfter('officer',10),402,'veteran armor reduces the same blow to 18');
 });

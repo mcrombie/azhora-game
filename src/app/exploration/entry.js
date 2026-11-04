@@ -1,4 +1,6 @@
+import {launcherPresentation,automaticExploreLoading,presentLauncher,presentContinue} from './launcher-presentation.js';
 import {installLoadingLore} from './loading-lore.js';
+import {installLoadingFeedback} from './loading-feedback.js';
 import {createExplorationAudio} from './audio-host.js';
 import {chooseLoadingMode} from '../startup/loading-choice.js';
 import {explorationStore} from './checkpoint.js';
@@ -16,6 +18,9 @@ const storage=window.azhoraExplorationStorage??window.localStorage;
 const arrival=arrivalStore(storage);
 const soundtrack=createExplorationAudio({storage});
 const params=new URLSearchParams(location.search);
+const presentation=launcherPresentation(location.search);
+presentLauncher(document,presentation);
+const loadingFeedback=installLoadingFeedback(document);
 let starting=false,combatSession=null;
 const allegianceMenu=createCampaignAllegianceMenu({
   choose:({id,data,side})=>start(id,data,null,null,false,false,id==='war'&&!data?true:null,side),
@@ -81,11 +86,11 @@ async function start(id,data=null,combatExercise=null,autoplaySide=null,lookoutP
       $('loading-screen').hidden=false;$('loading-message').textContent='Entering the tower in Minora...';
       adventureClock=true;
     }
-    const loadingMode=id==='explore'?await chooseLoadingMode({search:location.search,ids:{status:'loading-message',loading:'loading-screen'}}):'fast';
+    const loadingMode=id==='explore'?(automaticExploreLoading(presentation)??await chooseLoadingMode({search:location.search,ids:{status:'loading-message',loading:'loading-screen'}})):'fast';
     const begun=performance.now();
     if(id==='explore')$('loading-help').textContent=loadingMode==='full'
       ?'Full loading · Preparing all supported regions before you begin.'
-      :'Fast loading · Nearby places load ahead of you as you travel.';
+      :'Preparing your starting area can take about a minute. Nearby places will then load as you travel.';
     if(lookoutPreview)data=(await import('../../dev/tools/lizeem-lookout-preview.js')).createUnattendedLookout();
     // New campaigns use elapsed adventure time. Continuing a legacy save or a
     // legacy native/autoplay fixture preserves its original campaign rules.
@@ -99,6 +104,7 @@ async function start(id,data=null,combatExercise=null,autoplaySide=null,lookoutP
     if(id==='combat')combatSession=session;
     if(newArrival){const result=session.save();if(result.ok)arrival.clear();}
   }catch(error){
+    loadingFeedback.fail();
     soundtrack.bind(()=>({mode:'loading'}));
     console.error(error);window.__EXPLORATION_ERROR__=String(error.stack||error);
     $('loading-message').textContent='The world could not open: '+error.message;
@@ -112,9 +118,9 @@ for(const button of document.querySelectorAll('[data-start-mode]'))button.onclic
 for(const button of document.querySelectorAll('[data-continue-mode]')){
   const id=button.dataset.continueMode;
   storeFor(id).then(store=>{
-    const saved=store.read();button.disabled=!saved.ok||!saved.data;
+    const saved=store.read();presentContinue(button,!!(saved.ok&&saved.data),presentation);
     if(id==='war'&&arrival.read()){
-      button.disabled=false;button.textContent='Continue journey';
+      presentContinue(button,true,presentation);button.textContent='Continue journey';
       document.querySelector('[data-save-note="war"]').textContent='Saved in the Spirit and Time Realm. Completed preparation is kept.';
       button.onclick=()=>start('war',null,null,null,false,false,true,null,arrival.read());return;
     }

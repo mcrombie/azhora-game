@@ -152,7 +152,10 @@
     "test:oremindi:desktop": "node scripts/launch.cjs --exploration --oremindi --smoke-test --internal-review",
     "test:yunethre": "node --test --test-isolation=none tests/yunethre-chapter.test.js tests/yunethre-autoplay.test.js",
     "test:yunethre:autoplay": "node scripts/launch.cjs --exploration --yunethre --smoke-test --internal-review --yunethre-autoplay-checks",
-    "test:yunethre:desktop": "node scripts/launch.cjs --exploration --yunethre --smoke-test --internal-review"
+    "test:yunethre:desktop": "node scripts/launch.cjs --exploration --yunethre --smoke-test --internal-review",
+    "check:tests": "node scripts/check-test-inventory.cjs",
+    "test:portfolio:web": "npm run build:web && node scripts/launch.cjs --smoke-test --web-checks --portfolio-checks",
+    "pretest": "npm run check:tests"
   },
   "files": [
     "index.html",
@@ -170,5 +173,8 @@
   "devDependencies": {
     "electron": "32.3.3",
     "meshoptimizer": "1.3.0"
+  },
+  "engines": {
+    "node": ">=22.15.0"
   }
 }

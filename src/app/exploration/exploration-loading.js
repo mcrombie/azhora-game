@@ -4,6 +4,10 @@ export async function prepareExplorationRegions(loading,initialRegion,{loadingMo
   const full=loadingMode==='full',jobs=loading.state().jobs;
   const regions=full?[...new Set([initialRegion,...jobs.flatMap(job=>job.regions)])]:[initialRegion];
   const relevant=new Set(jobs.filter(job=>full||job.regions.includes(initialRegion)).map(job=>job.id));
+  // Shared terrain/scenery may belong to another region but still block this
+  // arrival. Include that real work in progress without changing build order.
+  const byId=new Map(jobs.map(job=>[job.id,job]));
+  for(const id of relevant)for(const dependency of byId.get(id)?.dependencies??[])if(byId.has(dependency))relevant.add(dependency);
   let last=-1;
   const report=()=>{
     const ready=loading.state().jobs.filter(job=>relevant.has(job.id)&&job.status==='ready').length;
